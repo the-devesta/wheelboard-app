@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:country_picker/country_picker.dart';
 
 class ProfessionalController extends GetxController {
   // var selectedDialCode = '+91'.obs; // Initial value

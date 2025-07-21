@@ -10,11 +10,11 @@
 		</data>
 		<key>flutter_assets/AssetManifest.bin</key>
 		<data>
-		Pl2wtPnh3QRX8lQHtbSdZFPXS2M=
+		o79upaQdGj6OKYLio9fhC4j+0z8=
 		</data>
 		<key>flutter_assets/AssetManifest.json</key>
 		<data>
-		P3atvLeYqC52dC8beitTQGGzBAE=
+		rQwmXABMvzCs7tcdO8/7XOP3H4o=
 		</data>
 		<key>flutter_assets/FontManifest.json</key>
 		<data>
@@ -22,7 +22,7 @@
 		</data>
 		<key>flutter_assets/NOTICES.Z</key>
 		<data>
-		peByynXeU1dJnBTQbUuw02zm/tA=
+		3/+mmklH0DdKO7jTzkobDWVgpag=
 		</data>
 		<key>flutter_assets/NativeAssetsManifest.json</key>
 		<data>
@@ -48,6 +48,10 @@
 		<data>
 		XMGJrYYwn2apauZY2GdOUD/G5xc=
 		</data>
+		<key>flutter_assets/assets/mainlogo.png</key>
+		<data>
+		nvoXjsxpGbTUbMdiAFuY9HeB9Xw=
+		</data>
 		<key>flutter_assets/assets/onboarding.png</key>
 		<data>
 		kph/tU88NFW5OM6kzEXVaP5skFo=
@@ -62,7 +66,7 @@
 		</data>
 		<key>flutter_assets/kernel_blob.bin</key>
 		<data>
-		GJTnWEHBxR7qlW6BEM2HB/PwIc4=
+		BcinttlvWdCh5A8PGM+jrM+U5so=
 		</data>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
 		<data>
@@ -83,14 +87,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			0Z/rsViguHWyRkZJso0Y49PB8sRSnwKlR961kSkSRQk=
+			vRS9w02lpxE1zo6sg3CLgBA8+Oh1FYfTJRiMNCM11kg=
 			</data>
 		</dict>
 		<key>flutter_assets/AssetManifest.json</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			FLqvNFvxug0ToN+l0O0HjpEsXshoMFnI2aFHZ7Uiubc=
+			WDi/RPebw+Y+7KMbv8TtJL+L5UlvmJuQ3liknIHHtFU=
 			</data>
 		</dict>
 		<key>flutter_assets/FontManifest.json</key>
@@ -104,7 +108,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			LiTjhZgXfDISF/qVxqe1NX6QkrdfP7zA1bZXgIw7vHM=
+			1VbXKMkZA7mrBA+LwzjsfRojApVG2x7rg8qVCn1SrHI=
 			</data>
 		</dict>
 		<key>flutter_assets/NativeAssetsManifest.json</key>
@@ -149,6 +153,13 @@
 			WvHmhfSjW+Vw4N0aacQX3epaieL8iIqJ/F9wfBWAOeA=
 			</data>
 		</dict>
+		<key>flutter_assets/assets/mainlogo.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			p/ATleW4rRaEa3jaG5HklVKCIL0S92rQpH6p4/hd1Gk=
+			</data>
+		</dict>
 		<key>flutter_assets/assets/onboarding.png</key>
 		<dict>
 			<key>hash2</key>
@@ -174,7 +185,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Tr779LzzMWgGoU5WmFJ0iLqyrfbFK36fMJYqsZZZMO4=
+			8rlS4uMfmx/4pOeGziV3JGZgWXDp8WVVyzSfzXTw5sQ=
 			</data>
 		</dict>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>

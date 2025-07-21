@@ -6,10 +6,11 @@ import 'package:wheelboard/screens/signup.dart';
 import '../controllers/register_controller.dart';
 
 class RegisterScreen extends StatelessWidget {
-  final RegisterController controller = Get.put(RegisterController());
+  const RegisterScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final RegisterController controller = Get.put(RegisterController());
     return Scaffold(
       backgroundColor: Color(0xFFFCFDFC),
 

@@ -13,7 +13,7 @@ class AppDropdown<T> extends StatelessWidget {
   final AutovalidateMode autovalidateMode;
 
   const AppDropdown({
-    Key? key,
+    super.key,
     required this.value,
     required this.items,
     required this.onChanged,
@@ -23,7 +23,7 @@ class AppDropdown<T> extends StatelessWidget {
     this.validator,
     this.enabled = true,
     this.autovalidateMode = AutovalidateMode.onUserInteraction,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

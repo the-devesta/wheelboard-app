@@ -46,7 +46,7 @@
 		</data>
 		<key>Frameworks/App.framework/App</key>
 		<data>
-		+jJlokjSsooZr3kO5+xfprCIo8w=
+		SX/8j5GyCtI4A3Y8HTS/BCxPCxE=
 		</data>
 		<key>Frameworks/App.framework/Info.plist</key>
 		<data>
@@ -54,15 +54,15 @@
 		</data>
 		<key>Frameworks/App.framework/_CodeSignature/CodeResources</key>
 		<data>
-		uKdiy6kX5jmp5ID6WUOsIyKjKF4=
+		6oCrkOQvph9YcQcaIt6HSHnJB1E=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/AssetManifest.bin</key>
 		<data>
-		Pl2wtPnh3QRX8lQHtbSdZFPXS2M=
+		o79upaQdGj6OKYLio9fhC4j+0z8=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/AssetManifest.json</key>
 		<data>
-		P3atvLeYqC52dC8beitTQGGzBAE=
+		rQwmXABMvzCs7tcdO8/7XOP3H4o=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/FontManifest.json</key>
 		<data>
@@ -70,7 +70,7 @@
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/NOTICES.Z</key>
 		<data>
-		peByynXeU1dJnBTQbUuw02zm/tA=
+		3/+mmklH0DdKO7jTzkobDWVgpag=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/NativeAssetsManifest.json</key>
 		<data>
@@ -96,6 +96,10 @@
 		<data>
 		XMGJrYYwn2apauZY2GdOUD/G5xc=
 		</data>
+		<key>Frameworks/App.framework/flutter_assets/assets/mainlogo.png</key>
+		<data>
+		nvoXjsxpGbTUbMdiAFuY9HeB9Xw=
+		</data>
 		<key>Frameworks/App.framework/flutter_assets/assets/onboarding.png</key>
 		<data>
 		kph/tU88NFW5OM6kzEXVaP5skFo=
@@ -110,7 +114,7 @@
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/kernel_blob.bin</key>
 		<data>
-		GJTnWEHBxR7qlW6BEM2HB/PwIc4=
+		BcinttlvWdCh5A8PGM+jrM+U5so=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
 		<data>
@@ -218,7 +222,7 @@
 		</data>
 		<key>Info.plist</key>
 		<data>
-		Z0rZ28OU0pJGDrj9SULYukPFG7o=
+		5rQvzss7UKrsO3DealNxRfUXxTA=
 		</data>
 		<key>PkgInfo</key>
 		<data>
@@ -226,7 +230,7 @@
 		</data>
 		<key>Runner.debug.dylib</key>
 		<data>
-		xiLz6Jbo1bZ6egB/MkL0WOCCGEc=
+		5HyTMfpLX+yOcB7RiittfzIw3kM=
 		</data>
 		<key>__preview.dylib</key>
 		<data>
@@ -309,7 +313,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			5Me6CyoARxwxB4SFE9C7k8OsWTygOD5cimy9MOOL7Pc=
+			k7epTgyUEEyr6g79YYCxApgP0ij3aB9j90CSBNCD1JE=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/Info.plist</key>
@@ -323,21 +327,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			k5KOLw8DPOP2Fg1vSZe6vusuuM98n1fefHtDJpKbOv4=
+			D0fWf36zRS4a+vQjdpzYUi7l+Denp1uFRQcrq8eeU4I=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/AssetManifest.bin</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			0Z/rsViguHWyRkZJso0Y49PB8sRSnwKlR961kSkSRQk=
+			vRS9w02lpxE1zo6sg3CLgBA8+Oh1FYfTJRiMNCM11kg=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/AssetManifest.json</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			FLqvNFvxug0ToN+l0O0HjpEsXshoMFnI2aFHZ7Uiubc=
+			WDi/RPebw+Y+7KMbv8TtJL+L5UlvmJuQ3liknIHHtFU=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/FontManifest.json</key>
@@ -351,7 +355,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			LiTjhZgXfDISF/qVxqe1NX6QkrdfP7zA1bZXgIw7vHM=
+			1VbXKMkZA7mrBA+LwzjsfRojApVG2x7rg8qVCn1SrHI=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/NativeAssetsManifest.json</key>
@@ -396,6 +400,13 @@
 			WvHmhfSjW+Vw4N0aacQX3epaieL8iIqJ/F9wfBWAOeA=
 			</data>
 		</dict>
+		<key>Frameworks/App.framework/flutter_assets/assets/mainlogo.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			p/ATleW4rRaEa3jaG5HklVKCIL0S92rQpH6p4/hd1Gk=
+			</data>
+		</dict>
 		<key>Frameworks/App.framework/flutter_assets/assets/onboarding.png</key>
 		<dict>
 			<key>hash2</key>
@@ -421,7 +432,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Tr779LzzMWgGoU5WmFJ0iLqyrfbFK36fMJYqsZZZMO4=
+			8rlS4uMfmx/4pOeGziV3JGZgWXDp8WVVyzSfzXTw5sQ=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
@@ -610,7 +621,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			lPq2lSebV3DlHAZYQQ8YppYxLQrV2fRw/cPIZBOtHsY=
+			7Tkc4GOz90EUmpoxwF/e9qsmwSyPDgTPviIr5HqFcRo=
 			</data>
 		</dict>
 		<key>__preview.dylib</key>
