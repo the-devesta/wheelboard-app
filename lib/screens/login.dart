@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/signup.dart';
 import '../controllers/register_controller.dart';
+import '../screens/professional_signup.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -82,7 +83,11 @@ class RegisterScreen extends StatelessWidget {
                               print(
                                 'Selected: ${controller.selectedType.value}',
                               );
-                              Get.to(Signup());
+                              if (controller.selectedType.value == 'Company') {
+                                Get.to(Signup());
+                              } else {
+                                Get.to(ProfessionalRegisterScreen());
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.buttonBg, // custom red

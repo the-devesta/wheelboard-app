@@ -15,6 +15,7 @@ class Signup extends StatelessWidget {
   final TextEditingController companyController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final RxnString selectedCompanyType = RxnString();
   final Rxn<Country> selectedCountry = Rxn<Country>(
     Country.parse(ui.window.locale.countryCode ?? 'IN'),
@@ -108,6 +109,13 @@ class Signup extends StatelessWidget {
             hintText: 'Enter company name',
           ),
           const SizedBox(height: 16),
+          const SizedBox(width: double.infinity, child: Text("Email")),
+          const SizedBox(height: 5),
+          AppTextField(
+            controller: emailController,
+            hintText: 'Enter your email',
+          ),
+          const SizedBox(height: 16),
           const SizedBox(width: double.infinity, child: Text("Phone Number")),
           const SizedBox(height: 5),
           AppTextField(
@@ -184,7 +192,7 @@ class Signup extends StatelessWidget {
         final model = CompanySignUpModel(
           companyName: companyController.text,
           mobileNo: phoneController.text,
-          email: "teja@gmail.com",
+          email: emailController.text,
           password: passwordController.text,
           businessCategory: selectedCompanyType.value ?? '',
         );
