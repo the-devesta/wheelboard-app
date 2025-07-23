@@ -7,6 +7,7 @@ import 'package:wheelboard/controllers/signup_controller.dart';
 import '../constants/apps_colors.dart';
 import 'package:country_picker/country_picker.dart';
 import '../models/company_signupmodel.dart';
+import 'complete_profile.dart';
 
 class Signup extends StatelessWidget {
   Signup({super.key});
@@ -189,16 +190,16 @@ class Signup extends StatelessWidget {
   Widget _buildRegisterButton() {
     return ElevatedButton(
       onPressed: () {
-        final model = CompanySignUpModel(
-          companyName: companyController.text,
-          mobileNo: phoneController.text,
-          email: emailController.text,
-          password: passwordController.text,
-          businessCategory: selectedCompanyType.value ?? '',
-        );
-        controller.registerCompany(model);
+        // final model = CompanySignUpModel(
+        //   companyName: companyController.text,
+        //   mobileNo: phoneController.text,
+        //   email: emailController.text,
+        //   password: passwordController.text,
+        //   businessCategory: selectedCompanyType.value ?? '',
+        // );
+        // controller.registerCompany(model);
 
-        // Get.to(() => MyprofileScreen());
+        Get.to(() => MyprofileScreen());
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.buttonBg,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'bottom_navigation.dart';
 
 class ProfessionLogin extends StatelessWidget {
   const ProfessionLogin({super.key});
@@ -184,7 +185,7 @@ class ProfessionLogin extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          Get.to(() => const ProfessionLogin()); // Replace with home screen
+          Get.to(() => BottomNavScreen()); // Replace with home screen
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.buttonBg,
