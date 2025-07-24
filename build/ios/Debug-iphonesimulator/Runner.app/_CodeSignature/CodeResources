@@ -46,7 +46,7 @@
 		</data>
 		<key>Frameworks/App.framework/App</key>
 		<data>
-		2a2ZU0iwWUMRp61QIpJO14JbZmo=
+		2ZZz8rBXsqhuqVRSpeX5eNMxXLM=
 		</data>
 		<key>Frameworks/App.framework/Info.plist</key>
 		<data>
@@ -54,15 +54,15 @@
 		</data>
 		<key>Frameworks/App.framework/_CodeSignature/CodeResources</key>
 		<data>
-		xJwuWEItATaV0CSHpwACMvMSUt0=
+		+J2Syg168KR+rfuHlDX+KZd/skw=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/AssetManifest.bin</key>
 		<data>
-		o79upaQdGj6OKYLio9fhC4j+0z8=
+		msOEI7Xr8JT3yVfckcwG4s+X1TA=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/AssetManifest.json</key>
 		<data>
-		rQwmXABMvzCs7tcdO8/7XOP3H4o=
+		ZXM8WkS1ZDNV3uAiO9w0ut/YvSk=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/FontManifest.json</key>
 		<data>
@@ -104,6 +104,10 @@
 		<data>
 		kph/tU88NFW5OM6kzEXVaP5skFo=
 		</data>
+		<key>Frameworks/App.framework/flutter_assets/assets/truck.png</key>
+		<data>
+		RnWM1K5QmNtJqKDFeqEWJpcSHM4=
+		</data>
 		<key>Frameworks/App.framework/flutter_assets/fonts/MaterialIcons-Regular.otf</key>
 		<data>
 		/CUoTuPQqqdexfyOT9lpJhV+2MQ=
@@ -114,7 +118,7 @@
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/kernel_blob.bin</key>
 		<data>
-		kb+RCQ0tfaStKOtZsdodCMu4Y5o=
+		NrisiuqddH8bqyWLfg15/91fA3g=
 		</data>
 		<key>Frameworks/App.framework/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
 		<data>
@@ -313,7 +317,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			vTCzZrq3qj/0jvlXo98xHEJytshoLtNRr/+9lgFi+CI=
+			G1tJ11eTuEL020t6xY9u7sG65WkyieoV0Q1jUHmEMSk=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/Info.plist</key>
@@ -327,21 +331,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			ut1HQpmN6nTYZKhTfpehJ5SdVT7dDGmZWEU27aPGVq4=
+			JVvfC47WJ8yEWJ1jIaoLxDNonf558sPbYIv3BgQ7um4=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/AssetManifest.bin</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			vRS9w02lpxE1zo6sg3CLgBA8+Oh1FYfTJRiMNCM11kg=
+			o2JQF20zBMMDLCFxOdBbfE3MliOpMaCDBPA+1sRQZ8s=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/AssetManifest.json</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			WDi/RPebw+Y+7KMbv8TtJL+L5UlvmJuQ3liknIHHtFU=
+			pQNMIdzinSN8Wv8oLEFRyxvvwrn8Gq0zHBIHOoNhs/U=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/FontManifest.json</key>
@@ -414,6 +418,13 @@
 			3VV/urjSQ1zfxXwaNg95qgVjjjMm1/oTQDxN3qd65Ls=
 			</data>
 		</dict>
+		<key>Frameworks/App.framework/flutter_assets/assets/truck.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			+xvCPRMSy+VvnP31ZBjHtIoN0+ntR1o9iacmJpzwbwc=
+			</data>
+		</dict>
 		<key>Frameworks/App.framework/flutter_assets/fonts/MaterialIcons-Regular.otf</key>
 		<dict>
 			<key>hash2</key>
@@ -432,7 +443,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			8IVP4p38FDK2Bclass9louw6D1N3ZQODkhLxHo2U19g=
+			6bWVqXY73CwZgm3czv4mR/ioXiENtk/0VL/LRZUZ8To=
 			</data>
 		</dict>
 		<key>Frameworks/App.framework/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>

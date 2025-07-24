@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'feed_screen.dart';
+import 'home_screen.dart';
 
 class BottomNavScreen extends StatefulWidget {
   @override
@@ -11,7 +12,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    Center(child: Text("Home")),
+    HomeScreen(),
     Center(child: Text("Fleet")),
     Center(child: Text("Trips")),
     FeedScreen(),

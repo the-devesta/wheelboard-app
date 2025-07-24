@@ -110,11 +110,8 @@ class FeedScreen extends StatelessWidget {
           elevation: 4,
         ),
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          child: Text(
-            "New Post",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+          child: Text("New Post", style: TextStyle(color: AppColors.white)),
         ),
       ),
     );
