@@ -8,6 +8,8 @@ class FeedScreen extends StatelessWidget {
       'https://images.unsplash.com/photo-1618675529403-69e751c17746'; // Truck image
   final String profileImage = 'https://i.pravatar.cc/100';
 
+  const FeedScreen({super.key});
+
   Widget buildPostCard() {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10, horizontal: 12),

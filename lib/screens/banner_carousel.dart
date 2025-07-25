@@ -14,9 +14,9 @@ class _BannerCarouselState extends State<BannerCarousel> {
   Timer? _timer;
 
   final List<String> images = [
-    'https://images.unsplash.com/photo-1558980394-0c04964e0f91', // Truck 1
-    'https://images.unsplash.com/photo-1503376780353-7e6692767b70', // Truck 2
-    'https://images.unsplash.com/photo-1601851785943-8857d19b02ed', // Truck 3
+    'assets/truck.png', // Truck 1
+    'assets/truck.png', // Truck 2
+    'assets/truck.png', // Truck 3
   ];
 
   @override
@@ -50,7 +50,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
       children: [
         /// Carousel
         SizedBox(
-          height: 200,
+          height: 120,
           child: PageView.builder(
             controller: _pageController,
             itemCount: images.length,
@@ -62,7 +62,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
+                  child: Image.asset(
                     images[index],
                     fit: BoxFit.cover,
                     width: double.infinity,

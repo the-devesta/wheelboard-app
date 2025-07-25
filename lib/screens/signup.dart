@@ -6,7 +6,6 @@ import 'package:wheelboard/commonwidget/app_dropdown.dart';
 import 'package:wheelboard/controllers/signup_controller.dart';
 import '../constants/apps_colors.dart';
 import 'package:country_picker/country_picker.dart';
-import '../models/company_signupmodel.dart';
 import 'complete_profile.dart';
 
 class Signup extends StatelessWidget {

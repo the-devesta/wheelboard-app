@@ -10,6 +10,9 @@ class HomeScreen extends StatelessWidget {
     {'icon': Icons.local_shipping, 'label': 'Vehicles'},
     {'icon': Icons.person, 'label': 'Professional'},
     {'icon': Icons.money, 'label': 'Expenses'},
+    {'icon': Icons.local_shipping, 'label': 'Vehicles'},
+    {'icon': Icons.person, 'label': 'Professional'},
+    {'icon': Icons.money, 'label': 'Expenses'},
   ];
 
   final List<Map<String, dynamic>> stats = [
@@ -116,41 +119,6 @@ class HomeScreen extends StatelessWidget {
                 BannerCarousel(),
                 SizedBox(height: 20),
 
-                GridView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: stats.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.8,
-                  ),
-                  itemBuilder: (context, index) {
-                    final item = menuItems[index];
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: EdgeInsets.all(12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(item['icon'], size: 30, color: Colors.teal),
-                          SizedBox(height: 8),
-                          Text(
-                            item['label'],
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-
-                SizedBox(height: 20),
-
                 /// Menu Grid
                 GridView.builder(
                   physics: NeverScrollableScrollPhysics(),
@@ -219,6 +187,7 @@ class HomeScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: AppColors.buttonBg,
                             ),
                           ),
                           Container(
@@ -232,7 +201,10 @@ class HomeScreen extends StatelessWidget {
                             ),
                             child: Text(
                               "Call Now",
-                              style: TextStyle(color: Colors.red),
+                              style: TextStyle(
+                                color: AppColors.buttonBg,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -260,21 +232,29 @@ class HomeScreen extends StatelessWidget {
                             child: ElevatedButton.icon(
                               onPressed: () {},
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
+                                backgroundColor: Color(0xFF00AEEF),
                                 shape: StadiumBorder(),
                               ),
-                              icon: Icon(Icons.share),
-                              label: Text("Share"),
+                              icon: Icon(Icons.share, color: Colors.white),
+                              label: Text(
+                                "Share",
+                                style: TextStyle(color: AppColors.white),
+                              ),
                             ),
                           ),
-                          SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.redAccent,
-                              shape: StadiumBorder(),
+                          SizedBox(width: 10), // Space between buttons
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFFD1E5E2),
+                                shape: StadiumBorder(),
+                              ),
+                              child: Text(
+                                "Services",
+                                style: TextStyle(color: AppColors.buttonBg),
+                              ),
                             ),
-                            child: Text("Services"),
                           ),
                         ],
                       ),

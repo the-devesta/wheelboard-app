@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 class FleetUserprofile extends StatelessWidget {
   final String profileImage = 'https://i.pravatar.cc/150?img=12';
 
+  const FleetUserprofile({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

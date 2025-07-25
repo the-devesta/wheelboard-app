@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'feed_screen.dart';
 import 'home_screen.dart';
+import 'job_screen.dart';
 
 class BottomNavScreen extends StatefulWidget {
+  const BottomNavScreen({super.key});
+
   @override
   _BottomNavScreenState createState() => _BottomNavScreenState();
 }
@@ -16,7 +19,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     Center(child: Text("Fleet")),
     Center(child: Text("Trips")),
     FeedScreen(),
-    Center(child: Text("Jobs")),
+    JobsScreen(),
   ];
 
   void _onTabTapped(int index) {
