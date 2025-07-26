@@ -112,27 +112,28 @@ class JobCard extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                        horizontal: 16,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFEAEA),
-                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            offset: const Offset(0, 4),
+                            blurRadius: 6,
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        role,
-                        style: const TextStyle(
-                          color: Color(0xFFFF5C5C),
-                          fontWeight: FontWeight.w500,
+                      child: const Text(
+                        "Technician",
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 16,
                         ),
                       ),
-                    ),
-                    Row(
-                      children: const [
-                        Icon(Icons.favorite_border, color: Colors.red),
-                        SizedBox(width: 10),
-                        Icon(Icons.share_outlined, color: Colors.red),
-                      ],
                     ),
                   ],
                 ),
