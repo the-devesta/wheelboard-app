@@ -3,6 +3,7 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'banner_carousel.dart';
 import 'fleet_userprofile.dart';
 import 'package:get/get.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -343,11 +344,27 @@ class HomeScreen extends StatelessWidget {
           // Reactions
           Row(
             children: [
-              Icon(Icons.favorite_border, color: AppColors.buttonBg),
+              SvgPicture.asset(
+                'assets/heart.svg',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+              ),
+              // Icon(Icons.favorite_border, color: AppColors.buttonBg),
               SizedBox(width: 10),
-              Icon(Icons.chat_bubble_outline, color: AppColors.buttonBg),
+              SvgPicture.asset(
+                'assets/share.svg',
+                width: 26,
+                height: 26,
+                fit: BoxFit.contain,
+              ),
               SizedBox(width: 10),
-              Icon(Icons.share, color: AppColors.buttonBg),
+              SvgPicture.asset(
+                'assets/eye.svg',
+                width: 26,
+                height: 26,
+                fit: BoxFit.contain,
+              ),
             ],
           ),
           SizedBox(height: 10),

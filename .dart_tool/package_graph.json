@@ -14,6 +14,7 @@
       "devDependencies": [
         "country_picker",
         "flutter_lints",
+        "flutter_svg",
         "flutter_test",
         "http",
         "mime"
@@ -300,6 +301,71 @@
       "dependencies": [
         "collection"
       ]
+    },
+    {
+      "name": "flutter_svg",
+      "version": "2.0.9",
+      "dependencies": [
+        "flutter",
+        "vector_graphics",
+        "vector_graphics_codec",
+        "vector_graphics_compiler"
+      ]
+    },
+    {
+      "name": "vector_graphics",
+      "version": "1.1.10+1",
+      "dependencies": [
+        "flutter",
+        "vector_graphics_codec"
+      ]
+    },
+    {
+      "name": "vector_graphics_codec",
+      "version": "1.1.10+1",
+      "dependencies": []
+    },
+    {
+      "name": "path_parsing",
+      "version": "1.1.0",
+      "dependencies": [
+        "meta",
+        "vector_math"
+      ]
+    },
+    {
+      "name": "vector_graphics_compiler",
+      "version": "1.1.10+1",
+      "dependencies": [
+        "args",
+        "meta",
+        "path",
+        "path_parsing",
+        "vector_graphics_codec",
+        "xml"
+      ]
+    },
+    {
+      "name": "xml",
+      "version": "6.5.0",
+      "dependencies": [
+        "collection",
+        "meta",
+        "petitparser"
+      ]
+    },
+    {
+      "name": "petitparser",
+      "version": "6.1.0",
+      "dependencies": [
+        "collection",
+        "meta"
+      ]
+    },
+    {
+      "name": "args",
+      "version": "2.7.0",
+      "dependencies": []
     }
   ],
   "configVersion": 1

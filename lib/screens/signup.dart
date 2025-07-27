@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import 'package:wheelboard/commonwidget/app_dropdown.dart';
@@ -7,6 +8,7 @@ import 'package:wheelboard/controllers/signup_controller.dart';
 import '../constants/apps_colors.dart';
 import 'package:country_picker/country_picker.dart';
 import 'complete_profile.dart';
+import '../models/company_signupmodel.dart';
 
 class Signup extends StatelessWidget {
   Signup({super.key});
@@ -225,9 +227,9 @@ class Signup extends StatelessWidget {
   Widget _buildSocialButtons() {
     return Column(
       children: [
-        _socialButton("Continue with Google", "assets/google.png"),
+        _socialButton("Continue with Google", "assets/google.svg"),
         const SizedBox(height: 12),
-        _socialButton("Continue with Facebook", "assets/1.png"),
+        _socialButton("Continue with Facebook", "assets/facebook.svg"),
       ],
     );
   }
@@ -243,7 +245,7 @@ class Signup extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(asset, height: 24),
+          SvgPicture.asset(asset, width: 20, height: 20),
           const SizedBox(width: 12),
           Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],

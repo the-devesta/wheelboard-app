@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'bottom_navigation.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfessionLogin extends StatelessWidget {
   const ProfessionLogin({super.key});
@@ -65,7 +66,7 @@ class ProfessionLogin extends StatelessWidget {
                         children: [
                           _socialButton(
                             "Continue with Google",
-                            "assets/google.png",
+                            "assets/google.svg",
                             screenWidth,
                           ),
                           SizedBox(height: screenHeight * 0.03),
@@ -153,7 +154,7 @@ class ProfessionLogin extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(asset, height: screenWidth * 0.06),
+          SvgPicture.asset(asset, height: screenWidth * 0.06),
           SizedBox(width: screenWidth * 0.03),
           Text(
             text,
