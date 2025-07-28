@@ -20,43 +20,64 @@ class FleetUserprofile extends StatelessWidget {
           ),
 
           Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            left: 16,
-            right: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Back button
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back, color: Colors.white),
+            height: MediaQuery.of(context).size.height * 0.06,
+            top: MediaQuery.of(context).padding.top,
+            left: 4,
+            right: 4,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12), // Set corner radius
+              child: Container(
+                clipBehavior:
+                    Clip.antiAlias, // Clip content to match border radius
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const Text(
-                  "User Profile",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Back button
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.arrow_back, color: Colors.black),
+                    ),
+                    const Text(
+                      "User Profile",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                  ],
                 ),
-                const SizedBox(width: 24), // space to balance layout
-              ],
+              ),
             ),
           ),
 
           // ⬜️ Foreground Content
           Positioned(
-            top: 250, // align content just below the curve
+            top:
+                MediaQuery.of(context).size.height * 0.06 +
+                MediaQuery.of(context).padding.top +
+                5, // align content just below the curve
             left: 0,
             right: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: const [
-                  Text("Profile Content", style: TextStyle(fontSize: 20)),
-                  // ... add other widgets here
-                ],
-              ),
+            child: Column(
+              children: const [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  child: CircleAvatar(
+                    radius: 45,
+                    backgroundImage: NetworkImage(
+                      'https://i.pravatar.cc/150?img=12',
+                    ),
+                  ),
+                ),
+                // ... add other widgets here
+              ],
             ),
           ),
         ],
