@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
+import 'package:wheelboard/constants/apps_colors.dart';
+import 'job_form_screen.dart';
 
 class JobsScreen extends StatelessWidget {
   const JobsScreen({super.key});
@@ -7,7 +10,7 @@ class JobsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFCEEF0),
+      backgroundColor: AppColors.primary,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -48,7 +51,9 @@ class JobsScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFFFF5C5C),
-        onPressed: () {},
+        onPressed: () {
+          Get.to(PostJobScreen());
+        },
         icon: SvgPicture.asset(
           'assets/add_circle.svg', // <-- your SVG path
           width: 24,
