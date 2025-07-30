@@ -3,6 +3,7 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/screens/fleet_userprofile.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'new_post_screen.dart';
 
 class FeedScreen extends StatelessWidget {
   final String postImage =
@@ -120,7 +121,9 @@ class FeedScreen extends StatelessWidget {
         children: [buildPostCard(), buildPostCard()],
       ),
       floatingActionButton: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Get.to(NetworkPostScreen());
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Color(0xFFFD6C6C),
           shape: RoundedRectangleBorder(

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'job_form_screen.dart';
+import 'job_application_screen.dart';
 
 class JobsScreen extends StatelessWidget {
   const JobsScreen({super.key});
@@ -16,11 +17,20 @@ class JobsScreen extends StatelessWidget {
         elevation: 0,
         leading: Icon(Icons.arrow_back, color: Colors.black),
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text("Your Jobs", style: TextStyle(color: Colors.black)),
-            SizedBox(width: 16),
-            Text("Applications", style: TextStyle(color: Colors.black38)),
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            const Text("Your Jobs", style: TextStyle(color: Colors.black)),
+            const SizedBox(width: 40),
+            GestureDetector(
+              onTap: () {
+                // Handle the tap here
+                Get.to(JobApplicationsScreen());
+              },
+              child: const Text(
+                "Applications",
+                style: TextStyle(color: Colors.black38),
+              ),
+            ),
           ],
         ),
         centerTitle: true,
@@ -103,15 +113,11 @@ class JobCard extends StatelessWidget {
             children: [
               // Image
               ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                child: SvgPicture.asset(
-                  "assets/feed.svg",
+                child: Image.asset(
+                  "assets/jobdescription.png", // Replace with the PNG file path
                   width: double.infinity,
-                  height: 120,
-                  fit: BoxFit.cover,
+                  height: 140,
+                  fit: BoxFit.fill, // You can adjust the fit as needed
                 ),
               ),
 
