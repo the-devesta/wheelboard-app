@@ -4,6 +4,9 @@ import 'banner_carousel.dart';
 import 'fleet_userprofile.dart';
 import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'professional_list.dart';
+import 'companyuser_profile_screen.dart';
+import 'services_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -49,10 +52,15 @@ class HomeScreen extends StatelessWidget {
                 /// Header
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundImage: NetworkImage(
-                        'https://i.pravatar.cc/150?img=4',
+                    GestureDetector(
+                      onTap: () {
+                        Get.to(CompanyProfileScreen());
+                      },
+                      child: CircleAvatar(
+                        radius: 40,
+                        backgroundImage: NetworkImage(
+                          'https://i.pravatar.cc/150?img=4',
+                        ),
                       ),
                     ),
                     SizedBox(width: 12),
@@ -133,22 +141,40 @@ class HomeScreen extends StatelessWidget {
                   ),
                   itemBuilder: (context, index) {
                     final item = menuItems[index];
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: EdgeInsets.all(12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(item['icon'], size: 30, color: Colors.teal),
-                          SizedBox(height: 8),
-                          Text(
-                            item['label'],
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                        ],
+                    return GestureDetector(
+                      onTap: () {
+                        // Handle tap here
+                        print(
+                          'Tapped on item: ${item['label']} (Index: $index)',
+                        );
+
+                        // Example: If second item tapped
+                        if (index == 1) {
+                          // Navigate, show dialog, etc.
+                          Get.to(ProfessionalListScreen());
+                        }
+                        if (index == 0) {
+                          // Navigate, show dialog, etc.
+                          Get.to(ServicesScreen());
+                        }
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: EdgeInsets.all(12),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(item['icon'], size: 30, color: Colors.teal),
+                            SizedBox(height: 8),
+                            Text(
+                              item['label'],
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
