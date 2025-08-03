@@ -10,11 +10,11 @@
 		</data>
 		<key>flutter_assets/AssetManifest.bin</key>
 		<data>
-		ft22+Bud4PZGHGSIP/gh98vcx0Y=
+		X+i4gPcA1vFJ5cDfHmdYNAdAiz8=
 		</data>
 		<key>flutter_assets/AssetManifest.json</key>
 		<data>
-		NA8YWugVOX0ji2+K3wAxj/4dSHw=
+		bKJRhC0EZbhN24nODiBvJkn99jk=
 		</data>
 		<key>flutter_assets/FontManifest.json</key>
 		<data>
@@ -88,6 +88,14 @@
 		<data>
 		kph/tU88NFW5OM6kzEXVaP5skFo=
 		</data>
+		<key>flutter_assets/assets/promotion.svg</key>
+		<data>
+		5WkVQ0N//JejsL1jhL1PcIqgdXk=
+		</data>
+		<key>flutter_assets/assets/services.svg</key>
+		<data>
+		2IMGPvPNs1yYMYxGAToyNOYPqf0=
+		</data>
 		<key>flutter_assets/assets/share.svg</key>
 		<data>
 		mkLgcAo5sI5DoZvmcFVPR/zVLnA=
@@ -95,6 +103,10 @@
 		<key>flutter_assets/assets/shareBtnWBg.svg</key>
 		<data>
 		Vy2fhkDHRcZIbrklvXKzAuhWD1o=
+		</data>
+		<key>flutter_assets/assets/tips.svg</key>
+		<data>
+		dSkf3HTu6hj0Eo3M5x18z5qhIf0=
 		</data>
 		<key>flutter_assets/assets/truck.png</key>
 		<data>
@@ -110,7 +122,7 @@
 		</data>
 		<key>flutter_assets/kernel_blob.bin</key>
 		<data>
-		kPRQ8IVFvqKjA0GV3Q2676wLkLI=
+		hrrOgRwOzEW+GaEdpFLs++wXVpY=
 		</data>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
 		<data>
@@ -131,14 +143,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			4HspaMkDWa5xorqMOEQmbbtKByxzMaQyIyjiqBeexXY=
+			UlpGxqsUhViBKxP4gui0Fp3NRgQTJwHtOWC9CseWQGY=
 			</data>
 		</dict>
 		<key>flutter_assets/AssetManifest.json</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			OaMqW+oro1vyj/WSeA2eLm4bgeA0vc1FrrOJOMrDX7E=
+			2DVCjqVhb1tIVDCXoFTOVG1TTOZy8qUbt/3g04At+7Y=
 			</data>
 		</dict>
 		<key>flutter_assets/FontManifest.json</key>
@@ -267,6 +279,20 @@
 			3VV/urjSQ1zfxXwaNg95qgVjjjMm1/oTQDxN3qd65Ls=
 			</data>
 		</dict>
+		<key>flutter_assets/assets/promotion.svg</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			E53XgRqffv54pVwddr5N//nXpOOfQXmCvzg6uj8zxUU=
+			</data>
+		</dict>
+		<key>flutter_assets/assets/services.svg</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			HfDVLAxgXsJOJFmapnvbXdEbBlp4PzIPnX0ttksZato=
+			</data>
+		</dict>
 		<key>flutter_assets/assets/share.svg</key>
 		<dict>
 			<key>hash2</key>
@@ -279,6 +305,13 @@
 			<key>hash2</key>
 			<data>
 			5mDMhqjVQN574U2MNtyXsWsg+88n75ISM6iR7twchaU=
+			</data>
+		</dict>
+		<key>flutter_assets/assets/tips.svg</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			L6tbr4/bwpnWrbLFLWeoGqrR3PTiOmUViru/dffI/ZU=
 			</data>
 		</dict>
 		<key>flutter_assets/assets/truck.png</key>
@@ -306,7 +339,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			lszDutfR9KTLy99vV50pkPeYW8gEU5oAyNALkHg13lY=
+			gYk+UXUCe/MykzKf8hpFH2UPkmAgWvgQeusd6vp+n08=
 			</data>
 		</dict>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
