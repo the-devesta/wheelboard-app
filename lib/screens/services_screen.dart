@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'banner_carousel.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
@@ -6,11 +7,11 @@ class ServicesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromRGBO(246, 247, 248, 1),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: Colors.black),
+        leading: BackButton(),
         title: const Text("Services", style: TextStyle(color: Colors.black)),
         centerTitle: true,
       ),
@@ -18,45 +19,90 @@ class ServicesScreen extends StatelessWidget {
         children: [
           // Search and Filters
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
+                // Search bar with filter icon
                 Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: "Search services...",
-                      prefixIcon: const Icon(Icons.search),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: 'Search services...',
+                              border: InputBorder.none,
+                              hintStyle: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.filter_alt_outlined,
+                            color: Colors.blue,
+                          ),
+                          onPressed: () {
+                            // Handle filter action
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+
+                const SizedBox(width: 12),
+
+                // Dropdown filter
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.sort),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: const [
-                      Text("All"),
-                      Icon(Icons.keyboard_arrow_down),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: 'All',
+                      items: ['All', 'Active', 'Inactive']
+                          .map(
+                            (label) => DropdownMenuItem(
+                              value: label,
+                              child: Text(
+                                label,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        // Handle dropdown selection
+                      },
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    ),
                   ),
                 ),
               ],
@@ -68,14 +114,15 @@ class ServicesScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                "https://images.unsplash.com/photo-1589561084283-930aa7b1bebb",
+              child: Image.asset(
+                "assets/service.png",
                 height: 160,
                 width: double.infinity,
                 fit: BoxFit.cover,
               ),
             ),
           ),
+
           const SizedBox(height: 8),
 
           // CTA Button
@@ -84,16 +131,20 @@ class ServicesScreen extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                backgroundColor: const Color(0xFF00B894),
+                elevation: 6, // adds the shadow
+                shadowColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: const StadiumBorder(), // capsule shape
               ),
               child: const Center(
                 child: Text(
                   "Book Services near you !",
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -123,6 +174,7 @@ class ServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Colors.white,
       elevation: 1,
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -141,9 +193,9 @@ class ServiceCard extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 4),
-                Icon(Icons.verified, color: Colors.green, size: 18),
+                Icon(Icons.verified, color: Color(0xFF00B894), size: 18),
                 SizedBox(width: 4),
-                Text("Verified", style: TextStyle(color: Colors.green)),
+                Text("Verified", style: TextStyle(color: Color(0xFF00B894))),
               ],
             ),
 
@@ -151,11 +203,27 @@ class ServiceCard extends StatelessWidget {
 
             // Tag + Address
             Row(
-              children: const [
+              children: [
                 Chip(
-                  label: Text("Workshop"),
-                  backgroundColor: Color(0xFFE0F7FA),
-                  labelStyle: TextStyle(color: Colors.teal),
+                  label: Text(
+                    "Workshop",
+                    style: TextStyle(
+                      color: Color(0xFF00B894),
+                      fontSize: 12, // smaller font
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  backgroundColor: Color(0xFFE6F9F2),
+                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  visualDensity: VisualDensity(
+                    horizontal: 0,
+                    vertical: -4,
+                  ), // reduces chip height
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide.none, // ← ensures no border
+                  ), // minimizes touch area
                 ),
                 SizedBox(width: 8),
                 Text("Raj Tyre Works · Surat, Gujarat"),
@@ -180,12 +248,15 @@ class ServiceCard extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Color(0xFF00B894),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  child: const Text("View Details"),
+                  child: const Text(
+                    "View Details",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),

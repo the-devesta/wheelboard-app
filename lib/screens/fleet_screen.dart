@@ -11,108 +11,165 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.redAccent,
-        title: const Text("Fleet", style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.search, color: Colors.white),
-          ),
-        ],
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Icon(Icons.remove_red_eye, color: Colors.redAccent),
+    final screenHeight = MediaQuery.of(context).size.height;
+    return Stack(
+      children: [
+        // Background image behind everything
+        Positioned.fill(
+          child: SvgPicture.asset(
+            'assets/bgDesign.svg',
+            fit: BoxFit.cover, // ensure it fills the whole screen
           ),
         ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-        ),
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: SvgPicture.asset(
-              'assets/bgDesign.svg',
-              width: 24,
-              height: 24,
+        // Foreground UI inside Scaffold
+        Positioned(
+          top: screenHeight * 0.08,
+          left: 0,
+          right: 0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              height: 60,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Centered label
+                  const Center(
+                    child: Text(
+                      "Fleet",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+
+                  // Left icon
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 53,
+                      height: 53,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      padding: EdgeInsets.all(6),
+                      child: Image.asset(
+                        'assets/logobg.png', // Replace with your asset
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+
+                  // Right icon
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      onPressed: () {
+                        // Handle search press
+                      },
+                      icon: const Icon(Icons.search, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          Column(
-            children: [
-              _tabBar(),
-              const SizedBox(height: 12),
-              _filterButton(),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: isVehicleSelected
-                      ? _vehicleCards()
-                      : _driverCards(), // switch between the two
-                ),
+        ),
+
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Container(
+            padding: EdgeInsets.only(top: 10),
+            margin: EdgeInsets.only(
+              top: screenHeight * 0.18,
+            ), // push below header if needed
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
-            ],
+            ),
+            child: Column(
+              children: [
+                _tabBar(),
+                const SizedBox(height: 12),
+                _filterButton(),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(12),
+                    children: isVehicleSelected
+                        ? _vehicleCards()
+                        : _driverCards(),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-      floatingActionButton: isVehicleSelected
-          ? FloatingActionButton.extended(
-              backgroundColor: Colors.redAccent,
-              onPressed: () {},
-              label: const Text(
-                '+ Add Vehicle',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            )
-          : null,
+          floatingActionButton: isVehicleSelected
+              ? FloatingActionButton.extended(
+                  backgroundColor: Colors.redAccent,
+                  onPressed: () {},
+                  label: const Text(
+                    '+ Add Vehicle',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )
+              : null,
+        ),
+      ],
     );
   }
 
   Widget _tabBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          _tabItem("Drivers", !isVehicleSelected, () {
-            setState(() => isVehicleSelected = false);
-          }),
-          _tabItem("Vehicles", isVehicleSelected, () {
-            setState(() => isVehicleSelected = true);
-          }),
-        ],
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(40),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            _segmentedTabItem("Drivers", !isVehicleSelected, () {
+              setState(() => isVehicleSelected = false);
+            }),
+            _segmentedTabItem("Vehicles", isVehicleSelected, () {
+              setState(() => isVehicleSelected = true);
+            }),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _tabItem(String title, bool selected, VoidCallback onTap) {
+  Widget _segmentedTabItem(String title, bool selected, VoidCallback onTap) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          alignment: Alignment.center,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: selected ? Colors.redAccent : Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.grey.shade300),
-            boxShadow: selected
-                ? [BoxShadow(color: Colors.black12, blurRadius: 4)]
-                : [],
+            color: selected ? Colors.redAccent : Colors.transparent,
+            borderRadius: BorderRadius.circular(40),
           ),
+          alignment: Alignment.center,
           child: Text(
             title,
             style: TextStyle(
-              color: selected ? Colors.white : Colors.black87,
+              color: selected ? Colors.white : Colors.redAccent,
               fontWeight: FontWeight.w600,
+              fontSize: 16,
             ),
           ),
         ),
@@ -146,7 +203,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
       _vehicleCard(
         status: "In-Transit",
         statusColor: Colors.green,
-        image: 'assets/google.png',
+        image: 'assets/truckImg.png',
         title: "Tata-2518",
         type: "Owned",
         driver: "Deepak Kumar",
@@ -157,7 +214,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
       _vehicleCard(
         status: "Assigned",
         statusColor: Colors.blue,
-        image: 'assets/google.png',
+        image: 'assets/truckImg.png',
         title: "Tata-2007",
         type: "Owned",
         driver: "Deepak Kumar",
@@ -168,7 +225,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
       _vehicleCard(
         status: "Available",
         statusColor: Colors.orange,
-        image: 'assets/google.png',
+        image: 'assets/truckImg.png',
         title: "Omni van-1999",
         type: "Attached",
         driver: "",

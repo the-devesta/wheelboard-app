@@ -11,12 +11,12 @@ import 'services_screen.dart';
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
   final List<Map<String, dynamic>> menuItems = [
-    {'icon': Icons.local_shipping, 'label': 'Vehicles'},
-    {'icon': Icons.person, 'label': 'Professional'},
-    {'icon': Icons.money, 'label': 'Expenses'},
-    {'icon': Icons.local_shipping, 'label': 'Vehicles'},
-    {'icon': Icons.person, 'label': 'Professional'},
-    {'icon': Icons.money, 'label': 'Expenses'},
+    {'icon': 'assets/vehicle.svg', 'label': 'Vehicles'},
+    {'icon': 'assets/professional.svg', 'label': 'Professional'},
+    {'icon': 'assets/expense.svg', 'label': 'Expenses'},
+    {'icon': 'assets/hire.svg', 'label': 'Hire'},
+    {'icon': 'assets/servicelogo.svg', 'label': 'Services'},
+    {'icon': 'assets/dashboard.svg', 'label': 'Dashboard'},
   ];
 
   final List<Map<String, dynamic>> stats = [
@@ -167,7 +167,12 @@ class HomeScreen extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(item['icon'], size: 30, color: Colors.teal),
+                            SvgPicture.asset(
+                              item['icon'],
+                              height: 40,
+                              width: 40,
+                              // Optional: works if SVG is single-colored
+                            ),
                             SizedBox(height: 8),
                             Text(
                               item['label'],
