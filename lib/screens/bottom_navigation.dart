@@ -4,6 +4,7 @@ import 'feed_screen.dart';
 import 'home_screen.dart';
 import 'job_screen.dart';
 import 'fleet_screen.dart';
+import 'trips_screen.dart';
 
 class BottomNavScreen extends StatefulWidget {
   const BottomNavScreen({super.key});
@@ -18,7 +19,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   final List<Widget> _screens = [
     HomeScreen(),
     FleetVehiclesScreen(),
-    Center(child: Text("Trips")),
+    TripPage(),
     FeedScreen(),
     JobsScreen(),
   ];
