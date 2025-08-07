@@ -176,7 +176,12 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       ),
       child: Row(
         children: [
-          Image.asset('assets/lock.png', height: 24, width: 24),
+          Image.asset(
+            'assets/google.png',
+            height: 24,
+            width: 24,
+            fit: BoxFit.cover,
+          ),
           SizedBox(width: 10),
           Expanded(child: Text("Complete your KYC to unlock full access")),
         ],
@@ -286,7 +291,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         ),
         const SizedBox(height: 12),
         _buildSwitchTile(Icons.dark_mode, "Dark Theme", isDarkTheme, (val) {
-          setState(() => isDarkTheme = val);
+          setState(() {
+            isDarkTheme = val;
+            Get.changeThemeMode(isDarkTheme ? ThemeMode.dark : ThemeMode.light);
+          });
         }),
         _buildSwitchTile(
           Icons.notifications,

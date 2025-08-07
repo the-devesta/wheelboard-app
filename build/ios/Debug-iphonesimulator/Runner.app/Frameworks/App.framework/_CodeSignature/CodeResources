@@ -10,11 +10,11 @@
 		</data>
 		<key>flutter_assets/AssetManifest.bin</key>
 		<data>
-		vzIGhcKIdujiV8xwzqw6dUYtdf8=
+		5Fl9XPIexqwoI7PpUkdLgOI+g2A=
 		</data>
 		<key>flutter_assets/AssetManifest.json</key>
 		<data>
-		cxuNbC45jG22cya1l/1SECLYfIQ=
+		K3Z6tYB3c0orJOQwjOC9AiuBNWs=
 		</data>
 		<key>flutter_assets/FontManifest.json</key>
 		<data>
@@ -22,7 +22,7 @@
 		</data>
 		<key>flutter_assets/NOTICES.Z</key>
 		<data>
-		pgJYtmL+P0Sk9qrrROWxw8bADM4=
+		/YWj0QbBHoW3W9gP6Dfpbb1AgVI=
 		</data>
 		<key>flutter_assets/NativeAssetsManifest.json</key>
 		<data>
@@ -240,6 +240,10 @@
 		<data>
 		JOMDDDDuImyaD5NbxUVrOs0EVp0=
 		</data>
+		<key>flutter_assets/assets/tripImage.png</key>
+		<data>
+		1v/SatdR17T6yfmvpDfyj6ANMno=
+		</data>
 		<key>flutter_assets/assets/truck.png</key>
 		<data>
 		RnWM1K5QmNtJqKDFeqEWJpcSHM4=
@@ -266,7 +270,7 @@
 		</data>
 		<key>flutter_assets/kernel_blob.bin</key>
 		<data>
-		EtjAEnnbO0WLU+4HVFxO80r+L4o=
+		aK/REwONTq92U08TPkX8FfA3tlw=
 		</data>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
 		<data>
@@ -287,14 +291,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			9JSV9wP/+2Z4zGItaD/V93SScK+ULAu2MTOjdIe5Xpg=
+			zYV/iBRmwmxS38IUf2ajVuDnkQZVXFcIE+vOkOIU9s8=
 			</data>
 		</dict>
 		<key>flutter_assets/AssetManifest.json</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			h/Ya1DjQrIe6T1tAleYhzZVykycmC8QTSQs7RokZAbc=
+			mfYPDpYRebBO9JaAJIszN+RGqddN9Mwc0pyXOJ710Cg=
 			</data>
 		</dict>
 		<key>flutter_assets/FontManifest.json</key>
@@ -308,7 +312,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			mri3JY4dXYfiQC84VhnRaQ5Gm1nGJeBN+bK+Y3t8Jj4=
+			QQVZi9Hbz14rs5Xi2Fh0F7BIx6MKO0C6h1UZvr0zUJ0=
 			</data>
 		</dict>
 		<key>flutter_assets/NativeAssetsManifest.json</key>
@@ -689,6 +693,13 @@
 			Kob2KVkuYHiI8OEVLAg4A0J2RhDV1Dw9jrMepKEfCtw=
 			</data>
 		</dict>
+		<key>flutter_assets/assets/tripImage.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			qHxNbVprViaTXCfSHIp+s1+lhyTwMU4wHeY874m0f8w=
+			</data>
+		</dict>
 		<key>flutter_assets/assets/truck.png</key>
 		<dict>
 			<key>hash2</key>
@@ -735,7 +746,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			mHka3rhfOBZCD0kSOMYb7wPcSd7wxHqwY7wnmMRfdyE=
+			2EancQRCtWNHZW6yQRSJp3YL2EBNMh6SyizEUnbxzHo=
 			</data>
 		</dict>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
