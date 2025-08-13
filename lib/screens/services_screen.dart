@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'banner_carousel.dart';
+import 'package:get/get.dart';
+import 'service_details.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
@@ -246,7 +248,9 @@ class ServiceCard extends StatelessWidget {
                   ],
                 ),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Get.to(ServiceDetailScreen());
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF00B894),
                     shape: RoundedRectangleBorder(
