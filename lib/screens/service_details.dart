@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 
 class ServiceDetailScreen extends StatelessWidget {
@@ -28,18 +30,23 @@ class ServiceDetailScreen extends StatelessWidget {
 
       // Scrollable Body
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 80), // space for button
+        padding: const EdgeInsets.symmetric(horizontal: 16), // space for button
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Header Image
-            Image.asset(
-              "assets/tripImage.png",
-              height: 220,
-              width: double.infinity,
-              fit: BoxFit.cover,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(
+                16,
+              ), // Adjust radius as needed
+              child: Image.asset(
+                "assets/tripImage.png",
+                height: 220,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
-
+            SizedBox(height: 10),
             // Service Card
             Container(
               padding: const EdgeInsets.all(12),
@@ -64,7 +71,7 @@ class ServiceDetailScreen extends StatelessWidget {
                             ),
                             const Icon(
                               Icons.verified,
-                              color: Colors.green,
+                              color: Color(0xFF00B894),
                               size: 18,
                             ),
                           ],
@@ -78,14 +85,14 @@ class ServiceDetailScreen extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.green.shade50,
+                                color: Color(0xFF00B894).withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text(
                                 "Workshop",
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.green,
+                                  color: Color(0xFF00B894),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -168,11 +175,19 @@ class ServiceDetailScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: const [
-                      Icon(Icons.currency_rupee, size: 18, color: Colors.green),
+                      Icon(
+                        Icons.currency_rupee,
+                        size: 18,
+                        color: Color(0xFF00B894),
+                      ),
                       SizedBox(width: 4),
                       Text("1,200  Flat Rate"),
                       Spacer(),
-                      Icon(Icons.local_shipping, size: 18, color: Colors.green),
+                      Icon(
+                        Icons.local_shipping,
+                        size: 18,
+                        color: Color(0xFF00B894),
+                      ),
                       SizedBox(width: 4),
                       Text("On-premise"),
                     ],
@@ -180,11 +195,19 @@ class ServiceDetailScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: const [
-                      Icon(Icons.calendar_month, size: 18, color: Colors.green),
+                      Icon(
+                        Icons.calendar_month,
+                        size: 18,
+                        color: Color(0xFF00B894),
+                      ),
                       SizedBox(width: 4),
                       Text("Mon–Sat"),
                       Spacer(),
-                      Icon(Icons.access_time, size: 18, color: Colors.green),
+                      Icon(
+                        Icons.access_time,
+                        size: 18,
+                        color: Color(0xFF00B894),
+                      ),
                       SizedBox(width: 4),
                       Text("10 AM – 6 PM"),
                     ],
@@ -209,7 +232,11 @@ class ServiceDetailScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: const [
-                      Icon(Icons.location_on, size: 18, color: Colors.green),
+                      Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: Color(0xFF00B894),
+                      ),
                       SizedBox(width: 4),
                       Text("Surat, GJ"),
                     ],
@@ -226,10 +253,13 @@ class ServiceDetailScreen extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {},
-                          icon: const Icon(Icons.call),
-                          label: const Text("Call Now"),
+                          icon: const Icon(Icons.call, color: Colors.white),
+                          label: const Text(
+                            "Call Now",
+                            style: TextStyle(color: Colors.white),
+                          ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: Color(0xFF00B894),
                           ),
                         ),
                       ),
@@ -237,13 +267,17 @@ class ServiceDetailScreen extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {},
-                          icon: const Icon(Icons.abc, color: Colors.green),
+                          icon: Image.asset(
+                            "assets/whatsappIcon.png", // your custom icon
+                            height: 24, // control size
+                            width: 24,
+                          ),
                           label: const Text(
                             "WhatsApp",
-                            style: TextStyle(color: Colors.green),
+                            style: TextStyle(color: Color(0xFF00B894)),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.green),
+                            side: const BorderSide(color: Color(0xFF00B894)),
                           ),
                         ),
                       ),
@@ -252,38 +286,33 @@ class ServiceDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF00B894),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 50,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                "Assign Service",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ],
         ),
       ),
 
       // Fixed Button
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text(
-            "Assign Service",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
     );
   }
 }

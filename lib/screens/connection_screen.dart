@@ -8,8 +8,6 @@ class ConnectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
     return Stack(
       children: [
         // Background SVG
@@ -24,39 +22,81 @@ class ConnectionScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 60),
 
-                const SizedBox(height: 24),
+                Image.asset('assets/logo-bg 3.png', width: 280, height: 60),
 
-                // About Section
+                const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
+                  child: Image.asset(
+                    'assets/requestImage.png',
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "About",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          "Passionate about scaling logistics and delivering excellence. I optimize fleets, empower drivers, and ensure routes are always efficient. Let’s connect and drive results together.",
-                        ),
-                      ],
-                    ),
+                    height: 150,
+                    fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(height: 24),
-                // +Connect Button
-                gradientButton(),
+
+                const SizedBox(height: 20),
+                // AboWut Section
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: const BoxDecoration(
+                    color: Color(
+                      0xFFF4E3E3,
+                    ), // Replace with your desired background
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Stats: Fleet Size & Exp
+                      Text(
+                        "Connection Request Sent!",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 25),
+                      Text(
+                        "Your connection request has been successfully sent. "
+                        "You'll be notified once it's accepted.",
+                        textAlign:
+                            TextAlign.center, // 👈 centers text line by line
+                        style: TextStyle(fontSize: 16, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 20),
+
+                      const SizedBox(height: 24),
+
+                      // +Connect Button
+                      _buildOutlinedButton(
+                        "Back to Network",
+                        onTap: () {
+                          // TODO: action
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildOutlinedButton(
+                        "Create Another Post",
+                        onTap: () {
+                          // TODO: action
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildGradientButton(
+                        "View Profile",
+                        onTap: () {
+                          // TODO: action
+                        },
+                      ),
+
+                      const SizedBox(height: 200),
+                    ],
+                  ),
+                ),
 
                 const SizedBox(height: 200),
               ],
@@ -67,51 +107,62 @@ class ConnectionScreen extends StatelessWidget {
     );
   }
 
-  Widget _chip(String label) {
-    return Chip(
-      label: Text(label, style: const TextStyle(color: Colors.deepOrange)),
-      backgroundColor: const Color(0xFFFFF3E0),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
+  Widget _buildOutlinedButton(String text, {required VoidCallback onTap}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            side: const BorderSide(color: Colors.transparent),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(40), // pill shape
+            ),
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFFF5722), // orange text
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  Widget gradientButton() {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF5F6D), Color(0xFFFFC371)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(40),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(40),
-        onTap: () {
-          // Handle tap here
-        },
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.person_add_alt_1, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              "+ Connect",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+  Widget _buildGradientButton(String text, {required VoidCallback onTap}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(40),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(40),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF6B2C), Color(0xFFFF3C7E)], // orange → pink
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ),
             ),
-          ],
+            alignment: Alignment.center,
+            child: const Text(
+              "View Profile",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -10,8 +10,6 @@ class FleetUserprofile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return Stack(
       children: [
         // Background SVG

@@ -28,10 +28,6 @@
 		<data>
 		re4p7E8rPLLsN+wzaPN/+AVpXTY=
 		</data>
-		<key>flutter_assets/assets/1.png</key>
-		<data>
-		4Rai/bkE7JCPHHraqmu0ezrKKFc=
-		</data>
 		<key>flutter_assets/assets/Frame%2010.png</key>
 		<data>
 		7r/BMITvOaXALE8EBYSWKHdx8FY=
@@ -282,7 +278,7 @@
 		</data>
 		<key>flutter_assets/kernel_blob.bin</key>
 		<data>
-		WtjTHBK9T+X45DHS5HjF13HHaa4=
+		/aFTdzEI41baVtkpAVGQBLefqI0=
 		</data>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
 		<data>
@@ -332,13 +328,6 @@
 			<key>hash2</key>
 			<data>
 			lUijHkoEgTXB2U+Rkyi/tirix7s8q5ZVfHlB2ql3dss=
-			</data>
-		</dict>
-		<key>flutter_assets/assets/1.png</key>
-		<dict>
-			<key>hash2</key>
-			<data>
-			HIMvOhOICeEju740GRkfCaQBOCEi0cYofnSrfAazls4=
 			</data>
 		</dict>
 		<key>flutter_assets/assets/Frame%2010.png</key>
@@ -779,7 +768,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Pos6xD7+gSL2SboXfQ80h6583BkCe4DuDP7wNTbM94o=
+			2eJW/vGaRSr3iHc5qowBxkVgP7n1jmv1bt18TF/g928=
 			</data>
 		</dict>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>

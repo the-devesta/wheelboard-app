@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'banner_carousel.dart';
 import 'package:get/get.dart';
 import 'service_details.dart';
+import 'service_confirmation.dart';
+import 'enquiry_form_page.dart';
+import 'success_popup.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
@@ -131,7 +134,9 @@ class ServicesScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Get.to(SuccessPopup());
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00B894),
                 elevation: 6, // adds the shadow
