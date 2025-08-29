@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:wheelboard/screens/service_dashboard.dart';
 
 class ServiceConfirmationPage extends StatelessWidget {
   const ServiceConfirmationPage({super.key});
@@ -16,7 +18,7 @@ class ServiceConfirmationPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF00B894), Color(0xFF00C9A7)],
+                  colors: [Color(0xFF4ADE80), Color(0xFF22C55E)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -56,6 +58,7 @@ class ServiceConfirmationPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
+                color: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -177,6 +180,7 @@ class ServiceConfirmationPage extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
+                  border: Border.all(color: Color(0xFFBBF7D0)),
                   borderRadius: BorderRadius.circular(16),
                   color: const Color(0xFFE9FFF5),
                 ),
@@ -234,13 +238,15 @@ class ServiceConfirmationPage extends StatelessWidget {
                 children: [
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00B894),
+                      backgroundColor: const Color(0xFF22C55E),
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Get.to(ServiceDashboardScreen());
+                    },
                     icon: const Icon(Icons.home, color: Colors.white),
                     label: const Text(
                       "Back to Dashboard",
@@ -259,7 +265,9 @@ class ServiceConfirmationPage extends StatelessWidget {
                       ),
                       side: const BorderSide(color: Colors.black26),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Get.back();
+                    },
                     icon: const Icon(Icons.add, color: Colors.black87),
                     label: const Text(
                       "Assign Another Service",

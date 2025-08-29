@@ -10,11 +10,11 @@
 		</data>
 		<key>flutter_assets/AssetManifest.bin</key>
 		<data>
-		CfiZyote7J22vxOpCJsMlT2/PT0=
+		FX9ojNyFyWKgFv6Re3rCTog0K9s=
 		</data>
 		<key>flutter_assets/AssetManifest.json</key>
 		<data>
-		QkZf8iieq4s+BGseGBxAlp+mHZc=
+		q2nTtA+igf4sJB2TVvXoP9Xg/OA=
 		</data>
 		<key>flutter_assets/FontManifest.json</key>
 		<data>
@@ -22,7 +22,7 @@
 		</data>
 		<key>flutter_assets/NOTICES.Z</key>
 		<data>
-		/YWj0QbBHoW3W9gP6Dfpbb1AgVI=
+		fauTyrXFh2xandMmuBgTJmhcRJk=
 		</data>
 		<key>flutter_assets/NativeAssetsManifest.json</key>
 		<data>
@@ -268,6 +268,10 @@
 		<data>
 		x7PDfPuky2CsrY1ICwq8TxDCTuc=
 		</data>
+		<key>flutter_assets/assets/whatsappIcon.png</key>
+		<data>
+		sgYa94VZrkDRXVEEI8o2s1lEmEg=
+		</data>
 		<key>flutter_assets/fonts/MaterialIcons-Regular.otf</key>
 		<data>
 		/CUoTuPQqqdexfyOT9lpJhV+2MQ=
@@ -278,7 +282,7 @@
 		</data>
 		<key>flutter_assets/kernel_blob.bin</key>
 		<data>
-		/aFTdzEI41baVtkpAVGQBLefqI0=
+		Q/UyDf3wf8zyKSZWqC+Z93ptZC0=
 		</data>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>
 		<data>
@@ -299,14 +303,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			oeUBCkEjx+Wf/PP6opJyeovuXGqEMQGZSq8EaBjA85o=
+			6Rk4un7cbigUq3uBecUAPo7ZX9htdnF59clLWXgrm0k=
 			</data>
 		</dict>
 		<key>flutter_assets/AssetManifest.json</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			th1kIig07kPB9pM8HHiVRB0PVS4ivkDWm7fHk5sM5tw=
+			Bgo2z+i7MuJJ5mKzLEbCcRzzufjteGtW8E3x45WqF04=
 			</data>
 		</dict>
 		<key>flutter_assets/FontManifest.json</key>
@@ -320,7 +324,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			QQVZi9Hbz14rs5Xi2Fh0F7BIx6MKO0C6h1UZvr0zUJ0=
+			sNiERDEsTCR5MrpMdesjzTghxxC0FwtJJ8Gs56yNRJc=
 			</data>
 		</dict>
 		<key>flutter_assets/NativeAssetsManifest.json</key>
@@ -750,6 +754,13 @@
 			A/foBVsOvNbYQUVFojMRcgPd+QazRZ0ebJybMpgNuLI=
 			</data>
 		</dict>
+		<key>flutter_assets/assets/whatsappIcon.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			1UyroikNj8Gm+XHXmuZoLoyqAsyAdHiuJai3VnvYeTY=
+			</data>
+		</dict>
 		<key>flutter_assets/fonts/MaterialIcons-Regular.otf</key>
 		<dict>
 			<key>hash2</key>
@@ -768,7 +779,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			2eJW/vGaRSr3iHc5qowBxkVgP7n1jmv1bt18TF/g928=
+			dmoY9vBfWOsLEggYQDwdo1KKVyzYb4fnqGomGKduol0=
 			</data>
 		</dict>
 		<key>flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf</key>

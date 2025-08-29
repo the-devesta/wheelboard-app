@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:wheelboard/screens/dashboard.dart';
+import 'package:wheelboard/screens/notification.dart';
 import 'banner_carousel.dart';
 import 'fleet_userprofile.dart';
 import 'package:get/get.dart';
@@ -7,6 +9,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'professional_list.dart';
 import 'companyuser_profile_screen.dart';
 import 'services_screen.dart';
+import 'driver_profile.dart';
+import 'package:share_plus/share_plus.dart';
+import 'bottom_navigation.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -85,41 +90,79 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                     Spacer(),
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // Red square with rounded corners and white bell
-                        Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color:
-                                AppColors.buttonBg, // AppColors.buttonBg (red)
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            Icons.notifications,
-                            color: Colors.white,
-                            size: 26,
-                          ),
-                        ),
-
-                        // Small teal-green badge
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            width: 10,
-                            height: 10,
+                    GestureDetector(
+                      onTap: () {
+                        Get.to(NotificationsScreen());
+                      },
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Red square with rounded corners and white bell
+                          Container(
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Color(
-                                0xFF317873,
-                              ), // Example: AppColors.badge (teal green)
-                              shape: BoxShape.circle,
+                              color: AppColors
+                                  .buttonBg, // AppColors.buttonBg (red)
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.notifications,
+                              color: Colors.white,
+                              size: 26,
                             ),
                           ),
-                        ),
-                      ],
+
+                          // Small teal-green badge
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF317873), // AppColors.badge
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    // Stack(
+                    //   clipBehavior: Clip.none,
+                    //   children: [
+                    //     // Red square with rounded corners and white bell
+                    //     Container(
+                    //       padding: EdgeInsets.all(8),
+                    //       decoration: BoxDecoration(
+                    //         color:
+                    //             AppColors.buttonBg, // AppColors.buttonBg (red)
+                    //         borderRadius: BorderRadius.circular(10),
+                    //       ),
+                    //       child: Icon(
+                    //         Icons.notifications,
+                    //         color: Colors.white,
+                    //         size: 26,
+                    //       ),
+                    //     ),
+
+                    //     // Small teal-green badge
+                    //     Positioned(
+                    //       top: 4,
+                    //       right: 4,
+                    //       child: Container(
+                    //         width: 10,
+                    //         height: 10,
+                    //         decoration: BoxDecoration(
+                    //           color: Color(
+                    //             0xFF317873,
+                    //           ), // Example: AppColors.badge (teal green)
+                    //           shape: BoxShape.circle,
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
                   ],
                 ),
                 SizedBox(height: 20),
@@ -151,11 +194,21 @@ class HomeScreen extends StatelessWidget {
                         // Example: If second item tapped
                         if (index == 1) {
                           // Navigate, show dialog, etc.
-                          Get.to(ProfessionalListScreen());
+                          Get.to(() => const BottomNavScreen(initialIndex: 1));
                         }
-                        if (index == 0) {
+                        if (index == 2) {
+                          // Navigate, show dialog, etc.
+                          Get.to(DriverProfileScreen());
+                        }
+
+                        if (index == 4) {
                           // Navigate, show dialog, etc.
                           Get.to(ServicesScreen());
+                        }
+
+                        if (index == 5) {
+                          // Navigate, show dialog, etc.
+                          Get.to(DashboardScreen());
                         }
                       },
                       child: Container(
@@ -262,7 +315,9 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {},
+                              onPressed: () {
+                                Share.share("WheelBoard");
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF00AEEF),
                                 shape: StadiumBorder(),
@@ -283,7 +338,7 @@ class HomeScreen extends StatelessWidget {
                                 shape: StadiumBorder(),
                               ),
                               child: Text(
-                                "Services",
+                                "Edit",
                                 style: TextStyle(color: AppColors.buttonBg),
                               ),
                             ),
@@ -329,6 +384,47 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          ElevatedButton(
+            onPressed: () {
+              Get.to(ServicesScreen());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFD6C6C),
+              minimumSize: const Size(140, 40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 4,
+            ),
+            child: const Text(
+              "Services",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          const SizedBox(height: 4),
+          ElevatedButton(
+            onPressed: () {
+              Get.to(ServicesScreen());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonBg,
+              minimumSize: const Size(140, 40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 4,
+            ),
+            child: const Text(
+              "+ Post Job",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
       ),
 
       /// Bottom Nav Bar

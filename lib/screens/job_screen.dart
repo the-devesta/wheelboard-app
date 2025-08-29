@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'job_form_screen.dart';
 import 'job_application_screen.dart';
+import 'package:share_plus/share_plus.dart';
 
 class JobsScreen extends StatelessWidget {
   const JobsScreen({super.key});
@@ -163,11 +164,17 @@ class JobCard extends StatelessWidget {
                           fit: BoxFit.contain,
                         ),
                         const SizedBox(width: 8),
-                        SvgPicture.asset(
-                          'assets/shareBtnWBg.svg',
-                          width: 32,
-                          height: 32,
-                          fit: BoxFit.contain,
+                        GestureDetector(
+                          onTap: () {
+                            // Perform your share action here
+                            Share.share("WheelBoard");
+                          },
+                          child: SvgPicture.asset(
+                            'assets/shareBtnWBg.svg',
+                            width: 32,
+                            height: 32,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ],
                     ),

@@ -19,213 +19,222 @@ class FleetUserprofile extends StatelessWidget {
 
         Scaffold(
           backgroundColor: Colors.transparent,
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 60),
-
-                Container(
-                  margin: EdgeInsets.all(10),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Background color
-                    borderRadius: BorderRadius.circular(12), // Corner radius
-                  ),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.arrow_back),
-                      Spacer(),
-                      Text(
-                        "User Profile",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // const SizedBox(height: 60),
+                  Container(
+                    margin: EdgeInsets.all(10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white, // Background color
+                      borderRadius: BorderRadius.circular(12), // Corner radius
+                    ),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.black, // optional
+                          ),
                         ),
-                      ),
-                      Spacer(flex: 2),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Profile Image with Badge
-                Container(
-                  padding: const EdgeInsets.all(
-                    4,
-                  ), // Thickness of the white border
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Border color
-                    shape: BoxShape.circle,
-                  ),
-                  child: const CircleAvatar(
-                    radius: 48,
-                    backgroundImage: NetworkImage(
-                      "https://randomuser.me/api/portraits/men/32.jpg",
+                        Spacer(),
+                        Text(
+                          "User Profile",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Spacer(flex: 2),
+                      ],
                     ),
                   ),
-                ),
 
-                // Role Tag
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
+                  const SizedBox(height: 20),
+
+                  // Profile Image with Badge
+                  Container(
+                    padding: const EdgeInsets.all(
+                      4,
+                    ), // Thickness of the white border
+                    decoration: BoxDecoration(
+                      color: Colors.white, // Border color
+                      shape: BoxShape.circle,
+                    ),
+                    child: const CircleAvatar(
+                      radius: 48,
+                      backgroundImage: NetworkImage(
+                        "https://randomuser.me/api/portraits/men/32.jpg",
+                      ),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF13C77B),
-                    borderRadius: BorderRadius.circular(20),
+
+                  // Role Tag
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF13C77B),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "Fleet Manager",
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
                   ),
-                  child: const Text(
+
+                  const SizedBox(height: 8),
+
+                  // Name & Title
+                  const Text(
+                    "Alex Johnson",
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const Text(
                     "Fleet Manager",
-                    style: TextStyle(color: Colors.white, fontSize: 12),
+                    style: TextStyle(fontSize: 14, color: Colors.white),
                   ),
-                ),
 
-                const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-                // Name & Title
-                const Text(
-                  "Alex Johnson",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const Text(
-                  "Fleet Manager",
-                  style: TextStyle(fontSize: 14, color: Colors.white),
-                ),
-
-                const SizedBox(height: 8),
-
-                // Location and message icon
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                    Text(
-                      "Pune, MH, INDIA",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    SizedBox(width: 12),
-                    Icon(
-                      Icons.chat_bubble_outline,
-                      size: 20,
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  decoration: const BoxDecoration(
-                    color: Color(
-                      0xFFF4E3E3,
-                    ), // Replace with your desired background
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      // Stats: Fleet Size & Exp
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: const [
-                          Column(
-                            children: [
-                              Text(
-                                "50+",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text("Fleet Size"),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                "10+",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text("Years Exp."),
-                            ],
-                          ),
-                        ],
+                  // Location and message icon
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 18,
+                        color: Colors.white,
                       ),
-
-                      const SizedBox(height: 20),
-
-                      // Skills Chips
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          _chip("Fleet Optimization"),
-                          _chip("Driver Management"),
-                          _chip("Route Planning"),
-                        ],
+                      Text(
+                        "Pune, MH, INDIA",
+                        style: TextStyle(color: Colors.white),
                       ),
-
-                      const SizedBox(height: 24),
-
-                      // About Section
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "About",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                "Passionate about scaling logistics and delivering excellence. I optimize fleets, empower drivers, and ensure routes are always efficient. Let’s connect and drive results together.",
-                              ),
-                            ],
-                          ),
-                        ),
+                      SizedBox(width: 12),
+                      Icon(
+                        Icons.chat_bubble_outline,
+                        size: 20,
+                        color: Colors.white,
                       ),
-
-                      const SizedBox(height: 24),
-
-                      // +Connect Button
-                      gradientButton(),
-
-                      const SizedBox(height: 200),
                     ],
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: const BoxDecoration(
+                      color: Color(
+                        0xFFF4E3E3,
+                      ), // Replace with your desired background
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // Stats: Fleet Size & Exp
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: const [
+                            Column(
+                              children: [
+                                Text(
+                                  "50+",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text("Fleet Size"),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                Text(
+                                  "10+",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text("Years Exp."),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Skills Chips
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _chip("Fleet Optimization"),
+                            _chip("Driver Management"),
+                            _chip("Route Planning"),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // About Section
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "About",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  "Passionate about scaling logistics and delivering excellence. I optimize fleets, empower drivers, and ensure routes are always efficient. Let’s connect and drive results together.",
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // +Connect Button
+                        gradientButton(),
+
+                        const SizedBox(height: 200),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

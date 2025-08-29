@@ -1,6 +1,7 @@
 import 'dart:ffi';
-
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'service_detail_popup.dart';
 
 class ServiceDetailScreen extends StatelessWidget {
   const ServiceDetailScreen({super.key});
@@ -288,9 +289,16 @@ class ServiceDetailScreen extends StatelessWidget {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Get.dialog(
+                  const ServiceDetailsPopup(),
+                  barrierDismissible: true, // tap outside to dismiss (optional)
+                  transitionDuration: Duration.zero, // no animation
+                );
+              },
+
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF00B894),
+                backgroundColor: Color(0xFF27AE60),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 50,
                   vertical: 8,

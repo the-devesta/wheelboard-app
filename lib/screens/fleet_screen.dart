@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'add_vehicle.dart';
+import 'add_new_driver.dart';
+import 'package:get/get.dart';
 
 class FleetVehiclesScreen extends StatefulWidget {
   @override
@@ -113,7 +116,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
           floatingActionButton: isVehicleSelected
               ? FloatingActionButton.extended(
                   backgroundColor: Colors.redAccent,
-                  onPressed: () {},
+                  onPressed: () => Get.to(AddVehicleScreen()),
                   label: const Text(
                     '+ Add Vehicle',
                     style: TextStyle(
@@ -122,7 +125,17 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                     ),
                   ),
                 )
-              : null,
+              : FloatingActionButton.extended(
+                  backgroundColor: Colors.redAccent,
+                  onPressed: () => Get.to(AddNewDriverScreen()),
+                  label: const Text(
+                    '+ Add Driver',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
         ),
       ],
     );

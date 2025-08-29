@@ -75,7 +75,7 @@ class ConnectionScreen extends StatelessWidget {
                       _buildOutlinedButton(
                         "Back to Network",
                         onTap: () {
-                          // TODO: action
+                          Navigator.pop(context);
                         },
                       ),
                       const SizedBox(height: 16),

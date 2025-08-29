@@ -176,9 +176,8 @@ class Signup extends StatelessWidget {
             value: selectedCompanyType.value,
             hintText: "Choose your country",
             items: const [
-              DropdownMenuItem(value: 'us', child: Text('United States')),
-              DropdownMenuItem(value: 'in', child: Text('India')),
-              DropdownMenuItem(value: 'uk', child: Text('United Kingdom')),
+              DropdownMenuItem(value: 'us', child: Text('Transport')),
+              DropdownMenuItem(value: 'in', child: Text('Service Provider')),
             ],
             onChanged: (value) => selectedCompanyType.value = value,
           ),
@@ -189,27 +188,58 @@ class Signup extends StatelessWidget {
   }
 
   Widget _buildRegisterButton() {
-    return ElevatedButton(
-      onPressed: () {
-        // final model = CompanySignUpModel(
-        //   companyName: companyController.text,
-        //   mobileNo: phoneController.text,
-        //   email: emailController.text,
-        //   password: passwordController.text,
-        //   businessCategory: selectedCompanyType.value ?? '',
-        // );
-        // controller.registerCompany(model);
-
-        Get.to(() => MyprofileScreen());
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.buttonBg,
-        minimumSize: const Size(double.infinity, 50),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    return Obx(
+      () => ElevatedButton(
+        onPressed: controller.isLoading.value
+            ? null // Disable the button when loading
+            : () {
+                final model = CompanySignUpModel(
+                  companyName: companyController.text,
+                  mobileNo: phoneController.text,
+                  email: emailController.text,
+                  password: passwordController.text,
+                  businessCategory: selectedCompanyType.value ?? '',
+                );
+                controller.registerCompany(model);
+              },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.buttonBg,
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: controller.isLoading.value
+            ? CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
+            : const Text("Register", style: TextStyle(color: Colors.white)),
       ),
-      child: const Text("Register", style: TextStyle(color: Colors.white)),
     );
   }
+
+  // Widget _buildRegisterButton() {
+  //   return ElevatedButton(
+  //     onPressed: () {
+  //       final model = CompanySignUpModel(
+  //         companyName: companyController.text,
+  //         mobileNo: phoneController.text,
+  //         email: emailController.text,
+  //         password: passwordController.text,
+  //         businessCategory: selectedCompanyType.value ?? '',
+  //       );
+  //       controller.registerCompany(model);
+
+  //       // Get.to(() => MyprofileScreen());
+  //     },
+  //     style: ElevatedButton.styleFrom(
+  //       backgroundColor: AppColors.buttonBg,
+  //       minimumSize: const Size(double.infinity, 50),
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  //     ),
+  //     child: const Text("Register", style: TextStyle(color: Colors.white)),
+  //   );
+  // }
 
   Widget _buildDivider() {
     return Row(

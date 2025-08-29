@@ -56,7 +56,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.pink.shade50,
+      backgroundColor: Color(0xFFF4E3E3),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -83,40 +83,89 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search name, location...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: const Icon(Icons.filter_alt_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 25),
+            child: Row(
+              children: [
+                // 🔍 Search Bar
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search name, location...',
+                      hintStyle: TextStyle(color: Colors.grey.shade500),
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
                 ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
+                const SizedBox(width: 10),
+
+                // ⚙️ Filter Button
+                Material(
+                  color: Colors.white,
+                  shape: const CircleBorder(),
+                  elevation: 2, // subtle shadow
+                  child: IconButton(
+                    icon: const Icon(Icons.tune, color: Colors.redAccent),
+                    onPressed: () {
+                      // open filter bottom sheet or dialog
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
+
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: ['ONBOARDED', 'HIRED', 'FAVOURITE'].map((status) {
+              children: ['ONBOARD', 'HIRED', 'FAVOURITE'].map((status) {
                 final isSelected = selectedFilter == status;
-                return ChoiceChip(
-                  label: Text(status),
-                  selected: isSelected,
-                  onSelected: (_) => setState(() => selectedFilter = status),
-                  selectedColor: Colors.redAccent,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : Colors.redAccent,
+                final isLast = status == 'FAVOURITE'; // last item check
+
+                return Padding(
+                  padding: EdgeInsets.only(
+                    right: isLast ? 0 : 12,
+                  ), // space only on right
+                  child: GestureDetector(
+                    onTap: () => setState(() => selectedFilter = status),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.redAccent : Colors.white,
+                        borderRadius: BorderRadius.circular(30), // pill shape
+                        border: Border.all(color: Colors.redAccent),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.redAccent.withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.redAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
                   ),
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.redAccent),
                 );
               }).toList(),
             ),
           ),
+
           const SizedBox(height: 10),
           Expanded(
             child: ListView.builder(
@@ -129,6 +178,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                     vertical: 6,
                   ),
                   child: Card(
+                    color: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),

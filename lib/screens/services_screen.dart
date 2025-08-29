@@ -135,7 +135,11 @@ class ServicesScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ElevatedButton(
               onPressed: () {
-                Get.to(SuccessPopup());
+                Get.dialog(
+                  SuccessPopup(),
+                  barrierDismissible:
+                      false, // prevent dismiss by tapping outside
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00B894),

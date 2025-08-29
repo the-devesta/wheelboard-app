@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'edit_company_profile.dart';
+import 'switch_profile_popup.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
   const CompanyProfileScreen({super.key});
@@ -176,14 +177,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       ),
       child: Row(
         children: [
-          Image.asset(
-            'assets/google.png',
-            height: 24,
-            width: 24,
-            fit: BoxFit.cover,
-          ),
-          SizedBox(width: 10),
-          Expanded(child: Text("Complete your KYC to unlock full access")),
+          Expanded(child: Text("🔒 Complete your KYC to unlock full access")),
         ],
       ),
     );
@@ -290,46 +284,91 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _buildSwitchTile(Icons.dark_mode, "Dark Theme", isDarkTheme, (val) {
-          setState(() {
-            isDarkTheme = val;
-            Get.changeThemeMode(isDarkTheme ? ThemeMode.dark : ThemeMode.light);
-          });
-        }),
         _buildSwitchTile(
-          Icons.notifications,
-          "SMS Notifications",
-          smsNotifications,
-          (val) {
+          leading: const Icon(Icons.dark_mode),
+          title: "Dark Theme",
+          value: isDarkTheme,
+          onChanged: (val) {
+            setState(() {
+              isDarkTheme = val;
+              Get.changeThemeMode(
+                isDarkTheme ? ThemeMode.dark : ThemeMode.light,
+              );
+            });
+          },
+        ),
+
+        _buildSwitchTile(
+          leading: const Icon(Icons.notifications),
+          title: "SMS Notifications",
+          value: smsNotifications,
+          onChanged: (val) {
             setState(() => smsNotifications = val);
           },
         ),
+
         _buildSwitchTile(
-          Icons.email,
-          "Email Notifications",
-          emailNotifications,
-          (val) {
+          leading: const Icon(Icons.email),
+          title: "Email Notifications",
+          value: emailNotifications,
+          onChanged: (val) {
             setState(() => emailNotifications = val);
           },
         ),
+
         _buildSwitchTile(
-          Icons.abc,
-          "WhatsApp Notifications",
-          whatsappNotifications,
-          (val) {
+          leading: SvgPicture.asset(
+            'assets/whatsapp.svg',
+            width: 22,
+            height: 22,
+          ),
+          title: "WhatsApp Notifications",
+          value: whatsappNotifications,
+          onChanged: (val) {
             setState(() => whatsappNotifications = val);
           },
         ),
+
+        // _buildSwitchTile(Icons.dark_mode, "Dark Theme", isDarkTheme, (val) {
+        //   setState(() {
+        //     isDarkTheme = val;
+        //     Get.changeThemeMode(isDarkTheme ? ThemeMode.dark : ThemeMode.light);
+        //   });
+        // }),
+        // _buildSwitchTile(
+        //   Icons.notifications,
+        //   "SMS Notifications",
+        //   smsNotifications,
+        //   (val) {
+        //     setState(() => smsNotifications = val);
+        //   },
+        // ),
+        // _buildSwitchTile(
+        //   Icons.email,
+        //   "Email Notifications",
+        //   emailNotifications,
+        //   (val) {
+        //     setState(() => emailNotifications = val);
+        //   },
+        // ),
+        // _buildSwitchTile(
+        //   SvgPicture.asset('assets/whatsapp.svg', width: 20, height: 20),
+        //   "WhatsApp Notifications",
+        //   whatsappNotifications,
+        //   (val) {
+        //     setState(() => whatsappNotifications = val);
+        //   },
+        // ),
       ],
     );
   }
 
-  Widget _buildSwitchTile(
-    IconData icon,
-    String title,
-    bool value,
-    Function(bool) onChanged,
-  ) {
+  Widget _buildSwitchTile({
+    required Widget leading,
+    required String title,
+    required bool value,
+    required Function(bool) onChanged,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -337,7 +376,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.black87),
+              leading,
               const SizedBox(width: 12),
               Text(title, style: const TextStyle(fontSize: 16)),
             ],
@@ -347,13 +386,83 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
             onChanged: onChanged,
             activeColor: Colors.white,
             activeTrackColor: const Color.fromARGB(255, 112, 246, 117),
-            // inactiveThumbColor: Colors.grey.shade300,
-            inactiveTrackColor: Color(0xFF787880).withOpacity(0.4),
+            inactiveTrackColor: const Color(0xFF787880).withOpacity(0.4),
           ),
         ],
       ),
     );
   }
+
+  // Widget _buildSwitchTile({
+  //   String? svgAsset,
+  //   IconData? icon,
+  //   required String title,
+  //   required bool value,
+  //   required Function(bool) onChanged,
+  // }) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 8),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             if (svgAsset != null)
+  //               SvgPicture.asset(
+  //                 svgAsset,
+  //                 width: 24,
+  //                 height: 24,
+  //                 color: Colors.black87,
+  //               )
+  //             else if (icon != null)
+  //               Icon(icon, color: Colors.black87),
+
+  //             const SizedBox(width: 12),
+  //             Text(title, style: const TextStyle(fontSize: 16)),
+  //           ],
+  //         ),
+  //         Switch(
+  //           value: value,
+  //           onChanged: onChanged,
+  //           activeColor: Colors.white,
+  //           activeTrackColor: const Color.fromARGB(255, 112, 246, 117),
+  //           inactiveTrackColor: const Color(0xFF787880).withOpacity(0.4),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildSwitchTile(
+  //   IconData icon,
+  //   String title,
+  //   bool value,
+  //   Function(bool) onChanged,
+  // ) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 8),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             Icon(icon, color: Colors.black87),
+  //             const SizedBox(width: 12),
+  //             Text(title, style: const TextStyle(fontSize: 16)),
+  //           ],
+  //         ),
+  //         Switch(
+  //           value: value,
+  //           onChanged: onChanged,
+  //           activeColor: Colors.white,
+  //           activeTrackColor: const Color.fromARGB(255, 112, 246, 117),
+  //           // inactiveThumbColor: Colors.grey.shade300,
+  //           inactiveTrackColor: Color(0xFF787880).withOpacity(0.4),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildSubscriptionPlanCard() {
     return _buildCard(
@@ -412,8 +521,22 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _buildQuickAction(Icons.phone, "Contact Us"),
-            _buildQuickAction(Icons.sync, "Sync Profile"),
-            _buildQuickAction(Icons.logout, "Logout", color: Colors.red),
+            _buildQuickAction(
+              Icons.sync,
+              "Switch Profile",
+              onTap: () {
+                showSwitchProfilePopup(
+                  context,
+                  onSwitchToBusiness: () {
+                    print("Switching to Business Account...");
+                  },
+                  onLogout: () {
+                    print("Logging out...");
+                  },
+                );
+              },
+            ),
+            _buildQuickAction(Icons.logout, "Logout"),
           ],
         ),
       ],
@@ -477,13 +600,45 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     );
   }
 
-  Widget _buildQuickAction(IconData icon, String label, {Color? color}) {
-    return Column(
-      children: [
-        Icon(icon, size: 30, color: color ?? Colors.black),
-        const SizedBox(height: 6),
-        Text(label, style: TextStyle(color: color ?? Colors.black)),
-      ],
+  // Widget _buildQuickAction(IconData icon, String label, {Color? color}) {
+  //   return Column(
+  //     children: [
+  //       Icon(icon, size: 30, color: color ?? Colors.black),
+  //       const SizedBox(height: 6),
+  //       Text(label, style: TextStyle(color: color ?? Colors.black)),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildQuickAction(IconData icon, String label, {VoidCallback? onTap}) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.red, size: 28),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -6,15 +6,71 @@ import 'job_screen.dart';
 import 'fleet_screen.dart';
 import 'trips_screen.dart';
 
+// class BottomNavScreen extends StatefulWidget {
+//   const BottomNavScreen({super.key});
+
+//   @override
+//   _BottomNavScreenState createState() => _BottomNavScreenState();
+// }
+
+// class _BottomNavScreenState extends State<BottomNavScreen> {
+//   int _currentIndex = 0;
+
+//   final List<Widget> _screens = [
+//     HomeScreen(),
+//     FleetVehiclesScreen(),
+//     TripPage(),
+//     FeedScreen(),
+//     JobsScreen(),
+//   ];
+
+//   void _onTabTapped(int index) {
+//     setState(() {
+//       _currentIndex = index;
+//     });
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: _screens[_currentIndex],
+//       bottomNavigationBar: BottomNavigationBar(
+//         type: BottomNavigationBarType.fixed, // More than 3 items
+//         currentIndex: _currentIndex,
+//         onTap: _onTabTapped,
+//         selectedItemColor: AppColors.buttonBg,
+//         unselectedItemColor: Colors.grey,
+//         items: const [
+//           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+//           BottomNavigationBarItem(
+//             icon: Icon(Icons.local_shipping),
+//             label: "Fleet",
+//           ),
+//           BottomNavigationBarItem(icon: Icon(Icons.alt_route), label: "Trips"),
+//           BottomNavigationBarItem(icon: Icon(Icons.article), label: "Feeds"),
+//           BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
 class BottomNavScreen extends StatefulWidget {
-  const BottomNavScreen({super.key});
+  final int initialIndex;
+  const BottomNavScreen({super.key, this.initialIndex = 0}); // default = 0
 
   @override
   _BottomNavScreenState createState() => _BottomNavScreenState();
 }
 
 class _BottomNavScreenState extends State<BottomNavScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex; // use passed index
+  }
 
   final List<Widget> _screens = [
     HomeScreen(),
@@ -35,7 +91,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // More than 3 items
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
         selectedItemColor: AppColors.buttonBg,
