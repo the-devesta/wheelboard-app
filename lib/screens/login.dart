@@ -1,124 +1,152 @@
-// lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
-import 'package:wheelboard/screens/signup.dart';
-import '../controllers/register_controller.dart';
-import '../screens/professional_signup.dart';
+import 'bottom_navigation.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../controllers/login_controller.dart';
 
-class RegisterScreen extends StatelessWidget {
-  const RegisterScreen({super.key});
+class ProfessionLogin extends StatelessWidget {
+  ProfessionLogin({super.key});
+  final LoginController loginController = Get.put(LoginController());
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    final RegisterController controller = Get.put(RegisterController());
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      backgroundColor: Color(0xFFFCFDFC),
-
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(0),
+        child: AppBar(elevation: 0, backgroundColor: Colors.transparent),
+      ),
+      backgroundColor: AppColors.primary,
       body: SafeArea(
-        top: false,
-        bottom: false,
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Image.asset('assets/logo.png', height: 400),
-
-                // Your logo
-                Image.asset('assets/onboarding.png', height: 200), // Your image
-                SizedBox(height: 10),
-
-                // ⬇️ Section with background truck image and overlay content
-                Stack(
-                  alignment: Alignment.center,
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: screenHeight),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+                child: Column(
                   children: [
-                    Positioned.fill(
-                      child: Image.asset(
-                        'assets/bgImage.png', // ← replace with your actual truck image asset
-                        fit: BoxFit.cover,
+                    // SizedBox(height: screenHeight * 0.04),
+                    Image.asset(
+                      'assets/mainlogo.png',
+                      height: screenHeight * 0.12,
+                    ),
+                    SizedBox(height: screenHeight * 0.01),
+                    Text(
+                      "Sign in to your\nAccount",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.065,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0,
-                        vertical: 30,
+                    SizedBox(height: screenHeight * 0.01),
+                    Text(
+                      "Enter your Phone no. and password to log in",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: screenWidth * 0.038,
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.03),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(screenWidth * 0.05),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4),
+                        ],
                       ),
                       child: Column(
                         children: [
-                          Text(
-                            'Register as',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
+                          _socialButton(
+                            "Continue with Google",
+                            "assets/google.svg",
+                            screenWidth,
                           ),
-                          SizedBox(height: 20),
-                          Obx(
-                            () => Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildToggleButton(
-                                  label: 'Professional',
-                                  isSelected:
-                                      controller.selectedType.value ==
-                                      'Professional',
-                                  onTap: () =>
-                                      controller.selectType('Professional'),
-                                ),
-                                SizedBox(width: 16),
-                                _buildToggleButton(
-                                  label: 'Company',
-                                  isSelected:
-                                      controller.selectedType.value ==
-                                      'Company',
-                                  onTap: () => controller.selectType('Company'),
-                                ),
-                              ],
-                            ),
+                          SizedBox(height: screenHeight * 0.03),
+                          _buildDivider(screenWidth),
+                          SizedBox(height: screenHeight * 0.03),
+                          AppTextField(
+                            hintText: "Enter your phone number",
+                            controller: phoneController,
                           ),
-                          SizedBox(height: 30),
-                          ElevatedButton(
-                            onPressed: () {
-                              print(
-                                'Selected: ${controller.selectedType.value}',
-                              );
-                              if (controller.selectedType.value == 'Company') {
-                                Get.to(Signup());
-                              } else {
-                                Get.to(ProfessionalRegisterScreen());
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.buttonBg, // custom red
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 100,
-                                vertical: 16,
+                          SizedBox(height: screenHeight * 0.03),
+                          AppTextField(
+                            hintText: "Enter your password",
+                            controller: passwordController,
+                          ),
+                          SizedBox(height: screenHeight * 0.01),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Checkbox(value: false, onChanged: (_) {}),
+                                  Text(
+                                    "Remember me",
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.035,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              elevation: 4,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Sign Up',
-                                  style: TextStyle(color: Colors.white),
+                              TextButton(
+                                onPressed: () {},
+                                child: Text(
+                                  "Forgot Password ?",
+                                  style: TextStyle(
+                                    color: AppColors.buttonBg,
+                                    fontSize: screenWidth * 0.035,
+                                  ),
                                 ),
-
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward, color: Colors.white),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
+                          SizedBox(height: screenHeight * 0.02),
+                          _buildLoginButton(screenWidth),
+                          SizedBox(height: screenHeight * 0.03),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Don’t have an account?",
+                                style: TextStyle(fontSize: screenWidth * 0.035),
+                              ),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () {
+                                  Get.back();
+                                },
+                                child: Text(
+                                  "Sign Up",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                    fontSize: screenWidth * 0.035,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
                         ],
                       ),
                     ),
+                    SizedBox(height: screenHeight * 0.04),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -126,35 +154,73 @@ class RegisterScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildToggleButton({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.buttonBg : Colors.white,
-          border: Border.all(color: AppColors.buttonBg),
-          borderRadius: BorderRadius.circular(8),
+  Widget _socialButton(String text, String asset, double screenWidth) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.black12),
+        color: Colors.white,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(asset, height: screenWidth * 0.06),
+          SizedBox(width: screenWidth * 0.03),
+          Text(
+            text,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: screenWidth * 0.04,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider(double screenWidth) {
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+          child: Text("Or", style: TextStyle(fontSize: screenWidth * 0.035)),
         ),
-        child: Row(
-          children: [
-            Icon(
-              label == 'Professional' ? Icons.person : Icons.business,
-              color: isSelected ? Colors.white : Colors.redAccent,
-            ),
-            SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.redAccent,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        const Expanded(child: Divider()),
+      ],
+    );
+  }
+
+  Widget _buildLoginButton(double screenWidth) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () async {
+          final success = await loginController.login(
+            phoneController.text.trim(),
+            passwordController.text.trim(),
+          );
+
+          if (success) {
+            Get.to(() => BottomNavScreen());
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.buttonBg,
+          padding: EdgeInsets.symmetric(vertical: screenWidth * 0.045),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text(
+          "Log In",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: screenWidth * 0.045,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );

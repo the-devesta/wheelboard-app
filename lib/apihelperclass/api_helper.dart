@@ -54,41 +54,48 @@ class HttpHelper {
     return await http.delete(uri, headers: headers);
   }
 
-  /// ✅ Multipart upload (e.g., image, video, document, etc.)
   static Future<http.StreamedResponse> uploadMultipart({
     required String endpoint,
-    required Map<String, String> fields,
+    required Map<String, String?> fields,
     required List<File> files,
+    required String fieldKey,
     Map<String, String>? headers,
-    String method = 'POST', // Also supports 'PUT'
-    String fieldKey = 'file', // Field name for the file(s)
   }) async {
-    Uri uri = Uri.parse(baseUrl + endpoint);
-    var request = http.MultipartRequest(method, uri);
+    final uri = Uri.parse(baseUrl + endpoint);
 
-    // Add headers
+    final request = http.MultipartRequest("POST", uri);
+
+    // ✅ Add headers (Content-Type will be auto-set by MultipartRequest)
     if (headers != null) {
       request.headers.addAll(headers);
     }
 
-    // Add form fields
-    request.fields.addAll(fields);
+    // ✅ Add fields (skip nulls)
+    fields.forEach((key, value) {
+      if (value != null) {
+        request.fields[key] = value;
+      }
+    });
 
-    // Add files
-    for (File file in files) {
-      final mimeType =
-          lookupMimeType(file.path)?.split('/') ??
-          ['application', 'octet-stream'];
+    // ✅ Add files
+    for (final file in files) {
+      final fileName = file.path.split("/").last;
+      request.files.add(await http.MultipartFile.fromPath(fieldKey, file.path));
 
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          fieldKey,
-          file.path,
-          contentType: MediaType(mimeType[0], mimeType[1]),
-        ),
-      );
+      // Debug log for each file
+      // print("📂 Attached File: $fileName");
     }
 
+    // 🔍 Debug logging
+    // print("==================================");
+    // print("📡 Sending Multipart Request");
+    // print("👉 URL: $uri");
+    // print("👉 Headers: ${request.headers}");
+    // print("👉 Fields: ${request.fields}");
+    // print("👉 Files attached: ${files.length}");
+    // print("==================================");
+
+    // Send request
     return await request.send();
   }
 }
