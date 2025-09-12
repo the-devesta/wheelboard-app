@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:wheelboard/screens/complete_company_profile.dart';
+import 'package:wheelboard/screens/forgot_password.dart';
+import 'package:wheelboard/screens/service_provider_login.dart';
 import 'bottom_navigation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../controllers/login_controller.dart';
@@ -102,7 +105,9 @@ class ProfessionLogin extends StatelessWidget {
                                 ],
                               ),
                               TextButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Get.to(ForgotPasswordScreen());
+                                },
                                 child: Text(
                                   "Forgot Password ?",
                                   style: TextStyle(
@@ -198,14 +203,40 @@ class ProfessionLogin extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () async {
-          final success = await loginController.login(
+          final responseData = await loginController.login(
             phoneController.text.trim(),
             passwordController.text.trim(),
           );
 
-          if (success) {
-            Get.to(() => BottomNavScreen());
+          if (responseData != null) {
+            final businessCategory = responseData['businessCategory'];
+            final isProfileComplete = responseData['isProfileComplete'];
+
+            if (businessCategory == "Transport" && !isProfileComplete) {
+              Get.to(CompanyCompleteProfile());
+              // Navigate to the transport profile completion screen
+              //  Get.to(() => TransportProfileScreen());
+            } else if (businessCategory == "Service Provider" &&
+                !isProfileComplete) {
+              Get.to(
+                AlliedBusinessRegistrationScreen(),
+                arguments: {"userId": responseData['userId']},
+              );
+              // Navigate to the transport profile completion screen
+              //  Get.to(() => TransportProfileScreen());
+            } else {
+              // Navigate to the main home screen
+              Get.offAll(() => BottomNavScreen());
+            }
           }
+          // final success = await loginController.login(
+          //   phoneController.text.trim(),
+          //   passwordController.text.trim(),
+          // );
+
+          // if (success) {
+          //   Get.to(() => BottomNavScreen());
+          // }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.buttonBg,

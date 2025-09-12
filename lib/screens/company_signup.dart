@@ -5,11 +5,13 @@ import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import 'package:wheelboard/commonwidget/app_dropdown.dart';
 import 'package:wheelboard/controllers/signup_controller.dart';
 import 'package:wheelboard/screens/login.dart';
+import 'package:wheelboard/screens/service_provider_login.dart';
 import '../constants/apps_colors.dart';
 import 'package:country_picker/country_picker.dart';
 import 'complete_company_profile.dart';
 import '../models/company_signupmodel.dart';
 import '../utils/session_manager.dart';
+import 'forgot_password.dart';
 
 class Signup extends StatelessWidget {
   Signup({super.key});
@@ -196,22 +198,19 @@ class Signup extends StatelessWidget {
         onPressed: controller.isLoading.value
             ? null // Disable the button when loading
             : () async {
-                //   Get.to(() => CompanyCompleteProfile());
-                final model = CompanySignUpModel(
-                  companyName: companyController.text,
-                  mobileNo: phoneController.text,
-                  email: emailController.text,
-                  password: passwordController.text,
-                  businessCategory: selectedCompanyType.value ?? '',
-                );
-                final success = await controller.registerCompany(model);
-                final userId = controller.userId.value;
+                if (selectedCompanyType.value == "Transport") {
+                  final model = CompanySignUpModel(
+                    companyName: companyController.text,
+                    mobileNo: phoneController.text,
+                    email: emailController.text,
+                    password: passwordController.text,
+                    businessCategory: selectedCompanyType.value ?? '',
+                  );
+                  final success = await controller.registerCompany(model);
+                  final userId = controller.userId.value;
 
-                if (success) {
-                  // ✅ Condition check
-                  if (selectedCompanyType.value == "Transport" ||
-                      selectedCompanyType.value == null ||
-                      selectedCompanyType.value!.isEmpty) {
+                  if (success) {
+                    // ✅ Condition check
                     await SessionManager.setLogin(true);
                     await SessionManager.setProfileCompleted(false);
                     // Get.to(() => CompanyCompleteProfile());
@@ -220,9 +219,31 @@ class Signup extends StatelessWidget {
                       () => CompanyCompleteProfile(),
                       arguments: {"userId": userId},
                     );
-                  } else {
-                    // Your default navigation
-                    // Get.offAll(() => const DashboardScreen());
+                  }
+                } else {
+                  final model = CompanySignUpModel(
+                    companyName: companyController.text,
+                    mobileNo: phoneController.text,
+                    email: emailController.text,
+                    password: passwordController.text,
+                    businessCategory: selectedCompanyType.value ?? '',
+                  );
+                  final success = await controller.registerCompany(model);
+                  final userId = controller.userId.value;
+                  if (success) {
+                    // ✅ Condition check
+                    await SessionManager.setLogin(true);
+                    await SessionManager.setProfileCompleted(false);
+                    Get.to(
+                      () => AlliedBusinessRegistrationScreen(),
+                      arguments: {"userId": userId},
+                    );
+                    // Get.to(() => CompanyCompleteProfile());
+
+                    // Get.to(
+                    //   () => CompanyCompleteProfile(),
+                    //   arguments: {"userId": userId},
+                    // );
                   }
                 }
               },

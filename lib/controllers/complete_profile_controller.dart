@@ -58,51 +58,6 @@ class CompleteProfileController extends GetxController {
     selectedCountryCode.value = country.countryCode;
   }
 
-  /// Submit profile to backend
-  ///
-  ///
-  ///
-  //   Future<bool> submitProfile(CompleteProfileModel model) async {
-  //     isLoading.value = true;
-  //     try {
-  //       // ✅ Prepare fields
-  //       final fields = model.toJsonFields();
-
-  //       // ✅ Prepare files
-  //       final files = <File>[];
-  //       if (model.companyLogo != null) {
-  //         files.add(model.companyLogo!);
-  //       }
-
-  //       // ✅ Call multipart API
-  //       final streamedResponse = await HttpHelper.uploadMultipart(
-  //         endpoint: API.completeTransport, // e.g. "/profile/complete"
-  //         fields: fields,
-  //         files: files,
-  //         fieldKey: "CompanyLogo", // backend expects "CompanyLogo"
-  //         headers: {
-  //           "Authorization": "Bearer YOUR_TOKEN", // optional
-  //         },
-  //       );
-
-  //       // final response = await http.Response.fromStream(streamedResponse);
-
-  //       if (streamedResponse.statusCode == 200) {
-  //         Get.snackbar("Success", "Profile updated successfully");
-  //         return true;
-  //       } else {
-  //         Get.snackbar("Error", "Failed: ${streamedResponse}");
-  //         return false;
-  //       }
-  //     } catch (e) {
-  //       Get.snackbar("Error", e.toString());
-  //       return false;
-  //     } finally {
-  //       isLoading.value = false;
-  //     }
-  //   }
-  // }
-
   Future<bool> submitProfile(CompleteProfileModel model) async {
     isLoading.value = true;
     try {
@@ -131,22 +86,15 @@ class CompleteProfileController extends GetxController {
 
       if (response.statusCode == 200) {
         Get.snackbar("Success", "Profile updated successfully");
-        print("✅ Response Body: ${response.body}");
+
         return true;
       } else {
         // 🔍 Print details for debugging
-        print("❌ Error Status: ${response.statusCode}");
-        print("❌ Error Body: ${response.body}");
-        print("❌ Error Headers: ${response.headers}");
 
         Get.snackbar("Error", "Failed: ${response.body}");
         return false;
       }
     } catch (e, stacktrace) {
-      // 🔍 Capture exception + stacktrace for debugging
-      print("⚠️ Exception: $e");
-      print("⚠️ Stacktrace: $stacktrace");
-
       Get.snackbar("Error", e.toString());
       return false;
     } finally {

@@ -7,34 +7,30 @@ import '../utils/constants.dart';
 class LoginController extends GetxController {
   var isLoading = false.obs;
 
-  Future<bool> login(String phone, String password) async {
+  Future<Map<String, dynamic>?> login(String phone, String password) async {
     isLoading.value = true;
 
     try {
       final requestData = {"mobileNo": phone, "password": password};
-
-      // 🔍 Print request params
 
       final response = await HttpHelper.postData(
         endpoint: API.login,
         data: requestData,
       );
 
-      // 🔍 Print response status + body
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
         Get.snackbar("Success", "Login Successful");
 
-        return true;
+        return data['data']; // Return the data object
       } else {
         Get.snackbar("Error", "Invalid credentials");
-        return false;
+        return null;
       }
     } catch (e) {
       Get.snackbar("Error", e.toString());
-      return false;
+      return null;
     } finally {
       isLoading.value = false;
     }

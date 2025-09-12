@@ -87,13 +87,13 @@ class HttpHelper {
     }
 
     // 🔍 Debug logging
-    // print("==================================");
-    // print("📡 Sending Multipart Request");
-    // print("👉 URL: $uri");
-    // print("👉 Headers: ${request.headers}");
-    // print("👉 Fields: ${request.fields}");
-    // print("👉 Files attached: ${files.length}");
-    // print("==================================");
+    print("==================================");
+    print("📡 Sending Multipart Request");
+    print("👉 URL: $uri");
+    print("👉 Headers: ${request.headers}");
+    print("👉 Fields: ${request.fields}");
+    print("👉 Files attached: ${files.length}");
+    print("==================================");
 
     // Send request
     return await request.send();
