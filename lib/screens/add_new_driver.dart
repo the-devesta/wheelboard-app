@@ -1,9 +1,14 @@
+import 'dart:typed_data';
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:get/get.dart';
+import '../controllers/add_driver_controller.dart';
+import '../models/add_drivermodel.dart';
+import '../utils/session_manager.dart';
 
 class AddNewDriverScreen extends StatefulWidget {
   const AddNewDriverScreen({super.key});
@@ -13,26 +18,118 @@ class AddNewDriverScreen extends StatefulWidget {
 }
 
 class _AddVehicleScreenState extends State<AddNewDriverScreen> {
-  // Hold selected images
-  List<PlatformFile> _pickedImages = [];
+  final AddDriverController addDriverController = Get.put(
+    AddDriverController(),
+  );
 
-  Future<void> _pickImages() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: true,
-      withData: true, // important for Web thumbnails
-    );
-    if (result != null && result.files.isNotEmpty) {
-      setState(() => _pickedImages = result.files);
-      // TODO: If you also need to upload to a server, do it here,
-      // then update UI as "uploaded successfully" based on the result.
+  final TextEditingController driverNameController = TextEditingController();
+  final TextEditingController contactNumberController = TextEditingController();
+  final TextEditingController vehicleNumberController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController partnerIdController = TextEditingController();
+
+  String? selectedVehicleType;
+  bool isDeclarationAccepted = false;
+  XFile? _pickedImage; // ✅ Single image only
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        _pickedImage = image;
+      });
     }
   }
+
+  void _submitForm() async {
+    final sessionManager = SessionManager();
+
+    // 🔹 Load values with safety checks
+    final token = await sessionManager.getString("authToken");
+    final userId = await sessionManager.getString("userId");
+
+    if (token == null || token.isEmpty) {
+      Get.snackbar("Error", "Authentication token not found. Please log in.");
+      return;
+    }
+
+    if (userId == null || userId.isEmpty) {
+      Get.snackbar("Error", "UserId not found. Please log in again.");
+      return;
+    }
+
+    print("👉 Using Token: $token");
+    print("👉 Using UserId: $userId");
+
+    final File? imageFile = _pickedImage != null && !kIsWeb
+        ? File(_pickedImage!.path)
+        : null;
+
+    final partnerId = int.tryParse(partnerIdController.text.trim());
+
+    final driverModel = DriverModel(
+      userId: userId,
+      fullName: driverNameController.text.trim(),
+      contactNumber: contactNumberController.text.trim(),
+      vehicleType: selectedVehicleType,
+      vehicleNumber: vehicleNumberController.text.trim(),
+      description: descriptionController.text.trim(),
+      isDeclarationAccepted: isDeclarationAccepted,
+      image: imageFile, // ✅ single file
+      partnerId: partnerId, // ✅ integer
+    );
+
+    // 🔹 Add small delay (ensures async values + file stream ready)
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    bool isSuccess = await addDriverController.addDriver(driverModel, token);
+
+    if (isSuccess) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  // void _submitForm() async {
+  //   final sessionManager = SessionManager();
+  //   final token = await sessionManager.getString("authToken");
+  //   final userId = await sessionManager.getString("userId");
+
+  //   if (token == null) {
+  //     Get.snackbar("Error", "Authentication token not found. Please log in.");
+  //     return;
+  //   }
+
+  //   final File? imageFile = _pickedImage != null && !kIsWeb
+  //       ? File(_pickedImage!.path)
+  //       : null;
+
+  //   final partnerId = int.tryParse(partnerIdController.text.trim());
+
+  //   final driverModel = DriverModel(
+  //     userId: userId,
+  //     fullName: driverNameController.text.trim(),
+  //     contactNumber: contactNumberController.text.trim(),
+  //     vehicleType: selectedVehicleType,
+  //     vehicleNumber: vehicleNumberController.text.trim(),
+  //     description: descriptionController.text.trim(),
+  //     isDeclarationAccepted: isDeclarationAccepted,
+  //     image: imageFile, // ✅ single file
+  //     partnerId: partnerId, // ✅ integer
+  //   );
+
+  //   bool isSuccess = await addDriverController.addDriver(driverModel, token);
+
+  //   if (isSuccess) {
+  //     Navigator.of(context).pop();
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDECEC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -49,14 +146,14 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
+      body: Obx(() {
+        if (addDriverController.isLoading.value) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.deepPurpleAccent),
+          );
+        }
+
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,11 +170,16 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Vehicle Model
-              _buildTextField("Driver Name", "Enter Driver Name"),
-
-              // Vehicle Number
-              _buildTextField("Contact Number:", "Enter Number"),
+              _buildTextField(
+                "Driver Name",
+                "Enter Driver Name",
+                controller: driverNameController,
+              ),
+              _buildTextField(
+                "Contact Number",
+                "Enter Number",
+                controller: contactNumberController,
+              ),
 
               const SizedBox(height: 8),
               Text(
@@ -94,7 +196,8 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                   DropdownMenuItem(value: "truck", child: Text("Truck")),
                   DropdownMenuItem(value: "bus", child: Text("Bus")),
                 ],
-                onChanged: (value) {},
+                onChanged: (value) =>
+                    setState(() => selectedVehicleType = value),
                 decoration: InputDecoration(
                   hintText: "Select type of vehicle",
                   hintStyle: GoogleFonts.poppins(color: Colors.grey),
@@ -122,39 +225,22 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
               ),
 
               const SizedBox(height: 16),
-              _buildTextField("Enter Vehicle Number:", "Enter Vehicle Number"),
-              const SizedBox(height: 16),
-              Text(
-                "Description",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
-                ),
+              _buildTextField(
+                "Enter Vehicle Number",
+                "Enter Vehicle Number",
+                controller: vehicleNumberController,
               ),
-              const SizedBox(height: 6),
-              TextField(
+              const SizedBox(height: 16),
+              _buildTextField(
+                "Description",
+                "Enter Description",
+                controller: descriptionController,
                 maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: "Description",
-                  hintStyle: GoogleFonts.poppins(color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.grey.withOpacity(0.5),
-                      width: 1.5,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Colors.deepPurpleAccent,
-                      width: 2.0,
-                    ),
-                  ),
-                ),
+              ),
+              _buildTextField(
+                "Partner Id",
+                "Enter Partner Id",
+                controller: partnerIdController,
               ),
 
               const SizedBox(height: 16),
@@ -169,13 +255,17 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                       ),
                     ),
                   ),
-                  Switch(value: false, onChanged: (_) {}),
+                  Switch(
+                    value: isDeclarationAccepted,
+                    onChanged: (value) =>
+                        setState(() => isDeclarationAccepted = value),
+                  ),
                 ],
               ),
 
               const SizedBox(height: 16),
               Text(
-                "Upload Images of vehicles or Job Poster",
+                "Upload Vehicle / Driver Image",
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -183,120 +273,85 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Upload button (keeps your gradient container)
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF5C5C),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(
-                      // 👈 border color and width
-                      color: Colors.white,
-                      width: 2,
-                    ),
+                    side: const BorderSide(color: Colors.white, width: 2),
                   ),
                   elevation: 4,
                 ),
-                onPressed: _pickImages,
+                onPressed: _pickImage,
+                icon: const Icon(Icons.upload, color: Colors.white),
                 label: const Text(
                   "Upload",
                   style: TextStyle(color: Colors.white),
                 ),
               ),
 
-              // File name list with "uploaded successfully"
-              if (_pickedImages.isNotEmpty) const SizedBox(height: 12),
-              ..._pickedImages.map(
-                (f) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          f.name,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: Colors.grey[800],
-                          ),
-                          overflow: TextOverflow.ellipsis,
+              if (_pickedImage != null) ...[
+                const SizedBox(height: 12),
+                FutureBuilder<Uint8List>(
+                  future: _pickedImage!.readAsBytes(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "uploaded successfully",
-                        style: GoogleFonts.poppins(
-                          color: Colors.green,
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Remove',
-                        onPressed: () =>
-                            setState(() => _pickedImages.remove(f)),
-                        icon: const Icon(
-                          Icons.close,
-                          size: 18,
-                          color: Colors.redAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Tiny preview grid
-              if (_pickedImages.isNotEmpty) const SizedBox(height: 8),
-              if (_pickedImages.isNotEmpty)
-                GridView.builder(
-                  itemCount: _pickedImages.length,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                  ),
-                  itemBuilder: (context, i) {
-                    final file = _pickedImages[i];
-                    Widget img;
-                    if (kIsWeb) {
-                      img = Image.memory(file.bytes!, fit: BoxFit.cover);
-                    } else {
-                      img = Image.file(File(file.path!), fit: BoxFit.cover);
+                      );
                     }
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          img,
-                          Positioned(
-                            right: 4,
-                            top: 4,
+                    if (!snapshot.hasData) {
+                      return const SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: Center(child: Icon(Icons.error)),
+                      );
+                    }
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Image.memory(
+                          snapshot.data!,
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                        Positioned(
+                          top: -8,
+                          right: -8,
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _pickedImage = null;
+                              });
+                            },
                             child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(8),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.red,
                               ),
+                              padding: const EdgeInsets.all(4),
                               child: const Icon(
-                                Icons.image,
-                                size: 14,
+                                Icons.close,
+                                size: 16,
                                 color: Colors.white,
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     );
                   },
                 ),
+              ],
 
               const SizedBox(height: 20),
-              Container(
+              SizedBox(
                 width: double.infinity,
-                decoration: BoxDecoration(),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.buttonBg,
@@ -306,9 +361,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: () {
-                    // Submit payload that includes: _pickedImages
-                  },
+                  onPressed: _submitForm,
                   child: Text(
                     "Add Now",
                     style: GoogleFonts.poppins(
@@ -321,12 +374,17 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
               ),
             ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
-  Widget _buildTextField(String label, String hint, {Widget? suffix}) {
+  Widget _buildTextField(
+    String label,
+    String hint, {
+    TextEditingController? controller,
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -340,10 +398,11 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
         ),
         const SizedBox(height: 6),
         TextField(
+          controller: controller,
+          maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.poppins(color: Colors.grey),
-            suffixIcon: suffix,
             filled: true,
             fillColor: Colors.white,
             enabledBorder: OutlineInputBorder(

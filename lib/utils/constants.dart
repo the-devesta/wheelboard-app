@@ -11,4 +11,8 @@ class API {
       'api/User/complete-service-provider';
   static const String userProfile = 'api/User/user-profile/{userId}';
   static const String addDriver = 'api/Transport/add-driver';
+  static const String getDrivers = 'api/Transport/drivers';
+
+  static const String addVehicle = 'api/Transport/add-vehicle';
+  static const String getVehicles = 'api/Transport/vehicle';
 }

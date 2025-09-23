@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:wheelboard/screens/login.dart';
 import 'edit_company_profile.dart';
 import 'switch_profile_popup.dart';
 
@@ -328,37 +329,6 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
             setState(() => whatsappNotifications = val);
           },
         ),
-
-        // _buildSwitchTile(Icons.dark_mode, "Dark Theme", isDarkTheme, (val) {
-        //   setState(() {
-        //     isDarkTheme = val;
-        //     Get.changeThemeMode(isDarkTheme ? ThemeMode.dark : ThemeMode.light);
-        //   });
-        // }),
-        // _buildSwitchTile(
-        //   Icons.notifications,
-        //   "SMS Notifications",
-        //   smsNotifications,
-        //   (val) {
-        //     setState(() => smsNotifications = val);
-        //   },
-        // ),
-        // _buildSwitchTile(
-        //   Icons.email,
-        //   "Email Notifications",
-        //   emailNotifications,
-        //   (val) {
-        //     setState(() => emailNotifications = val);
-        //   },
-        // ),
-        // _buildSwitchTile(
-        //   SvgPicture.asset('assets/whatsapp.svg', width: 20, height: 20),
-        //   "WhatsApp Notifications",
-        //   whatsappNotifications,
-        //   (val) {
-        //     setState(() => whatsappNotifications = val);
-        //   },
-        // ),
       ],
     );
   }
@@ -392,77 +362,6 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       ),
     );
   }
-
-  // Widget _buildSwitchTile({
-  //   String? svgAsset,
-  //   IconData? icon,
-  //   required String title,
-  //   required bool value,
-  //   required Function(bool) onChanged,
-  // }) {
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(vertical: 8),
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //       children: [
-  //         Row(
-  //           children: [
-  //             if (svgAsset != null)
-  //               SvgPicture.asset(
-  //                 svgAsset,
-  //                 width: 24,
-  //                 height: 24,
-  //                 color: Colors.black87,
-  //               )
-  //             else if (icon != null)
-  //               Icon(icon, color: Colors.black87),
-
-  //             const SizedBox(width: 12),
-  //             Text(title, style: const TextStyle(fontSize: 16)),
-  //           ],
-  //         ),
-  //         Switch(
-  //           value: value,
-  //           onChanged: onChanged,
-  //           activeColor: Colors.white,
-  //           activeTrackColor: const Color.fromARGB(255, 112, 246, 117),
-  //           inactiveTrackColor: const Color(0xFF787880).withOpacity(0.4),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildSwitchTile(
-  //   IconData icon,
-  //   String title,
-  //   bool value,
-  //   Function(bool) onChanged,
-  // ) {
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(vertical: 8),
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //       children: [
-  //         Row(
-  //           children: [
-  //             Icon(icon, color: Colors.black87),
-  //             const SizedBox(width: 12),
-  //             Text(title, style: const TextStyle(fontSize: 16)),
-  //           ],
-  //         ),
-  //         Switch(
-  //           value: value,
-  //           onChanged: onChanged,
-  //           activeColor: Colors.white,
-  //           activeTrackColor: const Color.fromARGB(255, 112, 246, 117),
-  //           // inactiveThumbColor: Colors.grey.shade300,
-  //           inactiveTrackColor: Color(0xFF787880).withOpacity(0.4),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildSubscriptionPlanCard() {
     return _buildCard(
@@ -536,10 +435,74 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                 );
               },
             ),
-            _buildQuickAction(Icons.logout, "Logout"),
+            // _buildQuickAction(Icons.logout, "Logout"),
+            _buildQuickAction(
+              Icons.logout,
+              "Logout",
+              onTap: () {
+                _showLogoutDialog(context);
+              },
+            ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildLogoutCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade300,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              "Are you sure you want to logout?",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _showLogoutDialog(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.redAccent,
+            ),
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm Logout"),
+          content: const Text("Are you sure you want to logout?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Get.to(ProfessionLogin());
+                // Navigator.of(context).pop();
+                // Implement actual logout logic here
+                print("User logged out");
+              },
+              child: const Text("Logout"),
+            ),
+          ],
+        );
+      },
     );
   }
 

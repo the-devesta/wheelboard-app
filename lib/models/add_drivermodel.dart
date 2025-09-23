@@ -8,8 +8,8 @@ class DriverModel {
   final String? vehicleNumber;
   final String? description;
   final bool? isDeclarationAccepted;
-  final List<File>? images;
-  final String? partnerId;
+  final File? image; // ✅ single file instead of List<File>
+  final int? partnerId; // ✅ integer instead of String
 
   DriverModel({
     this.userId,
@@ -19,28 +19,21 @@ class DriverModel {
     this.vehicleNumber,
     this.description,
     this.isDeclarationAccepted,
-    this.images,
+    this.image,
     this.partnerId,
   });
 
-  // Convert to normal string fields (without file)
-  Map<String, String?> toJsonFields() {
-    final map = {
-      "UserId": userId,
-      "FullName": fullName,
-      "ContactNumber": contactNumber,
-      "VehicleType": vehicleType,
-      "VehicleNumber": vehicleNumber,
-      "Description": description,
-      "IsDeclarationAccepted": isDeclarationAccepted?.toString(),
-      "PartnerId": partnerId,
+  // Convert to normal string fields (backend expects text)
+  Map<String, String> toJsonFields() {
+    return {
+      "UserId": userId ?? "",
+      "FullName": fullName ?? "",
+      "ContactNumber": contactNumber ?? "",
+      "VehicleType": vehicleType ?? "",
+      "VehicleNumber": vehicleNumber ?? "",
+      "Description": description ?? "",
+      "IsDeclarationAccepted": isDeclarationAccepted?.toString() ?? "false",
+      "PartnerId": partnerId?.toString() ?? "0",
     };
-
-    return map;
-  }
-
-  // Get image files
-  List<File>? getImageFiles() {
-    return images;
   }
 }

@@ -7,6 +7,10 @@ import '../utils/constants.dart';
 class LoginController extends GetxController {
   var isLoading = false.obs;
 
+  /// 👁️ Password visibility toggle
+  var obscurePassword = true.obs;
+
+  /// Login API
   Future<Map<String, dynamic>?> login(String phone, String password) async {
     isLoading.value = true;
 
@@ -34,5 +38,10 @@ class LoginController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// 👁️ Toggle password visibility
+  void togglePasswordVisibility() {
+    obscurePassword.value = !obscurePassword.value;
   }
 }

@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
+import 'package:wheelboard/screens/driver_profile.dart';
+
 import 'add_vehicle.dart';
 import 'add_new_driver.dart';
-import 'package:get/get.dart';
+import '../controllers/fleet_controller.dart'; // adjust the path
+import '../utils/session_manager.dart';
+
+// 🌐 Replace with your API base URL
+const String baseImageUrl = "https://wheelboardapi.addonshareware.com/";
+
+String getFullImageUrl(String? path) {
+  if (path == null || path.isEmpty) return "";
+  return "$baseImageUrl$path";
+}
 
 class FleetVehiclesScreen extends StatefulWidget {
   @override
@@ -10,21 +22,56 @@ class FleetVehiclesScreen extends StatefulWidget {
 }
 
 class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
-  bool isVehicleSelected = true; // Track tab selection
+  bool isVehicleSelected = false;
+  final driverController = Get.put(DriverController());
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessionAndFetchDrivers();
+  }
+
+  Future<void> _loadSessionAndFetchDrivers() async {
+    final sessionManager = SessionManager();
+    final token = await sessionManager.getString("authToken");
+    final userId = await sessionManager.getString("userId");
+
+    // print(userId);
+    // print(token);
+
+    if (token != null && userId != null) {
+      driverController.fetchDrivers(userId, token);
+    } else {
+      debugPrint("Token or UserId is null");
+    }
+  }
+
+  Future<void> _FetchVehicles() async {
+    final sessionManager = SessionManager();
+    final token = await sessionManager.getString("authToken");
+    final userId = await sessionManager.getString("userId");
+
+    // print(userId);
+    // print(token);
+
+    if (token != null && userId != null) {
+      driverController.fetchVehicles(userId, token);
+    } else {
+      debugPrint("Token or UserId is null");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     return Stack(
       children: [
-        // Background image behind everything
+        // Background
         Positioned.fill(
-          child: SvgPicture.asset(
-            'assets/bgDesign.svg',
-            fit: BoxFit.cover, // ensure it fills the whole screen
-          ),
+          child: SvgPicture.asset('assets/bgDesign.svg', fit: BoxFit.cover),
         ),
-        // Foreground UI inside Scaffold
+
+        // Header
         Positioned(
           top: screenHeight * 0.08,
           left: 0,
@@ -36,7 +83,6 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Centered label
                   const Center(
                     child: Text(
                       "Fleet",
@@ -47,8 +93,6 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                       ),
                     ),
                   ),
-
-                  // Left icon
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Container(
@@ -58,21 +102,14 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                         shape: BoxShape.circle,
                         color: Colors.white,
                       ),
-                      padding: EdgeInsets.all(6),
-                      child: Image.asset(
-                        'assets/logobg.png', // Replace with your asset
-                        fit: BoxFit.contain,
-                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: Image.asset('assets/logobg.png'),
                     ),
                   ),
-
-                  // Right icon
                   Align(
                     alignment: Alignment.centerRight,
                     child: IconButton(
-                      onPressed: () {
-                        // Handle search press
-                      },
+                      onPressed: () {},
                       icon: const Icon(Icons.search, color: Colors.white),
                     ),
                   ),
@@ -82,16 +119,15 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
           ),
         ),
 
+        // Body
         Scaffold(
           backgroundColor: Colors.transparent,
           body: Container(
-            padding: EdgeInsets.only(top: 10),
-            margin: EdgeInsets.only(
-              top: screenHeight * 0.18,
-            ), // push below header if needed
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.only(top: 10),
+            margin: EdgeInsets.only(top: screenHeight * 0.18),
+            decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(24),
                 topRight: Radius.circular(24),
               ),
@@ -103,12 +139,81 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                 _filterButton(),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: isVehicleSelected
-                        ? _vehicleCards()
-                        : _driverCards(),
-                  ),
+                  child: isVehicleSelected
+                      ? Obx(() {
+                          if (driverController.isLoading.value) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          if (driverController.vehicles.isEmpty) {
+                            return const Center(
+                              child: Text("No vehicles found"),
+                            );
+                          }
+                          return ListView.builder(
+                            padding: const EdgeInsets.all(12),
+                            itemCount: driverController.vehicles.length,
+                            itemBuilder: (context, index) {
+                              final vehicle = driverController.vehicles[index];
+                              final imageUrl = getFullImageUrl(
+                                vehicle.imageUrls.first,
+                              );
+
+                              return _vehicleCard(
+                                status: vehicle.status,
+                                statusColor: Colors.blue,
+                                image: imageUrl.isNotEmpty
+                                    ? imageUrl
+                                    : 'assets/truckImg.png',
+                                title: vehicle.vehicleModel,
+                                type: vehicle.vehicleType,
+                                driver: vehicle.ownershipType,
+                                plate: vehicle.vehicleModel,
+                                rating: 0,
+                                borderColor: Colors.blue,
+                              );
+                            },
+                          );
+                        })
+                      : Obx(() {
+                          if (driverController.isLoading.value) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          if (driverController.drivers.isEmpty) {
+                            return const Center(
+                              child: Text("No drivers found"),
+                            );
+                          }
+
+                          return ListView.builder(
+                            padding: const EdgeInsets.all(12),
+                            itemCount: driverController.drivers.length,
+                            itemBuilder: (context, index) {
+                              final driver = driverController.drivers[index];
+                              final imageUrl = getFullImageUrl(
+                                driver.driverImagePath,
+                              );
+
+                              return _vehicleCard(
+                                status: "Available",
+                                statusColor: Color(0xFF00B894),
+                                image: imageUrl.isNotEmpty
+                                    ? imageUrl
+                                    : "assets/google.png",
+                                title: driver.fullName,
+                                type: "Driver",
+                                driver: "Assigned: ${driver.description}",
+                                plate: driver.vehicleNumber,
+                                rating: 0,
+                                borderColor: Colors.green,
+                                onTap: () => {Get.to(DriverProfileScreen())},
+                              );
+                            },
+                          );
+                        }),
                 ),
               ],
             ),
@@ -141,6 +246,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     );
   }
 
+  // --- Widgets ---
   Widget _tabBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -155,9 +261,11 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
           children: [
             _segmentedTabItem("Drivers", !isVehicleSelected, () {
               setState(() => isVehicleSelected = false);
+              _loadSessionAndFetchDrivers();
             }),
             _segmentedTabItem("Vehicles", isVehicleSelected, () {
               setState(() => isVehicleSelected = true);
+              _FetchVehicles();
             }),
           ],
         ),
@@ -211,72 +319,6 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     );
   }
 
-  List<Widget> _vehicleCards() {
-    return [
-      _vehicleCard(
-        status: "In-Transit",
-        statusColor: Colors.green,
-        image: 'assets/truckImg.png',
-        title: "Tata-2518",
-        type: "Owned",
-        driver: "Deepak Kumar",
-        plate: "TX-23-HJ9342",
-        rating: 4.2,
-        borderColor: Colors.green,
-      ),
-      _vehicleCard(
-        status: "Assigned",
-        statusColor: Colors.blue,
-        image: 'assets/truckImg.png',
-        title: "Tata-2007",
-        type: "Owned",
-        driver: "Deepak Kumar",
-        plate: "MH-12-AB-1234",
-        rating: 4.7,
-        borderColor: Colors.blue,
-      ),
-      _vehicleCard(
-        status: "Available",
-        statusColor: Colors.orange,
-        image: 'assets/truckImg.png',
-        title: "Omni van-1999",
-        type: "Attached",
-        driver: "",
-        plate: "CA-55-XY9782",
-        rating: 4.7,
-        borderColor: Colors.orange,
-      ),
-      const SizedBox(height: 80),
-    ];
-  }
-
-  List<Widget> _driverCards() {
-    return [
-      _vehicleCard(
-        status: "On Duty",
-        statusColor: Colors.green,
-        image: 'assets/google.png',
-        title: "Deepak Kumar",
-        type: "Driver",
-        driver: "Assigned: Tata-2518",
-        plate: "TX-23-HJ9342",
-        rating: 4.8,
-        borderColor: Colors.green,
-      ),
-      _vehicleCard(
-        status: "Available",
-        statusColor: Colors.orange,
-        image: 'assets/google.png',
-        title: "Amit Sharma",
-        type: "Driver",
-        driver: "Assigned: None",
-        plate: "N/A",
-        rating: 4.5,
-        borderColor: Colors.orange,
-      ),
-    ];
-  }
-
   Widget _vehicleCard({
     required String status,
     required Color statusColor,
@@ -287,72 +329,158 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     required String plate,
     required double rating,
     required Color borderColor,
+    VoidCallback? onTap, // 👈 Add onTap
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: borderColor),
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Column(
+    final isNetwork = image.startsWith("http");
+
+    return GestureDetector(
+      onTap: onTap, // 👈 Trigger tap
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: const Color(0xFFF4F4F4),
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Image.asset(image, height: 50, width: 60, fit: BoxFit.cover),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "$title  $type",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+              // Left: Status + Image
+              Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.work, size: 14, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(
+                          status,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                if (driver.isNotEmpty)
-                  Text(driver, style: const TextStyle(fontSize: 13)),
-                Text("Plate: $plate", style: const TextStyle(fontSize: 13)),
-                const SizedBox(height: 4),
-                Row(
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(40),
+                    child: isNetwork
+                        ? Image.network(
+                            image,
+                            height: 60,
+                            width: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.person, size: 50),
+                          )
+                        : Image.asset(
+                            image,
+                            height: 60,
+                            width: 60,
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(width: 12),
+
+              // Center: Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.star, color: Colors.red, size: 16),
                     Text(
-                      rating.toString(),
-                      style: const TextStyle(fontSize: 13),
+                      "$title $type",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Plate: $plate",
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            "Shipment",
+                            style: TextStyle(
+                              color: Colors.teal,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.star,
+                                size: 14,
+                                color: Colors.redAccent,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                rating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          Column(
-            children: const [
-              Icon(Icons.favorite_border, color: Colors.red),
-              SizedBox(height: 8),
-              Icon(Icons.edit, size: 18),
+              ),
+
+              // Right: action icons
+              Column(
+                children: [
+                  SvgPicture.asset('assets/heart.svg', width: 32, height: 32),
+                  const SizedBox(height: 12),
+                  const Icon(Icons.edit, color: Colors.red, size: 18),
+                ],
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right, color: Colors.black54),
             ],
           ),
-          const SizedBox(width: 8),
-          const Icon(Icons.arrow_forward_ios, size: 14),
-        ],
+        ),
       ),
     );
   }
