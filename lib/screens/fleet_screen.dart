@@ -8,14 +8,6 @@ import 'add_new_driver.dart';
 import '../controllers/fleet_controller.dart'; // adjust the path
 import '../utils/session_manager.dart';
 
-// 🌐 Replace with your API base URL
-const String baseImageUrl = "https://wheelboardapi.addonshareware.com/";
-
-String getFullImageUrl(String? path) {
-  if (path == null || path.isEmpty) return "";
-  return "$baseImageUrl$path";
-}
-
 class FleetVehiclesScreen extends StatefulWidget {
   @override
   State<FleetVehiclesScreen> createState() => _FleetVehiclesScreenState();
@@ -156,9 +148,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                             itemCount: driverController.vehicles.length,
                             itemBuilder: (context, index) {
                               final vehicle = driverController.vehicles[index];
-                              final imageUrl = getFullImageUrl(
-                                vehicle.imageUrls.first,
-                              );
+                              final imageUrl = vehicle.imageUrls.first;
 
                               return _vehicleCard(
                                 status: vehicle.status,
@@ -193,10 +183,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                             itemCount: driverController.drivers.length,
                             itemBuilder: (context, index) {
                               final driver = driverController.drivers[index];
-                              final imageUrl = getFullImageUrl(
-                                driver.driverImagePath,
-                              );
-
+                              final imageUrl = driver.driverImagePath;
                               return _vehicleCard(
                                 status: "Available",
                                 statusColor: Color(0xFF00B894),

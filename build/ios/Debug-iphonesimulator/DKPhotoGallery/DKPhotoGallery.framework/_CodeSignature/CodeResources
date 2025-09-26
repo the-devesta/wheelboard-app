@@ -6,7 +6,7 @@
 	<dict>
 		<key>DKPhotoGallery.bundle/Assets.car</key>
 		<data>
-		HJi+hvaeMZc+IUuKjZ70V4PRqKM=
+		bdLo4GghayO3xEuIgtoRCExEpnA=
 		</data>
 		<key>DKPhotoGallery.bundle/Base.lproj/DKPhotoGallery.strings</key>
 		<dict>
@@ -57,11 +57,11 @@
 		</data>
 		<key>Modules/DKPhotoGallery.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo</key>
 		<data>
-		fRqi+SigBvw/sQ3p2k1yb5c1m3E=
+		NejX7Yz7J8NZC12D3wGTKta7ohc=
 		</data>
 		<key>Modules/DKPhotoGallery.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo</key>
 		<data>
-		9h9D4z7wjLr2nnZJ+ai1J0Zppos=
+		LdvvScMnyPdzZwGEVcrtyWUkhVs=
 		</data>
 		<key>Modules/DKPhotoGallery.swiftmodule/arm64-apple-ios-simulator.abi.json</key>
 		<data>
@@ -98,11 +98,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			HJi+hvaeMZc+IUuKjZ70V4PRqKM=
+			bdLo4GghayO3xEuIgtoRCExEpnA=
 			</data>
 			<key>hash2</key>
 			<data>
-			xFMhDrZu1GS0f4DTYncM0No81+osgmIE2pWerYXgeB0=
+			pxsAxu2F93EFNnvb3J0xPA0Fgw0OscNDvkYS1eRhDRs=
 			</data>
 		</dict>
 		<key>DKPhotoGallery.bundle/Base.lproj/DKPhotoGallery.strings</key>
@@ -192,22 +192,22 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			fRqi+SigBvw/sQ3p2k1yb5c1m3E=
+			NejX7Yz7J8NZC12D3wGTKta7ohc=
 			</data>
 			<key>hash2</key>
 			<data>
-			DQLWK8C6rOV8XCrbci3Hdm3aPKMzLOrqBKXty3LflDE=
+			7BeWufbMRYhvSSp9obPjT9F/xf1Lo2LWulp5B405Mj8=
 			</data>
 		</dict>
 		<key>Modules/DKPhotoGallery.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo</key>
 		<dict>
 			<key>hash</key>
 			<data>
-			9h9D4z7wjLr2nnZJ+ai1J0Zppos=
+			LdvvScMnyPdzZwGEVcrtyWUkhVs=
 			</data>
 			<key>hash2</key>
 			<data>
-			Iam9+TKD30cAsv3NShYK4cBz0YqOhAnvKooA6NdZ83w=
+			/D2LmSvQ3Bmbyd7IpBzbYF40DOPKK212Fc3jkXkYP44=
 			</data>
 		</dict>
 		<key>Modules/DKPhotoGallery.swiftmodule/arm64-apple-ios-simulator.abi.json</key>

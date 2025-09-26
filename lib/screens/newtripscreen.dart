@@ -1,7 +1,134 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:wheelboard/commonwidget/app_textfield.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 
+/// ----------------------------
+/// Google Places Suggestion Model
+/// ----------------------------
+class Suggestion {
+  final String placeId;
+  final String description;
+  final String sector;
+  final String city;
+  final String state;
+  final String country;
+  final String subTitle;
+
+  Suggestion({
+    required this.placeId,
+    required this.description,
+    required this.sector,
+    required this.city,
+    required this.state,
+    required this.country,
+    required this.subTitle,
+  });
+
+  factory Suggestion.fromPrediction(Map<String, dynamic> p) {
+    final terms = (p['terms'] as List<dynamic>?) ?? [];
+    final sector = _getTerm(terms, 4);
+    final city = _getTerm(terms, 3);
+    final state = _getTerm(terms, 2);
+    final country = _getTerm(terms, 1);
+
+    final parts = [
+      if (sector.isNotEmpty) sector,
+      if (city.isNotEmpty) city,
+      if (state.isNotEmpty) state,
+    ];
+    final subTitle =
+        (parts.join(', ') + (country.isNotEmpty ? ', $country' : '')).trim();
+
+    return Suggestion(
+      placeId: p['place_id'] as String? ?? '',
+      description: (p['description'] as String? ?? '').trim(),
+      sector: sector,
+      city: city,
+      state: state,
+      country: country,
+      subTitle: subTitle,
+    );
+  }
+
+  static String _getTerm(List<dynamic> terms, int indexFromEnd) {
+    final index = terms.length - indexFromEnd;
+    if (index >= 0 && index < terms.length) {
+      final val = terms[index];
+      if (val is Map && val['value'] != null) return val['value'] as String;
+    }
+    return '';
+  }
+}
+
+/// ----------------------------
+/// Google Places Service
+/// ----------------------------
+class PlacesService {
+  final String apiKey;
+  final http.Client client;
+
+  PlacesService({required this.apiKey, http.Client? client})
+    : client = client ?? http.Client();
+
+  Future<List<Suggestion>> fetchSuggestions(String input) async {
+    final encoded = Uri.encodeQueryComponent(input);
+    final url =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+        '?input=$encoded'
+        '&types=establishment|geocode'
+        '&language=en'
+        '&components=country:in'
+        '&key=$apiKey';
+
+    final resp = await client.get(Uri.parse(url));
+    if (resp.statusCode != 200) {
+      throw Exception('Failed: ${resp.statusCode}');
+    }
+
+    final result = json.decode(resp.body) as Map<String, dynamic>;
+    final status = result['status'] as String? ?? 'UNKNOWN';
+
+    if (status == 'OK') {
+      final preds = result['predictions'] as List<dynamic>;
+      return preds
+          .map((p) => Suggestion.fromPrediction(p as Map<String, dynamic>))
+          .toList();
+    } else if (status == 'ZERO_RESULTS') {
+      return [];
+    } else {
+      throw Exception(result['error_message'] ?? 'Places API error: $status');
+    }
+  }
+
+  Future<Map<String, double>> fetchPlaceLocation(String placeId) async {
+    final url =
+        'https://maps.googleapis.com/maps/api/place/details/json'
+        '?place_id=${Uri.encodeQueryComponent(placeId)}'
+        '&fields=geometry'
+        '&key=$apiKey';
+
+    final resp = await client.get(Uri.parse(url));
+    if (resp.statusCode != 200) throw Exception('HTTP ${resp.statusCode}');
+    final body = json.decode(resp.body) as Map<String, dynamic>;
+    final status = body['status'] as String?;
+    if (status == 'OK') {
+      final loc =
+          body['result']['geometry']['location'] as Map<String, dynamic>;
+      return {
+        'lat': (loc['lat'] as num).toDouble(),
+        'lng': (loc['lng'] as num).toDouble(),
+      };
+    } else {
+      throw Exception(body['error_message'] ?? 'Details error: $status');
+    }
+  }
+}
+
+/// ----------------------------
+/// New Trip Screen
+/// ----------------------------
 class Newtripscreen extends StatefulWidget {
   const Newtripscreen({super.key});
 
@@ -19,6 +146,13 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
   final TextEditingController deliveryController = TextEditingController();
 
   final Color fieldBorderColor = const Color.fromARGB(255, 199, 198, 198);
+
+  final PlacesService placesService = PlacesService(
+    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+  ); // <-- put your key here
+
+  List<Suggestion> pickupSuggestions = [];
+  List<Suggestion> deliverySuggestions = [];
 
   @override
   Widget build(BuildContext context) {
@@ -80,18 +214,10 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
               ),
               const SizedBox(height: 16),
 
-              _buildTextField(
-                "Pickup Location",
-                "Enter pickup location",
-                pickupController,
-              ),
+              _buildPickupField(),
               const SizedBox(height: 16),
 
-              _buildTextField(
-                "Delivery Location",
-                "Enter delivery location",
-                deliveryController,
-              ),
+              _buildDeliveryField(),
               const SizedBox(height: 16),
 
               _buildDatePicker(context),
@@ -109,7 +235,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Submit action here
+                    // Submit action
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.buttonBg,
@@ -133,6 +259,123 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPickupField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Pickup Location"),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: pickupController,
+          decoration: _inputDecoration(
+            hint: "Enter pickup location",
+            borderColor: fieldBorderColor,
+          ),
+          onChanged: (value) async {
+            if (value.isNotEmpty) {
+              final results = await placesService.fetchSuggestions(value);
+              setState(() => pickupSuggestions = results);
+            } else {
+              setState(() => pickupSuggestions = []);
+            }
+          },
+        ),
+        if (pickupSuggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: fieldBorderColor),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: pickupSuggestions.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final s = pickupSuggestions[index];
+                return ListTile(
+                  title: Text(s.description),
+                  subtitle: Text(s.subTitle),
+                  onTap: () async {
+                    setState(() {
+                      pickupController.text = s.description;
+                      pickupSuggestions.clear();
+                    });
+
+                    // Optional: fetch lat/lng
+                    final loc = await placesService.fetchPlaceLocation(
+                      s.placeId,
+                    );
+                    debugPrint("Pickup LatLng: $loc");
+                  },
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Delivery Location"),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: deliveryController,
+          decoration: _inputDecoration(
+            hint: "Enter delivery location",
+            borderColor: fieldBorderColor,
+          ),
+          onChanged: (value) async {
+            if (value.isNotEmpty) {
+              final results = await placesService.fetchSuggestions(value);
+              setState(() => deliverySuggestions = results); // ✅ fixed
+            } else {
+              setState(() => deliverySuggestions = []);
+            }
+          },
+        ),
+        if (deliverySuggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: fieldBorderColor),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: deliverySuggestions.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final s = deliverySuggestions[index];
+                return ListTile(
+                  title: Text(s.description),
+                  subtitle: Text(s.subTitle),
+                  onTap: () async {
+                    setState(() {
+                      deliveryController.text = s.description;
+                      deliverySuggestions.clear();
+                    });
+
+                    final loc = await placesService.fetchPlaceLocation(
+                      s.placeId,
+                    );
+                    debugPrint("Delivery LatLng: $loc");
+                  },
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 
