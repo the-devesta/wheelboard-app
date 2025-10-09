@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
@@ -257,7 +256,7 @@ class _TripPageState extends State<TripPage>
             const SizedBox(height: 4),
             ElevatedButton(
               onPressed: () {
-                Get.to(const Newtripscreen());
+                Get.to(Newtripscreen());
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.buttonBg,
