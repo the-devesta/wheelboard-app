@@ -11,7 +11,6 @@ import 'package:country_picker/country_picker.dart';
 import 'complete_company_profile.dart';
 import '../models/company_signupmodel.dart';
 import '../utils/session_manager.dart';
-import 'forgot_password.dart';
 
 class Signup extends StatelessWidget {
   Signup({super.key});
@@ -47,6 +46,9 @@ class Signup extends StatelessWidget {
 
   Widget _buildWhiteCard(BuildContext context) {
     return Container(
+      constraints: BoxConstraints(
+        maxWidth: 500, // Limit maximum width for better responsiveness
+      ),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -62,26 +64,25 @@ class Signup extends StatelessWidget {
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
           ),
-          const Text(
+          Text(
             "Register as Company",
-            style: TextStyle(
-              fontSize: 24,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF333333),
+              color: const Color(0xFF333333),
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text("Already have an account? "),
+              Text("Already have an account? ", style: Theme.of(context).textTheme.bodyMedium),
               GestureDetector(
                 onTap: () {
                   Get.to(ProfessionLogin());
                 },
-                child: const Text(
+                child: Text(
                   "Login",
-                  style: TextStyle(
-                    color: Color(0xFFF36B5A),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFF36B5A),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -89,7 +90,7 @@ class Signup extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          _buildFormFields(),
+          _buildFormFields(context),
           _buildRegisterButton(),
           const SizedBox(height: 16),
           _buildDivider(),
@@ -100,27 +101,27 @@ class Signup extends StatelessWidget {
     );
   }
 
-  Widget _buildFormFields() {
+  Widget _buildFormFields(BuildContext context) {
     return Obx(
       () => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(width: double.infinity, child: Text("Company Name")),
-          const SizedBox(height: 5),
+          Text("Company Name", style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 8),
           AppTextField(
             controller: companyController,
             hintText: 'Enter company name',
           ),
           const SizedBox(height: 16),
-          const SizedBox(width: double.infinity, child: Text("Email")),
-          const SizedBox(height: 5),
+          Text("Email", style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 8),
           AppTextField(
             controller: emailController,
             hintText: 'Enter your email',
           ),
           const SizedBox(height: 16),
-          const SizedBox(width: double.infinity, child: Text("Phone Number")),
-          const SizedBox(height: 5),
+          Text("Phone Number", style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 8),
           AppTextField(
             controller: phoneController,
             hintText: "Enter your number",
@@ -143,7 +144,7 @@ class Signup extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      selectedCountry.value?.flagEmoji ?? '🌐',
+                      selectedCountry.value.flagEmoji,
                       style: const TextStyle(fontSize: 20),
                     ),
                     const Icon(Icons.arrow_drop_down),
@@ -153,8 +154,8 @@ class Signup extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const SizedBox(width: double.infinity, child: Text("Set Password")),
-          const SizedBox(height: 5),
+          Text("Set Password", style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 8),
           AppTextField(
             controller: passwordController,
             hintText: 'Enter your password',
@@ -169,11 +170,8 @@ class Signup extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const SizedBox(
-            width: double.infinity,
-            child: Text("Select Business Category"),
-          ),
-          const SizedBox(height: 5),
+          Text("Select Business Category", style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 8),
           AppDropdown<String>(
             value: selectedCompanyType.value,
             hintText: "Choose your country",

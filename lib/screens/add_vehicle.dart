@@ -429,7 +429,14 @@ import '../controllers/add_new_vehicle_controller.dart';
 import '../utils/session_manager.dart';
 
 class AddVehicleScreen extends StatefulWidget {
-  const AddVehicleScreen({super.key});
+  final VehicleModel? vehicleData; // ✅ For edit mode
+  final bool isEditMode; // ✅ To determine if it's add or edit
+  
+  const AddVehicleScreen({
+    super.key,
+    this.vehicleData,
+    this.isEditMode = false,
+  });
 
   @override
   State<AddVehicleScreen> createState() => _AddVehicleScreenState();
@@ -456,6 +463,22 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     AddVehicleController(),
   );
 
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Populate fields if in edit mode
+    if (widget.isEditMode && widget.vehicleData != null) {
+      final vehicle = widget.vehicleData!;
+      _vehicleModelController.text = vehicle.vehicleModel ?? '';
+      _vehicleNumberController.text = vehicle.vehicleNumber ?? '';
+      _manufacturingYearController.text = vehicle.manufacturingYear?.toString() ?? '';
+      _descriptionController.text = vehicle.description ?? '';
+      _ownershipType = vehicle.ownershipType ?? "Owned";
+      _vehicleType = vehicle.vehicleType;
+      _isDeclarationAccepted = vehicle.isDeclarationAccepted ?? false;
+    }
+  }
+
   Future<void> _pickImages() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
@@ -481,7 +504,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
     // Build model
     final vehicleModel = VehicleModel(
-      userId: userId, // TODO: Replace with logged-in userId
+      userId: userId,
+      vehicleId: widget.isEditMode ? widget.vehicleData?.vehicleId : null,
       vehicleModel: _vehicleModelController.text,
       vehicleNumber: _vehicleNumberController.text,
       manufacturingYear: int.tryParse(_manufacturingYearController.text),
@@ -492,7 +516,12 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       images: files,
     );
 
-    final success = await _vehicleController.addVehicle(vehicleModel, token);
+    bool success;
+    if (widget.isEditMode) {
+      success = await _vehicleController.updateVehicle(vehicleModel, token);
+    } else {
+      success = await _vehicleController.addVehicle(vehicleModel, token);
+    }
 
     if (success) {
       Navigator.pop(context);
@@ -507,7 +536,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          "Add new Vehicle",
+          widget.isEditMode ? "Edit Vehicle" : "Add new Vehicle",
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,

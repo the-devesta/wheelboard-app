@@ -12,9 +12,11 @@ class API {
   static const String getUserProfile = 'api/User/user-profile';
   static const String userProfile = 'api/User/user-profile/{userId}';
   static const String addDriver = 'api/Transport/add-driver';
+  static const String updateDriver = 'api/Transport/update-driver';
   static const String getDrivers = 'api/Transport/drivers';
 
   static const String addVehicle = 'api/Transport/add-vehicle';
+  static const String updateVehicle = 'api/Transport/update-vehicle';
   static const String getVehicles = 'api/Transport/vehicle';
   static const String addTrip = 'api/Trip/add-trip';
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../utils/responsive_utils.dart';
 
 class BannerCarousel extends StatefulWidget {
   const BannerCarousel({super.key});
@@ -50,7 +51,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
       children: [
         /// Carousel
         SizedBox(
-          height: 120,
+          height: ResponsiveUtils.getResponsiveSpacing(context, small: 100, medium: 120, large: 140),
           child: PageView.builder(
             controller: _pageController,
             itemCount: images.length,
@@ -59,9 +60,11 @@ class _BannerCarouselState extends State<BannerCarousel> {
             },
             itemBuilder: (context, index) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: ResponsiveUtils.getResponsiveHorizontalPadding(context),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.getResponsiveBorderRadius(context, small: 16, medium: 18, large: 20),
+                  ),
                   child: Image.asset(
                     images[index],
                     fit: BoxFit.cover,
@@ -73,7 +76,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
           ),
         ),
 
-        const SizedBox(height: 8),
+        SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, small: 6, medium: 8, large: 10)),
 
         /// Pagination dots
         Row(
@@ -81,9 +84,13 @@ class _BannerCarouselState extends State<BannerCarousel> {
           children: List.generate(images.length, (index) {
             return AnimatedContainer(
               duration: Duration(milliseconds: 300),
-              margin: EdgeInsets.symmetric(horizontal: 4),
-              width: _currentPage == index ? 14 : 8,
-              height: 8,
+              margin: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.getResponsiveSpacing(context, small: 3, medium: 4, large: 5),
+              ),
+              width: _currentPage == index 
+                  ? ResponsiveUtils.getResponsiveSpacing(context, small: 12, medium: 14, large: 16)
+                  : ResponsiveUtils.getResponsiveSpacing(context, small: 6, medium: 8, large: 10),
+              height: ResponsiveUtils.getResponsiveSpacing(context, small: 6, medium: 8, large: 10),
               decoration: BoxDecoration(
                 color: _currentPage == index
                     ? Colors.teal

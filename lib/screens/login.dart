@@ -322,9 +322,6 @@ class ProfessionLogin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(0),
@@ -334,38 +331,41 @@ class ProfessionLogin extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: screenHeight),
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+            ),
             child: IntrinsicHeight(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    Image.asset(
-                      'assets/mainlogo.png',
-                      height: screenHeight * 0.12,
+                    Flexible(
+                      child: Image.asset(
+                        'assets/mainlogo.png',
+                        height: 120,
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                    SizedBox(height: screenHeight * 0.01),
+                    const SizedBox(height: 16),
                     Text(
                       "Sign in to your\nAccount",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.065,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.01),
+                    const SizedBox(height: 8),
                     Text(
                       "Enter your Phone no. and password to log in",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.black54,
-                        fontSize: screenWidth * 0.038,
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.03),
+                    const SizedBox(height: 32),
                     Container(
                       width: double.infinity,
-                      padding: EdgeInsets.all(screenWidth * 0.05),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -378,18 +378,17 @@ class ProfessionLogin extends StatelessWidget {
                           _socialButton(
                             "Continue with Google",
                             "assets/google.svg",
-                            screenWidth,
                           ),
-                          SizedBox(height: screenHeight * 0.03),
-                          _buildDivider(screenWidth),
-                          SizedBox(height: screenHeight * 0.03),
+                          const SizedBox(height: 24),
+                          _buildDivider(context),
+                          const SizedBox(height: 24),
 
                           /// 📌 Phone Number
                           AppTextField(
                             hintText: "Enter your phone number",
                             controller: phoneController,
                           ),
-                          SizedBox(height: screenHeight * 0.03),
+                          const SizedBox(height: 24),
 
                           /// 📌 Password with Eye Toggle (Obx)
                           Obx(
@@ -413,7 +412,7 @@ class ProfessionLogin extends StatelessWidget {
                             ),
                           ),
 
-                          SizedBox(height: screenHeight * 0.01),
+                          const SizedBox(height: 8),
 
                           /// 📌 Remember me + Forgot Password
                           Row(
@@ -425,9 +424,7 @@ class ProfessionLogin extends StatelessWidget {
                                   Checkbox(value: false, onChanged: (_) {}),
                                   Text(
                                     "Remember me",
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.035,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
                               ),
@@ -437,27 +434,26 @@ class ProfessionLogin extends StatelessWidget {
                                 },
                                 child: Text(
                                   "Forgot Password ?",
-                                  style: TextStyle(
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: AppColors.buttonBg,
-                                    fontSize: screenWidth * 0.035,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          SizedBox(height: screenHeight * 0.02),
+                          const SizedBox(height: 16),
 
                           /// 📌 Login Button
-                          _buildLoginButton(screenWidth),
-                          SizedBox(height: screenHeight * 0.03),
+                          _buildLoginButton(),
+                          const SizedBox(height: 24),
 
                           /// 📌 Signup Redirect
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                "Don’t have an account?",
-                                style: TextStyle(fontSize: screenWidth * 0.035),
+                                "Don't have an account?",
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
                               const SizedBox(width: 4),
                               GestureDetector(
@@ -466,20 +462,19 @@ class ProfessionLogin extends StatelessWidget {
                                 },
                                 child: Text(
                                   "Sign Up",
-                                  style: TextStyle(
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.red,
-                                    fontSize: screenWidth * 0.035,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          SizedBox(height: screenHeight * 0.02),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.04),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -490,10 +485,10 @@ class ProfessionLogin extends StatelessWidget {
     );
   }
 
-  Widget _socialButton(String text, String asset, double screenWidth) {
+  Widget _socialButton(String text, String asset) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.black12),
@@ -502,13 +497,12 @@ class ProfessionLogin extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(asset, height: screenWidth * 0.06),
-          SizedBox(width: screenWidth * 0.03),
+          SvgPicture.asset(asset, height: 24),
+          const SizedBox(width: 12),
           Text(
             text,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: screenWidth * 0.04,
             ),
           ),
         ],
@@ -516,13 +510,13 @@ class ProfessionLogin extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider(double screenWidth) {
+  Widget _buildDivider(BuildContext context) {
     return Row(
       children: [
         const Expanded(child: Divider()),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-          child: Text("Or", style: TextStyle(fontSize: screenWidth * 0.035)),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text("Or", style: Theme.of(context).textTheme.bodySmall),
         ),
         const Expanded(child: Divider()),
       ],
@@ -596,7 +590,7 @@ class ProfessionLogin extends StatelessWidget {
   //   );
   // }
 
-  Widget _buildLoginButton(double screenWidth) {
+  Widget _buildLoginButton() {
     return Obx(
       () => SizedBox(
         width: double.infinity,
@@ -640,25 +634,24 @@ class ProfessionLogin extends StatelessWidget {
                 },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.buttonBg,
-            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.045),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
           child: loginController.isLoading.value
-              ? SizedBox(
-                  height: screenWidth * 0.05,
-                  width: screenWidth * 0.05,
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
                   child: CircularProgressIndicator(
                     color: Colors.white,
                     strokeWidth: 2,
                   ),
                 )
-              : Text(
+              : const Text(
                   "Log In",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: screenWidth * 0.045,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

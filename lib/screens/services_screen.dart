@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'banner_carousel.dart';
 import 'package:get/get.dart';
 import 'service_details.dart';
-import 'service_confirmation.dart';
-import 'enquiry_form_page.dart';
 import 'success_popup.dart';
 
 class ServicesScreen extends StatelessWidget {
@@ -29,9 +26,10 @@ class ServicesScreen extends StatelessWidget {
               children: [
                 // Search bar with filter icon
                 Expanded(
+                  flex: 3,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    height: 40,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -73,40 +71,44 @@ class ServicesScreen extends StatelessWidget {
                 const SizedBox(width: 12),
 
                 // Dropdown filter
-                Container(
-                  height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: 'All',
-                      items: ['All', 'Active', 'Inactive']
-                          .map(
-                            (label) => DropdownMenuItem(
-                              value: label,
-                              child: Text(
-                                label,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: 'All',
+                        isExpanded: true,
+                        items: ['All', 'Active', 'Inactive']
+                            .map(
+                              (label) => DropdownMenuItem(
+                                value: label,
+                                child: Text(
+                                  label,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        // Handle dropdown selection
-                      },
-                      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          // Handle dropdown selection
+                        },
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                      ),
                     ),
                   ),
                 ),
@@ -117,13 +119,14 @@ class ServicesScreen extends StatelessWidget {
           // Carousel Banner
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                "assets/service.png",
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
+            child: AspectRatio(
+              aspectRatio: 2.5,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  "assets/service.png",
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),

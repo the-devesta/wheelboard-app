@@ -7,6 +7,11 @@ import 'add_vehicle.dart';
 import 'add_new_driver.dart';
 import '../controllers/fleet_controller.dart'; // adjust the path
 import '../utils/session_manager.dart';
+import '../models/get_driver_model.dart';
+import '../models/get_vehicle_model.dart';
+import '../models/add_drivermodel.dart';
+import '../models/add_new_vehicle_model.dart';
+import 'dart:io';
 
 class FleetVehiclesScreen extends StatefulWidget {
   @override
@@ -162,6 +167,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                                 plate: vehicle.vehicleModel,
                                 rating: 0,
                                 borderColor: Colors.blue,
+                                vehicleData: vehicle, // ✅ Pass vehicle data for editing
                               );
                             },
                           );
@@ -196,6 +202,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                                 plate: driver.vehicleNumber,
                                 rating: 0,
                                 borderColor: Colors.green,
+                                driverData: driver, // ✅ Pass driver data for editing
                                 onTap: () => {Get.to(DriverProfileScreen())},
                               );
                             },
@@ -317,6 +324,8 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     required double rating,
     required Color borderColor,
     VoidCallback? onTap, // 👈 Add onTap
+    Driver? driverData, // ✅ For driver editing
+    Vehicle? vehicleData, // ✅ For vehicle editing
   }) {
     final isNetwork = image.startsWith("http");
 
@@ -460,7 +469,61 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                 children: [
                   SvgPicture.asset('assets/heart.svg', width: 32, height: 32),
                   const SizedBox(height: 12),
-                  const Icon(Icons.edit, color: Colors.red, size: 18),
+                  GestureDetector(
+                    onTap: () async {
+                      // ✅ Handle edit based on data type
+                      if (driverData != null) {
+                        // Edit Driver
+                        final sessionManager = SessionManager();
+                        final userId = await sessionManager.getString("userId");
+                        
+                        final editDriverModel = DriverModel(
+                          userId: userId,
+                          driverId: driverData.driverId,
+                          fullName: driverData.fullName,
+                          contactNumber: driverData.contactNumber,
+                          vehicleType: driverData.vehicleType,
+                          vehicleNumber: driverData.vehicleNumber,
+                          description: driverData.description,
+                          isDeclarationAccepted: driverData.isDeclarationAccepted,
+                          modifiedUserId: userId,
+                        );
+                        
+                        Get.to(AddNewDriverScreen(
+                          isEditMode: true,
+                          driverData: editDriverModel,
+                        ));
+                      } else if (vehicleData != null) {
+                        // Edit Vehicle
+                        final sessionManager = SessionManager();
+                        final userId = await sessionManager.getString("userId");
+                        
+                        // Convert image URLs to Files (if needed)
+                        List<File> imageFiles = [];
+                        // Note: For editing, we might not have the actual files
+                        // The user can select new images if needed
+                        
+                        final editVehicleModel = VehicleModel(
+                          userId: userId,
+                          vehicleId: vehicleData.vehicleId,
+                          vehicleModel: vehicleData.vehicleModel,
+                          vehicleNumber: vehicleData.vehicleNumber,
+                          manufacturingYear: vehicleData.manufacturingYear,
+                          ownershipType: vehicleData.ownershipType,
+                          vehicleType: vehicleData.vehicleType,
+                          description: vehicleData.description,
+                          isDeclarationAccepted: vehicleData.isDeclarationAccepted,
+                          images: imageFiles,
+                        );
+                        
+                        Get.to(AddVehicleScreen(
+                          isEditMode: true,
+                          vehicleData: editVehicleModel,
+                        ));
+                      }
+                    },
+                    child: const Icon(Icons.edit, color: Colors.red, size: 18),
+                  ),
                 ],
               ),
               const SizedBox(width: 8),

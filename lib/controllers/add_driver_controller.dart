@@ -42,4 +42,39 @@ class AddDriverController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  Future<bool> updateDriver(DriverModel driverModel, String token) async {
+    try {
+      isLoading.value = true;
+
+      final fields = driverModel.toJsonFields();
+      final File? imageFile = driverModel.image; // ✅ single image
+
+      final streamedResponse = await HttpHelper.uploadMultipart(
+        endpoint: API.updateDriver,
+        fields: fields,
+        files: imageFile != null ? [imageFile] : [], // ✅ only 1 file allowed
+        fieldKey: "Image", // ✅ must match backend
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        Get.snackbar("Success", "Driver updated successfully ✅");
+        return true;
+      } else {
+        print(
+          "Failed with status: ${response.statusCode} , body: ${response.body}",
+        );
+        Get.snackbar("Error", "Failed with status: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Something went wrong: $e");
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }

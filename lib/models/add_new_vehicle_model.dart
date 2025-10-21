@@ -49,6 +49,7 @@ import 'dart:io';
 
 class VehicleModel {
   final String? userId;
+  final String? vehicleId; // ✅ For update operations
   final String? vehicleModel;
   final String? vehicleNumber;
   final int? manufacturingYear; // keep as int
@@ -60,6 +61,7 @@ class VehicleModel {
 
   VehicleModel({
     this.userId,
+    this.vehicleId,
     this.vehicleModel,
     this.vehicleNumber,
     this.manufacturingYear,
@@ -75,6 +77,7 @@ class VehicleModel {
   Map<String, dynamic> toJsonFields() {
     return {
       "UserId": userId,
+      "VehicleId": vehicleId,
       "VehicleModel": vehicleModel,
       "VehicleNumber": vehicleNumber,
       "ManufacturingYear": manufacturingYear, // int directly

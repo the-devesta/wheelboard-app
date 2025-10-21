@@ -11,7 +11,14 @@ import '../models/add_drivermodel.dart';
 import '../utils/session_manager.dart';
 
 class AddNewDriverScreen extends StatefulWidget {
-  const AddNewDriverScreen({super.key});
+  final DriverModel? driverData; // ✅ For edit mode
+  final bool isEditMode; // ✅ To determine if it's add or edit
+  
+  const AddNewDriverScreen({
+    super.key,
+    this.driverData,
+    this.isEditMode = false,
+  });
 
   @override
   State<AddNewDriverScreen> createState() => _AddVehicleScreenState();
@@ -31,6 +38,22 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
   String? selectedVehicleType;
   bool isDeclarationAccepted = false;
   XFile? _pickedImage; // ✅ Single image only
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Populate fields if in edit mode
+    if (widget.isEditMode && widget.driverData != null) {
+      final driver = widget.driverData!;
+      driverNameController.text = driver.fullName ?? '';
+      contactNumberController.text = driver.contactNumber ?? '';
+      vehicleNumberController.text = driver.vehicleNumber ?? '';
+      descriptionController.text = driver.description ?? '';
+      partnerIdController.text = driver.partnerId?.toString() ?? '';
+      selectedVehicleType = driver.vehicleType;
+      isDeclarationAccepted = driver.isDeclarationAccepted ?? false;
+    }
+  }
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
@@ -71,6 +94,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
 
     final driverModel = DriverModel(
       userId: userId,
+      driverId: widget.isEditMode ? widget.driverData?.driverId : null,
       fullName: driverNameController.text.trim(),
       contactNumber: contactNumberController.text.trim(),
       vehicleType: selectedVehicleType,
@@ -79,12 +103,18 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
       isDeclarationAccepted: isDeclarationAccepted,
       image: imageFile, // ✅ single file
       partnerId: partnerId, // ✅ integer
+      modifiedUserId: userId, // ✅ For update operations
     );
 
     // 🔹 Add small delay (ensures async values + file stream ready)
     await Future.delayed(const Duration(milliseconds: 200));
 
-    bool isSuccess = await addDriverController.addDriver(driverModel, token);
+    bool isSuccess;
+    if (widget.isEditMode) {
+      isSuccess = await addDriverController.updateDriver(driverModel, token);
+    } else {
+      isSuccess = await addDriverController.addDriver(driverModel, token);
+    }
 
     if (isSuccess) {
       Navigator.of(context).pop();
@@ -134,7 +164,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          "Add new Driver",
+          widget.isEditMode ? "Edit Driver" : "Add new Driver",
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,

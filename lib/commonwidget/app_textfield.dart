@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:wheelboard/utils/responsive_utils.dart';
 
 class AppTextField extends StatelessWidget {
   final TextEditingController? controller;
@@ -51,9 +52,7 @@ class AppTextField extends StatelessWidget {
       onChanged: onChanged,
       readOnly: readOnly,
       onTap: onTap,
-      maxLines: obscureText
-          ? 1
-          : maxLines, // Ensure password fields are single line
+      maxLines: obscureText ? 1 : maxLines, // Ensure password fields are single line
       minLines: minLines,
       textAlign: textAlign,
       focusNode: focusNode,
@@ -66,31 +65,39 @@ class AppTextField extends StatelessWidget {
         suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(
-            8.0,
-          ), // Rounded corners for the border
+            ResponsiveUtils.getResponsiveBorderRadius(context),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context),
+          ),
           borderSide: BorderSide(color: Colors.grey.shade400, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context),
+          ),
           borderSide: BorderSide(
             color: Theme.of(context).primaryColor,
             width: 2.0,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context),
+          ),
           borderSide: BorderSide(color: Colors.red, width: 1.0),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context),
+          ),
           borderSide: BorderSide(color: Colors.red, width: 2.0),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 12.0,
-          horizontal: 16.0,
+        contentPadding: EdgeInsets.symmetric(
+          vertical: ResponsiveUtils.getResponsiveSpacing(context, small: 12, medium: 14, large: 16),
+          horizontal: ResponsiveUtils.getResponsiveSpacing(context, small: 12, medium: 14, large: 16),
         ),
         filled: true,
         fillColor: AppColors.background,

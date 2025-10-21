@@ -131,4 +131,43 @@ class AddVehicleController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  Future<bool> updateVehicle(VehicleModel vehicleModel, String token) async {
+    try {
+      isLoading.value = true;
+
+      // Collect fields (now Map<String, dynamic>)
+      final Map<String, dynamic> fields = vehicleModel.toJsonFields();
+      final List<File> files = vehicleModel.images ?? [];
+
+      // Call helper (make sure HttpHelper can handle dynamic fields)
+      final streamedResponse = await HttpHelper.uploadMultipart(
+        endpoint: API.updateVehicle,
+        fields: fields.map((k, v) => MapEntry(k, v?.toString() ?? "")),
+        // 🔑 Convert dynamic to String for multipart form-data
+        files: files,
+        fieldKey: "Images", // matches backend
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      // Convert streamed response
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        Get.snackbar("Success", "Vehicle updated successfully ✅");
+        return true;
+      } else {
+        Get.snackbar("Error", "Failed with status: ${response.statusCode}");
+        return false;
+      }
+    } catch (e, stack) {
+      // 🔹 Log exception with stacktrace
+      debugPrint("❌ Exception occurred: $e");
+      debugPrint("🪜 Stacktrace: $stack");
+      Get.snackbar("Error", "Something went wrong: $e");
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }
