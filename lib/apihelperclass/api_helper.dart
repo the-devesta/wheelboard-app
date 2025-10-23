@@ -26,11 +26,28 @@ class HttpHelper {
     Map<String, String>? headers,
   }) async {
     Uri uri = Uri.parse(baseUrl + endpoint);
-    return await http.post(
-      uri,
-      headers: headers ?? {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
+    
+    // Debug logging for release mode
+    print("🌐 API Request (Release Mode):");
+    print("🌐 URL: $uri");
+    print("🌐 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
+    print("🌐 Data: ${jsonEncode(data)}");
+    
+    try {
+      final response = await http.post(
+        uri,
+        headers: headers ?? {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+      
+      print("🌐 Response Status: ${response.statusCode}");
+      print("🌐 Response Body: ${response.body}");
+      
+      return response;
+    } catch (e) {
+      print("🌐 API Error: $e");
+      rethrow;
+    }
   }
 
   static Future<http.Response> putData({
