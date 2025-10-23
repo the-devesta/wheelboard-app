@@ -308,10 +308,11 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/complete_company_profile.dart';
 import 'package:wheelboard/screens/forgot_password.dart';
 import 'package:wheelboard/screens/service_provider_login.dart';
-import 'package:wheelboard/utils/session_manager.dart';
 import 'bottom_navigation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../controllers/login_controller.dart';
+import '../services/auth_service.dart';
+import '../widgets/custom_snackbar.dart';
 
 class ProfessionLogin extends StatelessWidget {
   ProfessionLogin({super.key});
@@ -598,38 +599,60 @@ class ProfessionLogin extends StatelessWidget {
           onPressed: loginController.isLoading.value
               ? null // Disable button while loading
               : () async {
+                  print("🔐 Starting login process...");
                   final responseData = await loginController.login(
                     phoneController.text.trim(),
                     passwordController.text.trim(),
                   );
 
+                  print("🔐 Login response: $responseData");
+                  
                   if (responseData != null) {
-                    final businessCategory = responseData['businessCategory'];
-                    final isProfileComplete = responseData['isProfileComplete'];
-                    final sessionManager = SessionManager();
-                    await sessionManager.saveString(
-                      "authToken",
-                      responseData['token'],
+                    final businessCategory = responseData['businessCategory'] ?? '';
+                    final isProfileComplete = responseData['isProfileComplete'] ?? false;
+                    final token = responseData['token'] ?? '';
+                    final userId = responseData['userId'] ?? '';
+                    
+                    print("🔐 Business Category: $businessCategory");
+                    print("🔐 Is Profile Complete: $isProfileComplete");
+                    print("🔐 Token: ${token.isNotEmpty ? 'Present' : 'Empty'}");
+                    print("🔐 UserId: $userId");
+                    
+                    // ✅ Use AuthService for login
+                    final authService = AuthService.to;
+                    final loginSuccess = await authService.login(
+                      token: token,
+                      userId: userId,
+                      userType: businessCategory,
                     );
-                    await sessionManager.saveString(
-                      "userId",
-                      responseData['userId'],
-                    );
+                    
+                    print("🔐 AuthService login result: $loginSuccess");
+
+                    if (loginSuccess) {
+                      SnackBarHelper.success("Login successful! Welcome back.");
+                    }
 
                     if (businessCategory == "Transport" && !isProfileComplete) {
+                      print("🔐 Navigating to CompanyCompleteProfile");
                       Get.to(
                         CompanyCompleteProfile(),
-                        arguments: {"userId": responseData['userId']},
+                        arguments: {"userId": userId},
                       );
                     } else if (businessCategory == "Service Provider" &&
                         !isProfileComplete) {
+                      print("🔐 Navigating to AlliedBusinessRegistrationScreen");
                       Get.to(
                         AlliedBusinessRegistrationScreen(),
-                        arguments: {"userId": responseData['userId']},
+                        arguments: {"userId": userId},
                       );
                     } else {
-                      Get.offAll(() => BottomNavScreen());
+                      // ✅ Navigate to home screen for complete profiles
+                      print("🔐 Navigating to BottomNavScreen (Home)");
+                      Get.offAll(() => const BottomNavScreen());
                     }
+                  } else {
+                    // ✅ Show error if login fails
+                    SnackBarHelper.error("Invalid credentials. Please try again.");
                   }
                 },
           style: ElevatedButton.styleFrom(
@@ -658,5 +681,14 @@ class ProfessionLogin extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ProfessionLogin();
   }
 }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
-import 'package:wheelboard/screens/login.dart';
+import 'package:wheelboard/screens/PreLogin/onboarding_screen.dart';
+import 'package:wheelboard/services/auth_service.dart';
+import 'package:wheelboard/widgets/custom_snackbar.dart';
 import 'edit_company_profile.dart';
 import 'switch_profile_popup.dart';
 
@@ -429,8 +431,8 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                   onSwitchToBusiness: () {
                     print("Switching to Business Account...");
                   },
-                  onLogout: () {
-                    print("Logging out...");
+                  onLogout: () async {
+                    await _performLogout();
                   },
                 );
               },
@@ -449,36 +451,6 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     );
   }
 
-  Widget _buildLogoutCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red.shade300,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Text(
-              "Are you sure you want to logout?",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _showLogoutDialog(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.redAccent,
-            ),
-            child: const Text("Logout"),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -492,11 +464,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
               child: const Text("Cancel"),
             ),
             TextButton(
-              onPressed: () {
-                Get.to(ProfessionLogin());
-                // Navigator.of(context).pop();
-                // Implement actual logout logic here
-                print("User logged out");
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _performLogout();
               },
               child: const Text("Logout"),
             ),
@@ -504,6 +474,31 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         );
       },
     );
+  }
+
+  /// Perform proper logout using AuthService
+  Future<void> _performLogout() async {
+    try {
+      print("🚪 Starting logout process...");
+      
+      // Show loading snackbar
+      SnackBarHelper.loading("Logging out...");
+      
+      // Call AuthService logout
+      final success = await AuthService.to.logout();
+      
+      if (success) {
+        print("✅ Logout successful, navigating to onboarding");
+        // Navigate to onboarding screen after successful logout
+        Get.offAll(() => const RegisterScreen());
+      } else {
+        print("❌ Logout failed");
+        SnackBarHelper.error("Logout failed. Please try again.");
+      }
+    } catch (e) {
+      print("❌ Error during logout: $e");
+      SnackBarHelper.error("An error occurred during logout.");
+    }
   }
 
   Widget _buildSupportCard() {

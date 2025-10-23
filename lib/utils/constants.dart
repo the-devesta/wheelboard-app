@@ -19,4 +19,8 @@ class API {
   static const String updateVehicle = 'api/Transport/update-vehicle';
   static const String getVehicles = 'api/Transport/vehicle';
   static const String addTrip = 'api/Trip/add-trip';
+  
+  // Vehicle and Driver Details APIs
+  static const String getVehicleDetails = 'api/VehicleApi/GetVehicleDetails';
+  static const String getLicenseDetails = 'api/VehicleApi/GetLicenceDetails';
 }

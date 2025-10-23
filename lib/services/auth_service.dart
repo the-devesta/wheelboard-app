@@ -1,0 +1,127 @@
+import 'package:get/get.dart';
+import '../utils/session_manager.dart';
+import '../widgets/custom_snackbar.dart';
+
+class AuthService extends GetxService {
+  static AuthService get to => Get.find();
+  
+  final SessionManager _sessionManager = SessionManager();
+  
+  // Observable variables
+  final RxBool isLoggedIn = false.obs;
+  final RxString authToken = ''.obs;
+  final RxString userId = ''.obs;
+  final RxString userType = ''.obs; // 'Professional' or 'Company'
+  
+  @override
+  void onInit() {
+    super.onInit();
+    // ✅ Don't auto-check on init, let splash screen control when to check
+    // _checkLoginStatus();
+  }
+  
+  /// Check if user is already logged in
+  Future<void> _checkLoginStatus() async {
+    try {
+      print("🔐 AuthService: Checking login status...");
+      final token = await _sessionManager.getString("authToken");
+      final user = await _sessionManager.getString("userId");
+      final type = await _sessionManager.getString("userType");
+      
+      print("🔐 Token exists: ${token != null && token.isNotEmpty}");
+      print("🔐 User exists: ${user != null && user.isNotEmpty}");
+      
+      if (token != null && token.isNotEmpty && 
+          user != null && user.isNotEmpty) {
+        authToken.value = token;
+        userId.value = user;
+        userType.value = type ?? '';
+        isLoggedIn.value = true;
+        
+        print("✅ User is already logged in: $user");
+        print("✅ AuthService state: isLoggedIn = ${isLoggedIn.value}");
+      } else {
+        authToken.value = '';
+        userId.value = '';
+        userType.value = '';
+        isLoggedIn.value = false;
+        print("❌ User is not logged in");
+      }
+    } catch (e) {
+      print("❌ Error checking login status: $e");
+      isLoggedIn.value = false;
+    }
+  }
+  
+  /// Login user
+  Future<bool> login({
+    required String token,
+    required String userId,
+    required String userType,
+  }) async {
+    try {
+      print("🔐 AuthService: Starting login process");
+      print("🔐 Token: ${token.isNotEmpty ? 'Present' : 'Empty'}");
+      print("🔐 UserId: $userId");
+      print("🔐 UserType: $userType");
+      
+      // Store in session
+      await _sessionManager.saveString("authToken", token);
+      await _sessionManager.saveString("userId", userId);
+      await _sessionManager.saveString("userType", userType);
+      
+      // Update observable variables
+      authToken.value = token;
+      this.userId.value = userId;
+      this.userType.value = userType;
+      isLoggedIn.value = true;
+      
+      SnackBarHelper.success("Login successful! Welcome back.");
+      return true;
+    } catch (e) {
+      SnackBarHelper.error("Login failed. Please try again.");
+      return false;
+    }
+  }
+  
+  /// Logout user
+  Future<bool> logout() async {
+    try {
+      // Clear session data
+      await _sessionManager.remove("authToken");
+      await _sessionManager.remove("userId");
+      await _sessionManager.remove("userType");
+      
+      // Reset observable variables
+      authToken.value = '';
+      userId.value = '';
+      userType.value = '';
+      isLoggedIn.value = false;
+      
+      print("✅ User logged out successfully");
+      SnackBarHelper.info("You have been logged out successfully.");
+      return true;
+    } catch (e) {
+      print("❌ Error during logout: $e");
+      SnackBarHelper.error("Logout failed. Please try again.");
+      return false;
+    }
+  }
+  
+  /// Get current auth token
+  String get currentToken => authToken.value;
+  
+  /// Get current user ID
+  String get currentUserId => userId.value;
+  
+  /// Get current user type
+  String get currentUserType => userType.value;
+  
+  /// Check if user is logged in
+  bool get isUserLoggedIn => isLoggedIn.value;
+  
+  /// Force refresh login status
+  Future<void> refreshLoginStatus() async {
+    await _checkLoginStatus();
+  }
+}

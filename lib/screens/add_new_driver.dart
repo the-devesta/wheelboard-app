@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io' show File;
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,7 +9,10 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:get/get.dart';
 import '../controllers/add_driver_controller.dart';
 import '../models/add_drivermodel.dart';
+import '../models/driver_license_model.dart';
 import '../utils/session_manager.dart';
+import '../apihelperclass/api_helper.dart';
+import '../widgets/custom_snackbar.dart';
 
 class AddNewDriverScreen extends StatefulWidget {
   final DriverModel? driverData; // ✅ For edit mode
@@ -34,9 +38,14 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
   final TextEditingController vehicleNumberController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController partnerIdController = TextEditingController();
+  
+  // ✅ Driver License Search Fields
+  final TextEditingController licenseNumberController = TextEditingController();
+  final TextEditingController dobController = TextEditingController();
 
   String? selectedVehicleType;
   bool isDeclarationAccepted = false;
+  bool _isSearchingDriver = false; // ✅ For driver search loading
   XFile? _pickedImage; // ✅ Single image only
 
   @override
@@ -62,6 +71,69 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
     if (image != null) {
       setState(() {
         _pickedImage = image;
+      });
+    }
+  }
+
+  /// Search driver license details by license number and DOB
+  Future<void> _searchDriverLicense() async {
+    final licenseNumber = licenseNumberController.text.trim();
+    final dob = dobController.text.trim();
+    
+    if (licenseNumber.isEmpty || dob.isEmpty) {
+      SnackBarHelper.warning("Please enter both license number and date of birth");
+      return;
+    }
+
+    setState(() {
+      _isSearchingDriver = true;
+    });
+
+    try {
+      SnackBarHelper.loading("Searching driver license details...");
+      
+      final response = await HttpHelper.getLicenseDetails(
+        number: licenseNumber,
+        dob: dob,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['code'] == 200 && data['result'] != null) {
+          final licenseDetails = DriverLicenseModel.fromJson(data);
+          
+          // ✅ Auto-fill the form with fetched data
+          driverNameController.text = licenseDetails.detailsOfDrivingLicence.name;
+          
+          // Extract vehicle types from badge details
+          if (licenseDetails.badgeDetails.isNotEmpty) {
+            final vehicleClasses = licenseDetails.badgeDetails.first.classOfVehicle;
+            if (vehicleClasses.isNotEmpty) {
+              selectedVehicleType = vehicleClasses.first; // Use first vehicle class
+            }
+          }
+          
+          setState(() {}); // Refresh UI
+          
+          SnackBarHelper.success("Driver license details fetched successfully!");
+          print("👤 Driver License Details Fetched:");
+          print("👤 Name: ${licenseDetails.detailsOfDrivingLicence.name}");
+          print("👤 Father Name: ${licenseDetails.detailsOfDrivingLicence.fatherOrHusbandName}");
+          print("👤 Vehicle Classes: ${licenseDetails.badgeDetails.isNotEmpty ? licenseDetails.badgeDetails.first.classOfVehicle : 'None'}");
+          print("👤 Address: ${licenseDetails.detailsOfDrivingLicence.address}");
+        } else {
+          SnackBarHelper.error("Driver license details not found");
+        }
+      } else {
+        SnackBarHelper.error("Failed to fetch driver license details");
+      }
+    } catch (e) {
+      print("❌ Error fetching driver license details: $e");
+      SnackBarHelper.error("Error fetching driver license details: $e");
+    } finally {
+      setState(() {
+        _isSearchingDriver = false;
       });
     }
   }
@@ -198,6 +270,136 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+
+              // ✅ Driver License Search Section - Fixed Layout
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.blue.shade200, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.search, color: Colors.blue.shade700, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Quick License Search",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Enter license details to auto-fill driver info",
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: Colors.blue.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // License Number Field - Full Width
+                    Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: TextField(
+                        controller: licenseNumberController,
+                        textAlign: TextAlign.center,
+                        textAlignVertical: TextAlignVertical.center,
+                        style: GoogleFonts.poppins(fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: "License Number (e.g., HR-2620140187259)",
+                          hintStyle: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.grey.shade500,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Date of Birth Field - Full Width
+                    Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: TextField(
+                        controller: dobController,
+                        textAlign: TextAlign.center,
+                        textAlignVertical: TextAlignVertical.center,
+                        style: GoogleFonts.poppins(fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: "Date of Birth (DD/MM/YYYY)",
+                          hintStyle: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.grey.shade500,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Search Button - Full Width
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _isSearchingDriver ? null : _searchDriverLicense,
+                        icon: _isSearchingDriver 
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(Icons.search, size: 20),
+                        label: Text(
+                          _isSearchingDriver ? "Searching..." : "Search License Details",
+                          style: GoogleFonts.poppins(fontSize: 15),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
               const SizedBox(height: 20),
 
               _buildTextField(

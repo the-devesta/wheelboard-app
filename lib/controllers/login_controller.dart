@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
@@ -25,15 +24,18 @@ class LoginController extends GetxController {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        Get.snackbar("Success", "Login Successful");
+        // ✅ Don't show success snackbar here - let login screen handle it
+        // SnackBarHelper.success("Login Successful");
 
         return data['data']; // Return the data object
       } else {
-        Get.snackbar("Error", "Invalid credentials");
+        // ✅ Don't show error snackbar here - let login screen handle it
+        // SnackBarHelper.error("Invalid credentials");
         return null;
       }
     } catch (e) {
-      Get.snackbar("Error", e.toString());
+      // ✅ Don't show error snackbar here - let login screen handle it
+      // SnackBarHelper.error("Login failed: ${e.toString()}");
       return null;
     } finally {
       isLoading.value = false;

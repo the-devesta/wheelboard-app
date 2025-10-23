@@ -418,6 +418,7 @@
 // }
 
 import 'dart:io' show File;
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -425,8 +426,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart'; // ✅ for controller
 import 'package:wheelboard/constants/apps_colors.dart';
 import '../models/add_new_vehicle_model.dart';
+import '../models/vehicle_details_model.dart';
 import '../controllers/add_new_vehicle_controller.dart';
 import '../utils/session_manager.dart';
+import '../apihelperclass/api_helper.dart';
+import '../widgets/custom_snackbar.dart';
 
 class AddVehicleScreen extends StatefulWidget {
   final VehicleModel? vehicleData; // ✅ For edit mode
@@ -454,6 +458,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   String? _ownershipType = "Owned";
   String? _vehicleType;
   bool _isDeclarationAccepted = false;
+  bool _isSearchingVehicle = false; // ✅ For vehicle search loading
 
   // Hold selected images
   List<PlatformFile> _pickedImages = [];
@@ -487,6 +492,75 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     );
     if (result != null && result.files.isNotEmpty) {
       setState(() => _pickedImages = result.files);
+    }
+  }
+
+  /// Search vehicle details by vehicle number
+  Future<void> _searchVehicleDetails() async {
+    final vehicleNumber = _vehicleNumberController.text.trim();
+    
+    if (vehicleNumber.isEmpty) {
+      SnackBarHelper.warning("Please enter vehicle number first");
+      return;
+    }
+
+    setState(() {
+      _isSearchingVehicle = true;
+    });
+
+    try {
+      SnackBarHelper.loading("Searching vehicle details...");
+      
+      print("🔍 Searching for vehicle: $vehicleNumber");
+      
+      final response = await HttpHelper.getVehicleDetails(
+        vehicleNumber: vehicleNumber,
+      );
+
+      print("📡 API Response Status: ${response.statusCode}");
+      print("📡 API Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        print("📊 Parsed Response: $data");
+        
+        if (data['code'] == 200 && data['result'] != null) {
+          try {
+            final vehicleDetails = VehicleDetailsModel.fromJson(data);
+            
+            // ✅ Auto-fill the form with fetched data
+            _vehicleModelController.text = vehicleDetails.model;
+            _manufacturingYearController.text = vehicleDetails.vehicleManufacturingMonthYear.split('/').last; // Extract year
+            _vehicleType = vehicleDetails.vehicleCategory;
+            
+            setState(() {}); // Refresh UI
+            
+            SnackBarHelper.success("Vehicle details fetched successfully!");
+            print("🚗 Vehicle Details Fetched:");
+            print("🚗 Model: ${vehicleDetails.model}");
+            print("🚗 Manufacturer: ${vehicleDetails.vehicleManufacturerName}");
+            print("🚗 Category: ${vehicleDetails.vehicleCategory}");
+            print("🚗 Manufacturing Year: ${vehicleDetails.vehicleManufacturingMonthYear}");
+          } catch (parseError) {
+            print("❌ Error parsing vehicle details: $parseError");
+            SnackBarHelper.error("Error parsing vehicle details. Please try again.");
+          }
+        } else {
+          print("❌ API returned error or no result");
+          SnackBarHelper.error("Vehicle details not found for this number");
+        }
+      } else {
+        print("❌ API request failed with status: ${response.statusCode}");
+        SnackBarHelper.error("Failed to fetch vehicle details. Please try again.");
+      }
+    } catch (e) {
+      print("❌ Error fetching vehicle details: $e");
+      SnackBarHelper.error("Error fetching vehicle details: $e");
+    } finally {
+      setState(() {
+        _isSearchingVehicle = false;
+      });
     }
   }
 
@@ -575,6 +649,106 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     ),
                     const SizedBox(height: 20),
 
+                    // ✅ Vehicle Search Section - Fixed Layout
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green.shade200, width: 1),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.search, color: Colors.green.shade700, size: 18),
+                              const SizedBox(width: 6),
+                              Text(
+                                "Quick Vehicle Search",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Enter vehicle number to auto-fill vehicle info",
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.green.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          
+                          // Vehicle Number Field - Full Width
+                          Container(
+                            width: double.infinity,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: TextField(
+                              controller: _vehicleNumberController,
+                              textAlign: TextAlign.center,
+                              textAlignVertical: TextAlignVertical.center,
+                              style: GoogleFonts.poppins(fontSize: 14),
+                              decoration: InputDecoration(
+                                hintText: "Vehicle Number (e.g., UP16AF0785)",
+                                hintStyle: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade500,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          
+                          // Search Button - Full Width
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: _isSearchingVehicle ? null : _searchVehicleDetails,
+                              icon: _isSearchingVehicle 
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.search, size: 20),
+                              label: Text(
+                                _isSearchingVehicle ? "Searching..." : "Search Vehicle Details",
+                                style: GoogleFonts.poppins(fontSize: 15),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green.shade600,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+
                     // Vehicle Model
                     _buildTextField(
                       "Vehicle Model",
@@ -586,9 +760,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                       ),
                     ),
 
-                    // Vehicle Number
+                    // Vehicle Number (display only, auto-filled from search)
                     _buildTextField(
-                      "Vehicle Number:",
+                      "Vehicle Number (Auto-filled)",
                       "DD Q9 1644",
                       controller: _vehicleNumberController,
                     ),

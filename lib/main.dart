@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 
-import './theme/apptheme.dart';
-import './screens/login.dart';
-import './screens/company_signup.dart';
-import './screens/complete_company_profile.dart';
 import './screens/bottom_navigation.dart';
-import './utils/session_manager.dart'; // <-- create this file
 import './screens/PreLogin/onboarding_screen.dart';
+import './services/auth_service.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -19,8 +15,12 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
-void main() {
+void main() async {
   HttpOverrides.global = MyHttpOverrides();
+  
+  // Initialize GetX services
+  Get.put(AuthService());
+  
   runApp(const MyApp());
 }
 
@@ -53,19 +53,25 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkSession() async {
-    final loggedIn = await SessionManager.isLoggedIn();
-    final profileCompleted = await SessionManager.isProfileCompleted();
+    // Wait for AuthService to initialize and check login status
+    await Future.delayed(const Duration(seconds: 2)); // splash effect
+    
+    final authService = AuthService.to;
+    
+    // ✅ Wait for AuthService to finish checking login status
+    await authService.refreshLoginStatus();
+    
+    final loggedIn = authService.isUserLoggedIn;
 
-    await Future.delayed(const Duration(seconds: 2)); // just for splash effect
+    print("🔐 Splash Screen Check:");
+    print("🔐 Is Logged In: $loggedIn");
 
     if (!loggedIn) {
-      Get.offAll(() => RegisterScreen()); // not logged in → Login
-    } else if (!profileCompleted) {
-      Get.offAll(
-        () => ProfessionLogin(),
-      ); // logged in but incomplete → Complete Register
+      print("🔐 Navigating to RegisterScreen");
+      Get.offAll(() => const RegisterScreen()); // not logged in → Register/Login
     } else {
-      Get.offAll(() => const BottomNavScreen()); // logged in & complete → Home
+      print("🔐 Navigating to BottomNavScreen (Home) - User is logged in");
+      Get.offAll(() => const BottomNavScreen()); // logged in → Home (regardless of profile completion)
     }
   }
 

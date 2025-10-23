@@ -89,6 +89,7 @@ class HttpHelper {
     // 🔍 Debug logging
     print("==================================");
     print("📡 Sending Multipart Request");
+    print("👉 Method: ${request.method}");
     print("👉 URL: $uri");
     print("👉 Headers: ${request.headers}");
     print("👉 Fields: ${request.fields}");
@@ -97,5 +98,40 @@ class HttpHelper {
 
     // Send request
     return await request.send();
+  }
+
+  /// Get vehicle details by vehicle number
+  static Future<http.Response> getVehicleDetails({
+    required String vehicleNumber,
+    Map<String, String>? headers,
+  }) async {
+    Uri uri = Uri.parse(baseUrl + API.getVehicleDetails);
+    
+    final requestBody = {"vehicleNumber": vehicleNumber};
+    
+    print("🚗 Vehicle API Request:");
+    print("🚗 URL: $uri");
+    print("🚗 Body: ${jsonEncode(requestBody)}");
+    print("🚗 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
+    
+    return await http.post(
+      uri,
+      headers: headers ?? {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+  }
+
+  /// Get driver license details by license number and DOB
+  static Future<http.Response> getLicenseDetails({
+    required String number,
+    required String dob,
+    Map<String, String>? headers,
+  }) async {
+    Uri uri = Uri.parse(baseUrl + API.getLicenseDetails);
+    return await http.post(
+      uri,
+      headers: headers ?? {'Content-Type': 'application/json'},
+      body: jsonEncode({"number": number, "dob": dob}),
+    );
   }
 }

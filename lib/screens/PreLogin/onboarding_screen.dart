@@ -5,6 +5,7 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/company_signup.dart';
 import '../../controllers/register_controller.dart';
 import '../professional_signup.dart';
+import '../login.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -162,6 +163,34 @@ class RegisterScreen extends StatelessWidget {
                               Icon(Icons.arrow_forward, color: Colors.white),
                             ],
                           ),
+                        ),
+                        SizedBox(height: 20),
+                        // Login Link
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Already have an account? ',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Get.to(() => LoginScreen());
+                              },
+                              child: Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.buttonBg,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

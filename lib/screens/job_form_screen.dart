@@ -63,11 +63,17 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _roleButton("Driver"),
+                    Expanded(
+                      child: _roleButton("Driver"),
+                    ),
                     SizedBox(width: 8),
-                    _roleButton("Technician"),
+                    Expanded(
+                      child: _roleButton("Technician"),
+                    ),
                     SizedBox(width: 8),
-                    _roleButton("Helper"),
+                    Expanded(
+                      child: _roleButton("Helper"),
+                    ),
                   ],
                 ),
                 SizedBox(height: 20),
@@ -191,28 +197,33 @@ class _PostJobScreenState extends State<PostJobScreen> {
         ),
         backgroundColor: isSelected
             ? Colors.redAccent
-            : Colors.transparent, // Change the background color when selected
+            : Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         padding: EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 0,
-        ), // Adjust padding for better look
+          horizontal: 8,
+          vertical: 8,
+        ),
+        minimumSize: Size(0, 40),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.build, // You can replace this with your desired icon
+            Icons.build,
             color: isSelected ? Colors.white : Colors.redAccent,
-            size: 20, // Adjust the icon size
+            size: 16,
           ),
-          SizedBox(width: 8), // Space between icon and text
-          Text(
-            role,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.redAccent,
-              fontWeight: FontWeight.w500, // Bold text as in the image
-              fontSize: 14, // Adjust font size if necessary
+          SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              role,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.redAccent,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -277,17 +288,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
             color: Colors.grey,
           ), // Grey border color when focused
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16),
-      ),
-    );
-  }
-
-  Widget _textField(String hint, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        hintText: hint,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: EdgeInsets.symmetric(horizontal: 16),
       ),
     );
