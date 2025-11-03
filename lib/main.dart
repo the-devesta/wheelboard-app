@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 
-import './screens/bottom_navigation.dart';
-import './screens/PreLogin/onboarding_screen.dart';
+
 import './services/auth_service.dart';
+import './utils/navigation_helper.dart';
+import 'screens/auth/onboarding_screen.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -79,8 +80,9 @@ class _SplashScreenState extends State<SplashScreen> {
       print("🔐 Navigating to RegisterScreen");
       Get.offAll(() => const RegisterScreen()); // not logged in → Register/Login
     } else {
-      print("🔐 Navigating to BottomNavScreen (Home) - User is logged in");
-      Get.offAll(() => const BottomNavScreen()); // logged in → Home (regardless of profile completion)
+      print("🔐 Navigating to appropriate wrapper based on user type");
+      // Navigate to correct wrapper based on user type
+      NavigationHelper.navigateToMainWrapper();
     }
   }
 

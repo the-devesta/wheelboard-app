@@ -3,7 +3,7 @@ import 'dart:convert';
 import '../models/company_signupmodel.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
-import '../screens/login.dart';
+import '../screens/auth/login.dart';
 
 class SignupController extends GetxController {
   var isLoading = false.obs;
