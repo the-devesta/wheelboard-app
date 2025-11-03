@@ -10,8 +10,17 @@ class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // Only allow specific domains for development/testing
+        // In production, this should be more restrictive
+        if (host == 'wheelboardapi.addonshareware.com' || 
+            host == 'localhost' || 
+            host == '10.0.2.2' || 
+            host == '127.0.0.1') {
+          return true;
+        }
+        return false; // Reject certificates for other domains
+      };
   }
 }
 

@@ -23,4 +23,8 @@ class API {
   // Vehicle and Driver Details APIs
   static const String getVehicleDetails = 'api/VehicleApi/GetVehicleDetails';
   static const String getLicenseDetails = 'api/VehicleApi/GetLicenceDetails';
+  
+  // Post APIs
+  static const String createPost = 'api/Post/add';
+  static const String getUserPosts = 'api/Post/user/';
 }

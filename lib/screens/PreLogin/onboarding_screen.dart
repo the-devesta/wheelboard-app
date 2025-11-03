@@ -86,9 +86,14 @@ class RegisterScreen extends StatelessWidget {
                       horizontal: 20.0,
                       vertical: 30,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: MediaQuery.of(context).size.height * 0.4,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
                         Text(
                           'Register as',
                           style: TextStyle(
@@ -193,7 +198,9 @@ class RegisterScreen extends StatelessWidget {
                           ],
                         ),
                       ],
+                      ),
                     ),
+                  ),
                   ),
                 ],
               ),

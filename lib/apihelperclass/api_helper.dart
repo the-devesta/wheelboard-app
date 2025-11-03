@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart'; // Required for MediaType
-import 'package:mime/mime.dart'; // Optional: to detect MIME types
 // import '../controllers/apihelperclass/...';
 import '../utils/constants.dart';
 
@@ -28,7 +26,7 @@ class HttpHelper {
     Uri uri = Uri.parse(baseUrl + endpoint);
     
     // Debug logging for release mode
-    print("🌐 API Request (Release Mode):");
+    print("🌐 API Request:");
     print("🌐 URL: $uri");
     print("🌐 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
     print("🌐 Data: ${jsonEncode(data)}");
@@ -43,9 +41,20 @@ class HttpHelper {
       print("🌐 Response Status: ${response.statusCode}");
       print("🌐 Response Body: ${response.body}");
       
+      // Check for specific error cases
+      if (response.statusCode == 0) {
+        throw Exception("Network connection failed. Please check your internet connection.");
+      }
+      
       return response;
     } catch (e) {
       print("🌐 API Error: $e");
+      if (e.toString().contains('HandshakeException') || 
+          e.toString().contains('CertificateException')) {
+        throw Exception("SSL Certificate error. Please check your network configuration.");
+      } else if (e.toString().contains('SocketException')) {
+        throw Exception("Network connection failed. Please check your internet connection.");
+      }
       rethrow;
     }
   }
@@ -83,8 +92,11 @@ class HttpHelper {
     final request = http.MultipartRequest("POST", uri);
 
     // ✅ Add headers (Content-Type will be auto-set by MultipartRequest)
+    // Remove Content-Type from headers if present, as multipart sets it automatically
     if (headers != null) {
-      request.headers.addAll(headers);
+      final cleanHeaders = Map<String, String>.from(headers);
+      cleanHeaders.remove('Content-Type'); // Remove if present
+      request.headers.addAll(cleanHeaders);
     }
 
     // ✅ Add fields (skip nulls)
@@ -94,13 +106,21 @@ class HttpHelper {
       }
     });
 
-    // ✅ Add files
-    for (final file in files) {
+    // ✅ Add files - send all files with the same field name (standard multipart behavior)
+    for (int i = 0; i < files.length; i++) {
+      final file = files[i];
       final fileName = file.path.split("/").last;
-      request.files.add(await http.MultipartFile.fromPath(fieldKey, file.path));
-
-      // Debug log for each file
-      // print("📂 Attached File: $fileName");
+      
+      // Use the same field name for all files (most APIs expect this)
+      // The server should handle multiple files with the same field name
+      final multipartFile = await http.MultipartFile.fromPath(
+        fieldKey,
+        file.path,
+        filename: fileName,
+      );
+      
+      request.files.add(multipartFile);
+      print("📂 Attached File: $fileName as $fieldKey");
     }
 
     // 🔍 Debug logging
