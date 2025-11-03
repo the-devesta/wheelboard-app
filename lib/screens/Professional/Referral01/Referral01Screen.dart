@@ -6,13 +6,8 @@ class Referral01Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Referral 01'),
-      ),
-      body: const Center(
-        child: Text('Referral 01 Screen'),
-      ),
+      appBar: AppBar(title: const Text('Referral 01')),
+      body: const Center(child: Text('Referral 01 Screen')),
     );
   }
 }
-

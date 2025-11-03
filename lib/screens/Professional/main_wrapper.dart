@@ -3,6 +3,7 @@ import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
 import 'FindJobs/FindJobsScreen.dart';
 import 'FeedsProfessional/FeedsProfessionalScreen.dart';
 import 'widgets/professional_bottom_nav_widget.dart';
+import 'JobProgress/JobProgressScreen.dart';
 
 /// Main Wrapper for Professional User Type
 /// This wrapper contains bottom navigation and manages all Professional screens
@@ -11,7 +12,8 @@ class ProfessionalMainWrapper extends StatefulWidget {
   const ProfessionalMainWrapper({super.key, this.initialIndex = 0});
 
   @override
-  State<ProfessionalMainWrapper> createState() => _ProfessionalMainWrapperState();
+  State<ProfessionalMainWrapper> createState() =>
+      _ProfessionalMainWrapperState();
 }
 
 class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
@@ -29,7 +31,7 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
     const FindJobsScreen(), // Find
     const FindJobsScreen(), // Trips (placeholder - replace with actual Trips screen)
     const FeedsProfessionalScreen(), // Feeds
-    const FindJobsScreen(), // Jobs
+    const JobProgressScreen(), // Jobs
   ];
 
   void _onTabTapped(int index) {
@@ -49,5 +51,3 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
     );
   }
 }
-
-
