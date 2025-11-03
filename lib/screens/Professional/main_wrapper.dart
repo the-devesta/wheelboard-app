@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
+import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
+import 'FindJobs/FindJobsScreen.dart';
+import 'FeedsProfessional/FeedsProfessionalScreen.dart';
+import 'widgets/professional_bottom_nav_widget.dart';
 
 /// Main Wrapper for Professional User Type
 /// This wrapper contains bottom navigation and manages all Professional screens
@@ -20,12 +23,13 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
     _currentIndex = widget.initialIndex;
   }
 
-  // TODO: Import and add your Professional screens here
+  // Professional screens with bottom navigation (5 items matching Figma)
   final List<Widget> _screens = [
-    const _PlaceholderScreen(title: "Professional Home"),
-    const _PlaceholderScreen(title: "Professional Listings"),
-    const _PlaceholderScreen(title: "Professional Feeds"),
-    const _PlaceholderScreen(title: "Professional Jobs"),
+    const ProfessionalHomePageScreen(),
+    const FindJobsScreen(), // Find
+    const FindJobsScreen(), // Trips (placeholder - replace with actual Trips screen)
+    const FeedsProfessionalScreen(), // Feeds
+    const FindJobsScreen(), // Jobs
   ];
 
   void _onTabTapped(int index) {
@@ -38,53 +42,12 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar: ProfessionalBottomNavWidget(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        selectedItemColor: AppColors.buttonBg,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: "Listings",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.article),
-            label: "Feeds",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.work),
-            label: "Jobs",
-          ),
-        ],
       ),
     );
   }
 }
 
-// Placeholder widget - replace with actual screens
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const _PlaceholderScreen({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: Center(
-        child: Text(
-          title,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
 
