@@ -17,97 +17,84 @@ class RegisterScreen extends StatelessWidget {
     final RegisterController controller = Get.put(RegisterController());
     return Scaffold(
       backgroundColor: Color(0xFFFCFDFC),
-
       body: SafeArea(
-        top: false,
-        bottom: false,
-        child: Column(
+        child: Stack(
           children: [
-            // Logo and App Title Section
-            Padding(
-              padding: const EdgeInsets.only(top: 40.0),
-              child: Column(
-                children: [
-                  // Logo
-                  Image.asset(
-                    'assets/logo.png', 
-                    height: 80,
-                    fit: BoxFit.contain,
-                  ),
-                  SizedBox(height: 16),
-                  // App Name
-                  Text(
-                    'WHEELBOARD',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  // Tagline
-                  Text(
-                    'Empowering Growth, connecting success',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
+            // Background Image
+            Positioned.fill(
+              child: Image.asset(
+                'assets/bgImage.png',
+                fit: BoxFit.cover,
               ),
             ),
-            
-            SizedBox(height: 40),
-            
-            // Handshake Illustration
-            Image.asset(
-              'assets/onboarding.png', 
-              height: 200,
-              fit: BoxFit.contain,
-            ),
-            
-            SizedBox(height: 40),
-
-            // Registration Section with Background
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Background Image
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/bgImage.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  // Overlay Content
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 30,
-                    ),
-                    child: SingleChildScrollView(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: MediaQuery.of(context).size.height * 0.4,
+            // Content
+            Column(
+              children: [
+                // Logo and App Title Section
+                Padding(
+                  padding: const EdgeInsets.only(top: 20.0),
+                  child: Column(
+                    children: [
+                      // Logo
+                      Image.asset(
+                        'assets/logo.png',
+                        height: 60,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 12),
+                      // App Name
+                      Text(
+                        'WHEELBOARD',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          letterSpacing: 1.2,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                      ),
+                      const SizedBox(height: 4),
+                      // Tagline
+                      Text(
+                        'Empowering Growth, connecting success',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Handshake Illustration
+                Flexible(
+                  flex: 2,
+                  child: Image.asset(
+                    'assets/onboarding.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Registration Section
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Text(
                           'Register as',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 22,
                             fontWeight: FontWeight.w600,
                             color: Colors.black,
                           ),
                         ),
-                        SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         Obx(
                           () => Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Expanded(
                                 child: _buildToggleButton(
@@ -119,7 +106,7 @@ class RegisterScreen extends StatelessWidget {
                                       controller.selectType('Professional'),
                                 ),
                               ),
-                              SizedBox(width: 16),
+                              const SizedBox(width: 16),
                               Expanded(
                                 child: _buildToggleButton(
                                   label: 'Company',
@@ -132,46 +119,49 @@ class RegisterScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        SizedBox(height: 32),
-                        ElevatedButton(
-                          onPressed: () {
-                            print(
-                              'Selected: ${controller.selectedType.value}',
-                            );
-                            if (controller.selectedType.value == 'Company') {
-                              Get.to(Signup());
-                            } else {
-                              Get.to(ProfessionalRegisterScreen());
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.buttonBg,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 100,
-                              vertical: 16,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            elevation: 4,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              print(
+                                'Selected: ${controller.selectedType.value}',
+                              );
+                              if (controller.selectedType.value == 'Company') {
+                                Get.to(() => Signup());
+                              } else {
+                                Get.to(() => ProfessionalRegisterScreen());
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.buttonBg,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                                vertical: 16,
                               ),
-                              SizedBox(width: 8),
-                              Icon(Icons.arrow_forward, color: Colors.white),
-                            ],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(Icons.arrow_forward, color: Colors.white),
+                              ],
+                            ),
                           ),
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         // Login Link
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -200,12 +190,10 @@ class RegisterScreen extends StatelessWidget {
                           ],
                         ),
                       ],
-                      ),
                     ),
                   ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
@@ -221,7 +209,7 @@ class RegisterScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.buttonBg : Colors.white,
           border: Border.all(
@@ -233,30 +221,33 @@ class RegisterScreen extends StatelessWidget {
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
               blurRadius: 4,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              label == 'Professional' ? Icons.person_outline : Icons.local_shipping_outlined,
+              label == 'Professional'
+                  ? Icons.person_outline
+                  : Icons.local_shipping_outlined,
               color: isSelected ? Colors.white : AppColors.buttonBg,
-              size: 15,
+              size: 18,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 style: TextStyle(
                   color: isSelected ? Colors.white : AppColors.buttonBg,
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
-                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

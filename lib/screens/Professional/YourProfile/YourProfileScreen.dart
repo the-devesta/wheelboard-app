@@ -684,12 +684,13 @@ class YourProfileScreen extends StatelessWidget {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (icon is String)
             Text(icon, style: const TextStyle(fontSize: 24))
           else
             Icon(icon, size: 24, color: const Color(0xFF424242)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             title,
             style: GoogleFonts.poppins(
@@ -697,6 +698,9 @@ class YourProfileScreen extends StatelessWidget {
               fontWeight: FontWeight.w500,
               color: const Color(0xFF424242),
             ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
