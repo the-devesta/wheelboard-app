@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import '../../../services/auth_service.dart';
+import '../../../widgets/custom_snackbar.dart';
+import '../../auth/onboarding_screen.dart' show RegisterScreen;
 
 class YourProfileScreen extends StatelessWidget {
   const YourProfileScreen({super.key});
@@ -643,28 +647,35 @@ class YourProfileScreen extends StatelessWidget {
             Expanded(child: _buildActionCard(Icons.sync, 'Sync Profile')),
             const SizedBox(width: 12),
             Expanded(
-              child: Container(
-                height: 88,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFFEF5350)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.logout, size: 24, color: Color(0xFFEF5350)),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Logout',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFFEF5350),
-                      ),
+              child: Builder(
+                builder: (context) => GestureDetector(
+                  onTap: () {
+                    _showLogoutDialog(context);
+                  },
+                  child: Container(
+                    height: 88,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: const Color(0xFFEF5350)),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.logout, size: 24, color: Color(0xFFEF5350)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Logout',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFFEF5350),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -684,23 +695,25 @@ class YourProfileScreen extends StatelessWidget {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           if (icon is String)
             Text(icon, style: const TextStyle(fontSize: 24))
           else
             Icon(icon, size: 24, color: const Color(0xFF424242)),
           const SizedBox(height: 6),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF424242),
+          Flexible(
+            child: Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF424242),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -923,5 +936,55 @@ class YourProfileScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm Logout"),
+          content: const Text("Are you sure you want to logout?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _performLogout();
+              },
+              child: const Text("Logout"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Perform proper logout using AuthService
+  Future<void> _performLogout() async {
+    try {
+      print("🚪 Starting logout process...");
+      
+      // Show loading snackbar
+      SnackBarHelper.loading("Logging out...");
+      
+      // Call AuthService logout
+      final success = await AuthService.to.logout();
+      
+      if (success) {
+        print("✅ Logout successful, navigating to onboarding");
+        // Navigate to onboarding screen after successful logout
+        Get.offAll(() => const RegisterScreen());
+      } else {
+        print("❌ Logout failed");
+        SnackBarHelper.error("Logout failed. Please try again.");
+      }
+    } catch (e) {
+      print("❌ Error during logout: $e");
+      SnackBarHelper.error("An error occurred during logout.");
+    }
   }
 }

@@ -1,23 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
 import '../widgets/calendar_header_widget.dart';
 import '../widgets/calendar_widget.dart';
+import '../../../controllers/Professional/calendar_controller.dart';
 
 class CalendarInactiveScreen extends StatefulWidget {
-  const CalendarInactiveScreen({super.key});
+  final DateTime? initialDate;
+  
+  const CalendarInactiveScreen({super.key, this.initialDate});
 
   @override
   State<CalendarInactiveScreen> createState() => _CalendarInactiveScreenState();
 }
 
 class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
+  final CalendarController calendarController = Get.find<CalendarController>();
   final TextEditingController _eventNameController = TextEditingController();
   final TextEditingController _startTimeController = TextEditingController();
   final TextEditingController _endTimeController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
   String _selectedCategory = 'Trip';
   bool _isActive = false;
-  DateTime _selectedDate = DateTime(2025, 9, 2);
+  DateTime _selectedDate = DateTime.now();
+  TimeOfDay? _selectedStartTime;
+  TimeOfDay? _selectedEndTime;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialDate != null) {
+      _selectedDate = widget.initialDate!;
+    }
+  }
 
   @override
   void dispose() {
@@ -135,11 +150,29 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                       Expanded(
                                         child: TextField(
                                           controller: _startTimeController,
+                                          readOnly: true,
+                                          onTap: () async {
+                                            final time = await showTimePicker(
+                                              context: context,
+                                              initialTime: _selectedStartTime ?? TimeOfDay.now(),
+                                            );
+                                            if (time != null) {
+                                              setState(() {
+                                                _selectedStartTime = time;
+                                                _startTimeController.text = time.format(context);
+                                              });
+                                            }
+                                          },
                                           decoration: InputDecoration(
                                             hintText: 'Start time',
                                             hintStyle: GoogleFonts.poppins(
                                               fontSize: 15,
                                               color: const Color(0xFF8F9BB3),
+                                            ),
+                                            suffixIcon: const Icon(
+                                              Icons.access_time,
+                                              size: 18,
+                                              color: Color(0xFF8F9BB3),
                                             ),
                                             border: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
@@ -170,6 +203,19 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                       Expanded(
                                         child: TextField(
                                           controller: _endTimeController,
+                                          readOnly: true,
+                                          onTap: () async {
+                                            final time = await showTimePicker(
+                                              context: context,
+                                              initialTime: _selectedEndTime ?? TimeOfDay.now(),
+                                            );
+                                            if (time != null) {
+                                              setState(() {
+                                                _selectedEndTime = time;
+                                                _endTimeController.text = time.format(context);
+                                              });
+                                            }
+                                          },
                                           decoration: InputDecoration(
                                             hintText: 'End time',
                                             hintStyle: GoogleFonts.poppins(
@@ -410,12 +456,59 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                   ),
                                   const SizedBox(height: 32),
                                   // Mark the Date Button
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
+                                  Obx(
+                                    () {
+                                      return SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                        onPressed: calendarController.isLoading.value ? null : () async {
+                                          // Validate form
+                                          if (_eventNameController.text.trim().isEmpty) {
+                                            Get.snackbar("Error", "Please enter event name");
+                                            return;
+                                          }
+                                          
+                                          if (_selectedStartTime == null) {
+                                            Get.snackbar("Error", "Please select start time");
+                                            return;
+                                          }
+                                          
+                                          if (_selectedEndTime == null) {
+                                            Get.snackbar("Error", "Please select end time");
+                                            return;
+                                          }
+
+                                          // Combine selected date with selected times
+                                          final startDateTime = DateTime(
+                                            _selectedDate.year,
+                                            _selectedDate.month,
+                                            _selectedDate.day,
+                                            _selectedStartTime!.hour,
+                                            _selectedStartTime!.minute,
+                                          );
+                                          
+                                          final endDateTime = DateTime(
+                                            _selectedDate.year,
+                                            _selectedDate.month,
+                                            _selectedDate.day,
+                                            _selectedEndTime!.hour,
+                                            _selectedEndTime!.minute,
+                                          );
+
+                                          // Save event
+                                          final success = await calendarController.saveEvent(
+                                            eventName: _eventNameController.text.trim(),
+                                            startTime: startDateTime,
+                                            endTime: endDateTime,
+                                            note: _noteController.text.trim(),
+                                            category: _selectedCategory,
+                                            isActive: _isActive,
+                                          );
+
+                                          if (success) {
+                                            Navigator.pop(context);
+                                          }
+                                        },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: const Color(0xFFF36969),
                                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -423,16 +516,27 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                           borderRadius: BorderRadius.circular(7),
                                         ),
                                       ),
-                                      child: Text(
-                                        'Mark the Date',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
+                                      child: calendarController.isLoading.value
+                                          ? const SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(
+                                              'Mark the Date',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.white,
+                                              ),
+                                            ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
+                                ),
                                   const SizedBox(height: 32),
                                 ],
                               ),

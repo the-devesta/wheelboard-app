@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
 import 'FindJobs/FindJobsScreen.dart';
 import 'FeedsProfessional/FeedsProfessionalScreen.dart';
+import 'TripDashboard/TripDashboardScreen.dart';
 import 'widgets/professional_bottom_nav_widget.dart';
 import 'JobProgress/JobProgressScreen.dart';
 
@@ -29,7 +30,7 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
   final List<Widget> _screens = [
     const ProfessionalHomePageScreen(),
     const FindJobsScreen(), // Find
-    const FindJobsScreen(), // Trips (placeholder - replace with actual Trips screen)
+    const TripDashboardScreen(), // Trips (placeholder - replace with actual Trips screen)
     const FeedsProfessionalScreen(), // Feeds
     const JobProgressScreen(), // Jobs
   ];

@@ -14,9 +14,17 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: SafeArea(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          // Navigate to home screen instead of going back
+          Navigator.of(context).pushReplacementNamed('/professional-home');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF9FAFB),
+        body: SafeArea(
         child: Column(
           children: [
             // Header
@@ -29,18 +37,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 23),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.grey.withOpacity(0.1),
-                      ),
-                      child: const Icon(Icons.arrow_back_ios, size: 16),
-                    ),
-                  ),
+                  const SizedBox(width: 40), // Spacer to center title
                   Expanded(
                     child: Center(
                       child: Text(
@@ -125,6 +122,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -222,28 +220,36 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.trending_up, size: 20, color: Color(0xFF535353)),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Trip Completion Trend',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF535353),
+              Flexible(
+                child: Row(
+                  children: [
+                    const Icon(Icons.trending_up, size: 20, color: Color(0xFF535353)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Trip Completion Trend',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF535353),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Row(
-                children: [
-                  _buildChartToggleButton('Trips', _selectedChartType == 'Trips'),
-                  const SizedBox(width: 8),
-                  _buildChartToggleButton('Earnings', _selectedChartType == 'Earnings'),
-                  const SizedBox(width: 8),
-                  _buildChartToggleButton('Distance', _selectedChartType == 'Distance'),
-                ],
+              const SizedBox(width: 8),
+              Flexible(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildChartToggleButton('Trips', _selectedChartType == 'Trips'),
+                    _buildChartToggleButton('Earnings', _selectedChartType == 'Earnings'),
+                    _buildChartToggleButton('Distance', _selectedChartType == 'Distance'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -264,22 +270,27 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('30', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('27', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('24', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('21', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('18', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('15', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('12', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('9', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('6', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('3', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                          Text('0', style: GoogleFonts.inter(fontSize: 12, color: Colors.black.withOpacity(0.7))),
-                        ],
+                    SizedBox(
+                      width: 30,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('30', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('27', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('24', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('21', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('18', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('15', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('12', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('9', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('6', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('3', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text('0', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                            ],
+                          );
+                        },
                       ),
                     ),
                     Expanded(

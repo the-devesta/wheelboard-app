@@ -43,8 +43,16 @@ class JobBoardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          // Navigate to home screen instead of going back
+          Navigator.of(context).pushReplacementNamed('/professional-home');
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
         title: const Text(
           "Job Board",
           style: TextStyle(
@@ -54,7 +62,8 @@ class JobBoardScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        leading: const Icon(Icons.arrow_back, color: Colors.black87),
+        automaticallyImplyLeading: false,
+        leading: const SizedBox.shrink(),
         actions: const [
           Icon(Icons.notifications_none_rounded, color: Colors.black87),
           SizedBox(width: 16),
@@ -142,6 +151,7 @@ class JobBoardScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

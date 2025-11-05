@@ -10,7 +10,6 @@ class TrackTripScreen extends StatelessWidget {
     const String mapImageUrl = 'https://www.figma.com/api/mcp/asset/1a7d4319-4d6e-495f-b01f-0734d40eef23';
     const String vehicleMarkerUrl = 'https://www.figma.com/api/mcp/asset/9e035f3c-9747-40d9-a438-1a01d60d3339';
     const String destinationMarkerUrl = 'https://www.figma.com/api/mcp/asset/1237482f-b399-4fa4-bb50-8dfe1d9a2989';
-    const String routeLineUrl = 'https://www.figma.com/api/mcp/asset/39970617-7d6e-4ba6-ba38-25784be0d463';
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAFBFC),
@@ -104,30 +103,6 @@ class TrackTripScreen extends StatelessWidget {
                           ),
                         );
                       },
-                    ),
-                  ),
-                  // Back Button Overlay
-                  Positioned(
-                    left: 8,
-                    top: 42,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.arrow_back, size: 20),
-                      ),
                     ),
                   ),
                   // Location Card

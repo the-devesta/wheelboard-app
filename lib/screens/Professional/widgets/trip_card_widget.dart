@@ -24,46 +24,63 @@ class TripCardWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
+          // Title with paper airplane icon
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 18, color: Colors.black),
+              const Icon(
+                Icons.send,
+                size: 18,
+                color: Color(0xFF003366),
+              ),
               const SizedBox(width: 8),
               Text(
                 "Next Scheduled Trip",
                 style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                   color: Colors.black,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          // Pickup
+          // Pickup with red pin
           _buildAddressRow(
             icon: Icons.location_on,
             label: "Pickup:",
             address: pickupAddress,
+            iconColor: const Color(0xFFFF5E5E),
           ),
           const SizedBox(height: 12),
-          // Destination
+          // Destination with blue pin
           _buildAddressRow(
-            icon: Icons.place,
+            icon: Icons.location_on,
             label: "Destination:",
             address: destinationAddress,
+            iconColor: const Color(0xFF003366),
             isDestination: true,
           ),
           const SizedBox(height: 12),
-          // Date & Time
+          // Date & Time with red calendar icon
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.access_time, size: 16, color: Colors.black),
+              const Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: Color(0xFFFF5E5E),
+              ),
               const SizedBox(width: 8),
               Text(
                 "Date & Time:",
@@ -80,7 +97,7 @@ class TripCardWidget extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
-                    color: const Color(0xFF666666),
+                    color: const Color(0xFFADADB7),
                   ),
                 ),
               ),
@@ -102,12 +119,17 @@ class TripCardWidget extends StatelessWidget {
     required IconData icon,
     required String label,
     required String address,
+    Color? iconColor,
     bool isDestination = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Colors.black),
+        Icon(
+          icon,
+          size: 16,
+          color: iconColor ?? Colors.black,
+        ),
         const SizedBox(width: 8),
         Text(
           label,
@@ -124,7 +146,7 @@ class TripCardWidget extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w400,
-              color: const Color(0xFF666666),
+              color: const Color(0xFFADADB7),
             ),
           ),
         ),
@@ -133,28 +155,48 @@ class TripCardWidget extends StatelessWidget {
   }
 
   Widget _buildTag(String tag) {
-    Color borderColor = const Color(0xFF003366);
+    Color backgroundColor = const Color(0xFFF5F5F5);
     Color textColor = const Color(0xFF003366);
+    IconData icon = Icons.inventory_2; // Box icon for Cargo
     
     if (tag == "Fragile") {
-      borderColor = const Color(0xFFFF5E5E);
+      backgroundColor = const Color(0xFFFFE5E5);
       textColor = const Color(0xFFFF5E5E);
+      icon = Icons.error_outline;
+    } else if (tag == "Lift Gate") {
+      backgroundColor = const Color(0xFFF5F5F5);
+      textColor = const Color(0xFF003366);
+      icon = Icons.elevator;
+    } else if (tag == "Cargo") {
+      backgroundColor = const Color(0xFFF5F5F5);
+      textColor = const Color(0xFF003366);
+      icon = Icons.inventory_2;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        border: Border.all(color: borderColor),
-        borderRadius: BorderRadius.circular(9999),
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        tag,
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: textColor,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: textColor,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            tag,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+            ),
+          ),
+        ],
       ),
     );
   }

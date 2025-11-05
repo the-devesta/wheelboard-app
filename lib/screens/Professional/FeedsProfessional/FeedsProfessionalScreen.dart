@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../widgets/feed_card_widget.dart';
 import '../../../utils/responsive_utils.dart';
+import '../../../controllers/Professional/feeds_controller.dart';
 
 /// Feeds Professional Screen
 /// Pixel-perfect implementation matching Figma design
@@ -12,54 +14,8 @@ class FeedsProfessionalScreen extends StatefulWidget {
 }
 
 class _FeedsProfessionalScreenState extends State<FeedsProfessionalScreen> {
-  // Sample feed data - replace with actual data from API/controller
-  final List<Map<String, dynamic>> feedData = [
-    {
-      'profileImageUrl': 'https://www.figma.com/api/mcp/asset/82bf7986-c512-4e0e-9a8d-9d00c76530b3',
-      'profileName': 'Delhi Transport',
-      'imageUrl': 'https://www.figma.com/api/mcp/asset/00395b7c-6f38-4505-abac-5be69909cf73',
-      'title': 'Tips for fleet management',
-      'description': 'Learn how to optimize your fleet operations and reduce costs',
-      'postedTime': '2 days Ago',
-      'isLiked': false,
-    },
-    {
-      'profileImageUrl': 'https://www.figma.com/api/mcp/asset/82bf7986-c512-4e0e-9a8d-9d00c76530b3',
-      'profileName': 'Delhi Transport',
-      'imageUrl': 'https://www.figma.com/api/mcp/asset/00395b7c-6f38-4505-abac-5be69909cf73',
-      'title': 'Tips for fleet management',
-      'description': 'Learn how to optimize your fleet operations and reduce costs',
-      'postedTime': '2 days Ago',
-      'isLiked': false,
-    },
-    {
-      'profileImageUrl': 'https://www.figma.com/api/mcp/asset/82bf7986-c512-4e0e-9a8d-9d00c76530b3',
-      'profileName': 'Delhi Transport',
-      'imageUrl': 'https://www.figma.com/api/mcp/asset/00395b7c-6f38-4505-abac-5be69909cf73',
-      'title': 'Tips for fleet management',
-      'description': 'Learn how to optimize your fleet operations and reduce costs',
-      'postedTime': '2 days Ago',
-      'isLiked': false,
-    },
-    {
-      'profileImageUrl': 'https://www.figma.com/api/mcp/asset/82bf7986-c512-4e0e-9a8d-9d00c76530b3',
-      'profileName': 'Delhi Transport',
-      'imageUrl': 'https://www.figma.com/api/mcp/asset/00395b7c-6f38-4505-abac-5be69909cf73',
-      'title': 'Tips for fleet management',
-      'description': 'Learn how to optimize your fleet operations and reduce costs',
-      'postedTime': '2 days Ago',
-      'isLiked': false,
-    },
-    {
-      'profileImageUrl': 'https://www.figma.com/api/mcp/asset/82bf7986-c512-4e0e-9a8d-9d00c76530b3',
-      'profileName': 'Delhi Transport',
-      'imageUrl': 'https://www.figma.com/api/mcp/asset/00395b7c-6f38-4505-abac-5be69909cf73',
-      'title': 'Tips for fleet management',
-      'description': 'Learn how to optimize your fleet operations and reduce costs',
-      'postedTime': '2 days Ago',
-      'isLiked': false,
-    },
-  ];
+  // Initialize controller
+  final FeedsController controller = Get.put(FeedsController());
 
   @override
   Widget build(BuildContext context) {
@@ -107,43 +63,128 @@ class _FeedsProfessionalScreenState extends State<FeedsProfessionalScreen> {
 
                 // Feeds List
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      top: ResponsiveUtils.getResponsiveSpacing(context, small: 10, medium: 12, large: 14),
-                      bottom: ResponsiveUtils.getResponsiveSpacing(context, small: 100, medium: 110, large: 120),
-                    ),
-                    child: Column(
-                      children: feedData.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final feed = entry.value;
-                        return FeedCardWidget(
-                          profileImageUrl: feed['profileImageUrl'] ?? '',
-                          profileName: feed['profileName'] ?? '',
-                          imageUrl: feed['imageUrl'] ?? '',
-                          title: feed['title'] ?? '',
-                          description: feed['description'] ?? '',
-                          postedTime: feed['postedTime'] ?? '',
-                          isLiked: feed['isLiked'] ?? false,
-                          onProfileTap: () {
-                            // Navigate to profile
-                          },
-                          onHeartTap: () {
-                            setState(() {
-                              feedData[index]['isLiked'] = !(feedData[index]['isLiked'] ?? false);
-                            });
-                          },
-                          onShareTap: () {
-                            // Handle share
-                          },
-                          onEyeTap: () {
-                            // Handle view
-                          },
-                          onReadMoreTap: () {
-                            // Navigate to full post
-                          },
+                  child: Obx(
+                    () {
+                      if (controller.isLoading.value) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40.0),
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFF36969),
+                            ),
+                          ),
                         );
-                      }).toList(),
-                    ),
+                      }
+
+                      if (controller.feeds.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(40.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.feed_outlined,
+                                  size: 64,
+                                  color: Colors.grey.shade400,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "No feeds available",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  "Check back later for new posts",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return RefreshIndicator(
+                        onRefresh: () => controller.refreshFeeds(),
+                        color: const Color(0xFFF36969),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.only(
+                            top: ResponsiveUtils.getResponsiveSpacing(context, small: 10, medium: 12, large: 14),
+                            bottom: ResponsiveUtils.getResponsiveSpacing(context, small: 100, medium: 110, large: 120),
+                          ),
+                          child: Column(
+                            children: controller.feeds.map((post) {
+                              // Get first image if available
+                              final imageUrl = post.imageUrls.isNotEmpty
+                                  ? post.imageUrls[0]
+                                  : '';
+                              
+                              // Extract title from content (first line or first 50 chars)
+                              final contentLines = post.content.split('\n');
+                              final title = contentLines.isNotEmpty && contentLines[0].isNotEmpty
+                                  ? (contentLines[0].length > 50
+                                      ? '${contentLines[0].substring(0, 50)}...'
+                                      : contentLines[0])
+                                  : post.category.isNotEmpty
+                                      ? post.category
+                                      : 'Post';
+                              
+                              // Extract description (rest of content or second line)
+                              final description = contentLines.length > 1 && contentLines[1].isNotEmpty
+                                  ? contentLines[1]
+                                  : contentLines.length > 1
+                                      ? (contentLines.length > 2 && contentLines[2].isNotEmpty
+                                          ? contentLines[2]
+                                          : '')
+                                      : contentLines.isNotEmpty && contentLines[0].length > 50
+                                          ? contentLines[0].substring(50)
+                                          : '';
+
+                              return FeedCardWidget(
+                                profileImageUrl: '', // TODO: Add profile image when available in API
+                                profileName: post.category.isNotEmpty ? post.category : 'User',
+                                imageUrl: imageUrl,
+                                title: title,
+                                description: description.isNotEmpty
+                                    ? (description.length > 100
+                                        ? '${description.substring(0, 100)}...'
+                                        : description)
+                                    : post.content.isNotEmpty
+                                        ? (post.content.length > 100
+                                            ? '${post.content.substring(0, 100)}...'
+                                            : post.content)
+                                        : '',
+                                postedTime: post.timeAgo,
+                                isLiked: controller.isLiked(post.postId),
+                                onProfileTap: () {
+                                  // Navigate to profile
+                                },
+                                onHeartTap: () {
+                                  controller.toggleLike(post.postId);
+                                },
+                                onShareTap: () {
+                                  // Handle share
+                                },
+                                onEyeTap: () {
+                                  // Handle view
+                                },
+                                onReadMoreTap: () {
+                                  // Navigate to full post
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

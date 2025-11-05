@@ -16,8 +16,8 @@ class ProfessionalHeaderWidget extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFFFF5E5E), // Exact Figma red color
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(18),
-          bottomRight: Radius.circular(18),
+          bottomLeft: Radius.circular(8),
+          bottomRight: Radius.circular(8),
         ),
       ),
       child: SafeArea(
@@ -37,7 +37,7 @@ class ProfessionalHeaderWidget extends StatelessWidget {
                   child: const Icon(
                     Icons.menu,
                     color: Colors.white,
-                    size: 20,
+                    size: 24,
                   ),
                 ),
               ),
@@ -68,7 +68,7 @@ class ProfessionalHeaderWidget extends StatelessWidget {
                   child: const Icon(
                     Icons.notifications_outlined,
                     color: Colors.white,
-                    size: 18,
+                    size: 24,
                   ),
                 ),
               ),

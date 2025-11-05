@@ -1,5 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:get/get.dart';
+import '../../controllers/add_trip_controller.dart';
+import '../../utils/session_manager.dart';
+import '../../models/add_new_trip_model.dart';
+import 'dart:math';
 
 class ScheduleTripScreen extends StatefulWidget {
   const ScheduleTripScreen({super.key});
@@ -9,15 +16,55 @@ class ScheduleTripScreen extends StatefulWidget {
 }
 
 class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
-  String? selectedVehicle;
-  String? selectedDriver;
+  final TripController tripController = Get.put(TripController());
+
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
 
   final TextEditingController pickupController = TextEditingController();
   final TextEditingController deliveryController = TextEditingController();
+  final TextEditingController specialInstructionsController =
+      TextEditingController();
+  final TextEditingController payRangeController = TextEditingController();
 
   final Color fieldBorderColor = const Color.fromARGB(255, 199, 198, 198);
+  final PlacesService placesService = PlacesService(
+    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+  );
+
+  List<Suggestion> pickupSuggestions = [];
+  List<Suggestion> deliverySuggestions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _FetchDrivers();
+    _FetchVehicles();
+  }
+
+  Future<void> _FetchDrivers() async {
+    final sessionManager = SessionManager();
+    final token = await sessionManager.getString("authToken");
+    final userId = await sessionManager.getString("userId");
+
+    if (token != null && userId != null) {
+      tripController.fetchDrivers(userId, token);
+    } else {
+      debugPrint("Token or UserId is null");
+    }
+  }
+
+  Future<void> _FetchVehicles() async {
+    final sessionManager = SessionManager();
+    final token = await sessionManager.getString("authToken");
+    final userId = await sessionManager.getString("userId");
+
+    if (token != null && userId != null) {
+      tripController.fetchVehicles(userId, token);
+    } else {
+      debugPrint("Token or UserId is null");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,49 +108,69 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
               ),
               const SizedBox(height: 20),
 
-              _buildDropdown(
-                label: "Select Vehicle",
-                value: selectedVehicle,
-                hint: "Select Vehicle",
-                items: ["Truck A", "Van B", "Bike C"],
-                onChanged: (val) => setState(() => selectedVehicle = val),
-              ),
+              _buildVehicleDropdown(),
               const SizedBox(height: 16),
 
-              _buildDropdown(
-                label: "Select Driver",
-                value: selectedDriver,
-                hint: "Select Driver",
-                items: ["John", "Rahul", "Ankit"],
-                onChanged: (val) => setState(() => selectedDriver = val),
-              ),
+              _buildDriverDropdown(),
               const SizedBox(height: 16),
 
-              _buildTextField(
-                "Pickup Location",
-                "Enter pickup location",
-                pickupController,
-              ),
+              _buildPickupField(),
               const SizedBox(height: 16),
 
-              _buildTextField(
-                "Delivery Location",
-                "Enter delivery location",
-                deliveryController,
-              ),
+              _buildDeliveryField(),
               const SizedBox(height: 16),
 
               _buildDatePicker(context),
               const SizedBox(height: 16),
 
               _buildTimePicker(context),
+              const SizedBox(height: 16),
+
+              _buildTextField(
+                "Special Instructions",
+                "Enter special instructions",
+                specialInstructionsController,
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                "Enter Pay range (Rs 200 - Rs900)",
+                "Enter Pay range",
+                payRangeController,
+              ),
               const SizedBox(height: 24),
 
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Submit action here
+                  onPressed: () async {
+                    final token = await SessionManager().getString("authToken");
+                    final userId = await SessionManager().getString("userId");
+
+                    if (token == null || userId == null) {
+                      Get.snackbar("Error", "User not logged in");
+                      return;
+                    }
+
+                    // ✅ Build Trip object (TripId not needed - backend will generate)
+                    final trip = Trip(
+                      tripId: "", // Empty - backend will generate TripId
+                      userId: userId,
+                      vehicleId: tripController.selectedVehicle.value ?? "",
+                      driverId: tripController.selectedDriver.value ?? "",
+                      pickupLocation: pickupController.text,
+                      deliveryLocation: deliveryController.text,
+                      pickupDate: selectedDate,
+                      pickupTime: selectedTime != null
+                          ? _formatTimeOfDay(selectedTime!)
+                          : "00:00:00",
+                      specialInstructions: specialInstructionsController.text,
+                      payRange: payRangeController.text,
+                      tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}",
+                      tripStatus: "Pending",
+                    );
+
+                    // ✅ Send API call
+                    await tripController.addTrip(trip, token);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.buttonBg,
@@ -130,28 +197,191 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required String hint,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
+  Widget _buildVehicleDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label),
+        const Text("Select Vehicle"),
         const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          value: value,
-          hint: Text(hint),
-          isExpanded: true,
-          decoration: _inputDecoration(borderColor: fieldBorderColor),
-          items: items
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
-          onChanged: onChanged,
+        Obx(() {
+          if (tripController.isVehicleLoading.value) {
+            return const CircularProgressIndicator();
+          }
+          if (tripController.vehicles.isEmpty) {
+            return const Text("No vehicles available");
+          }
+          return DropdownButtonFormField<String>(
+            value: tripController.selectedVehicle.value,
+            hint: const Text("Select Vehicle"),
+            isExpanded: true,
+            decoration: _inputDecoration(borderColor: fieldBorderColor),
+            items: tripController.vehicles
+                .map(
+                  (vehicle) => DropdownMenuItem(
+                    value: vehicle.vehicleId,
+                    child: Text(vehicle.vehicleModel),
+                  ),
+                )
+                .toList(),
+            onChanged: (val) => tripController.selectedVehicle.value = val,
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildDriverDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Select Driver"),
+        const SizedBox(height: 6),
+        Obx(() {
+          if (tripController.isLoading.value) {
+            return const CircularProgressIndicator();
+          }
+          if (tripController.drivers.isEmpty) {
+            return const Text("No drivers available");
+          }
+          return DropdownButtonFormField<String>(
+            value: tripController.selectedDriver.value,
+            hint: const Text("Select Driver"),
+            isExpanded: true,
+            decoration: _inputDecoration(borderColor: fieldBorderColor),
+            items: tripController.drivers
+                .map(
+                  (driver) => DropdownMenuItem(
+                    value: driver.driverId,
+                    child: Text(driver.fullName),
+                  ),
+                )
+                .toList(),
+            onChanged: (val) => tripController.selectedDriver.value = val,
+          );
+        }),
+      ],
+    );
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final now = DateTime.now();
+    final dt = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    return "${dt.hour.toString().padLeft(2, '0')}:"
+        "${dt.minute.toString().padLeft(2, '0')}:00";
+  }
+
+  Widget _buildPickupField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Pickup Location"),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: pickupController,
+          decoration: _inputDecoration(
+            hint: "Enter pickup location",
+            borderColor: fieldBorderColor,
+          ),
+          onChanged: (value) async {
+            if (value.isNotEmpty) {
+              final results = await placesService.fetchSuggestions(value);
+              setState(() => pickupSuggestions = results);
+            } else {
+              setState(() => pickupSuggestions = []);
+            }
+          },
         ),
+        if (pickupSuggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: fieldBorderColor),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: pickupSuggestions.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final s = pickupSuggestions[index];
+                return ListTile(
+                  title: Text(s.description),
+                  subtitle: Text(s.subTitle),
+                  onTap: () async {
+                    setState(() {
+                      pickupController.text = s.description;
+                      pickupSuggestions.clear();
+                    });
+
+                    final loc = await placesService.fetchPlaceLocation(
+                      s.placeId,
+                    );
+                    debugPrint("Pickup LatLng: $loc");
+                  },
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Delivery Location"),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: deliveryController,
+          decoration: _inputDecoration(
+            hint: "Enter delivery location",
+            borderColor: fieldBorderColor,
+          ),
+          onChanged: (value) async {
+            if (value.isNotEmpty) {
+              final results = await placesService.fetchSuggestions(value);
+              setState(() => deliverySuggestions = results);
+            } else {
+              setState(() => deliverySuggestions = []);
+            }
+          },
+        ),
+        if (deliverySuggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: fieldBorderColor),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: deliverySuggestions.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final s = deliverySuggestions[index];
+                return ListTile(
+                  title: Text(s.description),
+                  subtitle: Text(s.subTitle),
+                  onTap: () async {
+                    setState(() {
+                      deliveryController.text = s.description;
+                      deliverySuggestions.clear();
+                    });
+
+                    final loc = await placesService.fetchPlaceLocation(
+                      s.placeId,
+                    );
+                    debugPrint("Delivery LatLng: $loc");
+                  },
+                );
+              },
+            ),
+          ),
       ],
     );
   }
@@ -267,4 +497,157 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
       ),
     );
   }
+}
+
+// Suggestion class for Google Places
+class Suggestion {
+  final String placeId;
+  final String description;
+  final String sector;
+  final String city;
+  final String state;
+  final String country;
+  final String subTitle;
+
+  Suggestion({
+    required this.placeId,
+    required this.description,
+    required this.sector,
+    required this.city,
+    required this.state,
+    required this.country,
+    required this.subTitle,
+  });
+
+  factory Suggestion.fromPrediction(Map<String, dynamic> p) {
+    final terms = (p['terms'] as List<dynamic>?) ?? [];
+    final sector = _getTerm(terms, 4);
+    final city = _getTerm(terms, 3);
+    final state = _getTerm(terms, 2);
+    final country = _getTerm(terms, 1);
+
+    final parts = [
+      if (sector.isNotEmpty) sector,
+      if (city.isNotEmpty) city,
+      if (state.isNotEmpty) state,
+    ];
+    final subTitle =
+        (parts.join(', ') + (country.isNotEmpty ? ', $country' : '')).trim();
+
+    return Suggestion(
+      placeId: p['place_id'] as String? ?? '',
+      description: (p['description'] as String? ?? '').trim(),
+      sector: sector,
+      city: city,
+      state: state,
+      country: country,
+      subTitle: subTitle,
+    );
+  }
+
+  static String _getTerm(List<dynamic> terms, int indexFromEnd) {
+    final index = terms.length - indexFromEnd;
+    if (index >= 0 && index < terms.length) {
+      final val = terms[index];
+      if (val is Map && val['value'] != null) return val['value'] as String;
+    }
+    return '';
+  }
+}
+
+// Google Places Service
+class PlacesService {
+  final String apiKey;
+  final http.Client client;
+
+  PlacesService({required this.apiKey, http.Client? client})
+      : client = client ?? http.Client();
+
+  Future<List<Suggestion>> fetchSuggestions(String input) async {
+    final encoded = Uri.encodeQueryComponent(input);
+    final url =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+        '?input=$encoded'
+        '&types=establishment|geocode'
+        '&language=en'
+        '&components=country:in'
+        '&key=$apiKey';
+
+    final resp = await client.get(Uri.parse(url));
+    if (resp.statusCode != 200) {
+      throw Exception('Failed: ${resp.statusCode}');
+    }
+
+    final result = json.decode(resp.body) as Map<String, dynamic>;
+    final status = result['status'] as String? ?? 'UNKNOWN';
+
+    if (status == 'OK') {
+      final preds = result['predictions'] as List<dynamic>;
+      return preds
+          .map((p) => Suggestion.fromPrediction(p as Map<String, dynamic>))
+          .toList();
+    } else if (status == 'ZERO_RESULTS') {
+      return [];
+    } else {
+      throw Exception(result['error_message'] ?? 'Places API error: $status');
+    }
+  }
+
+  Future<Map<String, double>> fetchPlaceLocation(String placeId) async {
+    final url =
+        'https://maps.googleapis.com/maps/api/place/details/json'
+        '?place_id=${Uri.encodeQueryComponent(placeId)}'
+        '&fields=geometry'
+        '&key=$apiKey';
+
+    final resp = await client.get(Uri.parse(url));
+    if (resp.statusCode != 200) throw Exception('HTTP ${resp.statusCode}');
+    final body = json.decode(resp.body) as Map<String, dynamic>;
+    final status = body['status'] as String?;
+    if (status == 'OK') {
+      final loc =
+          body['result']['geometry']['location'] as Map<String, dynamic>;
+      return {
+        'lat': (loc['lat'] as num).toDouble(),
+        'lng': (loc['lng'] as num).toDouble(),
+      };
+    } else {
+      throw Exception(body['error_message'] ?? 'Details error: $status');
+    }
+  }
+}
+
+/// Generate proper UUID v4 format (GUID) for TripId
+/// Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+String generateTripId() {
+  final random = Random();
+  final timestamp = DateTime.now().microsecondsSinceEpoch;
+  
+  // Generate UUID v4 format: 8-4-4-4-12 (hexadecimal)
+  String generateHexSegment(int length, Random rng, int seed) {
+    final hex = '0123456789abcdef';
+    final buffer = StringBuffer();
+    for (int i = 0; i < length; i++) {
+      buffer.write(hex[rng.nextInt(16)]);
+    }
+    return buffer.toString();
+  }
+  
+  // Part 1: 8 hex digits
+  final part1 = generateHexSegment(8, random, timestamp);
+  
+  // Part 2: 4 hex digits
+  final part2 = generateHexSegment(4, random, timestamp);
+  
+  // Part 3: 4 hex digits starting with '4' (version 4)
+  final part3 = '4${generateHexSegment(3, random, timestamp)}';
+  
+  // Part 4: 4 hex digits with variant bits (8, 9, a, or b)
+  final variant = ['8', '9', 'a', 'b'][random.nextInt(4)];
+  final part4 = '$variant${generateHexSegment(3, random, timestamp)}';
+  
+  // Part 5: 12 hex digits
+  final part5 = generateHexSegment(12, random, timestamp);
+  
+  return '$part1-$part2-$part3-$part4-$part5';
 }

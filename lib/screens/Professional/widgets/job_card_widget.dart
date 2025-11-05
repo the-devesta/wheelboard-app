@@ -5,16 +5,20 @@ import 'package:share_plus/share_plus.dart';
 /// Job Card Widget matching Figma design
 class JobCardWidget extends StatelessWidget {
   final String companyName;
+  final String? jobId; // Job ID from API
   final int likes;
   final int applicants;
+  final bool isApplying; // Show loading state when applying
   final VoidCallback? onCallNow;
   final VoidCallback? onApplyNow;
 
   const JobCardWidget({
     super.key,
     required this.companyName,
+    this.jobId,
     this.likes = 0,
     this.applicants = 0,
+    this.isApplying = false,
     this.onCallNow,
     this.onApplyNow,
   });
@@ -116,7 +120,7 @@ class JobCardWidget extends StatelessWidget {
   Widget _buildShareButton() {
     return ElevatedButton.icon(
       onPressed: () {
-        Share.share("Check out this job on WheelBoard!");
+        Share.share("Check out this job on WheelBoard!\n$companyName");
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF00AEEF), // Blue
@@ -137,22 +141,33 @@ class JobCardWidget extends StatelessWidget {
 
   Widget _buildApplyButton({VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isApplying ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFD500), // Yellow
+          color: isApplying 
+              ? const Color(0xFFFFD500).withOpacity(0.6) 
+              : const Color(0xFFFFD500), // Yellow
           borderRadius: BorderRadius.circular(9999),
         ),
         child: Center(
-          child: Text(
-            "Apply now",
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF003366),
-            ),
-          ),
+          child: isApplying
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF003366)),
+                  ),
+                )
+              : Text(
+                  "Apply now",
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF003366),
+                  ),
+                ),
         ),
       ),
     );

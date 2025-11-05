@@ -119,8 +119,8 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
               _buildVehicleDropdown(),
               const SizedBox(height: 16),
 
-              _buildDriverDropdown(),
-              const SizedBox(height: 16),
+              // _buildDriverDropdown(),
+              // const SizedBox(height: 16),
 
               _buildPickupField(),
               const SizedBox(height: 16),
@@ -157,10 +157,9 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                       return;
                     }
 
-                    // ✅ Build Trip object
+                    // ✅ Build Trip object (TripId not needed - backend will generate)
                     final trip = Trip(
-                      tripId:
-                          '1795c522-a839-f800-1f2e-a01645601b17', // or generate dynamically
+                      tripId: "", // Empty - backend will generate TripId
                       userId: userId,
                       vehicleId: tripController.selectedVehicle.value ?? "",
                       driverId: tripController.selectedDriver.value ?? "",
@@ -172,7 +171,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                           : "00:00:00",
                       specialInstructions: specialInstructionsController.text,
                       payRange: payRangeController.text,
-                      tripCode: "TRIP-123",
+                      tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}",
                       tripStatus: "Pending",
                     );
 
@@ -238,38 +237,38 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     );
   }
 
-  Widget _buildDriverDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Select Driver"),
-        const SizedBox(height: 6),
-        Obx(() {
-          if (tripController.isLoading.value) {
-            return const CircularProgressIndicator(); // Show loading indicator
-          }
-          if (tripController.drivers.isEmpty) {
-            return const Text("No drivers available");
-          }
-          return DropdownButtonFormField<String>(
-            value: tripController.selectedDriver.value,
-            hint: const Text("Select Driver"),
-            isExpanded: true,
-            decoration: _inputDecoration(borderColor: fieldBorderColor),
-            items: tripController.drivers
-                .map(
-                  (driver) => DropdownMenuItem(
-                    value: driver.driverId, // Use driver ID as the value
-                    child: Text(driver.fullName), // Display driver name
-                  ),
-                )
-                .toList(),
-            onChanged: (val) => tripController.selectedDriver.value = val,
-          );
-        }),
-      ],
-    );
-  }
+  // Widget _buildDriverDropdown() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text("Select Driver"),
+  //       const SizedBox(height: 6),
+  //       Obx(() {
+  //         if (tripController.isLoading.value) {
+  //           return const CircularProgressIndicator(); // Show loading indicator
+  //         }
+  //         if (tripController.drivers.isEmpty) {
+  //           return const Text("No drivers available");
+  //         }
+  //         return DropdownButtonFormField<String>(
+  //           value: tripController.selectedDriver.value,
+  //           hint: const Text("Select Driver"),
+  //           isExpanded: true,
+  //           decoration: _inputDecoration(borderColor: fieldBorderColor),
+  //           items: tripController.drivers
+  //               .map(
+  //                 (driver) => DropdownMenuItem(
+  //                   value: driver.driverId, // Use driver ID as the value
+  //                   child: Text(driver.fullName), // Display driver name
+  //                 ),
+  //               )
+  //               .toList(),
+  //           onChanged: (val) => tripController.selectedDriver.value = val,
+  //         );
+  //       }),
+  //     ],
+  //   );
+  // }
 
   String _formatTimeOfDay(TimeOfDay time) {
     final now = DateTime.now();
@@ -639,8 +638,37 @@ class PlacesService {
   }
 }
 
+/// Generate proper UUID v4 format (GUID) for TripId
+/// Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
 String generateTripId() {
-  final random = Random().nextInt(999999);
-  final timestamp = DateTime.now().millisecondsSinceEpoch;
-  return "trip-$timestamp-$random";
+  final random = Random();
+  final timestamp = DateTime.now().microsecondsSinceEpoch;
+  
+  // Generate UUID v4 format: 8-4-4-4-12 (hexadecimal)
+  String generateHexSegment(int length, Random rng, int seed) {
+    final hex = '0123456789abcdef';
+    final buffer = StringBuffer();
+    for (int i = 0; i < length; i++) {
+      buffer.write(hex[rng.nextInt(16)]);
+    }
+    return buffer.toString();
+  }
+  
+  // Part 1: 8 hex digits
+  final part1 = generateHexSegment(8, random, timestamp);
+  
+  // Part 2: 4 hex digits
+  final part2 = generateHexSegment(4, random, timestamp);
+  
+  // Part 3: 4 hex digits starting with '4' (version 4)
+  final part3 = '4${generateHexSegment(3, random, timestamp)}';
+  
+  // Part 4: 4 hex digits with variant bits (8, 9, a, or b)
+  final variant = ['8', '9', 'a', 'b'][random.nextInt(4)];
+  final part4 = '$variant${generateHexSegment(3, random, timestamp)}';
+  
+  // Part 5: 12 hex digits
+  final part5 = generateHexSegment(12, random, timestamp);
+  
+  return '$part1-$part2-$part3-$part4-$part5';
 }

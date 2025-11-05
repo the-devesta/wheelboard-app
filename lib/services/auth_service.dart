@@ -60,10 +60,13 @@ class AuthService extends GetxService {
     required String userType,
   }) async {
     try {
-      print("🔐 AuthService: Starting login process");
-      print("🔐 Token: ${token.isNotEmpty ? 'Present' : 'Empty'}");
+      print("==================================");
+      print("🔐 AUTH SERVICE: LOGIN PROCESS");
+      print("==================================");
+      print("🔐 Token: ${token.isNotEmpty ? 'Present (${token.substring(0, 20)}...)' : 'Empty'}");
       print("🔐 UserId: $userId");
       print("🔐 UserType: $userType");
+      print("==================================");
       
       // Store in session
       await _sessionManager.saveString("authToken", token);
@@ -76,9 +79,16 @@ class AuthService extends GetxService {
       this.userType.value = userType;
       isLoggedIn.value = true;
       
+      print("✅ LOGIN SUCCESSFUL!");
+      print("✅ User Type Saved: $userType");
+      print("✅ User ID Saved: $userId");
+      print("✅ Token Saved: ${token.substring(0, 20)}...");
+      print("==================================");
+      
       SnackBarHelper.success("Login successful! Welcome back.");
       return true;
     } catch (e) {
+      print("❌ LOGIN ERROR: $e");
       SnackBarHelper.error("Login failed. Please try again.");
       return false;
     }

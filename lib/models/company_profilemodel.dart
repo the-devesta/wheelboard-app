@@ -21,15 +21,16 @@ class CompleteProfileModel {
 
   // Convert to normal string fields (without file)
   Map<String, String?> toJsonFields() {
-    final map = {
+    final map = <String, String?>{
       "UserId": userId,
-      "FirstName": firstName,
-      "LastName": lastName,
-      "Address": address,
-      "FleetSize": fleetSize,
+      "FirstName": firstName ?? '',
+      "LastName": lastName ?? '',
+      "Address": address ?? '',
+      "FleetSize": fleetSize ?? '',
     };
+    // Only add GSTNumber if it's provided and not empty
     if (gstNumber != null && gstNumber!.isNotEmpty) {
-      map["GSTNumber"] = gstNumber!;
+      map["GSTNumber"] = gstNumber;
     }
     return map;
   }

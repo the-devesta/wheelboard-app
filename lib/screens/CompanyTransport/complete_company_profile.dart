@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:country_picker/country_picker.dart';
 import '../../controllers/complete_profile_controller.dart';
 import '../../models/company_profilemodel.dart';
 import '../../constants/apps_colors.dart';
 import '../auth/login.dart';
 import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class CompanyCompleteProfile extends StatefulWidget {
   const CompanyCompleteProfile({super.key});
@@ -258,22 +258,27 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
   Widget _buildRegisterButton() {
     return Obx(() {
       return ElevatedButton(
-        onPressed: () async {
+        onPressed: profileController.isLoading.value ? null : () async {
+          // ✅ Validation
+          if (!_validateForm()) {
+            return;
+          }
+
           final model = CompleteProfileModel(
             userId: userId,
             firstName: firstNameController.text.trim(),
             lastName: lastNameController.text.trim(),
             address: addressController.text.trim(),
             fleetSize: fleetSizeController.text.trim(),
-            gstNumber: gstController.text.trim(),
+            gstNumber: gstController.text.trim().isEmpty ? null : gstController.text.trim(),
             companyLogo: profileController.profileImage.value,
           );
 
-          final success = await profileController.submitProfile(model);
+          final success = await profileController.submitProfile(model, userId);
 
           if (success) {
             await SessionManager.setProfileCompleted(true);
-
+            SnackBarHelper.success("Profile completed successfully!");
             Get.to(() => ProfessionLogin());
           }
         },
@@ -289,5 +294,50 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
             : const Text("Get in now", style: TextStyle(color: Colors.white)),
       );
     });
+  }
+
+  bool _validateForm() {
+    // Validate First Name
+    if (firstNameController.text.trim().isEmpty) {
+      SnackBarHelper.error("Please enter First Name");
+      return false;
+    }
+
+    // Validate Last Name
+    if (lastNameController.text.trim().isEmpty) {
+      SnackBarHelper.error("Please enter Last Name");
+      return false;
+    }
+
+    // Validate Address
+    if (addressController.text.trim().isEmpty) {
+      SnackBarHelper.error("Please enter Address");
+      return false;
+    }
+
+    // Validate Fleet Size
+    if (fleetSizeController.text.trim().isEmpty) {
+      SnackBarHelper.error("Please enter Fleet Size");
+      return false;
+    }
+
+    // Validate Fleet Size is a number
+    final fleetSize = int.tryParse(fleetSizeController.text.trim());
+    if (fleetSize == null || fleetSize <= 0) {
+      SnackBarHelper.error("Fleet Size must be a valid number greater than 0");
+      return false;
+    }
+
+    // Validate GST Number format if provided (optional but if provided should be valid)
+    final gstNumber = gstController.text.trim();
+    if (gstNumber.isNotEmpty) {
+      // GST format: 15 characters alphanumeric
+      if (gstNumber.length != 15 || !RegExp(r'^[0-9A-Z]{15}$').hasMatch(gstNumber.toUpperCase())) {
+        SnackBarHelper.error("GST Number must be 15 characters alphanumeric");
+        return false;
+      }
+    }
+
+    return true;
   }
 }

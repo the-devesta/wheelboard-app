@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../widgets/calendar_header_widget.dart';
 import '../widgets/calendar_widget.dart';
 import '../widgets/event_card_widget.dart';
 import '../CalendarMarkDate/CalendarMarkDateScreen.dart';
+import '../../../controllers/Professional/calendar_controller.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -12,35 +14,8 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  DateTime _selectedDate = DateTime(2025, 9, 2);
-  final List<DateTime> _eventDates = [
-    DateTime(2025, 9, 2),
-    DateTime(2025, 9, 6),
-    DateTime(2025, 9, 7),
-    DateTime(2025, 9, 8),
-    DateTime(2025, 9, 9),
-    DateTime(2025, 9, 10),
-    DateTime(2025, 9, 11),
-    DateTime(2025, 9, 12),
-    DateTime(2025, 9, 13),
-    DateTime(2025, 9, 14),
-    DateTime(2025, 9, 15),
-    DateTime(2025, 9, 16),
-    DateTime(2025, 9, 17),
-    DateTime(2025, 9, 18),
-    DateTime(2025, 9, 19),
-    DateTime(2025, 9, 20),
-    DateTime(2025, 9, 21),
-    DateTime(2025, 9, 22),
-    DateTime(2025, 9, 23),
-    DateTime(2025, 9, 24),
-    DateTime(2025, 9, 25),
-    DateTime(2025, 9, 26),
-    DateTime(2025, 9, 27),
-    DateTime(2025, 9, 28),
-    DateTime(2025, 9, 29),
-    DateTime(2025, 9, 30),
-  ];
+  final CalendarController calendarController = Get.put(CalendarController());
+  DateTime _selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -51,30 +26,50 @@ class _CalendarScreenState extends State<CalendarScreen> {
           children: [
             const CalendarHeaderWidget(),
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 45),
-                    CalendarWidget(
-                      selectedDate: _selectedDate,
-                      onDateSelected: (date) {
-                        setState(() {
-                          _selectedDate = date;
-                        });
-                      },
-                      eventDates: _eventDates,
+              child: Obx(
+                () {
+                  final eventDates = calendarController.getEventDates();
+                  final selectedDateEvents = calendarController.getEventsForDate(_selectedDate);
+                  
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 45),
+                        CalendarWidget(
+                          selectedDate: _selectedDate,
+                          onDateSelected: (date) {
+                            setState(() {
+                              _selectedDate = date;
+                            });
+                          },
+                          eventDates: eventDates,
+                        ),
+                        const SizedBox(height: 24),
+                        // Show events for selected date
+                        if (selectedDateEvents.isNotEmpty)
+                          ...selectedDateEvents.map((event) => Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: EventCardWidget(
+                                  fromLocation: event.category,
+                                  toLocation: event.eventName,
+                                  time: _formatEventTime(event.startTime, event.endTime),
+                                  vehicleNumber: event.note,
+                                  status: event.isActive ? 'Active' : 'Inactive',
+                                ),
+                              )),
+                        if (selectedDateEvents.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text(
+                              'No events for selected date',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        const SizedBox(height: 100),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    const EventCardWidget(
-                      fromLocation: 'Warehouse A',
-                      toLocation: 'Store Z',
-                      time: 'Today, 09:35 AM',
-                      vehicleNumber: 'MH12AB3456',
-                      status: 'In Transit',
-                    ),
-                    const SizedBox(height: 100),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],
@@ -85,14 +80,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const CalendarMarkDateScreen(),
+              builder: (context) => CalendarMarkDateScreen(
+                initialDate: _selectedDate,
+              ),
             ),
-          );
+          ).then((_) {
+            // Refresh events after returning from mark date screen
+            calendarController.refreshEvents();
+          });
         },
         backgroundColor: const Color(0xFFFF5E5E),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
+  }
+
+  String _formatEventTime(DateTime startTime, DateTime endTime) {
+    final now = DateTime.now();
+    final selected = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final today = DateTime(now.year, now.month, now.day);
+    
+    String dateStr;
+    if (selected.isAtSameMomentAs(today)) {
+      dateStr = 'Today';
+    } else if (selected.isAtSameMomentAs(today.add(const Duration(days: 1)))) {
+      dateStr = 'Tomorrow';
+    } else if (selected.isAtSameMomentAs(today.subtract(const Duration(days: 1)))) {
+      dateStr = 'Yesterday';
+    } else {
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      dateStr = '${months[selected.month - 1]} ${selected.day}, ${selected.year}';
+    }
+    
+    final startTimeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+    final endTimeStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+    
+    return '$dateStr, $startTimeStr - $endTimeStr';
   }
 }
 

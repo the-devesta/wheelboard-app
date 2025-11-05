@@ -27,4 +27,13 @@ class API {
   // Post APIs
   static const String createPost = 'api/Post/add';
   static const String getUserPosts = 'api/Post/user/';
+  
+  // Job APIs
+  static const String getAppliedJobs = 'api/Job/applied-jobs/';
+  static const String getOpenJobs = 'api/Job/open-job-list';
+  static const String applyJob = 'api/Job/apply-job';
+  
+  // Calendar Events APIs
+  static const String saveCalendarEvent = 'api/Trip/save-calendar-events';
+  static const String getEventsByUserId = 'api/Trip/get-events-by-userId/';
 }

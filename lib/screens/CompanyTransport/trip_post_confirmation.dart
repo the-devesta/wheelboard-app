@@ -11,11 +11,11 @@ class PostConfirmTripPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Center(
+        child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+    
               children: [
                 // Logo and Title
                 Row(
@@ -28,14 +28,14 @@ class PostConfirmTripPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-
+                    
                 // Star Graphic
                 Image.asset(
                   'assets/star.png', // replace with star graphic
                   height: 100,
                 ),
                 const SizedBox(height: 24),
-
+                    
                 // Congrats Text
                 const Text(
                   "Congratulations!",
@@ -48,7 +48,7 @@ class PostConfirmTripPage extends StatelessWidget {
                   style: TextStyle(fontSize: 16, color: Colors.black54),
                 ),
                 const SizedBox(height: 32),
-
+                    
                 // Trip Details Card
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -97,9 +97,9 @@ class PostConfirmTripPage extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                const Spacer(),
-
+                    
+            
+                    
                 // OK Button
                 SizedBox(
                   width: double.infinity,
