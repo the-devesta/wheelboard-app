@@ -68,29 +68,6 @@ class SnackBarHelper {
     );
   }
 
-  // ✅ Loading SnackBar
-  static void loading(String message) {
-    Get.snackbar(
-      'Loading',
-      message,
-      backgroundColor: const Color(0xFF2196F3),
-      colorText: Colors.white,
-      icon: const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      ),
-      duration: const Duration(seconds: 2),
-      snackPosition: SnackPosition.TOP,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      isDismissible: false,
-    );
-  }
-
   // ✅ Custom SnackBar
   static void custom({
     required String title,

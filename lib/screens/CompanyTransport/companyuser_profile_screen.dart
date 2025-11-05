@@ -483,7 +483,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       print("🚪 Starting logout process...");
       
       // Show loading snackbar
-      SnackBarHelper.loading("Logging out...");
+      SnackBarHelper.info("Logging out...");
       
       // Call AuthService logout
       final success = await AuthService.to.logout();

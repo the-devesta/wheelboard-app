@@ -90,7 +90,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
     });
 
     try {
-      SnackBarHelper.loading("Searching driver license details...");
+      SnackBarHelper.info("Searching driver license details...");
       
       final response = await HttpHelper.getLicenseDetails(
         number: licenseNumber,
