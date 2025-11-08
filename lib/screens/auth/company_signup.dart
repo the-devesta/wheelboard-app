@@ -4,15 +4,13 @@ import 'package:get/get.dart';
 import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import 'package:wheelboard/commonwidget/app_dropdown.dart';
 import 'package:wheelboard/controllers/signup_controller.dart';
-import 'package:wheelboard/screens/auth/login.dart';
 
 import 'package:country_picker/country_picker.dart';
 
 import '../../constants/apps_colors.dart';
 import '../../models/company_signupmodel.dart';
-import '../../utils/session_manager.dart';
-import '../CompanyTransport/complete_company_profile.dart';
-import 'service_provider_login.dart';
+import '../../widgets/custom_snackbar.dart';
+import 'professional_login.dart' show ProfessionLogin;
 
 
 class Signup extends StatelessWidget {
@@ -208,18 +206,17 @@ class Signup extends StatelessWidget {
                     businessCategory: selectedCompanyType.value ?? '',
                   );
                   final success = await controller.registerCompany(model);
-                  final userId = controller.userId.value;
 
                   if (success) {
-                    // ✅ Condition check
-                    await SessionManager.setLogin(true);
-                    await SessionManager.setProfileCompleted(false);
-                    // Get.to(() => CompanyCompleteProfile());
-
-                    Get.to(
-                      () => CompanyCompleteProfile(),
-                      arguments: {"userId": userId},
-                    );
+                    // ✅ Show success message
+                    SnackBarHelper.success("Company registered successfully! Please login to continue.");
+                    
+                    // ✅ Wait for snackbar to be visible
+                    await Future.delayed(const Duration(milliseconds: 2000));
+                    
+                    // ✅ Navigate to login page - don't set login state yet
+                    // User needs to login first, then complete profile
+                    Get.offAll(() => ProfessionLogin());
                   }
                 } else {
                   final model = CompanySignUpModel(
@@ -230,21 +227,17 @@ class Signup extends StatelessWidget {
                     businessCategory: selectedCompanyType.value ?? '',
                   );
                   final success = await controller.registerCompany(model);
-                  final userId = controller.userId.value;
+                  
                   if (success) {
-                    // ✅ Condition check
-                    await SessionManager.setLogin(true);
-                    await SessionManager.setProfileCompleted(false);
-                    Get.to(
-                      () => AlliedBusinessRegistrationScreen(),
-                      arguments: {"userId": userId},
-                    );
-                    // Get.to(() => CompanyCompleteProfile());
-
-                    // Get.to(
-                    //   () => CompanyCompleteProfile(),
-                    //   arguments: {"userId": userId},
-                    // );
+                    // ✅ Show success message
+                    SnackBarHelper.success("Company registered successfully! Please login to continue.");
+                    
+                    // ✅ Wait for snackbar to be visible
+                    await Future.delayed(const Duration(milliseconds: 2000));
+                    
+                    // ✅ Navigate to login page - don't set login state yet
+                    // User needs to login first, then complete profile
+                    Get.offAll(() => ProfessionLogin());
                   }
                 }
               },

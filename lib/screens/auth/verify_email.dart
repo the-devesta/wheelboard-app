@@ -250,6 +250,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -299,21 +300,15 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   void _verifyCode() {
     String code = _controllers.map((c) => c.text).join();
     if (code.length != 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter complete 5-digit code')),
-      );
+      SnackBarHelper.error("Please enter complete 5-digit code");
       return;
     }
     // Yahan verification logic add karein
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Code verified successfully!')),
-    );
+    SnackBarHelper.success("Code verified successfully!");
   }
 
   void _resendEmail() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Verification code sent again!')),
-    );
+    SnackBarHelper.info("Verification code sent again!");
   }
 
   @override

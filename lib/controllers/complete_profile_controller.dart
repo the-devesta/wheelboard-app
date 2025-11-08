@@ -30,10 +30,12 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/company_profilemodel.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../utils/session_manager.dart';
+import '../widgets/custom_snackbar.dart';
 import 'package:http/http.dart' as http;
 
 class CompleteProfileController extends GetxController {
@@ -45,12 +47,34 @@ class CompleteProfileController extends GetxController {
 
   /// Pick image from gallery or camera
   Future<void> pickImage(ImageSource source) async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: source,
-      imageQuality: 80,
-    );
-    if (pickedFile != null) {
-      profileImage.value = File(pickedFile.path);
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+      if (pickedFile != null) {
+        // Copy image to permanent location to avoid cache deletion issues
+        try {
+          final Directory appDocDir = await getApplicationDocumentsDirectory();
+          final String fileName = 'company_logo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          final String permanentPath = '${appDocDir.path}/$fileName';
+          
+          // Copy the file to permanent location
+          final File permanentFile = await File(pickedFile.path).copy(permanentPath);
+          
+          profileImage.value = permanentFile;
+          SnackBarHelper.success("Image selected successfully");
+        } catch (e) {
+          print("Error copying image: $e");
+          // Fallback to original path if copy fails
+          profileImage.value = File(pickedFile.path);
+          SnackBarHelper.success("Image selected successfully");
+        }
+      }
+    } catch (e) {
+      SnackBarHelper.error("Failed to pick image: ${e.toString()}");
     }
   }
 
@@ -68,7 +92,7 @@ class CompleteProfileController extends GetxController {
       final token = await sessionManager.getString("authToken");
       
       if (token == null || token.isEmpty) {
-        Get.snackbar("Error", "Please login again");
+        SnackBarHelper.error("Please login again");
         return false;
       }
 
@@ -84,10 +108,18 @@ class CompleteProfileController extends GetxController {
       print("👉 Has Logo: ${model.companyLogo != null}");
       print("==================================");
 
-      // ✅ Prepare files
+      // ✅ Prepare files - validate file exists before sending
       final files = <File>[];
       if (model.companyLogo != null) {
-        files.add(model.companyLogo!);
+        // Check if file exists before adding
+        if (await model.companyLogo!.exists()) {
+          files.add(model.companyLogo!);
+          print("✅ Company Logo file exists: ${model.companyLogo!.path}");
+        } else {
+          print("❌ Company Logo file not found: ${model.companyLogo!.path}");
+          SnackBarHelper.error("Image file not found. Please select image again.");
+          return false;
+        }
       }
 
       // ✅ Call multipart API
@@ -123,23 +155,75 @@ class CompleteProfileController extends GetxController {
           print("✅ Profile completed successfully (non-JSON response)");
           return true;
         }
+      } else if (response.statusCode == 400) {
+        // Handle validation errors (like CompanyLogo required)
+        String errorMessage = "Validation Error";
+        try {
+          final errorData = json.decode(response.body);
+          
+          // Check for validation errors object
+          if (errorData.containsKey('errors') && errorData['errors'] is Map) {
+            final errors = errorData['errors'] as Map<String, dynamic>;
+            final errorMessages = <String>[];
+            
+            errors.forEach((field, messages) {
+              if (messages is List) {
+                for (var msg in messages) {
+                  errorMessages.add("$field: $msg");
+                }
+              } else {
+                errorMessages.add("$field: $messages");
+              }
+            });
+            
+            errorMessage = errorMessages.join('\n');
+            
+            // Special handling for CompanyLogo
+            if (errors.containsKey('CompanyLogo')) {
+              errorMessage = "Company Logo is required. Please select an image.";
+            }
+          } else if (errorData.containsKey('message')) {
+            errorMessage = errorData['message'].toString();
+          } else if (errorData.containsKey('error')) {
+            errorMessage = errorData['error'].toString();
+          }
+        } catch (e) {
+          if (response.body.contains('CompanyLogo')) {
+            errorMessage = "Company Logo is required. Please select an image.";
+          } else {
+            errorMessage = response.body.isNotEmpty 
+                          ? response.body.length > 100 
+                            ? "${response.body.substring(0, 100)}..." 
+                            : response.body
+                          : "Validation failed";
+          }
+        }
+        
+        SnackBarHelper.error(errorMessage);
+        return false;
       } else {
-        // 🔍 Parse error message
+        // 🔍 Parse error message for other errors
         String errorMessage = "Failed to complete profile";
         try {
           final errorData = json.decode(response.body);
-          errorMessage = errorData['message'] ?? errorData['error'] ?? response.body;
+          errorMessage = errorData['message'] ?? 
+                        errorData['error'] ?? 
+                        "Failed with status: ${response.statusCode}";
         } catch (e) {
-          errorMessage = response.body.isNotEmpty ? response.body : "Failed: ${response.statusCode}";
+          errorMessage = response.body.isNotEmpty 
+                        ? response.body.length > 100 
+                          ? "${response.body.substring(0, 100)}..." 
+                          : response.body
+                        : "Failed: ${response.statusCode}";
         }
         
-        Get.snackbar("Error", errorMessage);
+        SnackBarHelper.error(errorMessage);
         return false;
       }
     } catch (e, stacktrace) {
       print("❌ Exception: $e");
       print("❌ StackTrace: $stacktrace");
-      Get.snackbar("Error", "An error occurred: ${e.toString()}");
+      SnackBarHelper.error("An error occurred: ${e.toString()}");
       return false;
     } finally {
       isLoading.value = false;

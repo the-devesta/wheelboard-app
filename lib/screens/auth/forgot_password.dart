@@ -4,6 +4,7 @@ import '../../commonwidget/app_textfield.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 
 import 'otp_screen.dart';
+import '../../widgets/custom_snackbar.dart';
 
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -95,13 +96,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
+                  SnackBarHelper.success("Password reset link sent to your email");
                   Get.to(EnterOtpScreen());
-                  // Get.snackbar(
-                  //   "Success",
-                  //   "Password reset link sent to your email",
-                  //   backgroundColor: Colors.green.shade300,
-                  //   colorText: Colors.white,
-                  // );
                 }
               },
               style: ElevatedButton.styleFrom(

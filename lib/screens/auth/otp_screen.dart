@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 
 import '../../CommonWidget/app_textfield.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class EnterOtpScreen extends StatefulWidget {
   const EnterOtpScreen({Key? key}) : super(key: key);
@@ -91,12 +92,7 @@ class _EnterOtpScreenState extends State<EnterOtpScreen> {
             child: ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
-                  Get.snackbar(
-                    "Success",
-                    "OTP verified successfully",
-                    backgroundColor: Colors.green.shade300,
-                    colorText: Colors.white,
-                  );
+                  SnackBarHelper.success("OTP verified successfully");
                 }
               },
               style: ElevatedButton.styleFrom(

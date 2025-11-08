@@ -4,9 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../controllers/complete_profile_controller.dart';
 import '../../models/company_profilemodel.dart';
 import '../../constants/apps_colors.dart';
-import '../auth/login.dart';
 import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import '../../utils/session_manager.dart';
+import '../../utils/navigation_helper.dart';
 import '../../widgets/custom_snackbar.dart';
 
 class CompanyCompleteProfile extends StatefulWidget {
@@ -78,27 +78,74 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                // 👤 Profile Image
-                Obx(() {
-                  return GestureDetector(
-                    onTap: () => _showImagePickerOptions(context),
-                    child: CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage:
-                          profileController.profileImage.value != null
-                          ? FileImage(profileController.profileImage.value!)
-                          : null,
-                      child: profileController.profileImage.value == null
-                          ? const Icon(
-                              Icons.person,
-                              size: 40,
-                              color: Colors.grey,
-                            )
-                          : null,
+                // 👤 Profile Image / Company Logo
+                Column(
+                  children: [
+                    Obx(() {
+                      return GestureDetector(
+                        onTap: () => _showImagePickerOptions(context),
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage:
+                                  profileController.profileImage.value != null
+                                  ? FileImage(profileController.profileImage.value!)
+                                  : null,
+                              child: profileController.profileImage.value == null
+                                  ? const Icon(
+                                      Icons.camera_alt,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
+                            ),
+                            if (profileController.profileImage.value != null)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Company Logo*",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: profileController.profileImage.value == null 
+                            ? Colors.red 
+                            : Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  );
-                }),
+                    if (profileController.profileImage.value != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          "Image selected ✓",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 16),
 
                 // // 📋 Company Name
@@ -279,7 +326,12 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
           if (success) {
             await SessionManager.setProfileCompleted(true);
             SnackBarHelper.success("Profile completed successfully!");
-            Get.to(() => ProfessionLogin());
+            
+            // Wait for snackbar to be visible
+            await Future.delayed(const Duration(milliseconds: 2000));
+            
+            // Navigate to main wrapper after profile completion
+            NavigationHelper.navigateToMainWrapper();
           }
         },
         style: ElevatedButton.styleFrom(
@@ -297,6 +349,12 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
   }
 
   bool _validateForm() {
+    // ✅ Validate Company Logo (Required)
+    if (profileController.profileImage.value == null) {
+      SnackBarHelper.error("Please select Company Logo (CompanyLogo field is required)");
+      return false;
+    }
+
     // Validate First Name
     if (firstNameController.text.trim().isEmpty) {
       SnackBarHelper.error("Please enter First Name");

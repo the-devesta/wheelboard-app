@@ -38,26 +38,29 @@ dependencies:
   google_maps_flutter: ^2.13.1
   cached_network_image: ^3.3.1
   iconsax: ^0.0.8
-
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  country_picker: ^2.0.20
+  # Image and file handling
+  image_picker: ^1.0.4
+  file_picker: ^8.0.0
+  # Sharing and storage
+  share_plus: ^10.0.0 
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.1
+  # Network and utilities
   http: ^0.13.6
   mime: ^1.0.4
   flutter_svg: ^2.0.7
   google_fonts: ^4.0.4
-  share_plus: ^10.0.0 
-  file_picker: ^8.0.0
-  shared_preferences: ^2.2.2
+  country_picker: ^2.0.20
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
-  image_picker: ^1.0.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

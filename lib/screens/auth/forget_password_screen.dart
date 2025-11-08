@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'verify_email.dart';
+import '../../widgets/custom_snackbar.dart';
 
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -33,9 +34,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void _resetPassword() {
     String email = _emailController.text.trim();
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email')),
-      );
+      SnackBarHelper.error("Please enter your email");
       return;
     }
     

@@ -603,6 +603,17 @@ class ProfessionLogin extends StatelessWidget {
           onPressed: loginController.isLoading.value
               ? null // Disable button while loading
               : () async {
+                  // ✅ Validate fields before attempting login
+                  if (phoneController.text.trim().isEmpty) {
+                    SnackBarHelper.error("Please enter phone number");
+                    return;
+                  }
+
+                  if (passwordController.text.trim().isEmpty) {
+                    SnackBarHelper.error("Please enter password");
+                    return;
+                  }
+
                   print("🔐 Starting login process...");
                   final responseData = await loginController.login(
                     phoneController.text.trim(),
@@ -611,11 +622,18 @@ class ProfessionLogin extends StatelessWidget {
 
                   print("🔐 Login response: $responseData");
                   
-                  if (responseData != null) {
+                  // ✅ Only proceed if login was successful (responseData is not null)
+                  if (responseData != null && responseData.isNotEmpty) {
                     final businessCategory = responseData['businessCategory'] ?? '';
                     final isProfileComplete = responseData['isProfileComplete'] ?? false;
                     final token = responseData['token'] ?? '';
                     final userId = responseData['userId'] ?? '';
+                    
+                    // ✅ Validate token and userId before proceeding
+                    if (token.isEmpty || userId.isEmpty) {
+                      SnackBarHelper.error("Login failed: Invalid response from server");
+                      return; // Don't navigate
+                    }
                     
                     print("🔐 Business Category: $businessCategory");
                     print("🔐 Is Profile Complete: $isProfileComplete");
@@ -632,31 +650,38 @@ class ProfessionLogin extends StatelessWidget {
                     
                     print("🔐 AuthService login result: $loginSuccess");
 
+                    // ✅ Only navigate if login was successful
                     if (loginSuccess) {
                       SnackBarHelper.success("Login successful! Welcome back.");
-                    }
-
-                    if (businessCategory == "Transport" && !isProfileComplete) {
-                      print("🔐 Navigating to CompanyCompleteProfile");
-                      Get.to(
-                        CompanyCompleteProfile(),
-                        arguments: {"userId": userId},
-                      );
-                    } else if (businessCategory == "Service Provider" &&
-                        !isProfileComplete) {
-                      print("🔐 Navigating to AlliedBusinessRegistrationScreen");
-                      Get.to(
-                        AlliedBusinessRegistrationScreen(),
-                        arguments: {"userId": userId},
-                      );
+                      
+                      // Navigate only after successful login
+                      if (businessCategory == "Transport" && !isProfileComplete) {
+                        print("🔐 Navigating to CompanyCompleteProfile");
+                        Get.to(
+                          CompanyCompleteProfile(),
+                          arguments: {"userId": userId},
+                        );
+                      } else if (businessCategory == "Service Provider" &&
+                          !isProfileComplete) {
+                        print("🔐 Navigating to AlliedBusinessRegistrationScreen");
+                        Get.to(
+                          AlliedBusinessRegistrationScreen(),
+                          arguments: {"userId": userId},
+                        );
+                      } else {
+                        // ✅ Navigate to appropriate wrapper based on user type
+                        print("🔐 Navigating to appropriate wrapper based on user type");
+                        NavigationHelper.navigateToMainWrapper();
+                      }
                     } else {
-                      // ✅ Navigate to appropriate wrapper based on user type
-                      print("🔐 Navigating to appropriate wrapper based on user type");
-                      NavigationHelper.navigateToMainWrapper();
+                      SnackBarHelper.error("Login failed: Could not save session");
+                      // Don't navigate on failure
                     }
                   } else {
-                    // ✅ Show error if login fails
+                    // ✅ Show error if login fails - DO NOT NAVIGATE
                     SnackBarHelper.error("Invalid credentials. Please try again.");
+                    // Explicitly return to prevent any navigation
+                    return;
                   }
                 },
           style: ElevatedButton.styleFrom(
