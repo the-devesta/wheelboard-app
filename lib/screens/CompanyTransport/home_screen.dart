@@ -8,9 +8,10 @@ import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'companyuser_profile_screen.dart';
 import 'services_screen.dart';
-import 'driver_profile.dart';
 import 'package:share_plus/share_plus.dart';
-import 'main_wrapper.dart';
+import 'job_form_screen.dart';
+import 'add_expense_screen.dart';
+import 'professional_list.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -192,16 +193,19 @@ class HomeScreen extends StatelessWidget {
                               'Tapped on item: ${item['label']} (Index: $index)',
                             );
 
-                            // Example: If second item tapped
+                            // Professional tab
                             if (index == 1) {
-                              // Navigate, show dialog, etc.
-                              Get.to(() => const CompanyTransportMainWrapper(initialIndex: 1));
+                              // Navigate to Professional List Screen
+                              Get.to(const ProfessionalListScreen());
                             }
                             if (index == 2) {
-                              // Navigate, show dialog, etc.
-                              Get.to(DriverProfileScreen());
+                              // Expenses - Navigate to Add Expense Screen
+                              Get.to(const AddExpenseScreen());
                             }
-
+                            if (index == 3) {
+                              // Hire - Navigate to Post Job Screen
+                              Get.to(PostJobScreen());
+                            }
                             if (index == 4) {
                               // Navigate, show dialog, etc.
                               Get.to(ServicesScreen());
@@ -411,7 +415,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 8),
           ElevatedButton(
             onPressed: () {
-              Get.to(ServicesScreen());
+              Get.to(PostJobScreen());
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.buttonBg,

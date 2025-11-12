@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:wheelboard/commonwidget/app_textfield.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:get/get.dart';
 import '../../controllers/add_trip_controller.dart';
 import '../../utils/session_manager.dart';
@@ -26,9 +24,8 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
   final TextEditingController deliveryController = TextEditingController();
   final TextEditingController specialInstructionsController =
       TextEditingController();
-  final TextEditingController payRangeController = TextEditingController();
-
-  final Color fieldBorderColor = const Color.fromARGB(255, 199, 198, 198);
+  final TextEditingController minPayRangeController = TextEditingController();
+  final TextEditingController maxPayRangeController = TextEditingController();
   final PlacesService placesService = PlacesService(
     apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
   ); // <-- put your key here
@@ -77,127 +74,147 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9DCDC),
+      backgroundColor: const Color(0xFFF4E3E3),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 1,
+        elevation: 0,
         title: const Text(
           'New Post Trip',
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(
+            color: Color(0xFF1E1E1E),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Poppins',
+            letterSpacing: -0.14,
+          ),
         ),
         leading: const BackButton(color: Colors.black),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16),
-            child: Icon(Icons.close, color: Colors.black),
+            child: Icon(Icons.close, color: Colors.black, size: 20),
           ),
         ],
+        shape: const Border(
+          bottom: BorderSide(
+            color: Color(0xFFFCD2D2),
+            width: 1,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Center(
-                child: Text(
-                  "Trip Details",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black54,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              _buildVehicleDropdown(),
-              const SizedBox(height: 16),
-
-              // _buildDriverDropdown(),
-              // const SizedBox(height: 16),
-
-              _buildPickupField(),
-              const SizedBox(height: 16),
-
-              _buildDeliveryField(),
-              const SizedBox(height: 16),
-
-              _buildDatePicker(context),
-              const SizedBox(height: 16),
-
-              _buildTimePicker(context),
-              const SizedBox(height: 16),
-
-              AppTextField(
-                hintText: 'Special Instructions',
-                controller: specialInstructionsController,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                hintText: 'Enter Pay range (Rs 200 - Rs900)',
-                controller: payRangeController,
-              ),
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final token = await SessionManager().getString("authToken");
-                    final userId = await SessionManager().getString("userId");
-
-                    if (token == null || userId == null) {
-                      Get.snackbar("Error", "User not logged in");
-                      return;
-                    }
-
-                    // ✅ Build Trip object (TripId not needed - backend will generate)
-                    final trip = Trip(
-                      tripId: "", // Empty - backend will generate TripId
-                      userId: userId,
-                      vehicleId: tripController.selectedVehicle.value ?? "",
-                      driverId: tripController.selectedDriver.value ?? "",
-                      pickupLocation: pickupController.text,
-                      deliveryLocation: deliveryController.text,
-                      pickupDate: selectedDate,
-                      pickupTime: selectedTime != null
-                          ? _formatTimeOfDay(selectedTime!)
-                          : "00:00:00",
-                      specialInstructions: specialInstructionsController.text,
-                      payRange: payRangeController.text,
-                      tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}",
-                      tripStatus: "Pending",
-                    );
-
-                    // ✅ Send API call
-                    await tripController.addTrip(trip, token);
-                  },
-
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.buttonBg,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: Color(0xFF2B5DF2)),
-                    ),
-                  ),
-                  child: const Text(
-                    "Schedule Now",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppColors.white,
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.only(top: 24),
+            width: 343,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Text(
+                      "Trip Details",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Poppins',
+                        color: const Color(0xFF6C7278),
+                        letterSpacing: -0.32,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+
+                _buildVehicleDropdown(),
+                const SizedBox(height: 17),
+
+                _buildPickupField(),
+                const SizedBox(height: 17),
+
+                _buildDeliveryField(),
+                const SizedBox(height: 17),
+
+                _buildDatePicker(context),
+                const SizedBox(height: 17),
+
+                _buildTimePicker(context),
+                const SizedBox(height: 17),
+
+                _buildSpecialInstructionsField(),
+                const SizedBox(height: 17),
+
+                _buildPayRangeFields(),
+                const SizedBox(height: 24),
+
+                Center(
+                  child: SizedBox(
+                    width: 295,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final token = await SessionManager().getString("authToken");
+                        final userId = await SessionManager().getString("userId");
+
+                        if (token == null || userId == null) {
+                          Get.snackbar("Error", "User not logged in");
+                          return;
+                        }
+
+                        // Combine min and max pay range for backend (temporary - backend will change later)
+                        final payRange = minPayRangeController.text.isNotEmpty && maxPayRangeController.text.isNotEmpty
+                            ? "Rs ${minPayRangeController.text} - Rs ${maxPayRangeController.text}"
+                            : "";
+
+                        // ✅ Build Trip object (TripId not needed - backend will generate)
+                        final trip = Trip(
+                          tripId: "", // Empty - backend will generate TripId
+                          userId: userId,
+                          vehicleId: tripController.selectedVehicle.value ?? "",
+                          driverId: tripController.selectedDriver.value ?? "",
+                          pickupLocation: pickupController.text,
+                          deliveryLocation: deliveryController.text,
+                          pickupDate: selectedDate,
+                          pickupTime: selectedTime != null
+                              ? _formatTimeOfDay(selectedTime!)
+                              : "00:00:00",
+                          specialInstructions: specialInstructionsController.text,
+                          payRange: payRange,
+                          tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}",
+                          tripStatus: "Pending",
+                        );
+
+                        // ✅ Send API call
+                        await tripController.addTrip(trip, token);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF25C5C),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        "Schedule Now",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                          letterSpacing: -0.14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -208,29 +225,52 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Select Vehicle"),
-        const SizedBox(height: 6),
+        Text(
+          "Select Vehicle",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.normal,
+            fontFamily: 'Poppins',
+            color: const Color(0xFF535353),
+          ),
+        ),
+        const SizedBox(height: 8),
         Obx(() {
           if (tripController.isVehicleLoading.value) {
-            return const CircularProgressIndicator(); // Show loading indicator
+            return const CircularProgressIndicator();
           }
           if (tripController.vehicles.isEmpty) {
             return const Text("No vehicles available");
           }
           return DropdownButtonFormField<String>(
             value: tripController.selectedVehicle.value,
-            hint: const Text("Select Vehicle"),
+            hint: Text(
+              "Select Vehicle",
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'Poppins',
+                color: const Color(0xFF8F9098),
+              ),
+            ),
             isExpanded: true,
-            decoration: _inputDecoration(borderColor: fieldBorderColor),
+            decoration: _inputDecoration(
+              borderColor: const Color(0xFFC5C6CC),
+              height: 48,
+            ),
             items: tripController.vehicles
                 .map(
                   (vehicle) => DropdownMenuItem(
-                    value: vehicle.vehicleId, // Use vehicle ID as the value
-                    child: Text(vehicle.vehicleModel), // Display vehicle name
+                    value: vehicle.vehicleId,
+                    child: Text(vehicle.vehicleModel),
                   ),
                 )
                 .toList(),
             onChanged: (val) => tripController.selectedVehicle.value = val,
+            icon: const Icon(
+              Icons.keyboard_arrow_down,
+              color: Color(0xFF006FFD),
+              size: 12,
+            ),
           );
         }),
       ],
@@ -297,13 +337,29 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Pickup Location"),
-        const SizedBox(height: 6),
+        Text(
+          "Pickup Location",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Poppins',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.24,
+          ),
+        ),
+        const SizedBox(height: 2),
         TextFormField(
           controller: pickupController,
           decoration: _inputDecoration(
             hint: "Enter pickup location",
-            borderColor: fieldBorderColor,
+            borderColor: const Color(0xFFEDF1F3),
+            height: 46,
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Poppins',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
           ),
           onChanged: (value) async {
             if (value.isNotEmpty) {
@@ -319,8 +375,8 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
             margin: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(color: fieldBorderColor),
-              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEDF1F3)),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: ListView.separated(
               shrinkWrap: true,
@@ -338,7 +394,6 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                       pickupSuggestions.clear();
                     });
 
-                    // Optional: fetch lat/lng
                     final loc = await placesService.fetchPlaceLocation(
                       s.placeId,
                     );
@@ -373,18 +428,34 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Delivery Location"),
-        const SizedBox(height: 6),
+        Text(
+          "Delivery Location",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Plus Jakarta Sans',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.24,
+          ),
+        ),
+        const SizedBox(height: 2),
         TextFormField(
           controller: deliveryController,
           decoration: _inputDecoration(
             hint: "Enter delivery location",
-            borderColor: fieldBorderColor,
+            borderColor: const Color(0xFFEDF1F3),
+            height: 46,
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Inter',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
           ),
           onChanged: (value) async {
             if (value.isNotEmpty) {
               final results = await placesService.fetchSuggestions(value);
-              setState(() => deliverySuggestions = results); // ✅ fixed
+              setState(() => deliverySuggestions = results);
             } else {
               setState(() => deliverySuggestions = []);
             }
@@ -395,8 +466,8 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
             margin: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(color: fieldBorderColor),
-              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEDF1F3)),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: ListView.separated(
               shrinkWrap: true,
@@ -431,8 +502,17 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Pick up a Date"),
-        const SizedBox(height: 6),
+        Text(
+          "Pick up a Date",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Plus Jakarta Sans',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.24,
+          ),
+        ),
+        const SizedBox(height: 2),
         TextFormField(
           readOnly: true,
           onTap: () async {
@@ -452,9 +532,17 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                 : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
             suffixIcon: const Icon(
               Icons.calendar_month_outlined,
-              color: Colors.blue,
+              color: Color(0xFF006FFD),
+              size: 21,
             ),
-            borderColor: fieldBorderColor,
+            borderColor: const Color(0xFFEDF1F3),
+            height: 46,
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Inter',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
           ),
         ),
       ],
@@ -465,8 +553,17 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Pick Time"),
-        const SizedBox(height: 6),
+        Text(
+          "Pick Time",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Plus Jakarta Sans',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.24,
+          ),
+        ),
+        const SizedBox(height: 2),
         TextFormField(
           readOnly: true,
           onTap: () async {
@@ -482,8 +579,127 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
             hint: selectedTime == null
                 ? "Pick your time."
                 : selectedTime!.format(context),
-            suffixIcon: const Icon(Icons.access_time, color: Colors.blue),
-            borderColor: fieldBorderColor,
+            suffixIcon: const Icon(
+              Icons.access_time,
+              color: Color(0xFF006FFD),
+              size: 21,
+            ),
+            borderColor: const Color(0xFFEDF1F3),
+            height: 46,
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Inter',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpecialInstructionsField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Special Instructions",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Plus Jakarta Sans',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.24,
+          ),
+        ),
+        const SizedBox(height: 2),
+        TextFormField(
+          controller: specialInstructionsController,
+          maxLines: 3,
+          decoration: _inputDecoration(
+            hint: "Enter special instructions",
+            borderColor: const Color(0xFFEDF1F3),
+            height: 46,
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Inter',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPayRangeFields() {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Min Pay Range (Rs)",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Plus Jakarta Sans',
+                  color: const Color(0xFF6C7278),
+                  letterSpacing: -0.24,
+                ),
+              ),
+              const SizedBox(height: 2),
+              TextFormField(
+                controller: minPayRangeController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(
+                  hint: "200",
+                  borderColor: const Color(0xFFEDF1F3),
+                  height: 46,
+                ),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Inter',
+                  color: const Color(0xFF6C7278),
+                  letterSpacing: -0.14,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Max Pay Range (Rs)",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Plus Jakarta Sans',
+                  color: const Color(0xFF6C7278),
+                  letterSpacing: -0.24,
+                ),
+              ),
+              const SizedBox(height: 2),
+              TextFormField(
+                controller: maxPayRangeController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(
+                  hint: "900",
+                  borderColor: const Color(0xFFEDF1F3),
+                  height: 46,
+                ),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Inter',
+                  color: const Color(0xFF6C7278),
+                  letterSpacing: -0.14,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -494,27 +710,38 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     String? hint,
     Widget? suffixIcon,
     Color? borderColor,
+    double? height,
   }) {
-    final color = borderColor ?? Theme.of(context).primaryColor;
+    final color = borderColor ?? const Color(0xFFEDF1F3);
 
     return InputDecoration(
       hintText: hint,
       filled: true,
       fillColor: Colors.white,
       suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      hintStyle: TextStyle(
+        fontSize: 14,
+        fontFamily: 'Inter',
+        color: const Color(0xFF6C7278),
+        letterSpacing: -0.14,
+      ),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: height != null ? (height - 21) / 2 : 12.5,
+      ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: color, width: 1.5),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: color, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: color, width: 2.0),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: color, width: 1),
       ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: color),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: color, width: 1),
       ),
+      constraints: height != null ? BoxConstraints(minHeight: height) : null,
     );
   }
 }

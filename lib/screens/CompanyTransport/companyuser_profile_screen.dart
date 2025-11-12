@@ -5,6 +5,8 @@ import 'package:wheelboard/constants/apps_colors.dart';
 
 import 'package:wheelboard/services/auth_service.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
+import 'package:wheelboard/controllers/user_profile_controller.dart';
+import 'package:wheelboard/models/user_profile_model.dart';
 import '../auth/onboarding_screen.dart';
 import 'edit_company_profile.dart';
 import 'switch_profile_popup.dart';
@@ -25,6 +27,14 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize controller
+    final controller = Get.put(UserProfileController());
+    
+    // Fetch profile on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchCurrentUserProfile();
+    });
+
     return Scaffold(
       backgroundColor: AppColors.primary,
       appBar: AppBar(
@@ -57,45 +67,75 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          children: [
-            _buildProfileHeader(),
-            const SizedBox(height: 12),
-            _buildKycBanner(),
-            const SizedBox(height: 16),
-            _buildPersonalDetailsCard(),
-            const SizedBox(height: 16),
-            _buildContactInfoCard(),
-            const SizedBox(height: 16),
-            _buildPlatformPreferencesCard(),
-            const SizedBox(height: 16),
-            _buildSubscriptionPlanCard(),
-            const SizedBox(height: 16),
-            _buildQuickActionsCard(),
-            const SizedBox(height: 16),
-            _buildSupportCard(),
-            const SizedBox(height: 12),
-            const Text("App v1.3.2"),
-            const Row(
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: AppColors.buttonBg,
+            ),
+          );
+        }
+
+        if (controller.errorMessage.value.isNotEmpty) {
+          return Center(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("Terms & Conditions"),
-                SizedBox(width: 8),
-                Text("•"),
-                SizedBox(width: 8),
-                Text("Privacy Policy"),
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(controller.errorMessage.value),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => controller.fetchCurrentUserProfile(),
+                  child: const Text('Retry'),
+                ),
               ],
             ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+          );
+        }
+
+        final profile = controller.userProfile.value;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            children: [
+              _buildProfileHeader(profile),
+              const SizedBox(height: 12),
+              _buildKycBanner(),
+              const SizedBox(height: 16),
+              _buildPersonalDetailsCard(profile),
+              const SizedBox(height: 16),
+              _buildContactInfoCard(profile),
+              const SizedBox(height: 16),
+              _buildPlatformPreferencesCard(),
+              const SizedBox(height: 16),
+              _buildSubscriptionPlanCard(),
+              const SizedBox(height: 16),
+              _buildQuickActionsCard(),
+              const SizedBox(height: 16),
+              _buildSupportCard(),
+              const SizedBox(height: 12),
+              const Text("App v1.3.2"),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("Terms & Conditions"),
+                  SizedBox(width: 8),
+                  Text("•"),
+                  SizedBox(width: 8),
+                  Text("Privacy Policy"),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+      }),
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(UserProfileModel? profile) {
     return Container(
       margin: const EdgeInsets.all(4),
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -121,9 +161,15 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.buttonBg, width: 2.0),
                 ),
-                child: const CircleAvatar(
+                child: CircleAvatar(
                   radius: 45,
-                  backgroundImage: NetworkImage('https://i.pravatar.cc/300'),
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: profile?.companyLogoPath != null
+                      ? NetworkImage(profile!.companyLogoPath!)
+                      : null,
+                  child: profile?.companyLogoPath == null
+                      ? const Icon(Icons.business, size: 50, color: Colors.grey)
+                      : null,
                 ),
               ),
               Positioned(
@@ -144,20 +190,33 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
               color: AppColors.buttonBg,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.local_shipping, size: 16, color: Colors.white),
-                SizedBox(width: 6),
-                Text("Delhi Transport", style: TextStyle(color: Colors.white)),
+                const Icon(Icons.local_shipping, size: 16, color: Colors.white),
+                const SizedBox(width: 6),
+                Text(
+                  profile?.businessCategory ?? 'Transport',
+                  style: const TextStyle(color: Colors.white),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            "Deepak Kumar",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          Text(
+            profile?.companyName ?? 'N/A',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
+          if (profile?.mobileNo != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              profile!.mobileNo!,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
           const SizedBox(height: 4),
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -187,83 +246,47 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     );
   }
 
-  Widget _buildPersonalDetailsCard() {
+  Widget _buildPersonalDetailsCard(UserProfileModel? profile) {
     return _buildCard(
-      title: "Personal Details",
+      title: "Company Details",
       trailing: GestureDetector(
         onTap: () => Get.to(EditCompanyProfileScreen()),
         child: const Icon(Icons.edit),
       ),
       children: [
-        _ProfileItem(
-          icon: SvgPicture.asset('assets/person.svg', width: 20, height: 20),
-          title: "Name",
-          value: "Deepak Kumar",
-        ),
-        _ProfileItem(
-          icon: SvgPicture.asset(
-            'assets/mdi_password.svg',
-            width: 20,
-            height: 20,
+        if (profile?.companyName != null)
+          _ProfileItem(
+            icon: SvgPicture.asset('assets/bus.svg', width: 20, height: 20),
+            title: "Company Name",
+            value: profile!.companyName!,
           ),
-          title: "Change Password",
-          value: "***********",
-        ),
-        _ProfileItem(
-          icon: SvgPicture.asset('assets/location.svg', width: 20, height: 20),
-          title: "Location",
-          value: "Block C, Street 12, Noida, UP",
-        ),
-        _ProfileItem(
-          icon: SvgPicture.asset('assets/bus.svg', width: 20, height: 20),
-          title: "Company Name",
-          value: "Delhi Transport",
-        ),
-        _ProfileItem(
-          icon: SvgPicture.asset('assets/transport.svg', width: 20, height: 20),
-          title: "Business Category",
-          value: "Transport",
-        ),
-        _ProfileItem(
-          icon: SvgPicture.asset(
-            'assets/pickuptruck.svg',
-            width: 20,
-            height: 20,
+        if (profile?.businessCategory != null)
+          _ProfileItem(
+            icon: SvgPicture.asset('assets/transport.svg', width: 20, height: 20),
+            title: "Business Category",
+            value: profile!.businessCategory!,
           ),
-          title: "Fleet Size",
-          value: "42",
-        ),
-        _ProfileItem(
-          icon: SvgPicture.asset('assets/homegst.svg', width: 20, height: 20),
-          title: "GST number",
-          value: "43464984931316",
-        ),
+        if (profile?.gstNumber != null)
+          _ProfileItem(
+            icon: SvgPicture.asset('assets/homegst.svg', width: 20, height: 20),
+            title: "GST number",
+            value: profile!.gstNumber!,
+          ),
       ],
     );
   }
 
-  Widget _buildContactInfoCard() {
+  Widget _buildContactInfoCard(UserProfileModel? profile) {
     return _buildCard(
       title: "Contact Information",
       children: [
-        _ProfileItem(
-          icon: SvgPicture.asset('assets/phone.svg', width: 20, height: 20),
-          title: "Mobile Number",
-          value: "+91 98765 43210",
-          trailing: Text("Edit"),
-        ),
-        _ProfileItem(
-          icon: SvgPicture.asset('assets/email.svg', width: 20, height: 20),
-          title: "Email Address",
-          value: "deepak.kumar@email.com",
-          trailing: Text("Edit"),
-        ),
-        _ProfileItem(
-          icon: SvgPicture.asset('assets/whatsapp.svg', width: 20, height: 20),
-          title: "WhatsApp Number",
-          value: "+91 98765 43210",
-          trailing: Text("Edit"),
-        ),
+        if (profile?.mobileNo != null)
+          _ProfileItem(
+            icon: SvgPicture.asset('assets/phone.svg', width: 20, height: 20),
+            title: "Mobile Number",
+            value: profile!.mobileNo!,
+            trailing: const Text("Edit"),
+          ),
       ],
     );
   }

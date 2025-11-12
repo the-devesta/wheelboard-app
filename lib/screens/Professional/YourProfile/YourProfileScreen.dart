@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import '../../../services/auth_service.dart';
 import '../../../widgets/custom_snackbar.dart';
+import '../../../controllers/user_profile_controller.dart';
+import '../../../models/user_profile_model.dart';
 import '../../auth/onboarding_screen.dart' show RegisterScreen;
 
 class YourProfileScreen extends StatelessWidget {
@@ -10,46 +12,82 @@ class YourProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize controller
+    final controller = Get.put(UserProfileController());
+    
+    // Fetch profile on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchCurrentUserProfile();
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFB),
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 20),
-                child: Column(
-                  children: [
-                    _buildProfileCard(),
-                    const SizedBox(height: 24),
-                    _buildKycBanner(),
-                    const SizedBox(height: 20),
-                    _buildGoldMemberCard(),
-                    const SizedBox(height: 20),
-                    _buildPersonalDetails(),
-                    const SizedBox(height: 16),
-                    _buildContactInfo(),
-                    const SizedBox(height: 16),
-                    _buildWorkOverview(),
-                    const SizedBox(height: 16),
-                    _buildCompleteKyc(),
-                    const SizedBox(height: 16),
-                    _buildPlatformPreferences(),
-                    const SizedBox(height: 16),
-                    _buildSubscriptionPlans(),
-                    const SizedBox(height: 16),
-                    _buildQuickActions(),
-                    const SizedBox(height: 16),
-                    _buildHelpCard(),
-                    const SizedBox(height: 16),
-                    _buildFooter(),
-                  ],
+        child: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (controller.errorMessage.value.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(controller.errorMessage.value),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => controller.fetchCurrentUserProfile(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final profile = controller.userProfile.value;
+          
+          return Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Column(
+                    children: [
+                      _buildProfileCard(profile),
+                      const SizedBox(height: 24),
+                      _buildKycBanner(),
+                      const SizedBox(height: 20),
+                      _buildGoldMemberCard(),
+                      const SizedBox(height: 20),
+                      _buildPersonalDetails(profile),
+                      const SizedBox(height: 16),
+                      _buildContactInfo(profile),
+                      const SizedBox(height: 16),
+                      _buildWorkOverview(),
+                      const SizedBox(height: 16),
+                      _buildCompleteKyc(),
+                      const SizedBox(height: 16),
+                      _buildPlatformPreferences(),
+                      const SizedBox(height: 16),
+                      _buildSubscriptionPlans(),
+                      const SizedBox(height: 16),
+                      _buildQuickActions(),
+                      const SizedBox(height: 16),
+                      _buildHelpCard(),
+                      const SizedBox(height: 16),
+                      _buildFooter(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -102,7 +140,7 @@ class YourProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildProfileCard(UserProfileModel? profile) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -122,11 +160,17 @@ class YourProfileScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFF36969), width: 4),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://via.placeholder.com/96'),
-                    fit: BoxFit.cover,
-                  ),
+                  image: profile?.profileImagePath != null
+                      ? DecorationImage(
+                          image: NetworkImage(profile!.profileImagePath!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                  color: profile?.profileImagePath == null ? Colors.grey[300] : null,
                 ),
+                child: profile?.profileImagePath == null
+                    ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                    : null,
               ),
               Positioned(
                 bottom: 0,
@@ -148,7 +192,7 @@ class YourProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Rohit Sharma',
+            profile?.name ?? 'N/A',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -156,21 +200,22 @@ class YourProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF36969),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Text(
-              'Role',
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+          if (profile?.professionalType != null && profile!.professionalType!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF36969),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Text(
+                profile.professionalType!,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -281,7 +326,26 @@ class YourProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPersonalDetails() {
+  Widget _buildPersonalDetails(UserProfileModel? profile) {
+    String formatDate(String? dateString) {
+      if (dateString == null || dateString.isEmpty) return 'N/A';
+      try {
+        final date = DateTime.parse(dateString);
+        return '${date.day} ${_getMonthName(date.month)} ${date.year}';
+      } catch (e) {
+        return dateString;
+      }
+    }
+
+    String location = 'N/A';
+    if (profile?.city != null && profile?.state != null) {
+      location = '${profile!.city}, ${profile.state}';
+    } else if (profile?.city != null) {
+      location = profile!.city!;
+    } else if (profile?.state != null) {
+      location = profile!.state!;
+    }
+
     return _buildCard(
       title: 'Personal Details',
       trailing: GestureDetector(
@@ -310,22 +374,35 @@ class YourProfileScreen extends StatelessWidget {
         ),
       ),
       children: [
-        _buildInfoItem(Icons.person_outline, 'Name', 'Rohit Sharma'),
-        _buildInfoItem(Icons.person_outline, 'Father\'s Name', 'Jitendra Sharma'),
-        _buildInfoItem(Icons.calendar_today, 'Date of Birth', '17 June 1990'),
-        _buildInfoItem(Icons.location_on, 'Address/Location', 'Pune, Maharashtra'),
+        _buildInfoItem(Icons.person_outline, 'Name', profile?.name ?? 'N/A'),
+        if (profile?.fatherName != null && profile!.fatherName!.isNotEmpty)
+          _buildInfoItem(Icons.person_outline, 'Father\'s Name', profile.fatherName!),
+        if (profile?.dateOfBirth != null)
+          _buildInfoItem(Icons.calendar_today, 'Date of Birth', formatDate(profile?.dateOfBirth)),
+        _buildInfoItem(Icons.location_on, 'Address/Location', location),
         _buildInfoItem(Icons.work_outline, 'Years of Experience', '4 Years'),
       ],
     );
   }
 
-  Widget _buildContactInfo() {
+  String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1];
+  }
+
+  Widget _buildContactInfo(UserProfileModel? profile) {
     return _buildCard(
       title: 'Contact Information',
       children: [
-        _buildEditableItem(Icons.phone, 'Mobile Number', '+91 98765 43210'),
-        _buildEditableItem(Icons.email, 'Email Address', 'rohit.sharma@email.com'),
-        _buildEditableItem(Icons.message, 'WhatsApp Number', '+91 98765 43210'),
+        if (profile?.mobileNo != null)
+          _buildEditableItem(Icons.phone, 'Mobile Number', profile!.mobileNo!),
+        if (profile?.email != null && profile!.email!.isNotEmpty)
+          _buildEditableItem(Icons.email, 'Email Address', profile.email!),
+        if (profile?.mobileNo != null)
+          _buildEditableItem(Icons.message, 'WhatsApp Number', profile!.mobileNo!),
       ],
     );
   }

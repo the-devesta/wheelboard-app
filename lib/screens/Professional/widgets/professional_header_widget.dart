@@ -11,8 +11,11 @@ class ProfessionalHeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Container(
-      height: 56,
+      height: screenHeight * 0.07, // Responsive height (~7% of screen height)
       decoration: const BoxDecoration(
         color: Color(0xFFFF5E5E), // Exact Figma red color
         borderRadius: BorderRadius.only(
@@ -23,52 +26,52 @@ class ProfessionalHeaderWidget extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04), // Responsive padding (4% of screen width)
           child: Row(
             children: [
-              // Menu Icon (Left)
+              // Menu Icon (Left) - Responsive
               GestureDetector(
                 onTap: () {
                   Get.to(const YourProfileScreen());
                 },
                 child: Container(
-                  width: 17.5,
-                  height: 20,
-                  child: const Icon(
+                  width: screenWidth * 0.045, // Responsive width
+                  height: screenHeight * 0.025, // Responsive height
+                  child: Icon(
                     Icons.menu,
                     color: Colors.white,
-                    size: 24,
+                    size: screenWidth * 0.06, // Responsive icon size (6% of screen width)
                   ),
                 ),
               ),
               const Spacer(),
-              // Title - Centered
+              // Title - Centered - Responsive
               Text(
                 "WHEELBOARD",
                 style: GoogleFonts.poppins(
-                  fontSize: 24,
+                  fontSize: screenWidth * 0.06, // Responsive font size (6% of screen width)
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                   letterSpacing: 1.2,
                 ),
               ),
               const Spacer(),
-              // Notification Bell
+              // Notification Bell - Responsive
               GestureDetector(
                 onTap: () {
                   Get.to(const Notification1Screen());
                 },
                 child: Container(
-                  width: 40,
-                  height: 40,
+                  width: screenWidth * 0.1, // Responsive width (10% of screen width)
+                  height: screenWidth * 0.1, // Responsive height
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.notifications_outlined,
                     color: Colors.white,
-                    size: 24,
+                    size: screenWidth * 0.06, // Responsive icon size (6% of screen width)
                   ),
                 ),
               ),

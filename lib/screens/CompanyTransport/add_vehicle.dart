@@ -4,10 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:get/get.dart'; // ✅ for controller
-import 'package:wheelboard/constants/apps_colors.dart';
 import '../../models/add_new_vehicle_model.dart';
 import '../../models/vehicle_details_model.dart';
 import '../../controllers/add_new_vehicle_controller.dart';
@@ -188,430 +186,478 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDECEC),
+      backgroundColor: const Color(0xFFF4E3E3),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
           widget.isEditMode ? "Edit Vehicle" : "Add new Vehicle",
-          style: GoogleFonts.poppins(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            fontFamily: 'Poppins',
+            color: const Color(0xFF1E1E1E),
+            letterSpacing: -0.14,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+        leading: const BackButton(color: Colors.black),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: Icon(Icons.close, color: Colors.black, size: 20),
+          ),
+        ],
+        shape: const Border(
+          bottom: BorderSide(
+            color: Color(0xFFFCD2D2),
+            width: 1,
+          ),
         ),
       ),
       body: Obx(() {
-        return Stack(
-          children: [
+        final children = <Widget>[
             SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Text(
-                        "Vehicle Details",
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
+              child: Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 24),
+                  width: 343,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: Text(
+                            "Vehicle Details",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins',
+                              color: const Color(0xFF6C7278),
+                              letterSpacing: -0.32,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
 
-                    // ✅ Vehicle Search Section - Fixed Layout
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.green.shade200, width: 1),
+                      // ✅ Vehicle Search Section
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFA5D6A7), width: 1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.search, color: Color(0xFF388E3C), size: 18),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "Quick Vehicle Search",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Poppins',
+                                    color: const Color(0xFF388E3C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Enter vehicle number to auto-fill vehicle info",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'Poppins',
+                                color: const Color(0xFF2E7D32),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            
+                            // Vehicle Number Field
+                            Container(
+                              width: double.infinity,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
+                              ),
+                              child: TextField(
+                                controller: _vehicleNumberController,
+                                textAlign: TextAlign.left,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Poppins',
+                                  color: const Color(0xFF6C7278),
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: "Vehicle Number (e.g., UP16AF0785)",
+                                  hintStyle: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Poppins',
+                                    color: const Color(0xFF6C7278),
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            
+                            // Search Button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: _isSearchingVehicle ? null : _searchVehicleDetails,
+                                icon: _isSearchingVehicle 
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Icon(Icons.search, size: 20),
+                                label: Text(
+                                  _isSearchingVehicle ? "Searching..." : "Search Vehicle Details",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF388E3C),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Column(
+                      
+                      const SizedBox(height: 17),
+
+                      // Vehicle Model
+                      _buildTextField(
+                        "Vehicle Model",
+                        "Tata-5218",
+                        controller: _vehicleModelController,
+                        suffix: const Icon(
+                          Icons.local_shipping,
+                          color: Color(0xFFF25C5C),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 17),
+
+                      // Vehicle Number
+                      _buildTextField(
+                        "Vehicle Number",
+                        "DD Q9 1644",
+                        controller: _vehicleNumberController,
+                      ),
+                      const SizedBox(height: 17),
+
+                      // Manufacturing Year + Ownership Row
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Icon(Icons.search, color: Colors.green.shade700, size: 18),
-                              const SizedBox(width: 6),
-                              Text(
-                                "Quick Vehicle Search",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.green.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Enter vehicle number to auto-fill vehicle info",
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              color: Colors.green.shade600,
+                          Expanded(
+                            child: _buildTextField(
+                              "Manufacturing Year",
+                              "1999",
+                              controller: _manufacturingYearController,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          
-                          // Vehicle Number Field - Full Width
-                          Container(
-                            width: double.infinity,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: TextField(
-                              controller: _vehicleNumberController,
-                              textAlign: TextAlign.center,
-                              textAlignVertical: TextAlignVertical.center,
-                              style: GoogleFonts.poppins(fontSize: 14),
-                              decoration: InputDecoration(
-                                hintText: "Vehicle Number (e.g., UP16AF0785)",
-                                hintStyle: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade500,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Ownership",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    color: const Color(0xFF6C7278),
+                                    letterSpacing: -0.24,
+                                  ),
                                 ),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
+                                const SizedBox(height: 2),
+                                Container(
+                                  constraints: const BoxConstraints(minHeight: 46),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Checkbox(
+                                            value: _ownershipType == "Owned",
+                                            onChanged: (v) => setState(() {
+                                              _ownershipType = "Owned";
+                                            }),
+                                            activeColor: const Color(0xFFF25C5C),
+                                          ),
+                                          Text(
+                                            "Owned",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontFamily: 'Inter',
+                                              color: const Color(0xFF6C7278),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Checkbox(
+                                            value: _ownershipType == "Attached",
+                                            onChanged: (v) => setState(() {
+                                              _ownershipType = "Attached";
+                                            }),
+                                            activeColor: const Color(0xFFF25C5C),
+                                          ),
+                                          Text(
+                                            "Attached",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontFamily: 'Inter',
+                                              color: const Color(0xFF6C7278),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          
-                          // Search Button - Full Width
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton.icon(
-                              onPressed: _isSearchingVehicle ? null : _searchVehicleDetails,
-                              icon: _isSearchingVehicle 
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Icon(Icons.search, size: 20),
-                              label: Text(
-                                _isSearchingVehicle ? "Searching..." : "Search Vehicle Details",
-                                style: GoogleFonts.poppins(fontSize: 15),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green.shade600,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 17),
 
-                    // Vehicle Model
-                    _buildTextField(
-                      "Vehicle Model",
-                      "Tata-5218",
-                      controller: _vehicleModelController,
-                      suffix: const Icon(
-                        Icons.local_shipping,
-                        color: Colors.red,
-                      ),
-                    ),
-
-                    // Vehicle Number (display only, auto-filled from search)
-                    _buildTextField(
-                      "Vehicle Number (Auto-filled)",
-                      "DD Q9 1644",
-                      controller: _vehicleNumberController,
-                    ),
-
-                    // Manufacturing Year + Ownership Row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: _buildTextField(
-                            "Vehicle Manufacturing Year",
-                            "1999",
-                            controller: _manufacturingYearController,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Ownership",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: _ownershipType == "Owned",
-                                    onChanged: (v) => setState(() {
-                                      _ownershipType = "Owned";
-                                    }),
-                                  ),
-                                  Text(
-                                    "Owned",
-                                    style: GoogleFonts.poppins(fontSize: 14),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: _ownershipType == "Attached",
-                                    onChanged: (v) => setState(() {
-                                      _ownershipType = "Attached";
-                                    }),
-                                  ),
-                                  Text(
-                                    "Attached",
-                                    style: GoogleFonts.poppins(fontSize: 14),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 8),
-                    Text(
-                      "Select Vehicle type",
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      items: const [
-                        DropdownMenuItem(value: "truck", child: Text("Truck")),
-                        DropdownMenuItem(value: "bus", child: Text("Bus")),
-                      ],
-                      onChanged: (value) =>
-                          setState(() => _vehicleType = value),
-                      decoration: InputDecoration(
-                        hintText: "Select type of vehicle",
-                        hintStyle: GoogleFonts.poppins(color: Colors.grey),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.grey.withOpacity(0.5),
-                            width: 1.5,
-                          ),
+                      // Vehicle Type Dropdown
+                      Text(
+                        "Select Vehicle type",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.normal,
+                          fontFamily: 'Poppins',
+                          color: const Color(0xFF535353),
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 16),
-                    Text(
-                      "Description",
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _descriptionController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: "Description",
-                        hintStyle: GoogleFonts.poppins(color: Colors.grey),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.grey.withOpacity(0.5),
-                            width: 1.5,
-                          ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _vehicleType,
+                        items: const [
+                          DropdownMenuItem(value: "truck", child: Text("Truck")),
+                          DropdownMenuItem(value: "bus", child: Text("Bus")),
+                        ],
+                        onChanged: (value) =>
+                            setState(() => _vehicleType = value),
+                        decoration: _inputDecoration(
+                          hint: "Select type of vehicle",
+                          borderColor: const Color(0xFFC5C6CC),
+                          height: 48,
+                        ),
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Color(0xFF006FFD),
+                          size: 12,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 17),
 
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            "By adding this you are explicitly entitled to submit the information and is correct.",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        Switch(
-                          value: _isDeclarationAccepted,
-                          onChanged: (v) =>
-                              setState(() => _isDeclarationAccepted = v),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-                    Text(
-                      "Upload Images of vehicles or Job Poster",
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
+                      // Description
+                      _buildTextField(
+                        "Description",
+                        "Enter Description",
+                        controller: _descriptionController,
+                        maxLines: 3,
                       ),
-                    ),
-                    const SizedBox(height: 8),
+                      const SizedBox(height: 17),
 
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF5C5C),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Colors.white, width: 2),
-                        ),
-                        elevation: 4,
-                      ),
-                      onPressed: _pickImages,
-                      label: const Text(
-                        "Upload",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-
-                    if (_pickedImages.isNotEmpty) const SizedBox(height: 12),
-                    ..._pickedImages.map(
-                      (f) => Row(
+                      // Declaration Switch
+                      Row(
                         children: [
                           Expanded(
                             child: Text(
-                              f.name,
-                              overflow: TextOverflow.ellipsis,
+                              "By adding this you are explicitly entitled to submit the information and is correct.",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Poppins',
+                                color: const Color(0xFF1E1E1E),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            "uploaded successfully",
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          IconButton(
-                            tooltip: 'Remove',
-                            onPressed: () =>
-                                setState(() => _pickedImages.remove(f)),
-                            icon: const Icon(
-                              Icons.close,
-                              size: 18,
-                              color: Colors.redAccent,
-                            ),
+                          Switch(
+                            value: _isDeclarationAccepted,
+                            onChanged: (v) =>
+                                setState(() => _isDeclarationAccepted = v),
+                            activeColor: const Color(0xFFF25C5C),
                           ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 17),
 
-                    if (_pickedImages.isNotEmpty) const SizedBox(height: 8),
-                    if (_pickedImages.isNotEmpty)
-                      GridView.builder(
-                        itemCount: _pickedImages.length,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
+                      // Upload Images Section
+                      Text(
+                        "Upload Images of vehicles or Job Poster",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Plus Jakarta Sans',
+                          color: const Color(0xFF6C7278),
+                          letterSpacing: -0.24,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF25C5C),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                        itemBuilder: (context, i) {
-                          final file = _pickedImages[i];
-                          Widget img;
-                          if (kIsWeb) {
-                            img = Image.memory(file.bytes!, fit: BoxFit.cover);
-                          } else {
-                            img = Image.file(
-                              File(file.path!),
-                              fit: BoxFit.cover,
+                          ),
+                          onPressed: _pickImages,
+                          icon: const Icon(Icons.upload, color: Colors.white, size: 20),
+                          label: Text(
+                            "Upload",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      if (_pickedImages.isNotEmpty) const SizedBox(height: 12),
+                      if (_pickedImages.isNotEmpty)
+                        GridView.builder(
+                          itemCount: _pickedImages.length,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                mainAxisSpacing: 8,
+                                crossAxisSpacing: 8,
+                              ),
+                          itemBuilder: (context, i) {
+                            final file = _pickedImages[i];
+                            Widget img;
+                            if (kIsWeb) {
+                              img = Image.memory(file.bytes!, fit: BoxFit.cover);
+                            } else {
+                              img = Image.file(
+                                File(file.path!),
+                                fit: BoxFit.cover,
+                              );
+                            }
+                            return Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: img,
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: InkWell(
+                                    onTap: () =>
+                                        setState(() => _pickedImages.removeAt(i)),
+                                    child: Container(
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Color(0xFFF25C5C),
+                                      ),
+                                      padding: const EdgeInsets.all(4),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             );
-                          }
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: img,
-                          );
-                        },
-                      ),
+                          },
+                        ),
 
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.buttonBg,
-                          shadowColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      // Submit Button
+                      Center(
+                        child: SizedBox(
+                          width: 295,
+                          height: 48,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF25C5C),
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: _submitVehicle,
+                            child: Text(
+                              widget.isEditMode ? "Update Vehicle" : "Add Now",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: Colors.white,
+                                fontFamily: 'Poppins',
+                                letterSpacing: -0.14,
+                              ),
+                            ),
                           ),
                         ),
-                        onPressed: _submitVehicle,
-                        child: Text(
-                          "Add Now",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
             ),
+          ),
+        ];
 
-            // Show loader overlay
-            if (_vehicleController.isLoading.value)
-              const Center(child: CircularProgressIndicator()),
-          ],
-        );
+        // Add loader overlay if loading
+        if (_vehicleController.isLoading.value) {
+          children.add(const Center(child: CircularProgressIndicator()));
+        }
+
+        return Stack(children: children);
       }),
     );
   }
@@ -621,33 +667,79 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     String hint, {
     Widget? suffix,
     TextEditingController? controller,
+    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hint,
-            suffixIcon: suffix,
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey.withOpacity(0.5),
-                width: 1.5,
-              ),
-            ),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Plus Jakarta Sans',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.24,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 2),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: _inputDecoration(
+            hint: hint,
+            suffixIcon: suffix,
+            borderColor: const Color(0xFFEDF1F3),
+            height: 46,
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Inter',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
+          ),
+        ),
       ],
     );
   }
+
+  InputDecoration _inputDecoration({
+    String? hint,
+    Widget? suffixIcon,
+    Color? borderColor,
+    double? height,
+  }) {
+    final color = borderColor ?? const Color(0xFFEDF1F3);
+
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      suffixIcon: suffixIcon,
+      hintStyle: TextStyle(
+        fontSize: 14,
+        fontFamily: 'Inter',
+        color: const Color(0xFF6C7278),
+        letterSpacing: -0.14,
+      ),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: height != null ? (height - 21) / 2 : 12.5,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: color, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: color, width: 1),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: color, width: 1),
+      ),
+      constraints: height != null ? BoxConstraints(minHeight: height) : null,
+    );
+  }
 }
+

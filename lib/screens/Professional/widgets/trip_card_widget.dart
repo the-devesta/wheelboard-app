@@ -35,21 +35,29 @@ class TripCardWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title with paper airplane icon
+          // Title with paper airplane icon - More visible
           Row(
             children: [
-              const Icon(
-                Icons.send,
-                size: 18,
-                color: Color(0xFF003366),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF003366).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.send,
+                  size: 20,
+                  color: Color(0xFF003366),
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 "Next Scheduled Trip",
                 style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF003366),
+                  letterSpacing: 0.5,
                 ),
               ),
             ],

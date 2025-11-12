@@ -17,12 +17,13 @@ class QuickActionButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final lines = title.split('\n');
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 69,
-        height: 90,
+        width: screenWidth * 0.17, // Responsive width (~17% of screen width)
+        height: screenWidth * 0.22, // Responsive height (maintains aspect ratio)
         decoration: BoxDecoration(
           color: const Color(0xFFE83B4F), // Exact Figma red
           borderRadius: BorderRadius.circular(14),
@@ -34,13 +35,13 @@ class QuickActionButtonWidget extends StatelessWidget {
             Icon(
               icon,
               color: Colors.white,
-              size: 24,
+              size: screenWidth * 0.06, // Responsive icon size (6% of screen width)
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: screenWidth * 0.02), // Responsive spacing
             ...lines.map((line) => Text(
                   line,
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: screenWidth * 0.033, // Responsive font size (3.3% of screen width)
                     fontWeight: FontWeight.w500,
                     color: Colors.white,
                     height: 1.2,

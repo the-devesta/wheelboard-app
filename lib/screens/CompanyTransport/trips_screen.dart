@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/CompanyTransport/newtripscreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/schedulescreen.dart';
+import 'package:wheelboard/screens/CompanyTransport/bids_screen.dart';
 import 'trips_info_widget.dart';
 import 'trip_confirmation.dart';
 
@@ -213,62 +213,98 @@ class _TripPageState extends State<TripPage>
           ),
         ),
 
-        // Your FAB column
+        // FAB column - matching Figma design
         floatingActionButton: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            // New Trip Button
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Get.to(const Newtripscreen());
+                },
+                icon: const Icon(Icons.add_circle, size: 24),
+                label: const Text(
+                  "New Trip",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF26868),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(117, 42),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(
+                      color: Color(0xFFDFF5EB),
+                      width: 2,
+                    ),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            // Schedule Button
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Get.to(const ScheduleTripScreen());
+                },
+                icon: const Icon(Icons.calendar_today, size: 24),
+                label: const Text(
+                  "Schedule",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF26868),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(117, 42),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(
+                      color: Color(0xFFDFF5EB),
+                      width: 2,
+                    ),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            // Manage Trips Button
             ElevatedButton(
               onPressed: () {
                 Get.to(ConfirmTripPage());
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFD6C6C),
-                minimumSize: const Size(140, 40),
+                backgroundColor: const Color(0xFFF26868),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(117, 42),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(
+                    color: Color(0xFFDFF5EB),
+                    width: 2,
+                  ),
                 ),
-                elevation: 4,
+                elevation: 0,
               ),
               child: const Text(
                 "Manage Trips",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 4),
-            ElevatedButton(
-              onPressed: () {
-                Get.to(const ScheduleTripScreen());
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.buttonBg,
-                minimumSize: const Size(140, 40),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
                 ),
-                elevation: 4,
-              ),
-              child: const Text(
-                "Schedule",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 4),
-            ElevatedButton(
-              onPressed: () {
-                Get.to(Newtripscreen());
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.buttonBg,
-                minimumSize: const Size(140, 40),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 4,
-              ),
-              child: const Text(
-                "+ New Trip",
-                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -453,17 +489,243 @@ class _TripsTabViews extends StatelessWidget {
         ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
-            _TripTile(
-              title: "Trip to Bhopal",
-              subtitle: "Indore → Bhopal",
-              statusColor: Colors.orange,
+            _UpcomingTripCard(
+              title: "Trip to Chennai",
+              subtitle: "From: Hyderabad, TG → To: Chennai",
+              statusColor: Colors.grey,
               statusText: "Upcoming",
-              date: "Aug 9, 2025",
+              date: "Aug 12, 2024 - 08:00 AM",
               chip: "Express Delivery",
+              assignedTo: "Akshay R.",
+              assignedToImage: "https://i.pravatar.cc/150?img=4",
+              bidsAvailable: 5,
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Upcoming Trip Card with View Bids functionality
+class _UpcomingTripCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String statusText;
+  final Color statusColor;
+  final String date;
+  final String chip;
+  final String assignedTo;
+  final String assignedToImage;
+  final int bidsAvailable;
+
+  const _UpcomingTripCard({
+    required this.title,
+    required this.subtitle,
+    required this.statusText,
+    required this.statusColor,
+    required this.date,
+    required this.chip,
+    required this.assignedTo,
+    required this.assignedToImage,
+    required this.bidsAvailable,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Trip Image
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                child: Image.asset(
+                  'assets/tripImage.png',
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today, color: Colors.white, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        statusText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.teal[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        chip,
+                        style: const TextStyle(
+                          color: Colors.teal,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 14, color: Colors.black54),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        date,
+                        style: const TextStyle(fontSize: 13, color: Colors.black87),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Colors.green),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        subtitle,
+                        style: const TextStyle(fontSize: 13, color: Colors.black87),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 14, color: Colors.blue),
+                    const SizedBox(width: 6),
+                    const Text(
+                      "Assigned to:",
+                      style: TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                    const SizedBox(width: 6),
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundImage: NetworkImage(assignedToImage),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      assignedTo,
+                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "$bidsAvailable Bids Available",
+                    style: TextStyle(
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Get.to(const BidsScreen());
+                        },
+                        icon: const Icon(Icons.description, size: 16),
+                        label: const Text("View Bids"),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.blue),
+                          foregroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          // View Details
+                        },
+                        icon: const Icon(Icons.arrow_forward, size: 16),
+                        label: const Text("View Details"),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.grey),
+                          foregroundColor: Colors.grey,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

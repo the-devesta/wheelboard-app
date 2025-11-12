@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
-import 'package:wheelboard/CommonWidget/app_textfield.dart';
+import 'package:file_picker/file_picker.dart';
 
 class PostJobScreen extends StatefulWidget {
   @override
@@ -16,176 +15,318 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final TextEditingController cityController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  List<String> uploadedFiles = ['exampleImage.png', 'ExampleImage.jpg'];
-  String selectedRole = 'Technician';
+  List<PlatformFile> uploadedFiles = <PlatformFile>[];
+  String selectedRole = 'Driver';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFEEEEE),
+      backgroundColor: const Color(0xFFF4E3E3),
       appBar: AppBar(
-        leading: BackButton(),
-        title: Text("Post a Job", style: TextStyle(color: Colors.black)),
-        centerTitle: false,
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: const BackButton(color: Colors.black),
+        title: Text(
+          "Post a Job",
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Poppins',
+            color: const Color(0xFF1E1E1E),
+            letterSpacing: -0.14,
+          ),
+        ),
+        centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.close, color: Colors.black),
+            icon: const Icon(Icons.close, color: Colors.black, size: 20),
             onPressed: () => Navigator.pop(context),
           ),
         ],
+        shape: const Border(
+          bottom: BorderSide(
+            color: Color(0xFFFCD2D2),
+            width: 1,
+          ),
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Center(
         child: Container(
-          padding: const EdgeInsets.all(16.0),
+                margin: const EdgeInsets.only(top: 24),
+                width: 343,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
           ),
-          child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Role Selection
-                Center(
+                // Step indicator
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    "Step 1 of 2",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Poppins',
+                      color: const Color(0xFF6C7278),
+                      letterSpacing: -0.24,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Job Details heading
+                Align(
+                  alignment: Alignment.centerRight,
                   child: Text(
                     "Job Details",
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF6C7278),
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins',
+                      color: const Color(0xFF6C7278),
+                      letterSpacing: -0.28,
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 12),
+
+                // Job Type Selection Buttons
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: _roleButton("Driver"),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: _roleButton("Technician"),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: _roleButton("Helper"),
-                    ),
+                    _buildJobTypeButton("Driver", Icons.person),
+                    _buildJobTypeButton("Technician", Icons.build),
+                    _buildJobTypeButton("Helper", Icons.person_outline),
                   ],
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 24),
 
-                _label("Job duration"),
-                SizedBox(height: 5),
-                _dropdownField("Select Job Duration", selectedJobDuration, (
-                  value,
-                ) {
+                // Job Duration
+                _buildLabel("Job duration"),
+                const SizedBox(height: 2),
+                _buildDropdownField(
+                  "Select Job Duration",
+                  selectedJobDuration,
+                  (value) {
                   setState(() {
                     selectedJobDuration = value;
                   });
-                }),
+                  },
+                ),
+                const SizedBox(height: 17),
 
-                SizedBox(height: 16),
-
+                // Opening and Salary Row
                 Row(
                   children: [
                     Expanded(
-                      child: AppTextField(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel("Opening"),
+                          const SizedBox(height: 2),
+                          _buildTextField(
+                            "No. of Openings",
                         controller: openingController,
-                        hintText: 'No. of Openings',
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: AppTextField(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel("Salary"),
+                          const SizedBox(height: 2),
+                          _buildTextField(
+                            "Salary",
                         controller: salaryController,
-                        hintText: 'Salary',
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 17),
 
-                SizedBox(height: 16),
-                _label("City"),
-                AppTextField(
+                // City
+                _buildLabel("City"),
+                const SizedBox(height: 2),
+                _buildTextField(
+                  "Enter city",
                   controller: cityController,
-                  hintText: 'Enter city',
                 ),
+                const SizedBox(height: 17),
 
-                SizedBox(height: 16),
-                _label("Type of Job"),
-                _dropdownField("Select job type", selectedJobType, (value) {
+                // Type of Job
+                _buildLabel("Type of Job"),
+                const SizedBox(height: 8),
+                _buildDropdownField(
+                  "Select job type",
+                  selectedJobType,
+                  (value) {
                   setState(() {
                     selectedJobType = value;
                   });
-                }),
+                  },
+                ),
+                const SizedBox(height: 17),
 
-                SizedBox(height: 16),
-                _label("Description"),
-                _descriptionField(descriptionController),
+                // Description
+                _buildLabel("Description"),
+                const SizedBox(height: 8),
+                _buildDescriptionField(descriptionController),
+                const SizedBox(height: 17),
 
-                SizedBox(height: 16),
-                _label("Upload Images of vehicles or Job Poster"),
-
-                SizedBox(height: 8),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5C5C),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(
-                        // 👈 border color and width
-                        color: Colors.white,
-                        width: 2,
+                // Upload Images Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "Upload Images of vehicles or Job Poster",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Poppins',
+                            color: const Color(0xFF6C7278),
+                            letterSpacing: -0.24,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
                       ),
                     ),
-                    elevation: 4,
-                  ),
-                  onPressed: () {},
-                  label: const Text(
-                    "Upload",
-                    style: TextStyle(color: Colors.white),
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 77,
+                      height: 27,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF36C6C),
+                        borderRadius: BorderRadius.circular(50),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 3,
+                            offset: const Offset(3, 3),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _pickImages,
+                          borderRadius: BorderRadius.circular(50),
+                          child: Center(
+                            child: Text(
+                              "Upload",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Poppins',
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Save Button
+                Center(
+                  child: SizedBox(
+                    width: 295,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Save logic
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF25C5C),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        "Save Now!",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                          letterSpacing: -0.14,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-
-                // ElevatedButton(
-                //   onPressed: () {
-                //     // Upload logic
-                //   },
-                //   style: ElevatedButton.styleFrom(
-                //     elevation: 5,
-                //     shadowColor: Colors.grey,
-                //     backgroundColor: AppColors.buttonBg,
-                //     shape: RoundedRectangleBorder(
-                //       borderRadius: BorderRadius.circular(12),
-                //     ),
-                //   ),
-                // child: Text("Upload"),
-                // ),
-                SizedBox(height: 8),
-                for (var file in uploadedFiles)
-                  Text(
-                    "$file uploaded successfully",
-                    style: TextStyle(color: Colors.green, fontSize: 13),
-                  ),
-
-                SizedBox(height: 20),
-                _SaveButton(280),
               ],
             ),
           ),
+            ),
+            // Uploaded files list - positioned outside white card
+            if (uploadedFiles.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 53, top: 20, bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: uploadedFiles.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final file = entry.value;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index < uploadedFiles.length - 1 ? 4 : 0,
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Poppins',
+                            color: const Color(0xFF6C7278).withOpacity(0.87),
+                            letterSpacing: -0.24,
+                          ),
+                          children: [
+                            TextSpan(text: "${file.name}            "),
+                            TextSpan(
+                              text: "uploaded successfully",
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: const Color(0xFF10E445),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _roleButton(String role) {
+  Widget _buildJobTypeButton(String role, IconData icon) {
     final bool isSelected = selectedRole == role;
-
-    return OutlinedButton(
+    return SizedBox(
+      width: 85,
+      height: 29,
+      child: OutlinedButton(
       onPressed: () {
         setState(() {
           selectedRole = role;
@@ -193,141 +334,192 @@ class _PostJobScreenState extends State<PostJobScreen> {
       },
       style: OutlinedButton.styleFrom(
         side: BorderSide(
-          color: isSelected ? Colors.redAccent : AppColors.buttonBg,
+            color: isSelected
+                ? const Color(0xFFF36363)
+                : const Color(0xFFF36969),
+            width: 1,
         ),
-        backgroundColor: isSelected
-            ? Colors.redAccent
-            : Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        padding: EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 8,
-        ),
-        minimumSize: Size(0, 40),
+          backgroundColor: Colors.white,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(5),
+          ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.build,
-            color: isSelected ? Colors.white : Colors.redAccent,
-            size: 16,
+              icon,
+              size: 12,
+              color: isSelected
+                  ? const Color(0xFFF36666)
+                  : const Color(0xFFF36969),
           ),
-          SizedBox(width: 4),
-          Flexible(
-            child: Text(
+            const SizedBox(width: 8),
+            Text(
               role,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.redAccent,
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-              ),
-              overflow: TextOverflow.ellipsis,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
+                color: isSelected
+                    ? const Color(0xFFF36666)
+                    : const Color(0xFFF36969),
             ),
           ),
         ],
+        ),
       ),
     );
   }
 
-  // Widget _roleButton(String role) {
-  //   final bool isSelected = selectedRole == role;
-  //   return OutlinedButton(
-  //     onPressed: () {
-  //       setState(() {
-  //         selectedRole = role;
-  //       });
-  //     },
-  //     style: OutlinedButton.styleFrom(
-  //       side: BorderSide(color: AppColors.buttonBg),
-  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-  //     ),
-  //     child: Text(
-  //       role,
-  //       style: TextStyle(color: isSelected ? Colors.white : Colors.redAccent),
-  //     ),
-  //   );
-  // }
-
-  Widget _label(String text) {
+  Widget _buildLabel(String text) {
     return Text(
       text,
       style: TextStyle(
-        fontWeight: FontWeight.w400,
-        fontSize: 14,
-        color: Color(0xFF6C7278),
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Poppins',
+        color: const Color(0xFF6C7278),
+        letterSpacing: -0.24,
       ),
     );
   }
 
-  Widget _dropdownField(
+  Widget _buildTextField(String hint, {TextEditingController? controller}) {
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
+      ),
+      child: TextField(
+        controller: controller,
+        style: TextStyle(
+          fontSize: 14,
+          fontFamily: 'Inter',
+          color: const Color(0xFF6C7278),
+          letterSpacing: -0.14,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+        fontSize: 14,
+            fontFamily: 'Inter',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField(
     String hint,
     String? selectedValue,
     Function(String?) onChanged,
   ) {
-    return DropdownButtonFormField<String>(
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFD9D9D9), width: 1),
+      ),
+      child: DropdownButtonFormField<String>(
       value: selectedValue,
       items: [
-        'One Day',
-        'One Week',
-        'One Month',
-      ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          if (hint.contains("Duration"))
+            ...['One Day', 'One Week', 'One Month']
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
+          if (hint.contains("job type"))
+            ...['Full-time', 'Part-time', 'Contract']
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
+        ],
       onChanged: onChanged,
       decoration: InputDecoration(
         hintText: hint,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Colors.grey,
-          ), // Grey border color when not focused
+          hintStyle: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFFB3B3B3),
+            letterSpacing: 0.1,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Colors.grey,
-          ), // Grey border color when focused
+        icon: const Icon(
+          Icons.keyboard_arrow_down,
+          color: Color(0xFF006FFD),
+          size: 24,
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16),
+        style: TextStyle(
+          fontSize: 14,
+          fontFamily: 'Roboto',
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFFB3B3B3),
+        ),
       ),
     );
   }
 
-  Widget _descriptionField(TextEditingController controller) {
-    return TextField(
+  Widget _buildDescriptionField(TextEditingController controller) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 80),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFD9D9D9), width: 1),
+      ),
+      child: TextField(
       controller: controller,
-      maxLines: 3,
+        maxLines: null,
+        minLines: 3,
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: 'Inter',
+          color: const Color(0xFFB3B3B3),
+        ),
       decoration: InputDecoration(
         hintText: "Description",
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: EdgeInsets.all(16),
+          hintStyle: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Inter',
+            color: const Color(0xFFB3B3B3),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _SaveButton(double screenWidth) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          // Get.to(() => BottomNavScreen()); // Replace with home screen
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.buttonBg,
-          padding: EdgeInsets.symmetric(vertical: screenWidth * 0.045),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: Text(
-          "Save now",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: screenWidth * 0.045,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+  Future<void> _pickImages() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+      withData: true,
     );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        uploadedFiles = List<PlatformFile>.from(result.files);
+      });
+    }
   }
 }
