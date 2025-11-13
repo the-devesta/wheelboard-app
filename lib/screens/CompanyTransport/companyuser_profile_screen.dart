@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 
 import 'package:wheelboard/services/auth_service.dart';
@@ -36,194 +36,254 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Your Profile',
-          style: TextStyle(
-            color: AppColors.buttonBg,
-            fontWeight: FontWeight.bold,
+      backgroundColor: const Color(0xFFF4E3E3), // Pink background
+      body: SafeArea(
+        child: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.buttonBg,
+              ),
+            );
+          }
+
+          if (controller.errorMessage.value.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(controller.errorMessage.value),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => controller.fetchCurrentUserProfile(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final profile = controller.userProfile.value;
+
+          return Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                    children: [
+                      _buildProfileHeader(profile),
+                      const SizedBox(height: 16),
+                      _buildKycBanner(),
+                      const SizedBox(height: 16),
+                      _buildPersonalDetailsCard(profile),
+                      const SizedBox(height: 16),
+                      _buildContactInfoCard(profile),
+                      const SizedBox(height: 16),
+                      _buildPlatformPreferencesCard(),
+                      const SizedBox(height: 16),
+                      _buildSubscriptionPlanCard(),
+                      const SizedBox(height: 16),
+                      _buildQuickActionsCard(),
+                      const SizedBox(height: 16),
+                      _buildSupportCard(),
+                      const SizedBox(height: 12),
+                      Text(
+                        "App v1.3.2",
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFFBDBDBD),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Terms & Conditions",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFFBDBDBD),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('•', style: TextStyle(color: Color(0xFFBDBDBD))),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Privacy Policy",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFFBDBDBD),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      height: 60,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 23),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.withOpacity(0.1),
+              ),
+              child: const Icon(Icons.arrow_back_ios, size: 16),
+            ),
           ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        leading: IconButton(
-          icon: SvgPicture.asset(
-            'assets/redBackBtn.svg',
-            width: 24,
-            height: 24,
+          Expanded(
+            child: Center(
+              child: Text(
+                'Your Profile',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFF36969),
+                ),
+              ),
+            ),
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: SvgPicture.asset(
-              'assets/editBtn.svg',
-              width: 24,
-              height: 24,
+          GestureDetector(
+            onTap: () => Get.to(EditCompanyProfileScreen()),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.withOpacity(0.1),
+              ),
+              child: const Icon(Icons.edit, size: 22),
             ),
           ),
         ],
       ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.buttonBg,
-            ),
-          );
-        }
-
-        if (controller.errorMessage.value.isNotEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text(controller.errorMessage.value),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => controller.fetchCurrentUserProfile(),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final profile = controller.userProfile.value;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            children: [
-              _buildProfileHeader(profile),
-              const SizedBox(height: 12),
-              _buildKycBanner(),
-              const SizedBox(height: 16),
-              _buildPersonalDetailsCard(profile),
-              const SizedBox(height: 16),
-              _buildContactInfoCard(profile),
-              const SizedBox(height: 16),
-              _buildPlatformPreferencesCard(),
-              const SizedBox(height: 16),
-              _buildSubscriptionPlanCard(),
-              const SizedBox(height: 16),
-              _buildQuickActionsCard(),
-              const SizedBox(height: 16),
-              _buildSupportCard(),
-              const SizedBox(height: 12),
-              const Text("App v1.3.2"),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Terms & Conditions"),
-                  SizedBox(width: 8),
-                  Text("•"),
-                  SizedBox(width: 8),
-                  Text("Privacy Policy"),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        );
-      }),
     );
   }
 
   Widget _buildProfileHeader(UserProfileModel? profile) {
     return Container(
-      margin: const EdgeInsets.all(4),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
           Stack(
-            alignment: Alignment.bottomRight,
+            alignment: Alignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(3),
+                width: 96,
+                height: 96,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.buttonBg, width: 2.0),
-                ),
-                child: CircleAvatar(
-                  radius: 45,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: profile?.companyLogoPath != null
-                      ? NetworkImage(profile!.companyLogoPath!)
+                  border: Border.all(color: const Color(0xFFF36969), width: 4),
+                  image: profile?.companyLogoPath != null
+                      ? DecorationImage(
+                          image: NetworkImage(profile!.companyLogoPath!),
+                          fit: BoxFit.cover,
+                        )
                       : null,
-                  child: profile?.companyLogoPath == null
-                      ? const Icon(Icons.business, size: 50, color: Colors.grey)
-                      : null,
+                  color: profile?.companyLogoPath == null ? Colors.grey[300] : null,
                 ),
+                child: profile?.companyLogoPath == null
+                    ? const Icon(Icons.business, size: 50, color: Colors.grey)
+                    : null,
               ),
               Positioned(
-                bottom: 2,
-                right: 2,
-                child: CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.camera_alt, size: 16, color: Colors.black),
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF36969),
+                    shape: BoxShape.circle,
+                    border: Border.fromBorderSide(
+                      BorderSide(color: Colors.white, width: 2),
+                    ),
+                  ),
+                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          // Company tag
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.buttonBg,
-              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFFF36969),
+              borderRadius: BorderRadius.circular(999),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.local_shipping, size: 16, color: Colors.white),
-                const SizedBox(width: 6),
+                const Icon(Icons.local_shipping, size: 20, color: Colors.white),
+                const SizedBox(width: 8),
                 Text(
-                  profile?.businessCategory ?? 'Transport',
-                  style: const TextStyle(color: Colors.white),
+                  profile?.companyName ?? 'Delhi Transport',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 8),
+          // Name
           Text(
-            profile?.companyName ?? 'N/A',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          if (profile?.mobileNo != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              profile!.mobileNo!,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+            profile?.name ?? 'Deepak Kumar',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF535353),
             ),
-          ],
-          const SizedBox(height: 4),
-          const Row(
+          ),
+          const SizedBox(height: 8),
+          // Rating
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.star, color: Colors.amber, size: 18),
-              SizedBox(width: 4),
-              Text("4.7 / 5"),
+              const Icon(Icons.star, size: 14, color: Color(0xFFF36969)),
+              const SizedBox(width: 4),
+              Text(
+                '4.7 / 5',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFF36969),
+                ),
+              ),
             ],
           ),
         ],
@@ -233,14 +293,27 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
 
   Widget _buildKycBanner() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
       ),
       child: Row(
         children: [
-          Expanded(child: Text("🔒 Complete your KYC to unlock full access")),
+          const Text('🔒', style: TextStyle(fontSize: 18)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Complete your KYC to unlock full access',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF424242),
+              ),
+            ),
+          ),
+          const Icon(Icons.chevron_right, size: 16),
         ],
       ),
     );
@@ -248,230 +321,460 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
 
   Widget _buildPersonalDetailsCard(UserProfileModel? profile) {
     return _buildCard(
-      title: "Company Details",
+      title: 'Personal Details',
       trailing: GestureDetector(
         onTap: () => Get.to(EditCompanyProfileScreen()),
-        child: const Icon(Icons.edit),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.edit, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                'Edit Profile',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       children: [
-        if (profile?.companyName != null)
-          _ProfileItem(
-            icon: SvgPicture.asset('assets/bus.svg', width: 20, height: 20),
-            title: "Company Name",
-            value: profile!.companyName!,
-          ),
-        if (profile?.businessCategory != null)
-          _ProfileItem(
-            icon: SvgPicture.asset('assets/transport.svg', width: 20, height: 20),
-            title: "Business Category",
-            value: profile!.businessCategory!,
-          ),
-        if (profile?.gstNumber != null)
-          _ProfileItem(
-            icon: SvgPicture.asset('assets/homegst.svg', width: 20, height: 20),
-            title: "GST number",
-            value: profile!.gstNumber!,
-          ),
+        _buildInfoItem(Icons.person_outline, 'Name', profile?.name ?? 'Deepak Kumar'),
+        _buildInfoItem(Icons.lock_outline, 'Change Password', '************'),
+        _buildInfoItem(Icons.location_on, 'Location', 'Block C, Street 12, Noida, UP'),
+        _buildInfoItem(Icons.business, 'Company Name', profile?.companyName ?? 'Delhi Transport'),
+        _buildInfoItem(Icons.category, 'Business Category', profile?.businessCategory ?? 'Transport'),
+        _buildInfoItem(Icons.local_shipping, 'Fleet Size', '42'),
+        _buildInfoItem(Icons.account_balance, 'GST number', profile?.gstNumber ?? '43464984931316'),
       ],
     );
   }
 
   Widget _buildContactInfoCard(UserProfileModel? profile) {
     return _buildCard(
-      title: "Contact Information",
+      title: 'Contact Information',
       children: [
-        if (profile?.mobileNo != null)
-          _ProfileItem(
-            icon: SvgPicture.asset('assets/phone.svg', width: 20, height: 20),
-            title: "Mobile Number",
-            value: profile!.mobileNo!,
-            trailing: const Text("Edit"),
-          ),
+        _buildEditableItem(Icons.phone, 'Mobile Number', profile?.mobileNo ?? '+91 98765 43210'),
+        _buildEditableItem(Icons.email, 'Email Address', profile?.email ?? 'deepak.kumar@email.com'),
+        _buildEditableItem(Icons.message, 'WhatsApp Number', profile?.mobileNo ?? '+91 98765 43210'),
       ],
     );
   }
 
   Widget _buildPlatformPreferencesCard() {
     return _buildCard(
-      title: "Platform Preferences",
+      title: 'Platform Preferences',
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Icon(Icons.language),
-            const SizedBox(width: 12),
-            const Text("Language"),
-            const Spacer(),
-            DropdownButton<String>(
-              value: "English",
-              items: const [
-                DropdownMenuItem(value: "English", child: Text("English")),
+            Row(
+              children: [
+                const Icon(Icons.language, size: 22, color: Color(0xFF424242)),
+                const SizedBox(width: 14),
+                Text(
+                  'Language',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF424242),
+                  ),
+                ),
               ],
-              onChanged: (val) {},
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFFE0E0E0)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'English',
+                    style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF424242)),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.keyboard_arrow_down, size: 20),
+                ],
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        _buildSwitchTile(
-          leading: const Icon(Icons.dark_mode),
-          title: "Dark Theme",
-          value: isDarkTheme,
-          onChanged: (val) {
-            setState(() {
-              isDarkTheme = val;
-              Get.changeThemeMode(
-                isDarkTheme ? ThemeMode.dark : ThemeMode.light,
-              );
-            });
-          },
-        ),
+        const SizedBox(height: 24),
+        _buildToggleRow(Icons.dark_mode, 'Dark Theme', isDarkTheme, (val) {
+          setState(() {
+            isDarkTheme = val;
+            Get.changeThemeMode(
+              isDarkTheme ? ThemeMode.dark : ThemeMode.light,
+            );
+          });
+        }),
+        const SizedBox(height: 24),
+        _buildToggleRow(Icons.sms, 'SMS Notifications', smsNotifications, (val) {
+          setState(() => smsNotifications = val);
+        }),
+        const SizedBox(height: 24),
+        _buildToggleRow(Icons.email, 'Email Notifications', emailNotifications, (val) {
+          setState(() => emailNotifications = val);
+        }),
+        const SizedBox(height: 24),
+        _buildToggleRow(Icons.message, 'WhatsApp Notifications', whatsappNotifications, (val) {
+          setState(() => whatsappNotifications = val);
+        }),
+      ],
+    );
+  }
 
-        _buildSwitchTile(
-          leading: const Icon(Icons.notifications),
-          title: "SMS Notifications",
-          value: smsNotifications,
-          onChanged: (val) {
-            setState(() => smsNotifications = val);
-          },
+  Widget _buildToggleRow(IconData icon, String title, bool value, Function(bool) onChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF424242)),
+            const SizedBox(width: 18),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF424242),
+              ),
+            ),
+          ],
         ),
-
-        _buildSwitchTile(
-          leading: const Icon(Icons.email),
-          title: "Email Notifications",
-          value: emailNotifications,
-          onChanged: (val) {
-            setState(() => emailNotifications = val);
-          },
-        ),
-
-        _buildSwitchTile(
-          leading: SvgPicture.asset(
-            'assets/whatsapp.svg',
-            width: 22,
-            height: 22,
-          ),
-          title: "WhatsApp Notifications",
-          value: whatsappNotifications,
-          onChanged: (val) {
-            setState(() => whatsappNotifications = val);
-          },
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: const Color(0xFF30DB5B),
         ),
       ],
     );
   }
 
-  Widget _buildSwitchTile({
-    required Widget leading,
-    required String title,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildSubscriptionPlanCard() {
+    return _buildCard(
+      title: 'Subscription Plans',
+      children: [
+        Row(
+          children: [
+            Expanded(child: _buildPlanCard('Starter')),
+            const SizedBox(width: 12),
+            Expanded(child: _buildPlanCard('Pro')),
+            const SizedBox(width: 12),
+            Expanded(child: _buildPlanCard('Enterprise')),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlanCard(String plan) {
+    return Container(
+      height: 88,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFEF5350)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              leading,
-              const SizedBox(width: 12),
-              Text(title, style: const TextStyle(fontSize: 16)),
-            ],
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Colors.white,
-            activeTrackColor: const Color.fromARGB(255, 112, 246, 117),
-            inactiveTrackColor: const Color(0xFF787880).withOpacity(0.4),
+          const Icon(Icons.credit_card, size: 26, color: Color(0xFFEF5350)),
+          const SizedBox(height: 8),
+          Text(
+            plan,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFFEF5350),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSubscriptionPlanCard() {
+  Widget _buildQuickActionsCard() {
     return _buildCard(
-      title: "Subscription Plans",
+      title: 'Quick Actions',
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildPlanButton("Starter"),
-              const SizedBox(width: 16),
-              _buildPlanButton("Pro"),
-              const SizedBox(width: 16),
-              _buildPlanButton("Enterprise"),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlanButton(String title) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 100, maxWidth: 140),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.redAccent),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        Row(
           children: [
-            Icon(Icons.description, size: 36, color: Colors.redAccent),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
+            Expanded(child: _buildActionCard('📞', 'Contact Us')),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  showSwitchProfilePopup(
+                    context,
+                    onSwitchToBusiness: () {
+                      print("Switching to Business Account...");
+                    },
+                    onLogout: () async {
+                      await _performLogout();
+                    },
+                  );
+                },
+                child: _buildActionCard(Icons.sync, 'Switch Profile'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Builder(
+                builder: (context) => GestureDetector(
+                  onTap: () {
+                    _showLogoutDialog(context);
+                  },
+                  child: Container(
+                    height: 88,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: const Color(0xFFEF5350)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.logout, size: 24, color: Color(0xFFEF5350)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Logout',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFFEF5350),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard(dynamic icon, String title) {
+    return Container(
+      height: 88,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          if (icon is String)
+            Text(icon, style: const TextStyle(fontSize: 24))
+          else
+            Icon(icon, size: 24, color: const Color(0xFF424242)),
+          const SizedBox(height: 6),
+          Flexible(
+            child: Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF424242),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildQuickActionsCard() {
-    return _buildCard(
-      title: "Quick Actions",
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildQuickAction(Icons.phone, "Contact Us"),
-            _buildQuickAction(
-              Icons.sync,
-              "Switch Profile",
-              onTap: () {
-                showSwitchProfilePopup(
-                  context,
-                  onSwitchToBusiness: () {
-                    print("Switching to Business Account...");
-                  },
-                  onLogout: () async {
-                    await _performLogout();
-                  },
-                );
-              },
+  Widget _buildSupportCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF36969),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Having issues with your profile?',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Our team is here to help',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
-            // _buildQuickAction(Icons.logout, "Logout"),
-            _buildQuickAction(
-              Icons.logout,
-              "Logout",
-              onTap: () {
-                _showLogoutDialog(context);
-              },
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(999),
             ),
-          ],
-        ),
-      ],
+            child: Text(
+              'Chat',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCard({
+    required String title,
+    Widget? trailing,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1A1A1A),
+                ),
+              ),
+              const Spacer(),
+              if (trailing != null) trailing,
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF424242)),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF757575),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF424242),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditableItem(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF424242)),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF757575),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF424242),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {},
+            child: Text(
+              'Edit',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -523,147 +826,5 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       print("❌ Error during logout: $e");
       SnackBarHelper.error("An error occurred during logout.");
     }
-  }
-
-  Widget _buildSupportCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red.shade300,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Text(
-              "Having issues with your profile?\nOur team is here to help",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.redAccent,
-            ),
-            child: const Text("Chat"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCard({
-    required String title,
-    Widget? trailing,
-    required List<Widget> children,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const Spacer(),
-              if (trailing != null) trailing,
-            ],
-          ),
-          const Divider(),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  // Widget _buildQuickAction(IconData icon, String label, {Color? color}) {
-  //   return Column(
-  //     children: [
-  //       Icon(icon, size: 30, color: color ?? Colors.black),
-  //       const SizedBox(height: 6),
-  //       Text(label, style: TextStyle(color: color ?? Colors.black)),
-  //     ],
-  //   );
-  // }
-
-  Widget _buildQuickAction(IconData icon, String label, {VoidCallback? onTap}) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.red, size: 28),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileItem extends StatelessWidget {
-  final Widget icon;
-  final String title;
-  final String value;
-  final Widget? trailing;
-
-  const _ProfileItem({
-    required this.icon,
-    required this.title,
-    required this.value,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          icon,
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-          if (trailing != null) trailing!,
-        ],
-      ),
-    );
   }
 }

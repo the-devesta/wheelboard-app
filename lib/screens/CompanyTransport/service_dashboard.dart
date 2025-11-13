@@ -11,24 +11,24 @@ class ServiceDashboardScreen extends StatelessWidget {
         title: 'Tyre Replacement',
         subtitle: 'Professional tyre replacement service for all vehicle types',
         tag: 'Tyre Repair',
-        tagColor: Color(0xFFE6EBFF),
-        tagTextColor: Color(0xFF5A78FF),
+        tagColor: Color(0xFFDBEAFE),
+        tagTextColor: Color(0xFF1E40AF),
         meta: 'Updated 2 days ago',
       ),
       const ServiceCardData(
         title: 'Engine Diagnostics',
         subtitle: 'Complete engine diagnostic and repair services',
         tag: 'Engine',
-        tagColor: Color(0xFFF2E9FF),
-        tagTextColor: Color(0xFF8C5CF6),
+        tagColor: Color(0xFFE9D5FF),
+        tagTextColor: Color(0xFF6B21A8),
         meta: 'Updated 1 day ago',
       ),
       const ServiceCardData(
         title: 'Oil Change Service',
         subtitle: 'Quick and efficient oil change for all vehicles',
         tag: 'Oil',
-        tagColor: Color(0xFFFFF7D9),
-        tagTextColor: Color(0xFFC49A00),
+        tagColor: Color(0xFFFEF3C7),
+        tagTextColor: Color(0xFF92400E),
         meta: 'Created 1 week ago',
       ),
     ];
@@ -43,6 +43,7 @@ class ServiceDashboardScreen extends StatelessWidget {
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: _DashboardAppBar(
         title: 'Service Dashboard',
         subtitle: 'Raise a new request or track your active services',
@@ -53,20 +54,22 @@ class ServiceDashboardScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            // My Assigned Services header
             Text(
               'My Assigned Services',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF0E141B),
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1F2937),
               ),
             ),
+            const SizedBox(height: 4),
             Text(
               'Track your Services here',
-              style: GoogleFonts.poppins(
-                fontSize: 12.5,
-                color: const Color(0xFF9AA4B2),
-                height: 1.3,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF6B7280),
               ),
             ),
             const SizedBox(height: 12),
@@ -78,17 +81,13 @@ class ServiceDashboardScreen extends StatelessWidget {
                   child: _SearchField(
                     hint: 'Search services...',
                     onChanged: (_) {},
-                    trailing: _ChipButton(
-                      icon: Icons.tune_rounded,
-                      onTap: () {},
-                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 _DropdownPill(value: 'All', onTap: () {}),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
             // Assigned services list
             ...services.map(
@@ -99,35 +98,12 @@ class ServiceDashboardScreen extends StatelessWidget {
             ),
 
             // In-progress block
-            _SectionCard(
-              borderColor: const Color(0xFF2E89FF),
-              header: 'Service in-progress',
-              child: ServiceCard(
-                data: const ServiceCardData(
-                  title: 'Tyre Replacement',
-                  subtitle:
-                      'Professional tyre replacement service for all vehicle types',
-                  tag: 'Tyre Repair',
-                  tagColor: Color(0xFFE6EBFF),
-                  tagTextColor: Color(0xFF5A78FF),
-                  meta: '',
-                  showTrash: false,
-                ),
-                dense: true,
-              ),
-            ),
+            const SizedBox(height: 12),
+            _InProgressSection(),
+
             const SizedBox(height: 12),
 
-            Text(
-              'Task Progress',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF0E141B),
-              ),
-            ),
-            const SizedBox(height: 8),
-
+            // Task Progress section
             _TimelineCard(steps: timeline),
           ],
         ),
@@ -137,13 +113,13 @@ class ServiceDashboardScreen extends StatelessWidget {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: SizedBox(
-          height: 52,
+          height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF36D781),
+              backgroundColor: const Color(0xFF84FAB6),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
               elevation: 0,
             ),
@@ -178,7 +154,7 @@ class _DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBell;
 
   @override
-  Size get preferredSize => const Size.fromHeight(72);
+  Size get preferredSize => const Size.fromHeight(76);
 
   @override
   Widget build(BuildContext context) {
@@ -187,65 +163,40 @@ class _DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       titleSpacing: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black87),
+        icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 18),
         onPressed: onBack,
+        padding: const EdgeInsets.all(16),
       ),
+      centerTitle: true,
       title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             title,
             style: GoogleFonts.poppins(
-              color: const Color(0xFF0E141B),
-              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F2937),
+              fontWeight: FontWeight.w600,
               fontSize: 18,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             subtitle,
             style: GoogleFonts.poppins(
-              color: const Color(0xFF9AA4B2),
+              color: const Color(0xFF6B7280),
               fontSize: 12,
-              height: 1.1,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
-          icon: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFC5C65),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.notifications, color: Colors.white),
-              ),
-              Positioned(
-                right: 2,
-                top: 2,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF317873),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          icon: const Icon(Icons.notifications_outlined, color: Colors.black87, size: 18),
           onPressed: onBell,
+          padding: const EdgeInsets.all(16),
         ),
-        const SizedBox(width: 8),
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1.5),
-        child: Container(height: 2, color: const Color(0xFF2E89FF)),
-      ),
     );
   }
 }
@@ -256,69 +207,78 @@ class _SearchField extends StatelessWidget {
   const _SearchField({
     required this.hint,
     required this.onChanged,
-    this.trailing,
   });
 
   final String hint;
   final ValueChanged<String> onChanged;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return Container(
+      height: 38,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Stack(
       alignment: Alignment.centerRight,
       children: [
         TextField(
           onChanged: onChanged,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: const Color(0xFF1F2937),
+            ),
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: const Icon(Icons.search),
-            hintStyle: GoogleFonts.poppins(color: const Color(0xFF9AA4B2)),
+              hintStyle: GoogleFonts.poppins(
+                fontSize: 12,
+                color: const Color(0xFFADAEBC),
+              ),
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 14,
+                color: Color(0xFFADAEBC),
+              ),
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
+                horizontal: 8,
+                vertical: 10,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey.withOpacity(0.3),
-                width: 1,
-              ),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF5A78FF),
-                width: 1.8,
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
               ),
             ),
           ),
-        ),
-        if (trailing != null) Positioned(right: 8, child: trailing!),
-      ],
-    );
-  }
-}
-
-class _ChipButton extends StatelessWidget {
-  const _ChipButton({required this.icon, this.onTap});
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFEFF2F8),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Icon(icon, size: 20, color: const Color(0xFF5A78FF)),
-        ),
+          Positioned(
+            right: 8,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {},
+                borderRadius: BorderRadius.circular(4),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.tune,
+                    size: 18,
+                    color: Color(0xFFADAEBC),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -331,26 +291,38 @@ class _DropdownPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           child: Row(
+              mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 value,
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF0E141B),
-                  fontWeight: FontWeight.w600,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF1F2937),
                 ),
               ),
-              const SizedBox(width: 6),
-              const Icon(Icons.expand_more, size: 18),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.expand_more,
+                  size: 19,
+                  color: Color(0xFF1F2937),
+                ),
             ],
+            ),
           ),
         ),
       ),
@@ -388,11 +360,12 @@ class ServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      height: 148,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE3E7EF)),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -404,7 +377,7 @@ class ServiceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // title row with chip and trash
+          // title row with chip
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -412,9 +385,10 @@ class ServiceCard extends StatelessWidget {
                 child: Text(
                   data.title,
                   style: GoogleFonts.poppins(
-                    fontSize: dense ? 15 : 16,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0E141B),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF111827),
+                    height: 1.5,
                   ),
                 ),
               ),
@@ -425,16 +399,20 @@ class ServiceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
+          const SizedBox(height: 8),
+          Expanded(
+            child: Text(
             data.subtitle,
             style: GoogleFonts.poppins(
-              fontSize: 13.5,
-              color: const Color(0xFF3A4656),
-              height: 1.4,
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF4B5563),
+                height: 1.43,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 8),
           if (data.meta.isNotEmpty)
             Row(
               children: [
@@ -442,16 +420,26 @@ class ServiceCard extends StatelessWidget {
                   data.meta,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: const Color(0xFF9AA4B2),
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
                 const Spacer(),
                 if (data.showTrash)
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(Icons.delete, color: Color(0xFFED4C5C)),
-                    onPressed: () {},
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {},
+                      borderRadius: BorderRadius.circular(4),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.delete_outline,
+                          size: 14,
+                          color: Color(0xFFED4C5C),
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -470,55 +458,92 @@ class _TagPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(9999),
       ),
+      alignment: Alignment.center,
       child: Text(
         text,
         style: GoogleFonts.poppins(
           color: fg,
-          fontSize: 12.5,
-          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.header,
-    required this.child,
-    this.borderColor,
-  });
-  final String header;
-  final Widget child;
-  final Color? borderColor;
+class _InProgressSection extends StatelessWidget {
+  const _InProgressSection();
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 148,
       decoration: BoxDecoration(
-        border: Border.all(
-          color: borderColor ?? const Color(0xFFE3E7EF),
-          width: 2,
-        ),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
-      padding: const EdgeInsets.all(10),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            header,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF0E141B),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 11, 16, 0),
+            child: Text(
+              'Service in-progress',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF111827),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          child,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 13, 16, 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tyre Replacement',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF111827),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+          Text(
+                        'Professional tyre replacement service for all vehicle types',
+            style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF4B5563),
+                          height: 1.43,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+            ),
+          ),
+                _TagPill(
+                  text: 'Tyre Repair',
+                  bg: const Color(0xFFDBEAFE),
+                  fg: const Color(0xFF1E40AF),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -540,18 +565,18 @@ class _TimelineCard extends StatelessWidget {
   const _TimelineCard({required this.steps});
   final List<TaskStep> steps;
 
-  Color get doneColor => const Color(0xFF36D781);
-  Color get activeColor => const Color(0xFF2E89FF);
-  Color get lineColor => const Color(0xFFE0E5EF);
+  Color get doneColor => const Color(0xFF27AE60);
+  Color get activeColor => const Color(0xFF3A7BD5);
+  Color get lineColor => const Color(0xFFE5E7EB);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE3E7EF)),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -561,16 +586,27 @@ class _TimelineCard extends StatelessWidget {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (int i = 0; i < steps.length; i++) ...[
-            _TimelineRow(
-              step: steps[i],
+          Text(
+            'Task Progress',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...steps.asMap().entries.map((entry) {
+            final i = entry.key;
+            final step = entry.value;
+            return _TimelineRow(
+              step: step,
               isFirst: i == 0,
               isLast: i == steps.length - 1,
               colors: (done: doneColor, active: activeColor, line: lineColor),
-            ),
-            if (i != steps.length - 1) const SizedBox(height: 4),
-          ],
+            );
+          }),
         ],
       ),
     );
@@ -594,100 +630,160 @@ class _TimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDone = step.status == StepStatus.done;
     final isActive = step.status == StepStatus.active;
+    final isTodo = step.status == StepStatus.todo;
 
-    return Row(
+    return Container(
+      height: 56,
+      child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // timeline gutter
         SizedBox(
-          width: 26,
-          child: Column(
+            width: 28,
+            height: 56,
+            child: Stack(
             children: [
-              // top connector
-              if (!isFirst) Container(height: 10, width: 2, color: colors.line),
-              // node
-              if (isDone)
-                Container(
-                  width: 22,
-                  height: 22,
+                // Connector line (full height for middle items, partial for first/last)
+                if (!isFirst && !isLast)
+                  Positioned(
+                    top: 0,
+                    left: 12,
+                    child: Container(
+                      width: 4,
+                      height: 56,
+                      color: colors.line,
+                    ),
+                  )
+                else if (isFirst && !isLast)
+                  Positioned(
+                    top: 28,
+                    left: 12,
+                    child: Container(
+                      width: 4,
+                      height: 28,
+                      color: colors.line,
+                    ),
+                  )
+                else if (!isFirst && isLast)
+                  Positioned(
+                    top: 0,
+                    left: 12,
+                    child: Container(
+                      width: 4,
+                      height: 28,
+                      color: colors.line,
+                    ),
+                  ),
+                // node (centered vertically)
+                Center(
+                  child: Container(
+                    width: 28,
+                    height: 28,
                   decoration: BoxDecoration(
-                    color: colors.done.withOpacity(0.12),
+                      color: isDone
+                          ? colors.done
+                          : isActive
+                              ? Colors.white
+                              : colors.line,
                     shape: BoxShape.circle,
+                      border: isActive
+                          ? Border.all(color: colors.active, width: 2)
+                          : null,
                   ),
                   alignment: Alignment.center,
-                  child: Icon(Icons.check_circle, size: 18, color: colors.done),
+                    child: isDone
+                        ? const Icon(
+                            Icons.check,
+                            size: 16,
+                            color: Colors.white,
                 )
-              else if (isActive)
-                Container(
-                  width: 22,
-                  height: 22,
+                        : isActive
+                            ? Container(
+                                width: 16,
+                                height: 16,
                   decoration: BoxDecoration(
-                    border: Border.all(color: colors.active, width: 3),
+                                  color: colors.active,
                     shape: BoxShape.circle,
-                    color: Colors.white,
                   ),
                 )
-              else
-                Container(
-                  width: 22,
-                  height: 22,
+                            : Container(
+                                width: 16,
+                                height: 16,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
-                    border: Border.all(color: colors.line, width: 2),
+                                  border: Border.all(
+                                    color: colors.line,
+                                    width: 1,
+                                  ),
                   ),
                 ),
-              // bottom connector
-              if (!isLast) Container(height: 22, width: 2, color: colors.line),
+                  ),
+                ),
             ],
           ),
         ),
 
-        const SizedBox(width: 6),
+          const SizedBox(width: 16),
 
-        // title + "Live"
+          // title + "Live" + time
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(top: 2),
+              padding: const EdgeInsets.only(top: 14),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     step.title,
                     style: GoogleFonts.poppins(
-                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                      color: const Color(0xFF0E141B),
+                        fontSize: 14,
+                        fontWeight: isActive
+                            ? FontWeight.w500
+                            : isTodo
+                                ? FontWeight.w500
+                                : FontWeight.w500,
+                        color: isActive
+                            ? colors.active
+                            : isTodo
+                                ? const Color(0xFF6B7280)
+                                : const Color(0xFF1F2937),
                     ),
                   ),
                 ),
                 if (isActive)
-                  Text(
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
                     'Live',
                     style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                       color: colors.active,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-              ],
             ),
           ),
         ),
-
-        // time
         SizedBox(
-          width: 80,
+                    width: 53,
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
               step.time,
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: const Color(0xFF9AA4B2),
+                          fontWeight: FontWeight.w400,
+                          color: step.time == '-'
+                              ? const Color(0xFFBDBDBD)
+                              : const Color(0xFF6B7280),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+        ],
         ),
-      ],
     );
   }
 }

@@ -23,8 +23,10 @@ class UserProfileModel {
   final String? professionalType;
   final String? profileImagePath;
   
-  // Service Provider fields (for future use)
-  // Add service provider specific fields here when needed
+  // Service Provider fields
+  final String? businessName;
+  final String? businessType;
+  final String? businessLogoPath;
 
   UserProfileModel({
     required this.userId,
@@ -44,6 +46,10 @@ class UserProfileModel {
     this.city,
     this.professionalType,
     this.profileImagePath,
+    // Service Provider fields
+    this.businessName,
+    this.businessType,
+    this.businessLogoPath,
   });
 
   /// Factory constructor to create from JSON
@@ -70,6 +76,10 @@ class UserProfileModel {
       city: json['city'] as String?,
       professionalType: json['professionalType'] as String?,
       profileImagePath: json['profileImagePath'] as String?,
+      // Service Provider fields
+      businessName: json['businessName'] as String?,
+      businessType: json['businessType'] as String?,
+      businessLogoPath: json['businessLogoPath'] as String?,
     );
   }
 
@@ -93,6 +103,10 @@ class UserProfileModel {
       if (city != null) 'city': city,
       if (professionalType != null) 'professionalType': professionalType,
       if (profileImagePath != null) 'profileImagePath': profileImagePath,
+      // Service Provider fields
+      if (businessName != null) 'businessName': businessName,
+      if (businessType != null) 'businessType': businessType,
+      if (businessLogoPath != null) 'businessLogoPath': businessLogoPath,
     };
   }
 
@@ -113,6 +127,8 @@ class UserProfileModel {
       return companyName ?? 'N/A';
     } else if (isProfessional) {
       return name ?? 'N/A';
+    } else if (isServiceProvider) {
+      return businessName ?? 'N/A';
     }
     return 'N/A';
   }
@@ -123,6 +139,8 @@ class UserProfileModel {
       return companyLogoPath;
     } else if (isProfessional) {
       return profileImagePath;
+    } else if (isServiceProvider) {
+      return businessLogoPath;
     }
     return null;
   }

@@ -175,8 +175,8 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                       tripStatus: "Pending",
                     );
 
-                    // ✅ Send API call
-                    await tripController.addTrip(trip, token);
+                    // ✅ Send API call (userId-based auth, no token needed)
+                    await tripController.addTrip(trip);
                   },
                   style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF25C5C),

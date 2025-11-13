@@ -159,39 +159,39 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                     height: 48,
                     child: ElevatedButton(
                       onPressed: () async {
-                        final token = await SessionManager().getString("authToken");
+                        // Using userId-based authentication (token not required)
                         final userId = await SessionManager().getString("userId");
 
-                        if (token == null || userId == null) {
+                        if (userId == null || userId.isEmpty) {
                           Get.snackbar("Error", "User not logged in");
                           return;
                         }
 
-                        // Combine min and max pay range for backend (temporary - backend will change later)
+                        // Combine min and max pay range for backend
                         final payRange = minPayRangeController.text.isNotEmpty && maxPayRangeController.text.isNotEmpty
                             ? "Rs ${minPayRangeController.text} - Rs ${maxPayRangeController.text}"
                             : "";
 
-                        // ✅ Build Trip object (TripId not needed - backend will generate)
+                        // ✅ Build Trip object according to new API structure
                         final trip = Trip(
-                          tripId: "", // Empty - backend will generate TripId
+                          tripId: "", // Empty for new trips
                           userId: userId,
                           vehicleId: tripController.selectedVehicle.value ?? "",
-                          driverId: tripController.selectedDriver.value ?? "",
-                          pickupLocation: pickupController.text,
-                          deliveryLocation: deliveryController.text,
+                          driverId: tripController.selectedDriver.value ?? "", // Optional - can be empty
+                          pickupLocation: pickupController.text.trim(),
+                          deliveryLocation: deliveryController.text.trim(),
                           pickupDate: selectedDate,
                           pickupTime: selectedTime != null
                               ? _formatTimeOfDay(selectedTime!)
-                              : "00:00:00",
-                          specialInstructions: specialInstructionsController.text,
+                              : "",
+                          specialInstructions: specialInstructionsController.text.trim(),
                           payRange: payRange,
-                          tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}",
-                          tripStatus: "Pending",
+                          tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}", // Auto-generated
+                          tripStatus: "Pending", // Default status
                         );
 
-                        // ✅ Send API call
-                        await tripController.addTrip(trip, token);
+                        // ✅ Send API call (userId-based auth, no token needed)
+                        await tripController.addTrip(trip);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFF25C5C),

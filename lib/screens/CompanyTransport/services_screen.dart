@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../controllers/service_controller.dart';
+import '../../models/service_model.dart';
 import 'service_details.dart';
 import 'success_popup.dart';
 
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
+
+  ServiceController get _serviceController => Get.put(ServiceController());
 
   @override
   Widget build(BuildContext context) {
@@ -170,13 +174,67 @@ class ServicesScreen extends StatelessWidget {
 
           // Service List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 6,
-              itemBuilder: (context, index) {
-                return ServiceCard();
-              },
-            ),
+            child: Obx(() {
+              if (_serviceController.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (_serviceController.services.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.miscellaneous_services,
+                            size: 48, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No services available',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (_serviceController.errorMessage.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              _serviceController.errorMessage.value,
+                              style: const TextStyle(color: Colors.redAccent),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _serviceController.fetchServices,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: _serviceController.fetchServices,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _serviceController.services.length,
+                  itemBuilder: (context, index) {
+                    final service = _serviceController.services[index];
+                    return ServiceCard(
+                      service: service,
+                      onTapDetails: () {
+                        Get.to(
+                          () => ServiceDetailScreen(serviceId: service.serviceId),
+                        );
+                      },
+                    );
+                  },
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -185,7 +243,14 @@ class ServicesScreen extends StatelessWidget {
 }
 
 class ServiceCard extends StatelessWidget {
-  const ServiceCard({super.key});
+  const ServiceCard({
+    super.key,
+    required this.service,
+    required this.onTapDetails,
+  });
+
+  final ServiceModel service;
+  final VoidCallback onTapDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -201,17 +266,27 @@ class ServiceCard extends StatelessWidget {
           children: [
             // Title + Verified Badge
             Row(
-              children: const [
+              children: [
                 Expanded(
                   child: Text(
-                    "Tyre Replacement & Balancing",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    service.serviceTitle.isNotEmpty
+                        ? service.serviceTitle
+                        : 'Service',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
-                SizedBox(width: 4),
-                Icon(Icons.verified, color: Color(0xFF00B894), size: 18),
-                SizedBox(width: 4),
-                Text("Verified", style: TextStyle(color: Color(0xFF00B894))),
+                if (service.isAvailable) ...[
+                  const SizedBox(width: 4),
+                  const Icon(Icons.verified, color: Color(0xFF00B894), size: 18),
+                  const SizedBox(width: 4),
+                  const Text(
+                    "Available",
+                    style: TextStyle(color: Color(0xFF00B894)),
+                  ),
+                ]
               ],
             ),
 
@@ -222,27 +297,35 @@ class ServiceCard extends StatelessWidget {
               children: [
                 Chip(
                   label: Text(
-                    "Workshop",
-                    style: TextStyle(
+                    service.businessType.isNotEmpty
+                        ? service.businessType
+                        : 'Service',
+                    style: const TextStyle(
                       color: Color(0xFF00B894),
-                      fontSize: 12, // smaller font
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  backgroundColor: Color(0xFFE6F9F2),
-                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                  visualDensity: VisualDensity(
+                  backgroundColor: const Color(0xFFE6F9F2),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  visualDensity: const VisualDensity(
                     horizontal: 0,
                     vertical: -4,
-                  ), // reduces chip height
+                  ),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                    side: BorderSide.none, // ← ensures no border
-                  ), // minimizes touch area
+                    side: BorderSide.none,
+                  ),
                 ),
-                SizedBox(width: 8),
-                Text("Raj Tyre Works · Surat, Gujarat"),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _buildAddressLabel(service),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
 
@@ -253,20 +336,29 @@ class ServiceCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.star, color: Colors.amber, size: 20),
-                    SizedBox(width: 4),
-                    Text("4.6"),
-                    SizedBox(width: 4),
-                    Text("(132 reviews)", style: TextStyle(color: Colors.grey)),
+                  children: [
+                    Icon(
+                      service.isAvailable ? Icons.check_circle : Icons.cancel,
+                      color:
+                          service.isAvailable ? const Color(0xFF00B894) : Colors.redAccent,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      service.isAvailable ? "Available" : "Unavailable",
+                      style: TextStyle(
+                        color: service.isAvailable
+                            ? const Color(0xFF00B894)
+                            : Colors.redAccent,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    Get.to(ServiceDetailScreen());
-                  },
+                  onPressed: onTapDetails,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF00B894),
+                    backgroundColor: const Color(0xFF00B894),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -282,5 +374,15 @@ class ServiceCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _buildAddressLabel(ServiceModel service) {
+    if (service.businessName.isNotEmpty) {
+      return '${service.businessName} · ${service.city}';
+    }
+    if (service.city.isNotEmpty) {
+      return service.city;
+    }
+    return service.fullAddress.isNotEmpty ? service.fullAddress : 'Address N/A';
   }
 }

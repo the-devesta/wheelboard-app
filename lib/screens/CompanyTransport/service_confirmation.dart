@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/screens/CompanyTransport/service_dashboard.dart';
+
+import '../../models/service_assignment_summary.dart';
+import 'service_dashboard.dart';
 
 class ServiceConfirmationPage extends StatelessWidget {
-  const ServiceConfirmationPage({super.key});
+  const ServiceConfirmationPage({
+    super.key,
+    required this.summary,
+  });
+
+  final ServiceAssignmentSummary summary;
 
   @override
   Widget build(BuildContext context) {
@@ -27,14 +35,14 @@ class ServiceConfirmationPage extends StatelessWidget {
                 ),
               ),
               child: Column(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.white24,
                     child: Icon(Icons.check, color: Colors.white, size: 40),
                   ),
-                  SizedBox(height: 20),
-                  Text(
+                  const SizedBox(height: 20),
+                  const Text(
                     "Service Assigned\nSuccessfully",
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -43,8 +51,8 @@ class ServiceConfirmationPage extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     "The service has been successfully assigned!",
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
@@ -69,10 +77,10 @@ class ServiceConfirmationPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: const [
-                          Icon(Icons.assignment, color: Color(0xFF3867d6)),
-                          SizedBox(width: 8),
-                          Text(
+                        children: [
+                          const Icon(Icons.assignment, color: Color(0xFF3867d6)),
+                          const SizedBox(width: 8),
+                          const Text(
                             "Service Details",
                             style: TextStyle(
                               fontSize: 16,
@@ -84,20 +92,27 @@ class ServiceConfirmationPage extends StatelessWidget {
                       const Divider(height: 20),
 
                       // Service Title
-                      _detailRow("Service Title", "Tyre Replacement"),
+                      _detailRow(
+                        "Service Title",
+                        summary.serviceTitle.isNotEmpty ? summary.serviceTitle : 'Service',
+                      ),
                       const SizedBox(height: 12),
 
                       // Vehicle Number
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             "Vehicle Number",
                             style: TextStyle(color: Colors.black54),
                           ),
                           Chip(
-                            label: Text("DL01AB1234"),
-                            backgroundColor: Color(0xFFF5F5F5),
+                            label: Text(
+                              summary.vehicleNumber.isNotEmpty
+                                  ? summary.vehicleNumber
+                                  : 'N/A',
+                            ),
+                            backgroundColor: const Color(0xFFF5F5F5),
                           ),
                         ],
                       ),
@@ -106,22 +121,22 @@ class ServiceConfirmationPage extends StatelessWidget {
                       // Date & Time
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             "Service Date",
                             style: TextStyle(color: Colors.black54),
                           ),
                           Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.calendar_today,
                                 color: Color(0xFF3867d6),
                                 size: 18,
                               ),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Text(
-                                "Dec 15, 2024",
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                summary.formattedDate,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -130,29 +145,28 @@ class ServiceConfirmationPage extends StatelessWidget {
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             "Service Time",
                             style: TextStyle(color: Colors.black54),
                           ),
                           Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.access_time,
                                 color: Color(0xFF3867d6),
                                 size: 18,
                               ),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Text(
-                                "2:30 PM",
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                summary.formattedTime,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
-
                       // Description
                       const Text(
                         "Service Description",
@@ -162,9 +176,11 @@ class ServiceConfirmationPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        "Complete tyre replacement service including wheel alignment and balancing. Premium quality tyres with 2-year warranty coverage.",
-                        style: TextStyle(color: Colors.black87, fontSize: 14),
+                      Text(
+                        summary.description.isNotEmpty
+                            ? summary.description
+                            : "No additional description provided.",
+                        style: const TextStyle(color: Colors.black87, fontSize: 14),
                       ),
                     ],
                   ),
@@ -205,16 +221,32 @@ class ServiceConfirmationPage extends StatelessWidget {
                         color: Colors.white,
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
-                            "#WBD-2024121501",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              summary.serviceId,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Icon(Icons.copy, color: Color(0xFF00B894)),
+                          IconButton(
+                            onPressed: () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: summary.serviceId),
+                              );
+                              Get.snackbar(
+                                'Copied',
+                                'Service ID copied to clipboard.',
+                                snackPosition: SnackPosition.BOTTOM,
+                                margin: const EdgeInsets.all(16),
+                              );
+                            },
+                            icon: const Icon(Icons.copy, color: Color(0xFF00B894)),
+                          ),
                         ],
                       ),
                     ),
@@ -245,7 +277,7 @@ class ServiceConfirmationPage extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      Get.to(ServiceDashboardScreen());
+                      Get.to(() => ServiceDashboardScreen());
                     },
                     icon: const Icon(Icons.home, color: Colors.white),
                     label: const Text(

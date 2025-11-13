@@ -1,10 +1,38 @@
-import 'dart:ffi';
-import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../controllers/service_controller.dart';
+import '../../models/service_model.dart';
 import 'service_detail_popup.dart';
 
-class ServiceDetailScreen extends StatelessWidget {
-  const ServiceDetailScreen({super.key});
+class ServiceDetailScreen extends StatefulWidget {
+  const ServiceDetailScreen({super.key, required this.serviceId});
+
+  final String serviceId;
+
+  @override
+  State<ServiceDetailScreen> createState() => _ServiceDetailScreenState();
+}
+
+class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
+  late final ServiceController serviceController;
+
+  @override
+  void initState() {
+    super.initState();
+    serviceController = Get.find<ServiceController>();
+
+    // Load cached list entry if available
+    final cached = serviceController.getServiceById(widget.serviceId);
+    if (cached != null) {
+      serviceController.selectedService.value = cached;
+    }
+
+    // Fetch full detail from API
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      serviceController.fetchServiceDetail(widget.serviceId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,299 +56,393 @@ class ServiceDetailScreen extends StatelessWidget {
           ),
         ],
       ),
+      body: Obx(() {
+        final isLoading = serviceController.isDetailLoading.value;
+        final service = serviceController.selectedService.value;
 
-      // Scrollable Body
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16), // space for button
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        if (isLoading && service == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (service == null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
+                const SizedBox(height: 12),
+                const Text(
+                  'Service detail not found',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () =>
+                      serviceController.fetchServiceDetail(widget.serviceId),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Stack(
           children: [
-            // Header Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(
-                16,
-              ), // Adjust radius as needed
-              child: Image.asset(
-                "assets/tripImage.png",
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildHeaderImage(),
+                  const SizedBox(height: 10),
+                  _buildSummaryCard(service),
+                  const SizedBox(height: 8),
+                  _buildAboutSection(service),
+                  const SizedBox(height: 8),
+                  _buildPricingSection(service),
+                  const SizedBox(height: 8),
+                  _buildContactSection(service),
+                ],
               ),
             ),
-            SizedBox(height: 10),
-            // Service Card
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: Colors.white,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "Tyre Replacement & Balancing",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                            const Icon(
-                              Icons.verified,
-                              color: Color(0xFF00B894),
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Color(0xFF00B894).withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                "Workshop",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF00B894),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              "Raj Tyre Works · Surat, Gujarat",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            const Text(
-                              "4.6",
-                              style: TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "(132 reviews)",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+            if (isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.05),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+          ],
+        );
+      }),
+      bottomNavigationBar: Obx(() {
+        final service = serviceController.selectedService.value;
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: ElevatedButton(
+            onPressed: service == null
+                ? null
+                : () {
+                    Get.dialog(
+                      ServiceDetailsPopup(service: service),
+                      barrierDismissible: true,
+                      transitionDuration: Duration.zero,
+                    );
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF27AE60),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 50,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              "Assign Service",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildHeaderImage() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.asset(
+        "assets/tripImage.png",
+        height: 220,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(ServiceModel service) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  service.serviceTitle.isNotEmpty
+                      ? service.serviceTitle
+                      : 'Service',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              if (service.isAvailable)
+                const Icon(
+                  Icons.verified,
+                  color: Color(0xFF00B894),
+                  size: 18,
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00B894).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  service.businessType.isNotEmpty
+                      ? service.businessType
+                      : 'Service',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF00B894),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _buildAddressLabel(service),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutSection(ServiceModel service) {
+    final description = service.description?.trim();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "About this Service",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            (description != null && description.isNotEmpty)
+                ? description
+                : "Description not provided.",
+            style: const TextStyle(fontSize: 13, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPricingSection(ServiceModel service) {
+    final amount = service.amount;
+    final pricingOption = service.pricingOption ?? '';
+    final hoursFrom = service.businessHoursFrom ?? '';
+    final hoursTo = service.businessHoursTo ?? '';
+    final daysOpen = service.daysOpen ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Pricing & Availability",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(
+                Icons.currency_rupee,
+                size: 18,
+                color: Color(0xFF00B894),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                (amount != null && amount > 0)
+                    ? '₹$amount'
+                    : 'Contact for pricing',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const Spacer(),
+              const Icon(
+                Icons.info_outline,
+                size: 18,
+                color: Color(0xFF00B894),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                pricingOption.isNotEmpty ? pricingOption : 'Pricing info N/A',
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_month,
+                size: 18,
+                color: Color(0xFF00B894),
+              ),
+              const SizedBox(width: 4),
+              Text(daysOpen.isNotEmpty ? daysOpen : 'Days not specified'),
+              const Spacer(),
+              const Icon(
+                Icons.access_time,
+                size: 18,
+                color: Color(0xFF00B894),
+              ),
+              const SizedBox(width: 4),
+              Text(_formatHours(hoursFrom, hoursTo)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactSection(ServiceModel service) {
+    final contact = service.contactNumber ?? '';
+    final whatsapp = service.whatsappNumber ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Location & Contact",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on,
+                size: 18,
+                color: Color(0xFF00B894),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  service.fullAddress.isNotEmpty
+                      ? service.fullAddress
+                      : (service.city.isNotEmpty ? service.city : 'Address N/A'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            height: 100,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(child: Text("Map Placeholder")),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: contact.isNotEmpty ? () {} : null,
+                  icon: const Icon(Icons.call, color: Colors.white),
+                  label: Text(
+                    contact.isNotEmpty ? "Call Now" : "No contact",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00B894),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: whatsapp.isNotEmpty ? () {} : null,
+                  icon: Image.asset(
+                    "assets/whatsappIcon.png",
+                    height: 24,
+                    width: 24,
+                    color: whatsapp.isNotEmpty
+                        ? const Color(0xFF00B894)
+                        : Colors.grey,
+                  ),
+                  label: Text(
+                    whatsapp.isNotEmpty ? "WhatsApp" : "No WhatsApp",
+                    style: TextStyle(
+                      color: whatsapp.isNotEmpty
+                          ? const Color(0xFF00B894)
+                          : Colors.grey,
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // About This Service
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: Colors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "About this Service",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: whatsapp.isNotEmpty
+                          ? const Color(0xFF00B894)
+                          : Colors.grey,
+                    ),
                   ),
-                  SizedBox(height: 6),
-                  Text(
-                    "Our Tyre Replacement & Balancing ensures your ride is smooth and safe. We use advanced balancing machines, top-quality tyres, and certified technicians. Service includes tyre removal, new tyre fitment, wheel balancing, and valve checks. All work is performed with care and attention to detail for all car makes and models.",
-                    style: TextStyle(fontSize: 13, height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Pricing & Availability
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: Colors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Pricing & Availability",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: const [
-                      Icon(
-                        Icons.currency_rupee,
-                        size: 18,
-                        color: Color(0xFF00B894),
-                      ),
-                      SizedBox(width: 4),
-                      Text("1,200  Flat Rate"),
-                      Spacer(),
-                      Icon(
-                        Icons.local_shipping,
-                        size: 18,
-                        color: Color(0xFF00B894),
-                      ),
-                      SizedBox(width: 4),
-                      Text("On-premise"),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: const [
-                      Icon(
-                        Icons.calendar_month,
-                        size: 18,
-                        color: Color(0xFF00B894),
-                      ),
-                      SizedBox(width: 4),
-                      Text("Mon–Sat"),
-                      Spacer(),
-                      Icon(
-                        Icons.access_time,
-                        size: 18,
-                        color: Color(0xFF00B894),
-                      ),
-                      SizedBox(width: 4),
-                      Text("10 AM – 6 PM"),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Location & Contact
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: Colors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Location & Contact",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: const [
-                      Icon(
-                        Icons.location_on,
-                        size: 18,
-                        color: Color(0xFF00B894),
-                      ),
-                      SizedBox(width: 4),
-                      Text("Surat, GJ"),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    height: 100,
-                    color: Colors.grey.shade300,
-                    child: const Center(child: Text("Map Placeholder")),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.call, color: Colors.white),
-                          label: const Text(
-                            "Call Now",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF00B894),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {},
-                          icon: Image.asset(
-                            "assets/whatsappIcon.png", // your custom icon
-                            height: 24, // control size
-                            width: 24,
-                          ),
-                          label: const Text(
-                            "WhatsApp",
-                            style: TextStyle(color: Color(0xFF00B894)),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF00B894)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Get.dialog(
-                  const ServiceDetailsPopup(),
-                  barrierDismissible: true, // tap outside to dismiss (optional)
-                  transitionDuration: Duration.zero, // no animation
-                );
-              },
-
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF27AE60),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 50,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                "Assign Service",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
-
-      // Fixed Button
     );
+  }
+
+  static String _buildAddressLabel(ServiceModel service) {
+    if (service.businessName.isNotEmpty) {
+      return '${service.businessName} · ${service.city}';
+    }
+    if (service.city.isNotEmpty) {
+      return service.city;
+    }
+    return service.fullAddress.isNotEmpty ? service.fullAddress : 'Address N/A';
+  }
+
+  static String _formatHours(String from, String to) {
+    if (from.isEmpty && to.isEmpty) return 'Time not specified';
+    if (from.isEmpty) return 'Till $to';
+    if (to.isEmpty) return 'From $from';
+    return '$from – $to';
   }
 }

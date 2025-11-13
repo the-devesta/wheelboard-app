@@ -86,10 +86,11 @@ class HttpHelper {
     required List<File> files,
     required String fieldKey,
     Map<String, String>? headers,
+    String method = "POST",
   }) async {
     final uri = Uri.parse(baseUrl + endpoint);
 
-    final request = http.MultipartRequest("POST", uri);
+    final request = http.MultipartRequest(method, uri);
 
     // ✅ Add headers (Content-Type will be auto-set by MultipartRequest)
     // Remove Content-Type from headers if present, as multipart sets it automatically

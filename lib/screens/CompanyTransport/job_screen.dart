@@ -2,12 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'job_form_screen.dart';
 import 'job_application_screen.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../controllers/job_controller.dart';
+import '../../models/job_model.dart';
 
-class JobsScreen extends StatelessWidget {
+class JobsScreen extends StatefulWidget {
   const JobsScreen({super.key});
+
+  @override
+  State<JobsScreen> createState() => _JobsScreenState();
+}
+
+class _JobsScreenState extends State<JobsScreen> {
+  final JobController jobController = Get.put(JobController());
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh jobs when screen is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      jobController.refreshJobs();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +35,10 @@ class JobsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: Icon(Icons.arrow_back, color: Colors.black),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Get.back(),
+        ),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -24,8 +46,7 @@ class JobsScreen extends StatelessWidget {
             const SizedBox(width: 40),
             GestureDetector(
               onTap: () {
-                // Handle the tap here
-                Get.to(JobApplicationsScreen());
+                Get.to(() => JobApplicationsScreen());
               },
               child: const Text(
                 "Applications",
@@ -36,40 +57,70 @@ class JobsScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          JobCard(
-            role: 'Driver',
-            image: 'assets/feed.svg',
-            duration: 'Task-Based',
-            openings: '5',
-            salary: '₹18,000',
-            city: 'Mumbai',
-            description: 'Description..........',
-          ),
-          SizedBox(height: 16),
-          JobCard(
-            role: 'Technician',
-            image: 'assets/feedImage.svg',
-            duration: 'Permanent',
-            openings: '2',
-            salary: '₹35,000',
-            city: 'Pune',
-            description: 'Description..........',
+      body: Obx(() {
+        if (jobController.isLoading.value && jobController.jobs.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (jobController.jobs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.work_outline, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text(
+                  "No jobs posted yet",
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Tap the button below to post your first job",
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
           ),
         ],
       ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => jobController.refreshJobs(),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: jobController.jobs.asMap().entries.map((entry) {
+              final index = entry.key;
+              final job = entry.value;
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index < jobController.jobs.length - 1 ? 16 : 0,
+                ),
+                child: JobCard(
+                  job: job,
+                  onEdit: () async {
+                    await Get.to(() => PostJobScreen(jobToEdit: job));
+                    // Refresh jobs after returning from edit screen
+                    jobController.refreshJobs();
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      }),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFFFF5C5C),
-        onPressed: () {
-          Get.to(PostJobScreen());
+        onPressed: () async {
+          await Get.to(() => const PostJobScreen());
+          // Refresh jobs after returning from post job screen
+          jobController.refreshJobs();
         },
         icon: SvgPicture.asset(
-          'assets/add_circle.svg', // <-- your SVG path
+          'assets/add_circle.svg',
           width: 24,
           height: 24,
-          color: Colors.white, // optional, applies if SVG supports it
+          color: Colors.white,
         ),
         label: const Text("Post Job", style: TextStyle(color: Colors.white)),
       ),
@@ -78,23 +129,13 @@ class JobsScreen extends StatelessWidget {
 }
 
 class JobCard extends StatelessWidget {
-  final String role;
-  final String image;
-  final String duration;
-  final String openings;
-  final String salary;
-  final String city;
-  final String description;
+  final JobModel job;
+  final VoidCallback onEdit;
 
   const JobCard({
     super.key,
-    required this.role,
-    required this.image,
-    required this.duration,
-    required this.openings,
-    required this.salary,
-    required this.city,
-    required this.description,
+    required this.job,
+    required this.onEdit,
   });
 
   @override
@@ -114,11 +155,37 @@ class JobCard extends StatelessWidget {
             children: [
               // Image
               ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                child: job.imagePaths.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: job.imagePaths.first,
+                        width: double.infinity,
+                        height: 140,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          height: 140,
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          height: 140,
+                          color: Colors.grey[200],
                 child: Image.asset(
-                  "assets/jobdescription.png", // Replace with the PNG file path
+                            "assets/jobdescription.png",
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      )
+                    : Image.asset(
+                        "assets/jobdescription.png",
                   width: double.infinity,
                   height: 140,
-                  fit: BoxFit.fill, // You can adjust the fit as needed
+                        fit: BoxFit.cover,
                 ),
               ),
 
@@ -147,9 +214,9 @@ class JobCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: const Text(
-                            "Technician",
-                            style: TextStyle(
+                          child: Text(
+                            job.role,
+                            style: const TextStyle(
                               color: Colors.redAccent,
                               fontWeight: FontWeight.w400,
                               fontSize: 16,
@@ -166,8 +233,15 @@ class JobCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () {
-                            // Perform your share action here
-                            Share.share("WheelBoard");
+                            // Share job details
+                            Share.share(
+                              "Job: ${job.role}\n"
+                              "Duration: ${job.jobDuration}\n"
+                              "Openings: ${job.openings}\n"
+                              "Salary: ₹${job.salary}\n"
+                              "City: ${job.city}\n"
+                              "Description: ${job.description}",
+                            );
                           },
                           child: SvgPicture.asset(
                             'assets/shareBtnWBg.svg',
@@ -179,11 +253,12 @@ class JobCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    _infoRow("Duration", duration),
-                    _infoRow("Openings", openings),
-                    _infoRow("Salary", salary),
-                    _infoRow("City", city),
-                    _infoRow("Description", description),
+                    _infoRow("Duration", job.jobDuration),
+                    _infoRow("Openings", job.openings.toString()),
+                    _infoRow("Salary", "₹${job.salary}"),
+                    _infoRow("City", job.city),
+                    _infoRow("Job Type", job.jobType),
+                    _infoRow("Description", job.description),
                   ],
                 ),
               ),
@@ -201,14 +276,13 @@ class JobCard extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: const BorderSide(
-                  // 👈 border color and width
                   color: Colors.white,
                   width: 2,
                 ),
               ),
               elevation: 4,
             ),
-            onPressed: () {},
+            onPressed: onEdit,
             icon: const Icon(Icons.edit, size: 16, color: Colors.white),
             label: const Text("Edit", style: TextStyle(color: Colors.white)),
           ),

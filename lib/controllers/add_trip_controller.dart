@@ -36,6 +36,12 @@ class TripController extends GetxController {
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         drivers.value = data.map((e) => Driver.fromJson(e)).toList();
+
+        // ✅ Auto-select first driver if none selected
+        if (drivers.isNotEmpty && selectedDriver.value == null) {
+          selectedDriver.value = drivers.first.driverId;
+          print("🚚 Auto-selected driver: ${drivers.first.fullName} (${drivers.first.driverId})");
+        }
       } else {
         Get.snackbar("Error", "Failed to load drivers: ${response.statusCode}");
       }
@@ -75,22 +81,15 @@ class TripController extends GetxController {
     }
   }
 
-  Future<void> addTrip(Trip trip, String token) async {
+  Future<void> addTrip(Trip trip) async {
     try {
       isLoading.value = true;
 
-      // ✅ Validate required fields
+      // ✅ Validate only fields that are on the screen
+      // DriverId is optional (not on screen), so no validation needed
+      
       if (trip.vehicleId.isEmpty) {
         Get.snackbar("Error", "Please select a vehicle", 
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        isLoading.value = false;
-        return;
-      }
-      
-      if (trip.driverId.isEmpty) {
-        Get.snackbar("Error", "Please select a driver", 
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -125,9 +124,20 @@ class TripController extends GetxController {
         return;
       }
 
-      // ✅ Validate token
-      if (token.isEmpty) {
-        Get.snackbar("Error", "Authentication token is missing. Please login again.", 
+      if (trip.pickupTime.isEmpty) {
+        Get.snackbar("Error", "Please select pickup time", 
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+      
+      // SpecialInstructions and PayRange are optional (can be empty)
+
+      // ✅ Validate userId (userId-based authentication, token not required)
+      if (trip.userId.isEmpty) {
+        Get.snackbar("Error", "User ID is missing. Please login again.", 
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -135,26 +145,32 @@ class TripController extends GetxController {
         return;
       }
 
-      // ✅ Prepare fields (TripId removed - backend will generate it)
-      final fields = {
-        // "TripId": trip.tripId, // Removed - backend will generate TripId
-        "UserId": trip.userId,
-        "VehicleId": trip.vehicleId,
-        "DriverId": trip.driverId,
-        "PickupLocation": trip.pickupLocation,
-        "DeliveryLocation": trip.deliveryLocation,
-        "PickupDate": trip.pickupDate?.toIso8601String(),
-        "PickupTime": trip.pickupTime,
-        "SpecialInstructions": trip.specialInstructions,
-        "PayRange": trip.payRange,
-        "TripCode": trip.tripCode,
-        "TripStatus": trip.tripStatus,
-      };
-
-      // ✅ Get and log user type from session
+      // ✅ Get auth details from session/service (token optional but logged)
       final sessionManager = SessionManager();
       final savedUserType = await sessionManager.getString("userType");
       final savedUserId = await sessionManager.getString("userId");
+      final storedToken = await sessionManager.getString("authToken") ?? "";
+      final maskedToken =
+          storedToken.isNotEmpty ? "${storedToken.substring(0, 6)}..." : "NONE";
+
+      // ✅ Prepare fields according to new API structure
+      // Only include fields that are on the screen, others are optional
+      final fields = {
+        "TripId": "", // Empty for new trips
+        "UserId": trip.userId,
+        "VehicleId": trip.vehicleId,
+        if (trip.driverId.isNotEmpty) "DriverId": trip.driverId,
+        "PickupLocation": trip.pickupLocation,
+        "DeliveryLocation": trip.deliveryLocation,
+        if (trip.pickupDate != null)
+          "PickupDate": trip.pickupDate!.toIso8601String(),
+        if (trip.pickupTime.isNotEmpty) "PickupTime": trip.pickupTime,
+        if (trip.specialInstructions.isNotEmpty)
+          "SpecialInstructions": trip.specialInstructions,
+        if (trip.payRange.isNotEmpty) "PayRange": trip.payRange,
+        if (trip.tripCode.isNotEmpty) "TripCode": trip.tripCode,
+        if (trip.tripStatus.isNotEmpty) "TripStatus": trip.tripStatus,
+      };
       
       // 🔍 Debug: Log all fields before sending
       print("==================================");
@@ -163,7 +179,7 @@ class TripController extends GetxController {
       print("👤 Current User Type: ${savedUserType ?? 'NOT FOUND'}");
       print("👤 Current User ID: ${savedUserId ?? 'NOT FOUND'}");
       print("👉 Endpoint: ${API.addTrip}");
-      print("👉 Token: ${token.substring(0, 20)}...");
+      print("👉 Token (masked - not sent): $maskedToken");
       print("👉 Trip UserId: ${trip.userId}");
       print("👉 Fields: $fields");
       print("==================================");
@@ -174,12 +190,15 @@ class TripController extends GetxController {
       }
 
       // ✅ Call HttpHelper (no files for now, so pass empty list)
+      // NOTE: Backend accepts userId-based auth, so we DO NOT send Authorization header
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.addTrip,
         fields: fields,
         files: [], // if later you add images or docs
         fieldKey: "file", // backend field name for files (ignored here)
-        headers: {"Authorization": "Bearer $token"},
+        headers: {
+          "Accept": "*/*",
+        },
       );
 
       // ✅ Convert StreamedResponse to Response (can only read stream once)

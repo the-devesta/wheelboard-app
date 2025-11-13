@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:wheelboard/CommonWidget/app_textfield.dart';
-import 'package:wheelboard/commonwidget/app_dropdown.dart';
 import 'package:wheelboard/controllers/signup_controller.dart';
 
 import 'package:country_picker/country_picker.dart';
 
-import '../../constants/apps_colors.dart';
 import '../../models/company_signupmodel.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'professional_login.dart' show ProfessionLogin;
@@ -21,25 +20,70 @@ class Signup extends StatelessWidget {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final RxnString selectedCompanyType = RxnString();
+  final Rx<String?> selectedCompanyType = Rx<String?>(null);
   final Rx<Country> selectedCountry = Country.parse('IN').obs;
+  
+  final List<String> businessCategories = ['Transport', 'Service Provider'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: const Color(0xFFF4E3E3), // Pink background like Figma
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _headingTitle(),
-                const SizedBox(height: 20),
-                _buildWhiteCard(context),
-              ],
+        child: Column(
+          children: [
+            // Header with Logo and WHEELBOARD text
+            Padding(
+              padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
+              child: Row(
+                children: [
+                  // Logo
+                  Image.asset(
+                    'assets/logo.png',
+                    height: 49,
+                    width: 49,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 49,
+                        height: 49,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF25C5C),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  // WHEELBOARD text
+                  Text(
+                    'WHEELBOARD',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1A1C1E),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+
+             const SizedBox(height: 20),
+
+            // White card with form
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _buildWhiteCard(context),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -47,51 +91,71 @@ class Signup extends StatelessWidget {
 
   Widget _buildWhiteCard(BuildContext context) {
     return Container(
-      constraints: BoxConstraints(
-        maxWidth: 500, // Limit maximum width for better responsiveness
-      ),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
-        ],
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context),
-          ),
-          Text(
-            "Register as Company",
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF333333),
+          // Back button
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const Icon(
+              Icons.arrow_back_ios,
+              size: 16,
+              color: Color(0xFF1A1C1E),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
+          // Dynamic Title based on selection
+          Obx(
+            () => Text(
+              selectedCompanyType.value != null
+                  ? "Register as ${selectedCompanyType.value}"
+                  : "Register as Company",
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF535353),
+                letterSpacing: -0.48,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Login link
           Row(
             children: [
-              Text("Already have an account? ", style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                "Already have an account? ",
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF6C7278),
+                  letterSpacing: -0.12,
+                ),
+              ),
               GestureDetector(
                 onTap: () {
                   Get.to(ProfessionLogin());
                 },
                 child: Text(
                   "Login",
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFF36B5A),
-                    fontWeight: FontWeight.bold,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFF26262),
+                    letterSpacing: -0.12,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           _buildFormFields(context),
+          const SizedBox(height: 16),
           _buildRegisterButton(),
           const SizedBox(height: 16),
           _buildDivider(),
@@ -102,90 +166,188 @@ class Signup extends StatelessWidget {
     );
   }
 
+
   Widget _buildFormFields(BuildContext context) {
     return Obx(
       () => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Company Name", style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 8),
+          // Company Name
+          Text(
+            "Company Name",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF6C7278),
+              letterSpacing: -0.24,
+            ),
+          ),
+          const SizedBox(height: 2),
           AppTextField(
             controller: companyController,
             hintText: 'Enter company name',
           ),
           const SizedBox(height: 16),
-          Text("Email", style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 8),
-          AppTextField(
-            controller: emailController,
-            hintText: 'Enter your email',
+          // Phone Number
+          Text(
+            "Phone Number",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF6C7278),
+              letterSpacing: -0.24,
+            ),
           ),
-          const SizedBox(height: 16),
-          Text("Phone Number", style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: 2),
           AppTextField(
             controller: phoneController,
             hintText: "Enter your number",
             keyboardType: TextInputType.phone,
-            prefixIcon: GestureDetector(
-              onTap: () {
-                showCountryPicker(
-                  context: Get.context!,
-                  showPhoneCode: true,
-                  onSelect: (Country country) {
-                    selectedCountry.value = country;
-                    // selectedCountry
-                  },
-                );
-              },
-              child: Container(
-                width: 80,
-                padding: const EdgeInsets.only(left: 8, right: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      selectedCountry.value.flagEmoji,
-                      style: const TextStyle(fontSize: 20),
+            prefixIcon: Obx(
+              () => GestureDetector(
+                onTap: () {
+                  showCountryPicker(
+                    context: Get.context!,
+                    showPhoneCode: true,
+                    onSelect: (Country country) {
+                      selectedCountry.value = country;
+                    },
+                  );
+                },
+                child: Container(
+                  width: 62,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: const Color(0xFFEDF1F3)),
                     ),
-                    const Icon(Icons.arrow_drop_down),
-                  ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          selectedCountry.value.flagEmoji,
+                          style: const TextStyle(fontSize: 16),
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.keyboard_arrow_down, size: 12),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          Text("Set Password", style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 8),
+          // Email
+          Text(
+            "Email",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF6C7278),
+              letterSpacing: -0.24,
+            ),
+          ),
+          const SizedBox(height: 2),
+          AppTextField(
+            controller: emailController,
+            hintText: 'Enter your email',
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+          // Set Password
+          Text(
+            "Set Password",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF6C7278),
+              letterSpacing: -0.24,
+            ),
+          ),
+          const SizedBox(height: 2),
           AppTextField(
             controller: passwordController,
-            hintText: 'Enter your password',
+            hintText: 'Create your password',
             obscureText: controller.obscurePassword.value,
             suffixIcon: IconButton(
               icon: Icon(
                 controller.obscurePassword.value
                     ? Icons.visibility_off
                     : Icons.visibility,
+                size: 16,
+                color: const Color(0xFF6C7278),
               ),
               onPressed: () => controller.obscurePassword.toggle(),
             ),
           ),
           const SizedBox(height: 16),
-          Text("Select Business Category", style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 8),
-          AppDropdown<String>(
-            value: selectedCompanyType.value,
-            hintText: "Choose your country",
-            items: const [
-              DropdownMenuItem(value: 'Transport', child: Text('Transport')),
-              DropdownMenuItem(
-                value: 'Service Provider',
-                child: Text('Service Provider'),
-              ),
-            ],
-            onChanged: (value) => selectedCompanyType.value = value,
+          // Select Business Category
+          Text(
+            "Select Business Category",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF6C7278),
+              letterSpacing: -0.24,
+            ),
           ),
-          const SizedBox(height: 25),
+          const SizedBox(height: 2),
+          Container(
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: const Color(0xFFEDF1F3),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Obx(
+              () => DropdownButtonFormField<String>(
+                value: selectedCompanyType.value,
+                decoration: InputDecoration(
+                  hintText: 'Select category',
+                  hintStyle: GoogleFonts.roboto(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFFB3B3B3),
+                    letterSpacing: 0.1,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  suffixIcon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                items: businessCategories.map((String category) {
+                  return DropdownMenuItem<String>(
+                    value: category,
+                    child: Text(
+                      category,
+                      style: GoogleFonts.roboto(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF1A1C1E),
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? value) {
+                  selectedCompanyType.value = value;
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -193,79 +355,92 @@ class Signup extends StatelessWidget {
 
   Widget _buildRegisterButton() {
     return Obx(
-      () => ElevatedButton(
-        onPressed: controller.isLoading.value
-            ? null // Disable the button when loading
-            : () async {
-                if (selectedCompanyType.value == "Transport") {
+      () => Container(
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF25C5C), Color(0xFFF25C5C)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: ElevatedButton(
+          onPressed: controller.isLoading.value
+              ? null
+              : () async {
+                  if (selectedCompanyType.value == null) {
+                    SnackBarHelper.error("Please select a business category");
+                    return;
+                  }
                   final model = CompanySignUpModel(
                     companyName: companyController.text,
                     mobileNo: phoneController.text,
                     email: emailController.text,
                     password: passwordController.text,
-                    businessCategory: selectedCompanyType.value ?? '',
+                    businessCategory: selectedCompanyType.value ?? 'Transport',
                   );
                   final success = await controller.registerCompany(model);
 
                   if (success) {
-                    // ✅ Show success message
                     SnackBarHelper.success("Company registered successfully! Please login to continue.");
-                    
-                    // ✅ Wait for snackbar to be visible
                     await Future.delayed(const Duration(milliseconds: 2000));
-                    
-                    // ✅ Navigate to login page - don't set login state yet
-                    // User needs to login first, then complete profile
                     Get.offAll(() => ProfessionLogin());
                   }
-                } else {
-                  final model = CompanySignUpModel(
-                    companyName: companyController.text,
-                    mobileNo: phoneController.text,
-                    email: emailController.text,
-                    password: passwordController.text,
-                    businessCategory: selectedCompanyType.value ?? '',
-                  );
-                  final success = await controller.registerCompany(model);
-                  
-                  if (success) {
-                    // ✅ Show success message
-                    SnackBarHelper.success("Company registered successfully! Please login to continue.");
-                    
-                    // ✅ Wait for snackbar to be visible
-                    await Future.delayed(const Duration(milliseconds: 2000));
-                    
-                    // ✅ Navigate to login page - don't set login state yet
-                    // User needs to login first, then complete profile
-                    Get.offAll(() => ProfessionLogin());
-                  }
-                }
-              },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.buttonBg,
-          minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
+          child: controller.isLoading.value
+              ? const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                )
+              : Text(
+                  "Register",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: -0.14,
+                  ),
+                ),
         ),
-        child: controller.isLoading.value
-            ? CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              )
-            : const Text("Register", style: TextStyle(color: Colors.white)),
       ),
     );
   }
 
   Widget _buildDivider() {
     return Row(
-      children: const [
-        Expanded(child: Divider()),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Text("Or"),
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            color: const Color(0xFFEDF1F3),
+          ),
         ),
-        Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            "Or",
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF6C7278),
+              letterSpacing: -0.12,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: const Color(0xFFEDF1F3),
+          ),
+        ),
       ],
     );
   }
@@ -282,30 +457,33 @@ class Signup extends StatelessWidget {
 
   Widget _socialButton(String text, String asset) {
     return Container(
+      height: 48,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black12),
+        border: Border.all(color: const Color(0xFFEFF0F6)),
         color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF4F5FA).withOpacity(0.6),
+            blurRadius: 6,
+            offset: const Offset(0, -3),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(asset, width: 20, height: 20),
-          const SizedBox(width: 12),
-          Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
-  Widget _headingTitle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          Image.asset('assets/headingImg.png', width: 210, height: 30),
-          const SizedBox(width: 12),
+          SvgPicture.asset(asset, width: 18, height: 18),
+          const SizedBox(width: 10),
+          Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1A1C1E),
+              letterSpacing: -0.14,
+            ),
+          ),
         ],
       ),
     );

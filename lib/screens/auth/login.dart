@@ -446,7 +446,7 @@ class ProfessionLogin extends StatelessWidget {
                           const SizedBox(height: 16),
 
                           /// 📌 Login Button
-                          _buildLoginButton(),
+                          _buildLoginButton(context),
                           const SizedBox(height: 24),
 
                           /// 📌 Signup Redirect
@@ -592,7 +592,7 @@ class ProfessionLogin extends StatelessWidget {
   //   );
   // }
 
-  Widget _buildLoginButton() {
+  Widget _buildLoginButton(BuildContext context) {
     return Obx(
       () => SizedBox(
         width: double.infinity,
@@ -600,10 +600,35 @@ class ProfessionLogin extends StatelessWidget {
           onPressed: loginController.isLoading.value
               ? null // Disable button while loading
               : () async {
+                  final phone = phoneController.text.trim();
+                  final password = passwordController.text.trim();
+
+                  if (phone.isEmpty) {
+                    SnackBarHelper.error("Please enter your phone number.");
+                    return;
+                  }
+
+                  if (!RegExp(r'^\d{10}$').hasMatch(phone)) {
+                    SnackBarHelper.error("Please enter a valid 10-digit phone number.");
+                    return;
+                  }
+
+                  if (password.isEmpty) {
+                    SnackBarHelper.error("Please enter your password.");
+                    return;
+                  }
+
+                  if (password.length < 6) {
+                    SnackBarHelper.error("Password must be at least 6 characters long.");
+                    return;
+                  }
+
+                  FocusScope.of(context).unfocus();
+
                   print("🔐 Starting login process...");
                   final responseData = await loginController.login(
-                    phoneController.text.trim(),
-                    passwordController.text.trim(),
+                    phone,
+                    password,
                   );
 
                   print("🔐 Login response: $responseData");

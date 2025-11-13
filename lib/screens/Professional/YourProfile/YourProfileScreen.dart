@@ -21,7 +21,7 @@ class YourProfileScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: const Color(0xFFF4E3E3), // Pink background like Figma
       body: SafeArea(
         child: Obx(() {
           if (controller.isLoading.value) {
@@ -126,14 +126,19 @@ class YourProfileScreen extends StatelessWidget {
               ),
             ),
           ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey.withOpacity(0.1),
+          GestureDetector(
+            onTap: () {
+              // Navigate to edit profile screen
+            },
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.withOpacity(0.1),
+              ),
+              child: const Icon(Icons.edit, size: 22),
             ),
-            child: const Icon(Icons.more_vert, size: 22),
           ),
         ],
       ),
