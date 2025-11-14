@@ -1,197 +1,354 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../widgets/feed_card_widget.dart';
-import '../../../utils/responsive_utils.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../../../constants/apps_colors.dart';
 import '../../../controllers/Professional/feeds_controller.dart';
+import '../../../controllers/post_controller.dart';
 
 /// Feeds Professional Screen
-/// Pixel-perfect implementation matching Figma design
-class FeedsProfessionalScreen extends StatefulWidget {
+/// Same design as CompanyTransport feed_screen.dart
+class FeedsProfessionalScreen extends StatelessWidget {
+  final String profileImage = 'https://i.pravatar.cc/100';
+
   const FeedsProfessionalScreen({super.key});
 
-  @override
-  State<FeedsProfessionalScreen> createState() => _FeedsProfessionalScreenState();
-}
-
-class _FeedsProfessionalScreenState extends State<FeedsProfessionalScreen> {
-  // Initialize controller
-  final FeedsController controller = Get.put(FeedsController());
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3),
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: Stack(
-          children: [
-            // Main Content
-            Column(
+  Widget buildPostCard(Post post) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          InkWell(
+            onTap: () {
+              // Navigate to profile if needed
+            },
+            borderRadius: BorderRadius.circular(50),
+            child: Row(
               children: [
-                // White Header with Logo
-                Container(
-                  width: double.infinity,
-                  height: 91,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Color(0xFFFCD2D2),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: ResponsiveUtils.getResponsiveSpacing(context, small: 0, medium: 12, large: 16),
-                        top: ResponsiveUtils.getResponsiveSpacing(context, small: 38, medium: 40, large: 42),
-                      ),
-                      child: Image.asset(
-                        'assets/logo-bg 3.png',
-                        width: ResponsiveUtils.isMobile(context) ? screenWidth * 0.72 : 282,
-                        height: ResponsiveUtils.isMobile(context) ? 53 : 53,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Feeds List
+                CircleAvatar(backgroundImage: NetworkImage(profileImage)),
+                SizedBox(width: 10),
                 Expanded(
-                  child: Obx(
-                    () {
-                      if (controller.isLoading.value) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(40.0),
-                            child: CircularProgressIndicator(
-                              color: Color(0xFFF36969),
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (controller.feeds.isEmpty) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(40.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.feed_outlined,
-                                  size: 64,
-                                  color: Colors.grey.shade400,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  "No feeds available",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  "Check back later for new posts",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      return RefreshIndicator(
-                        onRefresh: () => controller.refreshFeeds(),
-                        color: const Color(0xFFF36969),
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.only(
-                            top: ResponsiveUtils.getResponsiveSpacing(context, small: 10, medium: 12, large: 14),
-                            bottom: ResponsiveUtils.getResponsiveSpacing(context, small: 100, medium: 110, large: 120),
-                          ),
-                          child: Column(
-                            children: controller.feeds.map((post) {
-                              // Get first image if available
-                              final imageUrl = post.imageUrls.isNotEmpty
-                                  ? post.imageUrls[0]
-                                  : '';
-                              
-                              // Extract title from content (first line or first 50 chars)
-                              final contentLines = post.content.split('\n');
-                              final title = contentLines.isNotEmpty && contentLines[0].isNotEmpty
-                                  ? (contentLines[0].length > 50
-                                      ? '${contentLines[0].substring(0, 50)}...'
-                                      : contentLines[0])
-                                  : post.category.isNotEmpty
-                                      ? post.category
-                                      : 'Post';
-                              
-                              // Extract description (rest of content or second line)
-                              final description = contentLines.length > 1 && contentLines[1].isNotEmpty
-                                  ? contentLines[1]
-                                  : contentLines.length > 1
-                                      ? (contentLines.length > 2 && contentLines[2].isNotEmpty
-                                          ? contentLines[2]
-                                          : '')
-                                      : contentLines.isNotEmpty && contentLines[0].length > 50
-                                          ? contentLines[0].substring(50)
-                                          : '';
-
-                              return FeedCardWidget(
-                                profileImageUrl: '', // TODO: Add profile image when available in API
-                                profileName: post.category.isNotEmpty ? post.category : 'User',
-                                imageUrl: imageUrl,
-                                title: title,
-                                description: description.isNotEmpty
-                                    ? (description.length > 100
-                                        ? '${description.substring(0, 100)}...'
-                                        : description)
-                                    : post.content.isNotEmpty
-                                        ? (post.content.length > 100
-                                            ? '${post.content.substring(0, 100)}...'
-                                            : post.content)
-                                        : '',
-                                postedTime: post.timeAgo,
-                                isLiked: controller.isLiked(post.postId),
-                                onProfileTap: () {
-                                  // Navigate to profile
-                                },
-                                onHeartTap: () {
-                                  controller.toggleLike(post.postId);
-                                },
-                                onShareTap: () {
-                                  // Handle share
-                                },
-                                onEyeTap: () {
-                                  // Handle view
-                                },
-                                onReadMoreTap: () {
-                                  // Navigate to full post
-                                },
-                              );
-                            }).toList(),
-                          ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "User", // You can fetch user name from profile if available
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        post.category,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+          ),
+          SizedBox(height: 10),
+
+          // Post Content
+          if (post.content.isNotEmpty)
+            Text(
+              post.content,
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: 14,
+              ),
+            ),
+
+          // Post Images
+          if (post.imageUrls.isNotEmpty) ...[
+            SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: post.imageUrls.length == 1
+                  ? Container(
+                      width: double.infinity,
+                      height: 200,
+                      child: Image.network(
+                        post.imageUrls[0],
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 200,
+                            color: Colors.grey[200],
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          // Show default placeholder image when network image fails
+                          return Container(
+                            height: 200,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Image.asset(
+                              "assets/truck.png",
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                // If truck.png also fails, show icon with text
+                                return Container(
+                                  color: Colors.grey[200],
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.image_not_supported,
+                                          size: 48,
+                                          color: Colors.grey[400],
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          "Image not available",
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : GridView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: post.imageUrls.length > 1 ? 2 : 1,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 1,
+                      ),
+                      itemCount: post.imageUrls.length > 4 ? 4 : post.imageUrls.length,
+                      itemBuilder: (context, index) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            child: Image.network(
+                              post.imageUrls[index],
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: Colors.grey[200],
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                          : null,
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                // Show default placeholder for grid images
+                                return Container(
+                                  color: Colors.grey[200],
+                                  child: Image.asset(
+                                    "assets/truck.png",
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // If truck.png also fails, show icon
+                                      return Container(
+                                        color: Colors.grey[200],
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            size: 32,
+                                            color: Colors.grey[400],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+
+          // If no content and no images, show placeholder image
+          if (post.content.isEmpty && post.imageUrls.isEmpty) ...[
+            SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset("assets/truck.png"),
+            ),
+          ],
+
+          SizedBox(height: 10),
+
+          // Reactions
+          Row(
+            children: [
+              SvgPicture.asset(
+                'assets/heart.svg',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(width: 10),
+              SvgPicture.asset(
+                'assets/share.svg',
+                width: 26,
+                height: 26,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(width: 10),
+              SvgPicture.asset(
+                'assets/eye.svg',
+                width: 26,
+                height: 26,
+                fit: BoxFit.contain,
+              ),
+              Spacer(),
+              // Status badge
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: post.status == 'Pending'
+                      ? Colors.orange[100]
+                      : Colors.green[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  post.status,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: post.status == 'Pending'
+                        ? Colors.orange[800]
+                        : Colors.green[800],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+
+          // Footer
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                post.timeAgo,
+                style: TextStyle(color: Colors.grey),
+              ),
+              if (post.content.length > 100)
+                Text(
+                  "Read More",
+                  style: TextStyle(color: Colors.blueAccent),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final FeedsController controller = Get.put(FeedsController());
+
+    return Scaffold(
+      backgroundColor: Color(0xFFFCECEC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: Row(
+          children: [
+            Image.asset('assets/headingImg.png', width: 210, height: 30),
           ],
         ),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              controller.refreshFeeds();
+            },
+          ),
+        ],
       ),
+      body: Obx(
+        () {
+          if (controller.isLoading.value) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          if (controller.feeds.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.feed, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    "No posts yet",
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "Create your first post!",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              await controller.refreshFeeds();
+            },
+            child: ListView.builder(
+              padding: EdgeInsets.only(bottom: 100),
+              itemCount: controller.feeds.length,
+              itemBuilder: (context, index) {
+                return buildPostCard(controller.feeds[index]);
+              },
+            ),
+          );
+        },
+      ),
+      
     );
   }
 }

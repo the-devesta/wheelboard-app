@@ -102,8 +102,10 @@ class TripCardWidget extends StatelessWidget {
               Expanded(
                 child: Text(
                   dateTime,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w400,
                     color: const Color(0xFFADADB7),
                   ),
@@ -142,7 +144,7 @@ class TripCardWidget extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
             color: Colors.black,
           ),
@@ -151,8 +153,10 @@ class TripCardWidget extends StatelessWidget {
         Expanded(
           child: Text(
             address,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w400,
               color: const Color(0xFFADADB7),
             ),

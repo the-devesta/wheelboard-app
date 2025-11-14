@@ -708,10 +708,12 @@ class YourProfileScreen extends StatelessWidget {
           Text(
             plan,
             style: GoogleFonts.poppins(
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w500,
               color: const Color(0xFFEF5350),
+
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -768,13 +770,11 @@ class YourProfileScreen extends StatelessWidget {
   }
 
   Widget _buildActionCard(dynamic icon, String title) {
-    return Container(
-      height: 88,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return SizedBox(
+      height: 100,
+    
+
+    
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.max,

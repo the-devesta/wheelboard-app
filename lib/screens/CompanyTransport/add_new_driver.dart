@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
 import '../../controllers/add_driver_controller.dart';
+import '../../controllers/fleet_controller.dart';
 import '../../models/add_drivermodel.dart';
 import '../../models/driver_license_model.dart';
 import '../../utils/session_manager.dart';
@@ -187,6 +188,20 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
     }
 
     if (isSuccess) {
+      // Auto-refresh fleet data
+      try {
+        final fleetController = Get.find<DriverController>();
+        final sessionManager = SessionManager();
+        final refreshToken = await sessionManager.getString("authToken");
+        final refreshUserId = await sessionManager.getString("userId");
+        
+        if (refreshToken != null && refreshUserId != null) {
+          await fleetController.fetchDrivers(refreshUserId, refreshToken);
+        }
+      } catch (e) {
+        print("⚠️ Could not refresh fleet data: $e");
+      }
+      
       Navigator.of(context).pop();
     }
   }

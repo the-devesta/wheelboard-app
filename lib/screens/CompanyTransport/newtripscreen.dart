@@ -43,31 +43,23 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
 
   Future<void> _FetchDrivers() async {
     final sessionManager = SessionManager();
-    final token = await sessionManager.getString("authToken");
     final userId = await sessionManager.getString("userId");
 
-    // print(userId);
-    // print(token);
-
-    if (token != null && userId != null) {
-      tripController.fetchDrivers(userId, token);
+    if (userId != null && userId.isNotEmpty) {
+      tripController.fetchDrivers(userId);
     } else {
-      debugPrint("Token or UserId is null");
+      debugPrint("UserId is null or empty");
     }
   }
 
   Future<void> _FetchVehicles() async {
     final sessionManager = SessionManager();
-    final token = await sessionManager.getString("authToken");
     final userId = await sessionManager.getString("userId");
 
-    // print(userId);
-    // print(token);
-
-    if (token != null && userId != null) {
-      tripController.fetchVehicles(userId, token);
+    if (userId != null && userId.isNotEmpty) {
+      tripController.fetchVehicles(userId);
     } else {
-      debugPrint("Token or UserId is null");
+      debugPrint("UserId is null or empty");
     }
   }
 
@@ -173,11 +165,12 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                             : "";
 
                         // ✅ Build Trip object according to new API structure
+                        // Note: driverId is NOT included as there's no driver selection in this UI
                         final trip = Trip(
                           tripId: "", // Empty for new trips
                           userId: userId,
                           vehicleId: tripController.selectedVehicle.value ?? "",
-                          driverId: tripController.selectedDriver.value ?? "", // Optional - can be empty
+                          driverId: "", // Not used in new trip screen - no driver selection UI
                           pickupLocation: pickupController.text.trim(),
                           deliveryLocation: deliveryController.text.trim(),
                           pickupDate: selectedDate,
@@ -185,7 +178,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                               ? _formatTimeOfDay(selectedTime!)
                               : "",
                           specialInstructions: specialInstructionsController.text.trim(),
-                          payRange: payRange,
+                          payRange: payRange.trim(),
                           tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}", // Auto-generated
                           tripStatus: "Pending", // Default status
                         );

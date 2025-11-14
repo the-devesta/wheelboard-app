@@ -13,14 +13,16 @@ import '../models/add_new_trip_model.dart';
 class TripController extends GetxController {
   var drivers = <Driver>[].obs;
   var vehicles = <Vehicle>[].obs;
+  var trips = <Trip>[].obs;
 
   var selectedDriver = RxnString(); // holds selected driver id
   var selectedVehicle = RxnString(); // holds selected vehicle id
 
   var isLoading = false.obs;
   var isVehicleLoading = false.obs;
+  var isTripsLoading = false.obs;
 
-  Future<void> fetchDrivers(String userId, String token) async {
+  Future<void> fetchDrivers(String userId) async {
     try {
       isLoading.value = true;
       final url = "${API.getDrivers}/$userId";
@@ -28,8 +30,7 @@ class TripController extends GetxController {
       final response = await HttpHelper.getData(
         endpoint: url,
         headers: {
-          "Authorization": "Bearer $token",
-          "Content-Type": "application/json",
+          "Accept": "*/*",
         },
       );
 
@@ -52,7 +53,7 @@ class TripController extends GetxController {
     }
   }
 
-  Future<void> fetchVehicles(String userId, String token) async {
+  Future<void> fetchVehicles(String userId) async {
     try {
       isVehicleLoading.value = true;
       final url = "${API.getVehicles}/$userId";
@@ -60,8 +61,7 @@ class TripController extends GetxController {
       final response = await HttpHelper.getData(
         endpoint: url,
         headers: {
-          "Authorization": "Bearer $token",
-          "Content-Type": "application/json",
+          "Accept": "*/*",
         },
       );
 
@@ -145,32 +145,41 @@ class TripController extends GetxController {
         return;
       }
 
-      // ✅ Get auth details from session/service (token optional but logged)
+      // ✅ Get auth details from session/service (token not needed, userId-based auth)
       final sessionManager = SessionManager();
       final savedUserType = await sessionManager.getString("userType");
       final savedUserId = await sessionManager.getString("userId");
-      final storedToken = await sessionManager.getString("authToken") ?? "";
-      final maskedToken =
-          storedToken.isNotEmpty ? "${storedToken.substring(0, 6)}..." : "NONE";
 
       // ✅ Prepare fields according to new API structure
-      // Only include fields that are on the screen, others are optional
-      final fields = {
-        "TripId": "", // Empty for new trips
+      // PayRange and SpecialInstructions are optional - send empty string if not provided
+      // TripId not needed for new trips - backend will generate it
+      // DriverId is only included if provided (not empty) - new trip screen doesn't have driver selection
+      final fields = <String, String>{
         "UserId": trip.userId,
         "VehicleId": trip.vehicleId,
-        if (trip.driverId.isNotEmpty) "DriverId": trip.driverId,
         "PickupLocation": trip.pickupLocation,
         "DeliveryLocation": trip.deliveryLocation,
-        if (trip.pickupDate != null)
-          "PickupDate": trip.pickupDate!.toIso8601String(),
-        if (trip.pickupTime.isNotEmpty) "PickupTime": trip.pickupTime,
-        if (trip.specialInstructions.isNotEmpty)
-          "SpecialInstructions": trip.specialInstructions,
-        if (trip.payRange.isNotEmpty) "PayRange": trip.payRange,
-        if (trip.tripCode.isNotEmpty) "TripCode": trip.tripCode,
-        if (trip.tripStatus.isNotEmpty) "TripStatus": trip.tripStatus,
+        "PickupDate": trip.pickupDate != null
+            ? trip.pickupDate!.toIso8601String()
+            : "",
+        "PickupTime": trip.pickupTime.trim().isNotEmpty 
+            ? trip.pickupTime.trim() 
+            : "",
+        // Send empty string if not provided (backend accepts empty string)
+        "SpecialInstructions": trip.specialInstructions.trim(),
+        "PayRange": trip.payRange.trim(),
+        "TripCode": trip.tripCode.trim().isNotEmpty 
+            ? trip.tripCode.trim() 
+            : "",
+        "TripStatus": trip.tripStatus.trim().isNotEmpty 
+            ? trip.tripStatus.trim() 
+            : "Pending",
       };
+      
+      // Only include DriverId if it's provided and not empty
+      if (trip.driverId.trim().isNotEmpty) {
+        fields["DriverId"] = trip.driverId.trim();
+      }
       
       // 🔍 Debug: Log all fields before sending
       print("==================================");
@@ -179,7 +188,7 @@ class TripController extends GetxController {
       print("👤 Current User Type: ${savedUserType ?? 'NOT FOUND'}");
       print("👤 Current User ID: ${savedUserId ?? 'NOT FOUND'}");
       print("👉 Endpoint: ${API.addTrip}");
-      print("👉 Token (masked - not sent): $maskedToken");
+      print("👉 Authentication: userId-based (no token sent)");
       print("👉 Trip UserId: ${trip.userId}");
       print("👉 Fields: $fields");
       print("==================================");
@@ -356,5 +365,61 @@ class TripController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// Fetch trips for current user
+  Future<void> fetchTrips(String userId) async {
+    try {
+      isTripsLoading.value = true;
+      
+      print("🚚 Fetching trips for userId: $userId");
+
+      final response = await HttpHelper.getData(
+        endpoint: '${API.getTripList}$userId',
+        headers: {
+          'Accept': '*/*',
+        },
+      );
+
+      print("🚚 Trips response status: ${response.statusCode}");
+      print("🚚 Trips response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        trips.value = data.map((e) => Trip.fromJson(e)).toList();
+        print("✅ Fetched ${trips.length} trips");
+      } else {
+        print("❌ Failed to fetch trips: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("❌ Error fetching trips: $e");
+    } finally {
+      isTripsLoading.value = false;
+    }
+  }
+
+  /// Get trips by status
+  List<Trip> getTripsByStatus(String status) {
+    return trips.where((trip) {
+      final tripStatus = trip.tripStatus.toLowerCase();
+      final searchStatus = status.toLowerCase();
+      
+      if (searchStatus == 'completed') {
+        return tripStatus == 'completed' || tripStatus.contains('complete');
+      } else if (searchStatus == 'in-process' || searchStatus == 'in process') {
+        return tripStatus == 'in-process' || 
+               tripStatus == 'in process' || 
+               tripStatus.contains('process') ||
+               tripStatus == 'ongoing';
+      } else if (searchStatus == 'upcoming') {
+        return tripStatus == 'upcoming' || tripStatus == 'pending';
+      }
+      return tripStatus == searchStatus;
+    }).toList();
+  }
+
+  /// Refresh trips list
+  Future<void> refreshTrips(String userId) async {
+    await fetchTrips(userId);
   }
 }

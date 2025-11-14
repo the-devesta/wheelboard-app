@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 // class FindJobsScreen extends StatelessWidget {
 //   const FindJobsScreen({super.key});
 
@@ -17,8 +15,10 @@ import 'package:flutter/material.dart';
 // }
 
 import 'package:flutter/material.dart';
-import '../TripOverview/TripOverviewScreen.dart';
 import 'package:get/get.dart';
+import '../../../controllers/Professional/unassigned_trips_controller.dart';
+import '../../../models/unassigned_trip_model.dart';
+import '../TripOverview/TripOverviewScreen.dart';
 // import 'package:iconsax/iconsax.dart';
 
 class FindJobsScreen extends StatelessWidget {
@@ -43,6 +43,7 @@ class JobBoardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final UnassignedTripsController tripsController = Get.put(UnassignedTripsController());
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) {
@@ -131,24 +132,46 @@ class JobBoardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            TripCard(
-              title: "Trip to Los Angeles",
-              tags: ["Standard", "Delivery"],
-              destination: "Los Angeles, CA",
-              date: "July 18, 2024",
-            ),
-            TripCard(
-              title: "Trip to Phoenix",
-              tags: ["Express"],
-              destination: "Phoenix, AZ",
-              date: "July 22, 2024",
-            ),
-            TripCard(
-              title: "Trip to Phoenix",
-              tags: ["Express"],
-              destination: "Phoenix, AZ",
-              date: "July 22, 2024",
-            ),
+            Obx(() {
+              if (tripsController.isLoading.value) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+
+              if (tripsController.unassignedTrips.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: Text(
+                      "No trips available",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: tripsController.unassignedTrips.map((trip) {
+                  return TripCard(
+                    trip: trip,
+                    onTap: () async {
+                      await tripsController.fetchTripDetails(trip.tripId);
+                      if (tripsController.tripDetails.value != null) {
+                        TripOverviewPopup.show(
+                          context,
+                          tripId: trip.tripId,
+                          tripDetails: tripsController.tripDetails.value!,
+                        );
+                      }
+                    },
+                  );
+                }).toList(),
+              );
+            }),
           ],
         ),
       ),
@@ -261,18 +284,37 @@ class JobCard extends StatelessWidget {
 }
 
 class TripCard extends StatelessWidget {
-  final String title, destination, date;
-  final List<String> tags;
+  final UnassignedTrip? trip;
+  final VoidCallback? onTap;
+  
   const TripCard({
     super.key,
-    required this.title,
-    required this.destination,
-    required this.date,
-    required this.tags,
+    this.trip,
+    this.onTap,
   });
+
+  String _getLocationName(String location) {
+    if (location.isEmpty) return 'Unknown';
+    final parts = location.split(',');
+    return parts.isNotEmpty ? parts[0].trim() : location;
+  }
+
+  String _formatDate(DateTime? date, String time) {
+    if (date == null) return time;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    final timeStr = time.isNotEmpty
+        ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
+        : '';
+    return "$dateStr$timeStr";
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (trip == null) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
@@ -296,25 +338,23 @@ class TripCard extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
-                title,
+                "Trip to ${_getLocationName(trip!.destination)}",
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
               ),
-              ...tags.map(
-                (e) => Chip(
-                  label: Text(
-                    e,
-                    style: const TextStyle(fontSize: 11, color: Colors.white),
-                  ),
-                  backgroundColor: Colors.redAccent,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: const VisualDensity(
-                    horizontal: -4,
-                    vertical: -4,
-                  ),
+              Chip(
+                label: Text(
+                  trip!.tripType,
+                  style: const TextStyle(fontSize: 11, color: Colors.white),
+                ),
+                backgroundColor: Colors.redAccent,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: const VisualDensity(
+                  horizontal: -4,
+                  vertical: -4,
                 ),
               ),
             ],
@@ -324,7 +364,19 @@ class TripCard extends StatelessWidget {
             children: [
               const Icon(Icons.location_on_outlined, size: 16),
               const SizedBox(width: 4),
-              Text("Destination: $destination"),
+              Expanded(
+                child: Text("From: ${_getLocationName(trip!.pickupLocation)}"),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined, size: 16),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text("To: ${_getLocationName(trip!.destination)}"),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -332,15 +384,20 @@ class TripCard extends StatelessWidget {
             children: [
               const Icon(Icons.calendar_today_outlined, size: 16),
               const SizedBox(width: 4),
-              Text("Departure: $date"),
+              Text(_formatDate(trip!.pickupDate, trip!.pickupTime)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.currency_rupee, size: 16),
+              const SizedBox(width: 4),
+              Text("Pay Range: ₹${trip!.payRange}"),
             ],
           ),
           const SizedBox(height: 10),
           ElevatedButton(
-            onPressed: () {
-              // Get.to(() => TripOverviewPopup());
-              TripOverviewPopup.show(Get.context!);
-            },
+            onPressed: onTap,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
@@ -356,3 +413,4 @@ class TripCard extends StatelessWidget {
     );
   }
 }
+

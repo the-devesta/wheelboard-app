@@ -11,39 +11,79 @@ class LoginController extends GetxController {
 
   /// Login API
   Future<Map<String, dynamic>?> login(String phone, String password) async {
+    // ✅ Validate inputs before making API call
+    if (phone.trim().isEmpty) {
+      print("❌ Login failed: Phone number is empty");
+      return null;
+    }
+
+    if (password.trim().isEmpty) {
+      print("❌ Login failed: Password is empty");
+      return null;
+    }
+
     isLoading.value = true;
 
     try {
-      final requestData = {"mobileNo": phone, "password": password};
+      final requestData = {"mobileNo": phone.trim(), "password": password.trim()};
 
-      print("🔐 Login attempt for phone: $phone");
+      print("==================================");
+      print("🔐 Login Request");
+      print("👉 Phone: $phone");
+      print("👉 Password: ${'*' * password.length}");
+      print("👉 Endpoint: ${API.login}");
+      print("==================================");
       
       final response = await HttpHelper.postData(
         endpoint: API.login,
         data: requestData,
       );
 
-      print("🔐 Login response status: ${response.statusCode}");
+      print("==================================");
+      print("🔐 Login Response");
+      print("👉 Status Code: ${response.statusCode}");
+      print("👉 Body: ${response.body}");
+      print("==================================");
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print("🔐 Login successful, data received: ${data.toString()}");
+        try {
+          final data = json.decode(response.body);
+          print("🔐 Login successful, data received: ${data.toString()}");
 
-        // ✅ Don't show success snackbar here - let login screen handle it
-        // SnackBarHelper.success("Login Successful");
-
-        return data['data']; // Return the data object
+          // ✅ Check if data exists and has required fields
+          if (data.containsKey('data') && data['data'] != null) {
+            final responseData = data['data'] as Map<String, dynamic>;
+            
+            // ✅ Validate required fields
+            if (responseData.containsKey('token') && 
+                responseData.containsKey('userId') &&
+                responseData['token'] != null &&
+                responseData['userId'] != null) {
+              return responseData; // Return the data object
+            } else {
+              print("❌ Login failed: Missing token or userId in response");
+              return null;
+            }
+          } else {
+            print("❌ Login failed: No data in response");
+            return null;
+          }
+        } catch (e) {
+          print("❌ Login failed: Error parsing response - $e");
+          return null;
+        }
       } else {
-        print("🔐 Login failed with status: ${response.statusCode}");
-        print("🔐 Response body: ${response.body}");
-        // ✅ Don't show error snackbar here - let login screen handle it
-        // SnackBarHelper.error("Invalid credentials");
+        print("❌ Login failed with status: ${response.statusCode}");
+        print("❌ Response body: ${response.body}");
         return null;
       }
-    } catch (e) {
-      print("🔐 Login error: $e");
-      // ✅ Don't show error snackbar here - let login screen handle it
-      // SnackBarHelper.error("Login failed: ${e.toString()}");
+    } catch (e, stackTrace) {
+      print("==================================");
+      print("❌ LOGIN EXCEPTION");
+      print("📋 Error: $e");
+      print("📋 Stack Trace:");
+      print(stackTrace);
+      print("==================================");
       return null;
     } finally {
       isLoading.value = false;

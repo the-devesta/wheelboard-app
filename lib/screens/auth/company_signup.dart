@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:wheelboard/CommonWidget/app_textfield.dart';
 import 'package:wheelboard/controllers/signup_controller.dart';
 
 import 'package:country_picker/country_picker.dart';
 
 import '../../models/company_signupmodel.dart';
 import '../../widgets/custom_snackbar.dart';
-import 'professional_login.dart' show ProfessionLogin;
-
+import 'login.dart';
 
 class Signup extends StatelessWidget {
   Signup({super.key});
@@ -28,7 +25,11 @@ class Signup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3), // Pink background like Figma
+      backgroundColor: const Color(0xFFF4E3E3), // Pink background
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(0),
+        child: AppBar(elevation: 0, backgroundColor: Colors.transparent),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -39,43 +40,45 @@ class Signup extends StatelessWidget {
                 children: [
                   // Logo
                   Image.asset(
-                    'assets/logo.png',
+                    'assets/headingImg.png',
+                    width: 211,
                     height: 49,
-                    width: 49,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 49,
-                        height: 49,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF25C5C),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.local_shipping,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                      return Row(
+                        children: [
+                          Container(
+                            width: 49,
+                            height: 49,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF25C5C),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.local_shipping,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'WHEELBOARD',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1A1C1E),
+                              letterSpacing: 0.5,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
                       );
                     },
-                  ),
-                  const SizedBox(width: 12),
-                  // WHEELBOARD text
-                  Text(
-                    'WHEELBOARD',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1C1E),
-                      letterSpacing: 0.5,
-                    ),
                   ),
                 ],
               ),
             ),
-
-             const SizedBox(height: 20),
-
+            const SizedBox(height: 20),
             // White card with form
             Expanded(
               child: SingleChildScrollView(
@@ -103,25 +106,27 @@ class Signup extends StatelessWidget {
           // Back button
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Icon(
-              Icons.arrow_back_ios,
-              size: 16,
-              color: Color(0xFF1A1C1E),
+            child: Container(
+              width: 24,
+              height: 24,
+              child: const Icon(
+                Icons.arrow_back,
+                size: 20,
+                color: Color(0xFF1A1C1E),
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          // Dynamic Title based on selection
-          Obx(
-            () => Text(
-              selectedCompanyType.value != null
-                  ? "Register as ${selectedCompanyType.value}"
-                  : "Register as Company",
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF535353),
-                letterSpacing: -0.48,
-              ),
+          const SizedBox(height: 12),
+          // Title - always "Register as Company"
+          Text(
+            "Register as Company",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF535353),
+              letterSpacing: -0.48,
+              fontFamily: 'Poppins',
+              height: 1.3,
             ),
           ),
           const SizedBox(height: 12),
@@ -129,25 +134,30 @@ class Signup extends StatelessWidget {
           Row(
             children: [
               Text(
-                "Already have an account? ",
-                style: GoogleFonts.inter(
+                "Already have an account?",
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: const Color(0xFF6C7278),
+                  height: 1.4,
                   letterSpacing: -0.12,
+                  fontFamily: 'Inter',
                 ),
               ),
+              const SizedBox(width: 6),
               GestureDetector(
                 onTap: () {
-                  Get.to(ProfessionLogin());
+                  Get.to(LoginScreen());
                 },
                 child: Text(
                   "Login",
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFFF26262),
+                    height: 1.4,
                     letterSpacing: -0.12,
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),
@@ -168,111 +178,25 @@ class Signup extends StatelessWidget {
 
 
   Widget _buildFormFields(BuildContext context) {
-    return Obx(
-      () => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Company Name
-          Text(
-            "Company Name",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF6C7278),
-              letterSpacing: -0.24,
-            ),
-          ),
-          const SizedBox(height: 2),
-          AppTextField(
-            controller: companyController,
-            hintText: 'Enter company name',
-          ),
-          const SizedBox(height: 16),
-          // Phone Number
-          Text(
-            "Phone Number",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF6C7278),
-              letterSpacing: -0.24,
-            ),
-          ),
-          const SizedBox(height: 2),
-          AppTextField(
-            controller: phoneController,
-            hintText: "Enter your number",
-            keyboardType: TextInputType.phone,
-            prefixIcon: Obx(
-              () => GestureDetector(
-                onTap: () {
-                  showCountryPicker(
-                    context: Get.context!,
-                    showPhoneCode: true,
-                    onSelect: (Country country) {
-                      selectedCountry.value = country;
-                    },
-                  );
-                },
-                child: Container(
-                  width: 62,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      right: BorderSide(color: const Color(0xFFEDF1F3)),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          selectedCountry.value.flagEmoji,
-                          style: const TextStyle(fontSize: 16),
-                          overflow: TextOverflow.visible,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.keyboard_arrow_down, size: 12),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Email
-          Text(
-            "Email",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF6C7278),
-              letterSpacing: -0.24,
-            ),
-          ),
-          const SizedBox(height: 2),
-          AppTextField(
-            controller: emailController,
-            hintText: 'Enter your email',
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 16),
-          // Set Password
-          Text(
-            "Set Password",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF6C7278),
-              letterSpacing: -0.24,
-            ),
-          ),
-          const SizedBox(height: 2),
-          AppTextField(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Company Name
+        _buildInputField(
+          label: "Company Name",
+          hint: "Enter company name",
+          controller: companyController,
+        ),
+        const SizedBox(height: 16),
+        // Phone Number
+        _buildPhoneField(context),
+        const SizedBox(height: 16),
+        // Set Password
+        Obx(
+          () => _buildInputField(
+            label: "Set Password",
+            hint: "Create your password",
             controller: passwordController,
-            hintText: 'Create your password',
             obscureText: controller.obscurePassword.value,
             suffixIcon: IconButton(
               icon: Icon(
@@ -283,61 +207,256 @@ class Signup extends StatelessWidget {
                 color: const Color(0xFF6C7278),
               ),
               onPressed: () => controller.obscurePassword.toggle(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
           ),
-          const SizedBox(height: 16),
-          // Select Business Category
-          Text(
-            "Select Business Category",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF6C7278),
-              letterSpacing: -0.24,
-            ),
+        ),
+        const SizedBox(height: 16),
+        // Select Business Category
+        _buildBusinessCategoryDropdown(),
+      ],
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    Widget? suffixIcon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF6C7278),
+            height: 1.6,
+            letterSpacing: -0.24,
+            fontFamily: 'Plus Jakarta Sans',
           ),
-          const SizedBox(height: 2),
-          Container(
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(
-                color: const Color(0xFFEDF1F3),
-                width: 1,
+        ),
+        const SizedBox(height: 2),
+        // Input field
+        Container(
+          height: 46,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFEDF1F3)),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+              color: const Color(0xFF1A1C1E),
+              height: 1.4,
+              letterSpacing: -0.14,
+              fontFamily: 'Inter',
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.normal,
+                color: const Color(0xFF6C7278),
+                height: 1.4,
+                letterSpacing: -0.14,
+                fontFamily: 'Inter',
               ),
-              borderRadius: BorderRadius.circular(10),
+              suffixIcon: suffixIcon,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
-            child: Obx(
-              () => DropdownButtonFormField<String>(
-                value: selectedCompanyType.value,
-                decoration: InputDecoration(
-                  hintText: 'Select category',
-                  hintStyle: GoogleFonts.roboto(
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhoneField(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Text(
+          "Phone Number",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF6C7278),
+            height: 1.6,
+            letterSpacing: -0.24,
+            fontFamily: 'Plus Jakarta Sans',
+          ),
+        ),
+        const SizedBox(height: 2),
+        // Input field with country code
+        Container(
+          height: 46,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFEDF1F3)),
+          ),
+          child: Row(
+            children: [
+              // Country code selector
+              Obx(
+                () => GestureDetector(
+                  onTap: () {
+                    showCountryPicker(
+                      context: context,
+                      showPhoneCode: true,
+                      onSelect: (Country country) {
+                        selectedCountry.value = country;
+                      },
+                    );
+                  },
+                  child: Container(
+                    width: 62,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: const Color(0xFFEDF1F3)),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            selectedCountry.value.flagEmoji,
+                            style: const TextStyle(fontSize: 16),
+                            overflow: TextOverflow.visible,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.keyboard_arrow_down, size: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Phone number input
+              Expanded(
+                child: TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFFB3B3B3),
-                    letterSpacing: 0.1,
+                    fontWeight: FontWeight.normal,
+                    color: const Color(0xFF1A1C1E),
+                    height: 1.4,
+                    letterSpacing: -0.14,
+                    fontFamily: 'Inter',
                   ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
+                  decoration: InputDecoration(
+                    hintText: "Enter your number",
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                      color: const Color(0xFF6C7278),
+                      height: 1.4,
+                      letterSpacing: -0.14,
+                      fontFamily: 'Inter',
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                   ),
-                  suffixIcon: const Icon(
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusinessCategoryDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Text(
+          "Select Business Category",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF6C7278),
+            height: 1.6,
+            letterSpacing: -0.24,
+            fontFamily: 'Plus Jakarta Sans',
+          ),
+        ),
+        const SizedBox(height: 2),
+        // Dropdown
+        Container(
+          height: 46,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFEDF1F3)),
+          ),
+          child: Obx(
+            () => DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedCompanyType.value,
+                hint: Padding(
+                  padding: const EdgeInsets.only(left: 14),
+                  child: Text(
+                    'Select category',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFFB3B3B3),
+                      letterSpacing: 0.1,
+                      fontFamily: 'Roboto',
+                    ),
+                  ),
+                ),
+                icon: const Padding(
+                  padding: EdgeInsets.only(right: 14),
+                  child: Icon(
                     Icons.keyboard_arrow_down,
                     size: 16,
                     color: Color(0xFF1E1E1E),
                   ),
                 ),
+                isExpanded: true,
                 items: businessCategories.map((String category) {
                   return DropdownMenuItem<String>(
                     value: category,
-                    child: Text(
-                      category,
-                      style: GoogleFonts.roboto(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF1A1C1E),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 14),
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF1A1C1E),
+                          fontFamily: 'Roboto',
+                        ),
                       ),
                     ),
                   );
@@ -348,37 +467,48 @@ class Signup extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildRegisterButton() {
     return Obx(
-      () => Container(
+      () => SizedBox(
         width: double.infinity,
         height: 48,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFF25C5C), Color(0xFFF25C5C)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
         child: ElevatedButton(
           onPressed: controller.isLoading.value
               ? null
               : () async {
+                  // ✅ Validate fields
+                  if (companyController.text.trim().isEmpty) {
+                    SnackBarHelper.error("Please enter company name");
+                    return;
+                  }
+                  if (phoneController.text.trim().isEmpty) {
+                    SnackBarHelper.error("Please enter phone number");
+                    return;
+                  }
+                  if (passwordController.text.trim().isEmpty) {
+                    SnackBarHelper.error("Please enter password");
+                    return;
+                  }
                   if (selectedCompanyType.value == null) {
                     SnackBarHelper.error("Please select a business category");
                     return;
                   }
+
+                  // ✅ Prevent multiple taps
+                  if (controller.isLoading.value) {
+                    return;
+                  }
+
                   final model = CompanySignUpModel(
-                    companyName: companyController.text,
-                    mobileNo: phoneController.text,
-                    email: emailController.text,
-                    password: passwordController.text,
+                    companyName: companyController.text.trim(),
+                    mobileNo: phoneController.text.trim(),
+                    email: emailController.text.trim(), // Keep for backend but not shown in UI
+                    password: passwordController.text.trim(),
                     businessCategory: selectedCompanyType.value ?? 'Transport',
                   );
                   final success = await controller.registerCompany(model);
@@ -386,27 +516,36 @@ class Signup extends StatelessWidget {
                   if (success) {
                     SnackBarHelper.success("Company registered successfully! Please login to continue.");
                     await Future.delayed(const Duration(milliseconds: 2000));
-                    Get.offAll(() => ProfessionLogin());
+                    Get.offAll(() => LoginScreen());
                   }
                 },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
+            backgroundColor: const Color(0xFFF25C5C),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
+            elevation: 0,
+            disabledBackgroundColor: const Color(0xFFF25C5C).withOpacity(0.6),
           ),
           child: controller.isLoading.value
-              ? const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
                 )
               : Text(
                   "Register",
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
+                    height: 1.4,
                     letterSpacing: -0.14,
+                    fontFamily: 'Poppins',
                   ),
                 ),
         ),
@@ -427,11 +566,13 @@ class Signup extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             "Or",
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w400,
               color: const Color(0xFF6C7278),
+              height: 1.5,
               letterSpacing: -0.12,
+              fontFamily: 'Inter',
             ),
           ),
         ),
@@ -456,35 +597,36 @@ class Signup extends StatelessWidget {
   }
 
   Widget _socialButton(String text, String asset) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEFF0F6)),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFF4F5FA).withOpacity(0.6),
-            blurRadius: 6,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(asset, width: 18, height: 18),
-          const SizedBox(width: 10),
-          Text(
-            text,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1A1C1E),
-              letterSpacing: -0.14,
+    return InkWell(
+      onTap: () {
+        // TODO: Implement social login
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFEFF0F6)),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(asset, width: 18, height: 18),
+            const SizedBox(width: 10),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A1C1E),
+                height: 1.4,
+                letterSpacing: -0.14,
+                fontFamily: 'Poppins',
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

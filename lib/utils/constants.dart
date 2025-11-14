@@ -19,6 +19,11 @@ class API {
   static const String updateVehicle = 'api/Transport/update-vehicle';
   static const String getVehicles = 'api/Transport/vehicle';
   static const String addTrip = 'api/Trip/add-trip';
+  static const String getTripList = 'api/Trip/trip-list/';
+  static const String getUnassignedTripList = 'api/Trip/unassign-trip-list';
+  static const String getUnassignedTripDetails = 'api/Trip/unassigned-trip-details/';
+  static const String submitBid = 'api/Trip/submit-bid';
+  static const String getTripBids = 'api/Trip/get-trip-bids/';
   
   // Service APIs
   static const String serviceList = 'api/Service/service-list';
@@ -31,7 +36,8 @@ class API {
   
   // Post APIs
   static const String createPost = 'api/Post/add';
-  static const String getUserPosts = 'api/Post/user/';
+  // static const String getUserPosts = 'api/Post/user/';
+    static const String getAllPost = 'api/Post/get-all-post';
   
   // Job APIs
   static const String getAppliedJobs = 'api/Job/applied-jobs/';
@@ -41,6 +47,9 @@ class API {
   static const String updateJob = 'api/Job/update-job';
   static const String getJobList = 'api/Job/job-list/';
   
+
+
+
   // Calendar Events APIs
   static const String saveCalendarEvent = 'api/Trip/save-calendar-events';
   static const String getEventsByUserId = 'api/Trip/get-events-by-userId/';

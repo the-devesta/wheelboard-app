@@ -127,7 +127,7 @@ class PostController extends GetxController {
       }
 
       final response = await HttpHelper.getData(
-        endpoint: '${API.getUserPosts}$userId',
+        endpoint: API.getAllPost,
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': '*/*',

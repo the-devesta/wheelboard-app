@@ -2,9 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'driver/view_driver_screen.dart';
 import 'trip/assign_trip_screen.dart';
+import '../../controllers/trip_bids_controller.dart';
+import '../../models/trip_bid_model.dart';
 
-class BidsScreen extends StatelessWidget {
-  const BidsScreen({super.key});
+class BidsScreen extends StatefulWidget {
+  final String tripId;
+
+  const BidsScreen({
+    super.key,
+    required this.tripId,
+  });
+
+  @override
+  State<BidsScreen> createState() => _BidsScreenState();
+}
+
+class _BidsScreenState extends State<BidsScreen> {
+  final TripBidsController bidsController = Get.put(TripBidsController());
+
+  @override
+  void initState() {
+    super.initState();
+    bidsController.fetchTripBids(widget.tripId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,32 +124,71 @@ class BidsScreen extends StatelessWidget {
 
           // Bids List
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildBidCard(
-                  driverName: 'Jon Doe',
-                  driverImage: 'https://i.pravatar.cc/150?img=1',
-                  bidAmount: '₹150',
-                  rating: 4,
-                  platform: 'Google',
-                  isVerified: true,
-                  onViewProfile: () {},
-                  onAssignTrip: () {},
+            child: Obx(() {
+              if (bidsController.isLoading.value) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              if (bidsController.bids.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inbox_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No bids available',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () => bidsController.refreshBids(widget.tripId),
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: bidsController.bids.map((bid) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildBidCard(
+                        bid: bid,
+                        driverName: bid.name,
+                        driverImage: 'https://i.pravatar.cc/150?img=${bid.driverId.hashCode % 70}',
+                        bidAmount: '₹${bid.bidAmount.toStringAsFixed(0)}',
+                        rating: 4, // Default rating, can be updated if API provides
+                        platform: 'WheelBoard',
+                        isVerified: true,
+                        onViewProfile: () {
+                          Get.to(() => ViewDriverScreen(
+                            driverName: bid.name,
+                            driverImage: 'https://i.pravatar.cc/150?img=${bid.driverId.hashCode % 70}',
+                          ));
+                        },
+                        onAssignTrip: () {
+                          Get.to(() => AssignTripScreen(
+                            driverName: bid.name,
+                            driverImage: 'https://i.pravatar.cc/150?img=${bid.driverId.hashCode % 70}',
+                            bidAmount: '₹${bid.bidAmount.toStringAsFixed(0)}',
+                          ));
+                        },
+                      ),
+                    );
+                  }).toList(),
                 ),
-                const SizedBox(height: 16),
-                _buildBidCard(
-                  driverName: 'Jon Doe',
-                  driverImage: 'https://i.pravatar.cc/150?img=2',
-                  bidAmount: '₹200',
-                  rating: 5,
-                  platform: 'Uber',
-                  isVerified: true,
-                  onViewProfile: () {},
-                  onAssignTrip: () {},
-                ),
-              ],
-            ),
+              );
+            }),
           ),
         ],
       ),
@@ -137,6 +196,7 @@ class BidsScreen extends StatelessWidget {
   }
 
   Widget _buildBidCard({
+    required TripBid bid,
     required String driverName,
     required String driverImage,
     required String bidAmount,
@@ -278,6 +338,29 @@ class BidsScreen extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Poppins',
                     color: Color(0xFF535353),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Bid Description
+                if (bid.bidDescription.isNotEmpty)
+                  Text(
+                    'Description: ${bid.bidDescription}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Poppins',
+                      color: Color(0xFF6C7278),
+                    ),
+                  ),
+                if (bid.bidDescription.isNotEmpty) const SizedBox(height: 8),
+                // Contact Number
+                Text(
+                  'Contact: ${bid.contactNumber}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Poppins',
+                    color: Color(0xFF6C7278),
                   ),
                 ),
                 const SizedBox(height: 12),

@@ -19,22 +19,46 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../BidSubmit/BidSubmitScreen.dart';
+import '../../../models/unassigned_trip_model.dart';
 
 class TripOverviewPopup {
-  static void show(BuildContext context) {
+  static void show(BuildContext context, {
+    required String tripId,
+    required UnassignedTripDetails tripDetails,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => const TripOverviewSheet(),
+      builder: (context) => TripOverviewSheet(
+        tripId: tripId,
+        tripDetails: tripDetails,
+      ),
     );
   }
 }
 
 class TripOverviewSheet extends StatelessWidget {
-  const TripOverviewSheet({super.key});
+  final String tripId;
+  final UnassignedTripDetails tripDetails;
+  
+  const TripOverviewSheet({
+    super.key,
+    required this.tripId,
+    required this.tripDetails,
+  });
+
+  String _formatDate(DateTime? date, String time) {
+    if (date == null) return time;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    final timeStr = time.isNotEmpty
+        ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
+        : '';
+    return "$dateStr$timeStr";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +129,7 @@ class TripOverviewSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text("123 Main Street, Bangalore"),
+                  Text(tripDetails.pickupLocation),
 
                   const SizedBox(height: 10),
 
@@ -123,21 +147,21 @@ class TripOverviewSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text("456 Oak Avenue, Chennai"),
+                  Text(tripDetails.deliveryLocation),
 
                   const SizedBox(height: 10),
 
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
+                      const Icon(
+                        Icons.directions_car,
                         size: 18,
                         color: Colors.grey,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
-                        "Cargo Details",
-                        style: TextStyle(
+                        "Vehicle",
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Colors.grey,
                         ),
@@ -145,7 +169,7 @@ class TripOverviewSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text("Freight: Electronics\nWeight: 500kg"),
+                  Text("${tripDetails.vehicleModel} (${tripDetails.vehicleNumber})"),
 
                   const SizedBox(height: 10),
 
@@ -163,7 +187,7 @@ class TripOverviewSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text("INR 5,000"),
+                  Text("₹${tripDetails.payRange}"),
 
                   const SizedBox(height: 10),
 
@@ -172,7 +196,7 @@ class TripOverviewSheet extends StatelessWidget {
                       Icon(Icons.access_time, size: 18, color: Colors.grey),
                       SizedBox(width: 4),
                       Text(
-                        "Deadline",
+                        "Pickup Date & Time",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Colors.grey,
@@ -181,29 +205,30 @@ class TripOverviewSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text("June 15, 2024, 10:00 AM"),
+                  Text(_formatDate(tripDetails.pickupDate, tripDetails.pickupTime)),
 
-                  const SizedBox(height: 10),
-
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.note_alt_outlined,
-                        size: 18,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        "Additional Instructions",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
+                  if (tripDetails.specialInstructions.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.note_alt_outlined,
+                          size: 18,
                           color: Colors.grey,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Text("Handle with care.\nContact: John Doe"),
+                        SizedBox(width: 4),
+                        Text(
+                          "Additional Instructions",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(tripDetails.specialInstructions),
+                  ],
                 ],
               ),
             ),
@@ -215,7 +240,11 @@ class TripOverviewSheet extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Get.to(() => BidSubmissionScreen());
+                  Navigator.pop(context);
+                  Get.to(() => BidSubmissionScreen(
+                    tripId: tripId,
+                    tripDetails: tripDetails,
+                  ));
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,

@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 import 'package:wheelboard/screens/CompanyTransport/newtripscreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/schedulescreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/bids_screen.dart';
-import 'trips_info_widget.dart';
+import 'package:wheelboard/controllers/add_trip_controller.dart';
+import 'package:wheelboard/utils/session_manager.dart';
 import 'trip_confirmation.dart';
 
 class TripPage extends StatefulWidget {
@@ -15,6 +16,22 @@ class TripPage extends StatefulWidget {
 
 class _TripPageState extends State<TripPage>
     with SingleTickerProviderStateMixin {
+  final TripController tripController = Get.put(TripController());
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTrips();
+  }
+
+  Future<void> _fetchTrips() async {
+    final sessionManager = SessionManager();
+    final userId = await sessionManager.getString("userId");
+    if (userId != null && userId.isNotEmpty) {
+      tripController.fetchTrips(userId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -120,31 +137,54 @@ class _TripPageState extends State<TripPage>
                       ),
                       const SizedBox(height: 16),
 
-                      SizedBox(
-                        height: 185,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            tripCard(
-                              title: "Trip to Ahmedabad",
-                              subtitle: "From Surat → Ahmedabad",
-                              tag: "Completed",
-                              label: "Cold Storage",
-                              date: "June 30, 2024 – 9:00 AM",
-                              tagColor: Colors.green,
+                      Obx(() {
+                        final recentTrips = tripController.trips.take(2).toList();
+                        if (tripController.isTripsLoading.value) {
+                          return const SizedBox(
+                            height: 185,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        if (recentTrips.isEmpty) {
+                          return const SizedBox(
+                            height: 185,
+                            child: Center(
+                              child: Text("No recent trips"),
                             ),
-                            const SizedBox(width: 16),
-                            tripCard(
-                              title: "Trip to Bhopal",
-                              subtitle: "Indore → Bhopal",
-                              tag: "Upcoming",
-                              label: "Express Delivery",
-                              date: "July 10, 2024",
-                              tagColor: Colors.blue,
-                            ),
-                          ],
-                        ),
-                      ),
+                          );
+                        }
+                        return SizedBox(
+                          height: 185,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: recentTrips.asMap().entries.map((entry) {
+                              final trip = entry.value;
+                              final index = entry.key;
+                              final statusColor = _getStatusColor(trip.tripStatus);
+                              final dateStr = trip.pickupDate != null
+                                  ? _formatDate(trip.pickupDate!)
+                                  : '';
+                              final timeStr = trip.pickupTime.isNotEmpty
+                                  ? ' – ${trip.pickupTime.substring(0, trip.pickupTime.length > 5 ? 5 : trip.pickupTime.length)}'
+                                  : '';
+                              
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  right: index < recentTrips.length - 1 ? 16 : 0,
+                                ),
+                                child: tripCard(
+                                  title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
+                                  subtitle: "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
+                                  tag: trip.tripStatus,
+                                  label: trip.vehicleType ?? "Standard",
+                                  date: "$dateStr$timeStr",
+                                  tagColor: statusColor,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      }),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -209,7 +249,7 @@ class _TripPageState extends State<TripPage>
             ],
 
             // Tab content
-            body: const _TripsTabViews(),
+            body: _TripsTabViews(tripController: tripController),
           ),
         ),
 
@@ -315,6 +355,29 @@ class _TripPageState extends State<TripPage>
 
   // --- Helpers from your original code ---
 
+  Color _getStatusColor(String status) {
+    final lowerStatus = status.toLowerCase();
+    if (lowerStatus.contains('complete')) {
+      return Colors.green;
+    } else if (lowerStatus.contains('process') || lowerStatus.contains('ongoing')) {
+      return Colors.blue;
+    } else if (lowerStatus.contains('upcoming') || lowerStatus.contains('pending')) {
+      return Colors.orange;
+    }
+    return Colors.grey;
+  }
+
+  String _getLocationName(String location) {
+    if (location.isEmpty) return 'Unknown';
+    final parts = location.split(',');
+    return parts.isNotEmpty ? parts[0].trim() : location;
+  }
+
+  String _formatDate(DateTime date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+  }
+
   static Widget tripCard({
     required String title,
     required String subtitle,
@@ -325,7 +388,7 @@ class _TripPageState extends State<TripPage>
   }) {
     return Container(
       width: 250,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -334,11 +397,12 @@ class _TripPageState extends State<TripPage>
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ✔ Completed pill with icon
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: tagColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
@@ -347,48 +411,56 @@ class _TripPageState extends State<TripPage>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, color: tagColor, size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  tag,
-                  style: TextStyle(
-                    color: tagColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                Icon(Icons.check_circle, color: tagColor, size: 11),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    tag,
+                    style: TextStyle(
+                      color: tagColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 5),
 
           Text(
             title,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
 
           Row(
             children: [
-              const Icon(Icons.location_on, size: 14, color: Colors.grey),
-              const SizedBox(width: 4),
+              const Icon(Icons.location_on, size: 11, color: Colors.grey),
+              const SizedBox(width: 3),
               Expanded(
                 child: Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 3),
 
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(20),
@@ -396,22 +468,28 @@ class _TripPageState extends State<TripPage>
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
 
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 14, color: Colors.black54),
-              const SizedBox(width: 6),
-              Text(
-                date,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
+              const Icon(Icons.calendar_today, size: 11, color: Colors.black54),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  date,
+                  style: const TextStyle(fontSize: 11, color: Colors.black87),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -446,62 +524,127 @@ class _TabBarHeader extends SliverPersistentHeaderDelegate {
 
 /// The 3 tab lists
 class _TripsTabViews extends StatelessWidget {
-  const _TripsTabViews({super.key});
+  final TripController tripController;
+  
+  const _TripsTabViews({required this.tripController});
+
+  Color _getStatusColor(String status) {
+    final lowerStatus = status.toLowerCase();
+    if (lowerStatus.contains('complete')) {
+      return Colors.green;
+    } else if (lowerStatus.contains('process') || lowerStatus.contains('ongoing')) {
+      return Colors.blue;
+    } else if (lowerStatus.contains('upcoming') || lowerStatus.contains('pending')) {
+      return Colors.orange;
+    }
+    return Colors.grey;
+  }
+
+  String _getLocationName(String location) {
+    if (location.isEmpty) return 'Unknown';
+    final parts = location.split(',');
+    return parts.isNotEmpty ? parts[0].trim() : location;
+  }
+
+  String _formatDate(DateTime? date, String time) {
+    if (date == null) return time;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    final timeStr = time.isNotEmpty
+        ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
+        : '';
+    return "$dateStr$timeStr";
+  }
 
   @override
   Widget build(BuildContext context) {
     return TabBarView(
       children: [
         // Completed
-        ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-          children: const [
-            TripInfoCard(
-              imagePath: 'assets/tripImage.png',
-              status: 'Completed',
-              badge: 'Standard',
-              title: 'Trip to Los Angeles',
-              tag: 'Package Delivery',
-              destination: 'Los Angeles',
-              departureDate: '2024-06-01',
-              vehicle: 'shipment truck-GJ 06 K9 1442',
-              driver: 'Deepak kumar',
-            ),
-          ],
-        ),
+        Obx(() {
+          final completedTrips = tripController.getTripsByStatus('Completed');
+          if (tripController.isTripsLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (completedTrips.isEmpty) {
+            return const Center(
+              child: Text("No completed trips"),
+            );
+          }
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+            children: completedTrips.map((trip) {
+              return _TripTile(
+                title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
+                subtitle: "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
+                statusColor: _getStatusColor(trip.tripStatus),
+                statusText: trip.tripStatus,
+                date: _formatDate(trip.pickupDate, trip.pickupTime),
+                chip: trip.vehicleType ?? "Standard",
+                vehicle: trip.vehicleNumber ?? '',
+                driver: trip.driverName ?? 'Not assigned',
+              );
+            }).toList(),
+          );
+        }),
 
         // In-Process
-        ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-          children: [
-            _TripTile(
-              title: "Trip to Pune",
-              subtitle: "Mumbai → Pune",
-              statusColor: Colors.blue,
-              statusText: "In-Process",
-              date: "Aug 6, 2025 – 11:10 AM",
-              chip: "Express Delivery",
-            ),
-          ],
-        ),
+        Obx(() {
+          final inProcessTrips = tripController.getTripsByStatus('In-Process');
+          if (tripController.isTripsLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (inProcessTrips.isEmpty) {
+            return const Center(
+              child: Text("No in-process trips"),
+            );
+          }
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+            children: inProcessTrips.map((trip) {
+              return _TripTile(
+                title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
+                subtitle: "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
+                statusColor: _getStatusColor(trip.tripStatus),
+                statusText: trip.tripStatus,
+                date: _formatDate(trip.pickupDate, trip.pickupTime),
+                chip: trip.vehicleType ?? "Standard",
+                vehicle: trip.vehicleNumber ?? '',
+                driver: trip.driverName ?? 'Not assigned',
+              );
+            }).toList(),
+          );
+        }),
 
         // Upcoming
-        ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-          children: [
-            _UpcomingTripCard(
-              title: "Trip to Chennai",
-              subtitle: "From: Hyderabad, TG → To: Chennai",
-              statusColor: Colors.grey,
-              statusText: "Upcoming",
-              date: "Aug 12, 2024 - 08:00 AM",
-              chip: "Express Delivery",
-              assignedTo: "Akshay R.",
-              assignedToImage: "https://i.pravatar.cc/150?img=4",
-              bidsAvailable: 5,
-            ),
-          ],
-        ),
+        Obx(() {
+          final upcomingTrips = tripController.getTripsByStatus('Upcoming');
+          if (tripController.isTripsLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (upcomingTrips.isEmpty) {
+            return const Center(
+              child: Text("No upcoming trips"),
+            );
+          }
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+            children: upcomingTrips.map((trip) {
+              return _UpcomingTripCard(
+                tripId: trip.tripId,
+                title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
+                subtitle: "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
+                statusColor: _getStatusColor(trip.tripStatus),
+                statusText: trip.tripStatus,
+                date: _formatDate(trip.pickupDate, trip.pickupTime),
+                chip: trip.vehicleType ?? "Standard",
+                assignedTo: trip.driverName ?? 'Not assigned',
+                assignedToImage: "https://i.pravatar.cc/150?img=4",
+                bidsAvailable: trip.totalBidCount,
+              );
+            }).toList(),
+          );
+        }),
       ],
     );
   }
@@ -509,6 +652,7 @@ class _TripsTabViews extends StatelessWidget {
 
 /// Upcoming Trip Card with View Bids functionality
 class _UpcomingTripCard extends StatelessWidget {
+  final String tripId;
   final String title;
   final String subtitle;
   final String statusText;
@@ -520,6 +664,7 @@ class _UpcomingTripCard extends StatelessWidget {
   final int bidsAvailable;
 
   const _UpcomingTripCard({
+    required this.tripId,
     required this.title,
     required this.subtitle,
     required this.statusText,
@@ -665,9 +810,12 @@ class _UpcomingTripCard extends StatelessWidget {
                       backgroundImage: NetworkImage(assignedToImage),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      assignedTo,
-                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    Expanded(
+                      child: Text(
+                        assignedTo,
+                        style: const TextStyle(fontSize: 11, color: Colors.black87),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
@@ -679,7 +827,7 @@ class _UpcomingTripCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "$bidsAvailable Bids Available",
+                    "$bidsAvailable ${bidsAvailable == 1 ? 'Bid' : 'Bids'} Available",
                     style: TextStyle(
                       color: Colors.blue[700],
                       fontWeight: FontWeight.w600,
@@ -692,14 +840,18 @@ class _UpcomingTripCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          Get.to(const BidsScreen());
-                        },
+                        onPressed: bidsAvailable > 0
+                            ? () {
+                                Get.to(() => BidsScreen(tripId: tripId));
+                              }
+                            : null,
                         icon: const Icon(Icons.description, size: 16),
                         label: const Text("View Bids"),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.blue),
-                          foregroundColor: Colors.blue,
+                          side: BorderSide(
+                            color: bidsAvailable > 0 ? Colors.blue : Colors.grey,
+                          ),
+                          foregroundColor: bidsAvailable > 0 ? Colors.blue : Colors.grey,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
@@ -738,15 +890,18 @@ class _TripTile extends StatelessWidget {
   final Color statusColor;
   final String date;
   final String chip;
+  final String vehicle;
+  final String driver;
 
   const _TripTile({
-    super.key,
     required this.title,
     required this.subtitle,
     required this.statusText,
     required this.statusColor,
     required this.date,
     required this.chip,
+    this.vehicle = '',
+    this.driver = '',
   });
 
   @override
@@ -841,6 +996,32 @@ class _TripTile extends StatelessWidget {
               ),
             ],
           ),
+          if (vehicle.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.directions_car, size: 14, color: Colors.black54),
+                const SizedBox(width: 6),
+                Text(
+                  vehicle,
+                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                ),
+              ],
+            ),
+          ],
+          if (driver.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.person, size: 14, color: Colors.black54),
+                const SizedBox(width: 6),
+                Text(
+                  driver,
+                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

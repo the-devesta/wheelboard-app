@@ -595,6 +595,11 @@ class _AlliedBusinessRegistrationScreenState
             onPressed: controller.isLoading.value
                 ? null
                 : () async {
+                    // ✅ Prevent multiple taps
+                    if (controller.isLoading.value) {
+                      return;
+                    }
+                    
                     if (_formKey.currentState!.validate()) {
                       File? businessLogo;
                       if (_pickedImages.isNotEmpty &&

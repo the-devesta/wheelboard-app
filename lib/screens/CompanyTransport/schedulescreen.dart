@@ -42,25 +42,23 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
 
   Future<void> _FetchDrivers() async {
     final sessionManager = SessionManager();
-    final token = await sessionManager.getString("authToken");
     final userId = await sessionManager.getString("userId");
 
-    if (token != null && userId != null) {
-      tripController.fetchDrivers(userId, token);
+    if (userId != null && userId.isNotEmpty) {
+      tripController.fetchDrivers(userId);
     } else {
-      debugPrint("Token or UserId is null");
+      debugPrint("UserId is null or empty");
     }
   }
 
   Future<void> _FetchVehicles() async {
     final sessionManager = SessionManager();
-    final token = await sessionManager.getString("authToken");
     final userId = await sessionManager.getString("userId");
 
-    if (token != null && userId != null) {
-      tripController.fetchVehicles(userId, token);
+    if (userId != null && userId.isNotEmpty) {
+      tripController.fetchVehicles(userId);
     } else {
-      debugPrint("Token or UserId is null");
+      debugPrint("UserId is null or empty");
     }
   }
 
@@ -149,10 +147,9 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                     height: 48,
                 child: ElevatedButton(
                   onPressed: () async {
-                    final token = await SessionManager().getString("authToken");
                     final userId = await SessionManager().getString("userId");
 
-                    if (token == null || userId == null) {
+                    if (userId == null || userId.isEmpty) {
                       Get.snackbar("Error", "User not logged in");
                       return;
                     }
@@ -169,8 +166,8 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                       pickupTime: selectedTime != null
                           ? _formatTimeOfDay(selectedTime!)
                           : "00:00:00",
-                      specialInstructions: specialInstructionsController.text,
-                      payRange: payRangeController.text,
+                      specialInstructions: specialInstructionsController.text.trim(),
+                      payRange: payRangeController.text.trim(),
                       tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}",
                       tripStatus: "Pending",
                     );

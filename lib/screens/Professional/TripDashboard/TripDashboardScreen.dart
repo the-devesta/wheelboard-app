@@ -561,14 +561,17 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              _buildCompletedFilterButton('Recent', _selectedCompletedFilter == 'Recent'),
-              const SizedBox(width: 8),
-              _buildCompletedFilterButton('Highest Rated', _selectedCompletedFilter == 'Highest Rated'),
-              const SizedBox(width: 8),
-              _buildCompletedFilterButton('Highest Earning', _selectedCompletedFilter == 'Highest Earning'),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildCompletedFilterButton('Recent', _selectedCompletedFilter == 'Recent'),
+                const SizedBox(width: 8),
+                _buildCompletedFilterButton('Highest Rated', _selectedCompletedFilter == 'Highest Rated'),
+                const SizedBox(width: 8),
+                _buildCompletedFilterButton('Highest Earning', _selectedCompletedFilter == 'Highest Earning'),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           _buildCompletedTripItem('Warehouse A', 'Store Z', '+₹9,400'),

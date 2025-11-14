@@ -6,6 +6,7 @@ import 'dart:io';
 import '../../controllers/job_controller.dart';
 import '../../models/job_model.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../enums/job_enums.dart';
 
 class PostJobScreen extends StatefulWidget {
   final JobModel? jobToEdit; // For editing existing job
@@ -19,8 +20,8 @@ class PostJobScreen extends StatefulWidget {
 class _PostJobScreenState extends State<PostJobScreen> {
   final JobController jobController = Get.put(JobController());
   
-  String? selectedJobDuration;
-  String? selectedJobType;
+  JobDuration? selectedJobDuration;
+  JobType? selectedJobType;
 
   final TextEditingController openingController = TextEditingController();
   final TextEditingController salaryController = TextEditingController();
@@ -29,7 +30,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
   List<PlatformFile> uploadedFiles = <PlatformFile>[];
   List<File> imageFiles = <File>[];
-  String selectedRole = 'Technician';
+  JobRole selectedRole = JobRole.driver;
   bool isEditMode = false;
 
   @override
@@ -39,13 +40,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
     
     if (isEditMode && widget.jobToEdit != null) {
       final job = widget.jobToEdit!;
-      selectedRole = job.role;
+      selectedRole = JobRole.fromString(job.role);
       
-      // Map API jobDuration to dropdown values
-      selectedJobDuration = _mapJobDurationFromAPI(job.jobDuration);
+      // Map API jobDuration to enum
+      selectedJobDuration = JobDuration.fromString(job.jobDuration);
       
-      // Map API jobType to dropdown values
-      selectedJobType = _mapJobTypeFromAPI(job.jobType);
+      // Map API jobType to enum
+      selectedJobType = JobType.fromString(job.jobType);
       
       openingController.text = job.openings.toString();
       salaryController.text = job.salary.toString();
@@ -54,55 +55,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
     }
   }
 
-  /// Map API jobDuration value to dropdown value
-  String? _mapJobDurationFromAPI(String? apiValue) {
-    if (apiValue == null || apiValue.isEmpty) return null;
-    
-    // Try to match common API values to dropdown values
-    final lowerValue = apiValue.toLowerCase().trim();
-    
-    // Check if it's already a valid dropdown value
-    if (['One Day', 'One Week', 'One Month'].contains(apiValue)) {
-      return apiValue;
-    }
-    
-    // Map numeric or other values
-    if (lowerValue.contains('day') || lowerValue == '1' || lowerValue == 'one day') {
-      return 'One Day';
-    } else if (lowerValue.contains('week') || lowerValue == '7' || lowerValue == 'one week') {
-      return 'One Week';
-    } else if (lowerValue.contains('month') || lowerValue == '30' || lowerValue == 'one month') {
-      return 'One Month';
-    }
-    
-    // If no match, return null (will show hint)
-    return null;
-  }
-
-  /// Map API jobType value to dropdown value
-  String? _mapJobTypeFromAPI(String? apiValue) {
-    if (apiValue == null || apiValue.isEmpty) return null;
-    
-    // Try to match common API values to dropdown values
-    final lowerValue = apiValue.toLowerCase().trim();
-    
-    // Check if it's already a valid dropdown value
-    if (['Full-time', 'Part-time', 'Contract'].contains(apiValue)) {
-      return apiValue;
-    }
-    
-    // Map variations
-    if (lowerValue.contains('full') || lowerValue.contains('fulltime')) {
-      return 'Full-time';
-    } else if (lowerValue.contains('part') || lowerValue.contains('parttime')) {
-      return 'Part-time';
-    } else if (lowerValue.contains('contract')) {
-      return 'Contract';
-    }
-    
-    // If no match, return null (will show hint)
-    return null;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,20 +90,32 @@ class _PostJobScreenState extends State<PostJobScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Job Details heading - outside card
+            // Job Details heading and Step indicator - outside card
             Padding(
               padding: const EdgeInsets.only(top: 4, right: 25),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  "Job Details",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF6C7278),
-                    letterSpacing: -0.28,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    "Step 1 of 2",
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF6C7278).withOpacity(0.87),
+                      letterSpacing: -0.24,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Job Details",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF6C7278),
+                      letterSpacing: -0.28,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 8),
@@ -167,26 +131,28 @@ class _PostJobScreenState extends State<PostJobScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                    // Job Type Selection Buttons - only 2 buttons
+                    // Job Role Selection Buttons - 3 buttons (Driver, Technician, Helper)
                 Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildJobTypeButton("Technician", Icons.build),
+                    _buildJobTypeButton(JobRole.driver, Icons.person),
                         const SizedBox(width: 12),
-                    _buildJobTypeButton("Helper", Icons.person_outline),
+                    _buildJobTypeButton(JobRole.technician, Icons.build),
+                        const SizedBox(width: 12),
+                    _buildJobTypeButton(JobRole.helper, Icons.person_outline),
                   ],
                 ),
                     const SizedBox(height: 39),
 
-                // Job Duration
+                // Job Duration - Dropdown
                 _buildLabel("Job duration"),
                 const SizedBox(height: 2),
                 _buildDropdownField(
                   "Select Job Duration",
-                  selectedJobDuration,
+                  selectedJobDuration?.value,
                   (value) {
                   setState(() {
-                    selectedJobDuration = value;
+                    selectedJobDuration = value != null ? JobDuration.fromString(value) : null;
                   });
                   },
                 ),
@@ -199,16 +165,16 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                              _buildLabel("Openeing"),
+                          _buildLabel("Openeing"),
                           const SizedBox(height: 2),
                           _buildTextField(
                             "No. of Openings",
-                        controller: openingController,
+                            controller: openingController,
                           ),
                         ],
                       ),
                     ),
-                        const SizedBox(width: 11),
+                    const SizedBox(width: 11),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,7 +183,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           const SizedBox(height: 2),
                           _buildTextField(
                             "Salary",
-                        controller: salaryController,
+                            controller: salaryController,
                           ),
                         ],
                       ),
@@ -240,10 +206,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 const SizedBox(height: 8),
                 _buildDropdownField(
                   "Select job type",
-                  selectedJobType,
+                  selectedJobType?.value,
                   (value) {
                   setState(() {
-                    selectedJobType = value;
+                    selectedJobType = value != null ? JobType.fromString(value) : null;
                   });
                   },
                 ),
@@ -308,7 +274,44 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     ),
                   ],
                 ),
-                    const SizedBox(height: 142),
+                    // Uploaded files list - inside white card
+                    if (uploadedFiles.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: uploadedFiles.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final file = entry.value;
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: index < uploadedFiles.length - 1 ? 8 : 0,
+                            ),
+                            child: RichText(
+                              text: TextSpan(
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF6C7278).withOpacity(0.87),
+                                  letterSpacing: -0.24,
+                                  height: 1.6,
+                                ),
+                                children: [
+                                  TextSpan(text: "${file.name}            "),
+                                  TextSpan(
+                                    text: "uploaded successfully",
+                                    style: GoogleFonts.poppins(
+                                      fontStyle: FontStyle.italic,
+                                      color: const Color(0xFF10E445),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                    const SizedBox(height: 31),
 
                 // Save Button
                     Obx(
@@ -321,11 +324,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                 ? null
                                 : () async {
                                     // Validate fields
-                                    if (selectedJobDuration == null || selectedJobDuration!.isEmpty) {
+                                    if (selectedJobDuration == null) {
                                       SnackBarHelper.error("Please select job duration");
                                       return;
                                     }
-                                    if (selectedJobType == null || selectedJobType!.isEmpty) {
+                                    if (selectedJobType == null) {
                                       SnackBarHelper.error("Please select job type");
                                       return;
                                     }
@@ -357,34 +360,42 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                       // Update existing job
                                       final success = await jobController.updateJob(
                                         jobId: widget.jobToEdit!.jobId,
-                                        role: selectedRole,
-                                        jobDuration: selectedJobDuration!,
+                                        role: selectedRole.value,
+                                        jobDuration: selectedJobDuration!.value,
                                         openings: openings,
                                         salary: salary,
                                         city: cityController.text.trim(),
-                                        jobType: selectedJobType!,
+                                        jobType: selectedJobType!.value,
                                         description: descriptionController.text.trim(),
                                         newImages: imageFiles.isNotEmpty ? imageFiles : null,
                                       );
                                       
                                       if (success) {
-                                        Get.back();
+                                        // Refresh jobs list before going back
+                                        await jobController.refreshJobs();
+                                        if (mounted) {
+                                          Navigator.of(context).pop();
+                                        }
                                       }
                                     } else {
                                       // Add new job
                                       final success = await jobController.addJob(
-                                        role: selectedRole,
-                                        jobDuration: selectedJobDuration!,
+                                        role: selectedRole.value,
+                                        jobDuration: selectedJobDuration!.value,
                                         openings: openings,
                                         salary: salary,
                                         city: cityController.text.trim(),
-                                        jobType: selectedJobType!,
+                                        jobType: selectedJobType!.value,
                                         description: descriptionController.text.trim(),
                                         images: imageFiles,
                                       );
                                       
                                       if (success) {
-                                        Get.back();
+                                        // Refresh jobs list before going back
+                                        await jobController.refreshJobs();
+                                        if (mounted) {
+                                          Navigator.of(context).pop();
+                                        }
                                       }
                                     }
                       },
@@ -422,92 +433,91 @@ class _PostJobScreenState extends State<PostJobScreen> {
             ),
           ),
             ),
-            // Uploaded files list - positioned outside white card
-            if (uploadedFiles.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(left: 53, top: 20, bottom: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: uploadedFiles.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final file = entry.value;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index < uploadedFiles.length - 1 ? 4 : 0,
-                      ),
-                      child: RichText(
-                        text: TextSpan(
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF6C7278).withOpacity(0.87),
-                            letterSpacing: -0.24,
-                            height: 1.6,
-                          ),
-                          children: [
-                            TextSpan(text: "${file.name}            "),
-                            TextSpan(
-                              text: "uploaded successfully",
-                              style: GoogleFonts.poppins(
-                                fontStyle: FontStyle.italic,
-                                color: const Color(0xFF10E445),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildJobTypeButton(String role, IconData icon) {
+  Widget _buildJobTypeButton(JobRole role, IconData icon) {
+    final isSelected = selectedRole == role;
     return SizedBox(
       width: 85,
       height: 29,
-      child: OutlinedButton(
-      onPressed: () {
-        setState(() {
-          selectedRole = role;
-        });
-      },
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(
-            color: const Color(0xFFF36969),
-            width: 1,
-        ),
-          backgroundColor: Colors.white,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(5),
-          ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-              icon,
-              size: 12,
-              color: const Color(0xFFF36969),
-          ),
-            const SizedBox(width: 8),
-            Text(
-              role,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFFF36969),
+      child: isSelected
+          ? ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  selectedRole = role;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF36969),
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    role.value,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  selectedRole = role;
+                });
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(
+                  color: Color(0xFFF36969),
+                  width: 1,
+                ),
+                backgroundColor: Colors.white,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 12,
+                    color: const Color(0xFFF36969),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    role.value,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFF36969),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-        ),
-      ),
     );
   }
 
@@ -563,12 +573,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
     String? selectedValue,
     Function(String?) onChanged,
   ) {
-    // Define dropdown items based on hint
+    // Define dropdown items based on hint using enums
     List<String> items = [];
     if (hint.contains("Duration")) {
-      items = ['One Day', 'One Week', 'One Month'];
+      items = JobDuration.allValues;
     } else if (hint.contains("job type")) {
-      items = ['Full-time', 'Part-time', 'Contract'];
+      items = JobType.allValues;
     }
 
     // Validate selectedValue - if it's not in the items list, set to null

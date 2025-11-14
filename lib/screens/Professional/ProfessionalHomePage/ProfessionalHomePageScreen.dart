@@ -14,16 +14,29 @@ import '../MyLearning/MyLearningScreen.dart';
 import '../SOS/SOSScreen.dart';
 import '../AddReferral/AddReferralScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
+import '../../../controllers/Professional/unassigned_trips_controller.dart';
+import '../TripOverview/TripOverviewScreen.dart';
 
 /// Professional Homepage Screen
 /// Main screen matching Figma design exactly
 class ProfessionalHomePageScreen extends StatelessWidget {
   const ProfessionalHomePageScreen({super.key});
 
+  String _formatDate(DateTime? date, String time) {
+    if (date == null) return time;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    final timeStr = time.isNotEmpty
+        ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
+        : '';
+    return "$dateStr$timeStr";
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Initialize controller
+    // Initialize controllers
     Get.put(OpenJobsController());
+    final tripsController = Get.put(UnassignedTripsController());
     
     // Get screen dimensions for responsive design
     final screenWidth = MediaQuery.of(context).size.width;
@@ -67,12 +80,58 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                         top: screenHeight * 0.16, // Responsive top position
                         left: screenWidth * 0.04, // Responsive left padding
                         right: screenWidth * 0.04, // Responsive right padding
-                        child: const TripCardWidget(
-                          pickupAddress: "123 Main Street, AnyTown, CA 32132",
-                          destinationAddress: "456 Oak Avenue, OtherTown, NY 100001",
-                          dateTime: "Oct 26, 2024 – 10:00 AM",
-                          tags: ["Cargo", "Fragile", "Lift Gate"],
-                        ),
+                        child: Obx(() {
+                          if (tripsController.isLoading.value) {
+                            return Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.06),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
+
+                          if (tripsController.unassignedTrips.isEmpty) {
+                            return const TripCardWidget(
+                              pickupAddress: "No trips available",
+                              destinationAddress: "Check back later for new trips",
+                              dateTime: "",
+                              tags: [],
+                            );
+                          }
+
+                          final trip = tripsController.unassignedTrips.first;
+                          final tags = [trip.tripType].where((t) => t.isNotEmpty).toList();
+
+                          return GestureDetector(
+                            onTap: () async {
+                              await tripsController.fetchTripDetails(trip.tripId);
+                              if (tripsController.tripDetails.value != null) {
+                                TripOverviewPopup.show(
+                                  context,
+                                  tripId: trip.tripId,
+                                  tripDetails: tripsController.tripDetails.value!,
+                                );
+                              }
+                            },
+                            child: TripCardWidget(
+                              pickupAddress: trip.pickupLocation,
+                              destinationAddress: trip.destination,
+                              dateTime: _formatDate(trip.pickupDate, trip.pickupTime),
+                              tags: tags,
+                            ),
+                          );
+                        }),
                       ),
                     ],
                   ),
@@ -82,7 +141,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                   // Banner ends at: screenHeight * 0.23
                   // Trip card extends below banner - we need to account for full card height
                   // Using generous spacing to ensure no overlap: banner end + card extension + margin
-                  SizedBox(height: (screenHeight * 0.40) + 40), // Generous spacing to ensure trip card ends before jobs section
+                  SizedBox(height: (screenHeight * 0.20) + 40), // Generous spacing to ensure trip card ends before jobs section
 
                   // Jobs Section - Below banner and cards
                   _buildJobsSection(context),

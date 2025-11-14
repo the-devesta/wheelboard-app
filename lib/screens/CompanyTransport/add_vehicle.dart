@@ -9,6 +9,7 @@ import 'package:get/get.dart'; // ✅ for controller
 import '../../models/add_new_vehicle_model.dart';
 import '../../models/vehicle_details_model.dart';
 import '../../controllers/add_new_vehicle_controller.dart';
+import '../../controllers/fleet_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../apihelperclass/api_helper.dart';
 import '../../widgets/custom_snackbar.dart';
@@ -179,6 +180,20 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     }
 
     if (success) {
+      // Auto-refresh fleet data
+      try {
+        final fleetController = Get.find<DriverController>();
+        final sessionManager = SessionManager();
+        final refreshToken = await sessionManager.getString("authToken");
+        final refreshUserId = await sessionManager.getString("userId");
+        
+        if (refreshToken != null && refreshUserId != null) {
+          await fleetController.fetchVehicles(refreshUserId, refreshToken);
+        }
+      } catch (e) {
+        print("⚠️ Could not refresh fleet data: $e");
+      }
+      
       Navigator.pop(context);
     }
   }

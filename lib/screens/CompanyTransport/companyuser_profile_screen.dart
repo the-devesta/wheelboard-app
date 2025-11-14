@@ -491,15 +491,21 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.credit_card, size: 26, color: Color(0xFFEF5350)),
-          const SizedBox(height: 8),
-          Text(
-            plan,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFFEF5350),
+          const Icon(Icons.credit_card, size: 24, color: Color(0xFFEF5350)),
+          const SizedBox(height: 4),
+          Flexible(
+            child: Text(
+              plan,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFEF5350),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

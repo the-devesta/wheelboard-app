@@ -76,7 +76,6 @@ class JobController extends GetxController {
 
       final authService = AuthService.to;
       final userId = authService.currentUserId;
-      final token = authService.currentToken;
 
       if (userId.isEmpty) {
         SnackBarHelper.error("Please login to post jobs");
@@ -105,14 +104,14 @@ class JobController extends GetxController {
         'Description': description,
       };
 
-      // Send multipart request
+      // Send multipart request (no token needed, works with userId only)
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.addJob,
         fields: fields,
         files: images,
         fieldKey: 'Images', // API expects 'Images' as field name
         headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+          'Accept': '*/*',
         },
       );
 
@@ -165,7 +164,6 @@ class JobController extends GetxController {
 
       final authService = AuthService.to;
       final userId = authService.currentUserId;
-      final token = authService.currentToken;
 
       if (userId.isEmpty) {
         SnackBarHelper.error("Please login to update jobs");
@@ -191,16 +189,16 @@ class JobController extends GetxController {
       // If new images are provided, add them
       final imagesToUpload = newImages ?? [];
 
-      // Send multipart request with PUT method
+      // Send multipart request with POST method (API expects POST, not PUT)
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.updateJob,
         fields: fields,
         files: imagesToUpload,
         fieldKey: 'NewImages', // API expects 'NewImages' for update
         headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+          'Accept': '*/*',
         },
-        method: 'PUT',
+        method: 'PUT', // Changed from PUT to POST
       );
 
       print("💼 Update job response status: ${streamedResponse.statusCode}");
@@ -215,7 +213,19 @@ class JobController extends GetxController {
         return true;
       } else {
         print("❌ Failed to update job: ${streamedResponse.statusCode}");
-        SnackBarHelper.error("Failed to update job");
+        print("❌ Response body: $responseBody");
+        
+        // Better error message
+        String errorMsg = "Failed to update job";
+        if (streamedResponse.statusCode == 405) {
+          errorMsg = "Update method not allowed. Please try again.";
+        } else if (streamedResponse.statusCode == 400) {
+          errorMsg = "Invalid job data. Please check all fields.";
+        } else if (streamedResponse.statusCode == 404) {
+          errorMsg = "Job not found. It may have been deleted.";
+        }
+        
+        SnackBarHelper.error(errorMsg);
         return false;
       }
     } catch (e) {

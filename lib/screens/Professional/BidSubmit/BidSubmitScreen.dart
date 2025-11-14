@@ -1,26 +1,20 @@
-// import 'package:flutter/material.dart';
 
-// class BidSubmitScreen extends StatelessWidget {
-//   const BidSubmitScreen({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Bid Submit'),
-//       ),
-//       body: const Center(
-//         child: Text('Bid Submit Screen'),
-//       ),
-//     );
-//   }
 // }
 
 import 'package:flutter/material.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:get/get.dart';
+import '../../../controllers/Professional/unassigned_trips_controller.dart';
+import '../../../models/unassigned_trip_model.dart';
 
 class BidSubmissionScreen extends StatefulWidget {
-  const BidSubmissionScreen({super.key});
+  final String tripId;
+  final UnassignedTripDetails tripDetails;
+  
+  const BidSubmissionScreen({
+    super.key,
+    required this.tripId,
+    required this.tripDetails,
+  });
 
   @override
   State<BidSubmissionScreen> createState() => _BidSubmissionScreenState();
@@ -29,6 +23,23 @@ class BidSubmissionScreen extends StatefulWidget {
 class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController messageController = TextEditingController();
+  final UnassignedTripsController controller = Get.put(UnassignedTripsController());
+
+  String _getLocationName(String location) {
+    if (location.isEmpty) return 'Unknown';
+    final parts = location.split(',');
+    return parts.isNotEmpty ? parts[0].trim() : location;
+  }
+
+  String _formatDate(DateTime? date, String time) {
+    if (date == null) return time;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    final timeStr = time.isNotEmpty
+        ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
+        : '';
+    return "$dateStr$timeStr";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +69,81 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Trip Details Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Trip Details",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 16, color: Colors.redAccent),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text("From: ${_getLocationName(widget.tripDetails.pickupLocation)}"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 16, color: Colors.redAccent),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text("To: ${_getLocationName(widget.tripDetails.deliveryLocation)}"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 16),
+                      const SizedBox(width: 4),
+                      Text(_formatDate(widget.tripDetails.pickupDate, widget.tripDetails.pickupTime)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.currency_rupee, size: 16),
+                      const SizedBox(width: 4),
+                      Text("Pay Range: ₹${widget.tripDetails.payRange}"),
+                    ],
+                  ),
+                  if (widget.tripDetails.vehicleNumber.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.directions_car, size: 16),
+                        const SizedBox(width: 4),
+                        Text("Vehicle: ${widget.tripDetails.vehicleNumber}"),
+                      ],
+                    ),
+                  ],
+                  if (widget.tripDetails.specialInstructions.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Special Instructions:",
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(widget.tripDetails.specialInstructions),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            
             // Section title
             const Text(
               "Submit Your Bid",
@@ -137,16 +223,40 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
             const SizedBox(height: 20),
 
             // Submit Bid button
-            SizedBox(
+            Obx(() => SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  // handle submit logic here
+                onPressed: controller.isSubmittingBid.value ? null : () async {
+                  final amount = double.tryParse(amountController.text.trim());
+                  if (amount == null || amount <= 0) {
+                    Get.snackbar("Error", "Please enter a valid bid amount");
+                    return;
+                  }
+
+                  final success = await controller.submitBid(
+                    tripId: widget.tripId,
+                    bidAmount: amount,
+                    bidDescription: messageController.text.trim(),
+                  );
+
+                  if (success) {
+                    Navigator.pop(context);
+                    controller.refreshTrips();
+                  }
                 },
-                icon: const Icon(Icons.send, size: 18),
-                label: const Text(
-                  "Submit Bid",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                icon: controller.isSubmittingBid.value
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.send, size: 18),
+                label: Text(
+                  controller.isSubmittingBid.value ? "Submitting..." : "Submit Bid",
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.tealAccent.shade700,
@@ -157,7 +267,7 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                   ),
                 ),
               ),
-            ),
+            )),
 
             const SizedBox(height: 30),
 

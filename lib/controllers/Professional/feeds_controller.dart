@@ -34,7 +34,7 @@ class FeedsController extends GetxController {
 
       // Using getUserPosts API - if it returns all posts, great. Otherwise, we might need a different endpoint
       final response = await HttpHelper.getData(
-        endpoint: '${API.getUserPosts}$userId',
+        endpoint: API.getAllPost,
         headers: {
           if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           'Accept': '*/*',
