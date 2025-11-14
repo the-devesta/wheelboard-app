@@ -75,19 +75,19 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Container(
+        child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
+          decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
               boxShadow: const [
-                BoxShadow(
+              BoxShadow(
                   color: Colors.black12,
                   blurRadius: 4,
                   offset: Offset(0, 2),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -95,44 +95,44 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                 Center(
                   child: Obx(
                     () => GestureDetector(
-                      onTap: () => _showImagePickerOptions(context),
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
+                        onTap: () => _showImagePickerOptions(context),
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
                             backgroundColor: const Color(0xFFF5F5F5),
                             backgroundImage: profileController.profileImage.value != null
-                                ? FileImage(profileController.profileImage.value!)
-                                : null,
-                            child: profileController.profileImage.value == null
-                                ? const Icon(
+                                  ? FileImage(profileController.profileImage.value!)
+                                  : null,
+                              child: profileController.profileImage.value == null
+                                  ? const Icon(
                                     Icons.person,
                                     size: 50,
                                     color: Color(0xFF9E9E9E),
-                                  )
-                                : null,
-                          ),
+                                    )
+                                  : null,
+                            ),
                           // Edit icon
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF25C5C),
-                                shape: BoxShape.circle,
+                                    shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: const Icon(
+                                  ),
+                                  child: const Icon(
                                 Icons.edit,
                                 size: 12,
-                                color: Colors.white,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                     ),
                   ),
                 ),
@@ -153,7 +153,7 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                       child: _buildInputField(
                         label: "First Name",
                         hint: "Enter first name",
-                        controller: firstNameController,
+                            controller: firstNameController,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -161,7 +161,7 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                       child: _buildInputField(
                         label: "Last Name",
                         hint: "Enter last name",
-                        controller: lastNameController,
+                            controller: lastNameController,
                       ),
                     ),
                   ],
@@ -445,42 +445,42 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                   }
 
                   // ✅ Validate form
-                  if (!_validateForm()) {
-                    return;
-                  }
+          if (!_validateForm()) {
+            return;
+          }
 
-                  final model = CompleteProfileModel(
-                    userId: userId,
-                    firstName: firstNameController.text.trim(),
-                    lastName: lastNameController.text.trim(),
-                    address: addressController.text.trim(),
-                    fleetSize: fleetSizeController.text.trim(),
+          final model = CompleteProfileModel(
+            userId: userId,
+            firstName: firstNameController.text.trim(),
+            lastName: lastNameController.text.trim(),
+            address: addressController.text.trim(),
+            fleetSize: fleetSizeController.text.trim(),
                     gstNumber: gstController.text.trim().isEmpty
                         ? null
                         : gstController.text.trim(),
-                    companyLogo: profileController.profileImage.value,
-                  );
+            companyLogo: profileController.profileImage.value,
+          );
 
-                  final success = await profileController.submitProfile(model, userId);
+          final success = await profileController.submitProfile(model, userId);
 
-                  if (success) {
-                    await SessionManager.setProfileCompleted(true);
-                    SnackBarHelper.success("Profile completed successfully!");
-
-                    await Future.delayed(const Duration(milliseconds: 2000));
-                    NavigationHelper.navigateToMainWrapper();
-                  }
-                },
-          style: ElevatedButton.styleFrom(
+          if (success) {
+            await SessionManager.setProfileCompleted(true);
+            SnackBarHelper.success("Profile completed successfully!");
+            
+            await Future.delayed(const Duration(milliseconds: 2000));
+            NavigationHelper.navigateToMainWrapper();
+          }
+        },
+        style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFF25C5C),
             padding: const EdgeInsets.symmetric(vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
             elevation: 0,
             disabledBackgroundColor: const Color(0xFFF25C5C).withOpacity(0.6),
-          ),
-          child: profileController.isLoading.value
+        ),
+        child: profileController.isLoading.value
               ? const SizedBox(
                   height: 20,
                   width: 20,

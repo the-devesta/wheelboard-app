@@ -38,7 +38,7 @@ class _ProfessionalRegisterScreenState
   DateTime? _selectedDateOfBirth;
 
   // Professional Type Options
-  final List<String> professionalTypes = ['Driver', 'Mechanical', 'Helper'];
+  final List<String> professionalTypes = ['Driver', 'Technician', 'Helper'];
 
   // State Options (Indian States)
   final List<String> states = [
@@ -213,7 +213,7 @@ class _ProfessionalRegisterScreenState
       ),
       body: SafeArea(
         child: Stack(
-          children: [
+            children: [
             // Background with logo and title
             Column(
               children: [
@@ -257,9 +257,9 @@ class _ProfessionalRegisterScreenState
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       const SizedBox(height: 22),
                       // Back button
                       GestureDetector(
@@ -273,24 +273,24 @@ class _ProfessionalRegisterScreenState
                             color: const Color(0xFF1A1C1E),
                           ),
                         ),
-                      ),
+                    ),
                       const SizedBox(height: 12),
                       // Title
                       Text(
-                        "Register as Professional",
-                        style: TextStyle(
+                      "Register as Professional",
+                      style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF535353),
                           letterSpacing: -0.48,
                           fontFamily: 'Poppins',
                           height: 1.3,
-                        ),
                       ),
+                    ),
                       const SizedBox(height: 12),
                       // Login link
-                      Row(
-                        children: [
+                    Row(
+                      children: [
                           Text(
                             "Already have an account?",
                             style: TextStyle(
@@ -303,28 +303,28 @@ class _ProfessionalRegisterScreenState
                             ),
                           ),
                           const SizedBox(width: 6),
-                          GestureDetector(
+                        GestureDetector(
                             onTap: () {
                               // Navigate to login
                             },
                             child: Text(
-                              "Login",
-                              style: TextStyle(
+                            "Login",
+                            style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFFF26262),
                                 height: 1.4,
                                 letterSpacing: -0.12,
                                 fontFamily: 'Inter',
-                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
                       const SizedBox(height: 24),
                       // Form fields
                       // Email field
-                      _buildTextField(
+                    _buildTextField(
                         "Email",
                         hint: "Enter your email",
                         controller: _emailController,
@@ -334,9 +334,9 @@ class _ProfessionalRegisterScreenState
                       // Password field
                       Obx(
                         () => _buildTextField(
-                          "Password",
+                      "Password",
                           hint: "Enter your password",
-                          controller: _passwordController,
+                      controller: _passwordController,
                           obscureText: obscurePassword.value,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -355,61 +355,61 @@ class _ProfessionalRegisterScreenState
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildTextField(
-                        "Full Name",
+                    _buildTextField(
+                      "Full Name",
                         hint: "Enter your full name",
-                        controller: _fullNameController,
-                      ),
+                      controller: _fullNameController,
+                    ),
                       const SizedBox(height: 16),
-                      _buildTextField(
+                    _buildTextField(
                         "Father's name",
                         hint: "Enter father's name",
-                        controller: _fatherNameController,
-                      ),
+                      controller: _fatherNameController,
+                    ),
                       const SizedBox(height: 16),
-                      _buildTextField(
-                        "Birth of date",
+                    _buildTextField(
+                      "Birth of date",
                         hint: "DD/MM/YYYY",
                         suffixIconData: Icons.calendar_today,
-                        controller: _dobController,
-                        onTap: () async {
-                          final pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime(2000),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime.now(),
-                          );
-                          if (pickedDate != null) {
-                            setState(() {
+                      controller: _dobController,
+                      onTap: () async {
+                        final pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime(2000),
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime.now(),
+                        );
+                        if (pickedDate != null) {
+                          setState(() {
                               _selectedDateOfBirth = pickedDate;
-                              _dobController.text =
-                                  "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
-                            });
-                          }
-                        },
-                      ),
+                            _dobController.text =
+                                "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
+                          });
+                        }
+                      },
+                    ),
                       const SizedBox(height: 16),
-                      _buildTextField(
-                        "Phone Number",
+                    _buildTextField(
+                      "Phone Number",
                         hint: "Eg.(+91) 98734 9864",
-                        controller: _phoneController,
+                      controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                      ),
+                    ),
                       const SizedBox(height: 16),
-                      _buildProfessionalTypeDropdown(),
+                    _buildProfessionalTypeDropdown(),
                       const SizedBox(height: 16),
-                      _buildStateDropdown(),
+                    _buildStateDropdown(),
                       const SizedBox(height: 16),
-                      _buildCityDropdown(),
-                      const SizedBox(height: 20),
+                    _buildCityDropdown(),
+                    const SizedBox(height: 20),
                       _buildImageUploadSection(),
-                      const SizedBox(height: 30),
-                      _buildRegisterButton(),
+                    const SizedBox(height: 30),
+                    _buildRegisterButton(),
                       const SizedBox(height: 24),
-                    ],
-                  ),
+                  ],
                 ),
               ),
+          ),
             ),
           ],
         ),
@@ -453,9 +453,9 @@ class _ProfessionalRegisterScreenState
             border: Border.all(color: const Color(0xFFEDF1F3)),
           ),
           child: TextField(
-            controller: controller,
-            readOnly: onTap != null,
-            onTap: onTap,
+          controller: controller,
+          readOnly: onTap != null,
+          onTap: onTap,
             obscureText: obscureText,
             keyboardType: keyboardType,
             style: TextStyle(
@@ -466,14 +466,14 @@ class _ProfessionalRegisterScreenState
               letterSpacing: -0.14,
               fontFamily: 'Inter',
             ),
-            contextMenuBuilder: (context, editableTextState) {
-              if (onTap != null) return const SizedBox.shrink();
-              return AdaptiveTextSelectionToolbar.editableText(
-                editableTextState: editableTextState,
-              );
-            },
-            decoration: InputDecoration(
-              hintText: hint ?? 'Enter $label',
+          contextMenuBuilder: (context, editableTextState) {
+            if (onTap != null) return const SizedBox.shrink();
+            return AdaptiveTextSelectionToolbar.editableText(
+              editableTextState: editableTextState,
+            );
+          },
+          decoration: InputDecoration(
+            hintText: hint ?? 'Enter $label',
               hintStyle: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.normal,
@@ -494,12 +494,12 @@ class _ProfessionalRegisterScreenState
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
+            contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 12,
-              ),
             ),
           ),
+        ),
         ),
       ],
     );
@@ -576,7 +576,7 @@ class _ProfessionalRegisterScreenState
                 ),
                 isExpanded: true,
                 items: states.map((state) {
-                  return DropdownMenuItem(
+                return DropdownMenuItem(
                     value: state,
                     child: Padding(
                       padding: const EdgeInsets.only(left: 16),
@@ -589,12 +589,12 @@ class _ProfessionalRegisterScreenState
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
-                onChanged: (value) {
+                );
+              }).toList(),
+              onChanged: (value) {
                   selectedState.value = value;
                   selectedCity.value = null;
-                },
+              },
               ),
             ),
           ),
@@ -664,7 +664,7 @@ class _ProfessionalRegisterScreenState
                 ),
                 isExpanded: true,
                 items: professionalTypes.map((type) {
-                  return DropdownMenuItem(
+                return DropdownMenuItem(
                     value: type,
                     child: Padding(
                       padding: const EdgeInsets.only(left: 16),
@@ -677,11 +677,11 @@ class _ProfessionalRegisterScreenState
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
-                onChanged: (value) {
+                );
+              }).toList(),
+              onChanged: (value) {
                   selectedProfessionalType.value = value;
-                },
+              },
               ),
             ),
           ),
@@ -728,7 +728,7 @@ class _ProfessionalRegisterScreenState
           child: Obx(
             () => DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: selectedCity.value,
+              value: selectedCity.value,
                 hint: Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: Row(
@@ -741,7 +741,7 @@ class _ProfessionalRegisterScreenState
                       const SizedBox(width: 8),
                       Text(
                         selectedState.value == null
-                            ? "Select State first"
+                  ? "Select State first" 
                             : "Select City",
                         style: TextStyle(
                           fontSize: 15,
@@ -762,9 +762,9 @@ class _ProfessionalRegisterScreenState
                   ),
                 ),
                 isExpanded: true,
-                items: citiesForSelectedState.map((city) {
-                  return DropdownMenuItem(
-                    value: city,
+              items: citiesForSelectedState.map((city) {
+                return DropdownMenuItem(
+                  value: city,
                     child: Padding(
                       padding: const EdgeInsets.only(left: 16),
                       child: Text(
@@ -776,13 +776,13 @@ class _ProfessionalRegisterScreenState
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
-                onChanged: selectedState.value == null
-                    ? null
-                    : (value) {
-                        selectedCity.value = value;
-                      },
+                );
+              }).toList(),
+              onChanged: selectedState.value == null 
+                  ? null 
+                  : (value) {
+                      selectedCity.value = value;
+                    },
               ),
             ),
           ),
@@ -831,8 +831,8 @@ class _ProfessionalRegisterScreenState
         const SizedBox(height: 8),
         GestureDetector(
           onTap: _pickImages,
-          child: Row(
-            children: [
+      child: Row(
+        children: [
               Container(
                 width: 40,
                 height: 40,
@@ -847,7 +847,7 @@ class _ProfessionalRegisterScreenState
                   color: const Color(0xFFF36969),
                 ),
               ),
-              const SizedBox(width: 12),
+          const SizedBox(width: 12),
               Expanded(
                 child: Container(
                   height: 37,
@@ -874,8 +874,8 @@ class _ProfessionalRegisterScreenState
                   ),
                 ),
               ),
-            ],
-          ),
+        ],
+      ),
         ),
         if (_selectedImage != null) ...[
           const SizedBox(height: 12),
@@ -942,27 +942,27 @@ class _ProfessionalRegisterScreenState
                     return;
                   }
 
-                  // ✅ Validate ProfileImage before submitting
-                  if (_selectedImage == null) {
-                    SnackBarHelper.error("Please upload driver image (ProfileImage is required)");
-                    return;
-                  }
+        // ✅ Validate ProfileImage before submitting
+        if (_selectedImage == null) {
+          SnackBarHelper.error("Please upload driver image (ProfileImage is required)");
+          return;
+        }
 
-                  // ✅ Validate other required fields
-                  if (_emailController.text.trim().isEmpty) {
-                    SnackBarHelper.error("Please enter email");
-                    return;
-                  }
+        // ✅ Validate other required fields
+        if (_emailController.text.trim().isEmpty) {
+          SnackBarHelper.error("Please enter email");
+          return;
+        }
 
-                  if (_passwordController.text.trim().isEmpty) {
-                    SnackBarHelper.error("Please enter password");
-                    return;
-                  }
+        if (_passwordController.text.trim().isEmpty) {
+          SnackBarHelper.error("Please enter password");
+          return;
+        }
 
-                  if (_fullNameController.text.trim().isEmpty) {
-                    SnackBarHelper.error("Please enter full name");
-                    return;
-                  }
+        if (_fullNameController.text.trim().isEmpty) {
+          SnackBarHelper.error("Please enter full name");
+          return;
+        }
 
                   if (_dobController.text.trim().isEmpty || _selectedDateOfBirth == null) {
                     SnackBarHelper.error("Please select date of birth");
@@ -974,22 +974,22 @@ class _ProfessionalRegisterScreenState
                     return;
                   }
 
-                  if (selectedProfessionalType.value == null) {
-                    SnackBarHelper.error("Please select professional type");
-                    return;
-                  }
+        if (selectedProfessionalType.value == null) {
+          SnackBarHelper.error("Please select professional type");
+          return;
+        }
 
-                  if (selectedState.value == null) {
-                    SnackBarHelper.error("Please select state");
-                    return;
-                  }
+        if (selectedState.value == null) {
+          SnackBarHelper.error("Please select state");
+          return;
+        }
 
-                  if (selectedCity.value == null) {
-                    SnackBarHelper.error("Please select city");
-                    return;
-                  }
+        if (selectedCity.value == null) {
+          SnackBarHelper.error("Please select city");
+          return;
+        }
 
-                  File? driverImage = _selectedImage;
+        File? driverImage = _selectedImage;
 
                   // Format DateOfBirth as ISO 8601 string (date-time format)
                   String? dobFormatted;
@@ -1011,22 +1011,22 @@ class _ProfessionalRegisterScreenState
                     }
                   }
 
-                  final model = ProfessionalSignupmodel(
-                    email: _emailController.text.trim(),
-                    password: _passwordController.text.trim(),
-                    fatherName: _fatherNameController.text.trim(),
-                    professionalType: selectedProfessionalType.value,
-                    mobileNo: _phoneController.text.trim(),
-                    fullName: _fullNameController.text.trim(),
+        final model = ProfessionalSignupmodel(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          fatherName: _fatherNameController.text.trim(),
+          professionalType: selectedProfessionalType.value,
+          mobileNo: _phoneController.text.trim(),
+          fullName: _fullNameController.text.trim(),
                     dob: dobFormatted,
-                    state: selectedState.value,
-                    city: selectedCity.value,
-                    driverImage: driverImage,
-                  );
+          state: selectedState.value,
+          city: selectedCity.value,
+          driverImage: driverImage,
+        );
 
-                  await controller.registerProfessional(model);
-                },
-          style: ElevatedButton.styleFrom(
+        await controller.registerProfessional(model);
+      },
+      style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFF25C5C),
             padding: const EdgeInsets.symmetric(vertical: 10),
             shape: RoundedRectangleBorder(
@@ -1034,7 +1034,7 @@ class _ProfessionalRegisterScreenState
             ),
             elevation: 0,
             disabledBackgroundColor: const Color(0xFFF25C5C).withOpacity(0.6),
-          ),
+      ),
           child: controller.isLoading.value
               ? const SizedBox(
                   height: 20,

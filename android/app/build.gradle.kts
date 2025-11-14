@@ -37,6 +37,20 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // Set APK output file name to Wheelboard.apk
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val outputFileName = if (variant.buildType.name == "release") {
+                "Wheelboard.apk"
+            } else {
+                "app-${variant.buildType.name}.apk"
+            }
+            output.outputFileName = outputFileName
+        }
+    }
 }
 
 flutter {

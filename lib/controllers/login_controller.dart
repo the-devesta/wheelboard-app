@@ -47,8 +47,8 @@ class LoginController extends GetxController {
 
       if (response.statusCode == 200) {
         try {
-          final data = json.decode(response.body);
-          print("🔐 Login successful, data received: ${data.toString()}");
+        final data = json.decode(response.body);
+        print("🔐 Login successful, data received: ${data.toString()}");
 
           // ✅ Check if data exists and has required fields
           if (data.containsKey('data') && data['data'] != null) {
