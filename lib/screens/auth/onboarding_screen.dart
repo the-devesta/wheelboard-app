@@ -1,13 +1,12 @@
 // lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
 
 import '../../controllers/register_controller.dart';
 
-import 'login.dart';
 import 'company_signup.dart';
 import 'professional_signup.dart';
+import 'login.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -15,188 +14,213 @@ class RegisterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final RegisterController controller = Get.put(RegisterController());
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Scaffold(
-      backgroundColor: Color(0xFFFCFDFC),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Background Image
-            Positioned.fill(
+      backgroundColor: const Color(0xFFFCFDFC),
+      body: Stack(
+        children: [
+          // Background Image at bottom with opacity
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Opacity(
+              opacity: 0.2,
               child: Image.asset(
                 'assets/bgImage.png',
                 fit: BoxFit.cover,
+                width: double.infinity,
+                height: screenHeight * 0.4,
               ),
             ),
-            // Content
-            Column(
-              children: [
-                // Logo and App Title Section
-                Padding(
-                  padding: const EdgeInsets.only(top: 20.0),
+          ),
+          
+          // Main Content with ScrollView
+          SafeArea(
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: screenHeight - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      // Logo
-                      Image.asset(
-                        'assets/logo.png',
-                        height: 60,
-                        fit: BoxFit.contain,
+                      const SizedBox(height: 20),
+                      
+                      // Logo - Responsive size
+                      SizedBox(
+                        height: screenHeight * 0.25,
+                        width: screenWidth * 0.8,
+                        child: Image.asset(
+                          'assets/logo.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
+                      
                       const SizedBox(height: 12),
-                      // App Name
-                      Text(
-                        'WHEELBOARD',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          letterSpacing: 1.2,
+                      
+                      
+                      SizedBox(height: screenHeight * 0.02),
+                      
+                      // Illustration - Responsive size
+                      SizedBox(
+                        height: screenHeight * 0.25,
+                        width: screenWidth * 0.9,
+                        child: Image.asset(
+                          'assets/onboarding.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      // Tagline
-                      Text(
-                        'Empowering Growth, connecting success',
+                      
+                      SizedBox(height: screenHeight * 0.03),
+                      
+                      // "Register as" Text
+                      const Text(
+                        'Register as',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                          fontWeight: FontWeight.w400,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF535353),
+                          fontFamily: 'Poppins',
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Handshake Illustration
-                Flexible(
-                  flex: 2,
-                  child: Image.asset(
-                    'assets/onboarding.png',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Registration Section
-                Expanded(
-                  flex: 3,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Register as',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Obx(
-                          () => Row(
-                            children: [
-                              Expanded(
-                                child: _buildToggleButton(
-                                  label: 'Professional',
-                                  isSelected:
-                                      controller.selectedType.value ==
-                                      'Professional',
-                                  onTap: () =>
-                                      controller.selectType('Professional'),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _buildToggleButton(
-                                  label: 'Company',
-                                  isSelected:
-                                      controller.selectedType.value ==
-                                      'Company',
-                                  onTap: () => controller.selectType('Company'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              print(
-                                'Selected: ${controller.selectedType.value}',
-                              );
-                              if (controller.selectedType.value == 'Company') {
-                                Get.to(() => Signup());
-                              } else {
-                                Get.to(() => ProfessionalRegisterScreen());
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.buttonBg,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 40,
-                                vertical: 16,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              elevation: 4,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Sign Up',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Icon(Icons.arrow_forward, color: Colors.white),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Login Link
-                        Row(
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Toggle Buttons - Responsive width
+                      Obx(
+                        () => Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'Already have an account? ',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black54,
+                            Expanded(
+                              child: _buildToggleButton(
+                                label: 'Professional',
+                                isSelected: controller.selectedType.value == 'Professional',
+                                onTap: () => controller.selectType('Professional'),
                               ),
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                Get.to(() => LoginScreen());
-                              },
-                              child: Text(
-                                'Login',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.buttonBg,
-                                  fontWeight: FontWeight.w600,
-                                  decoration: TextDecoration.underline,
-                                ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildToggleButton(
+                                label: 'Company',
+                                isSelected: controller.selectedType.value == 'Company',
+                                onTap: () => controller.selectType('Company'),
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Sign Up Button - Responsive width
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (controller.selectedType.value == 'Company') {
+                              Get.to(() => Signup());
+                            } else {
+                              Get.to(() => ProfessionalRegisterScreen());
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF25C5C),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white.withOpacity(0.12),
+                                  Colors.white.withOpacity(0),
+                                ],
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Poppins',
+                                    letterSpacing: -0.14,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: Icon(
+                                    Icons.arrow_forward,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Login Link
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Already have an account? ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Get.to(() => LoginScreen());
+                            },
+                            child: const Text(
+                              'Login',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFFF25C5C),
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 40), // Bottom padding
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -209,19 +233,22 @@ class RegisterScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.buttonBg : Colors.white,
-          border: Border.all(
-            color: isSelected ? AppColors.buttonBg : Colors.grey.shade300,
-            width: 1.5,
-          ),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? const Color(0xFFF26161) : const Color(0xFFFCFDFC),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+              spreadRadius: 3,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
@@ -229,21 +256,27 @@ class RegisterScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              label == 'Professional'
-                  ? Icons.person_outline
-                  : Icons.local_shipping_outlined,
-              color: isSelected ? Colors.white : AppColors.buttonBg,
-              size: 18,
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: Icon(
+                label == 'Professional'
+                    ? Icons.person_outline
+                    : Icons.local_shipping_outlined,
+                color: isSelected ? Colors.white : const Color(0xFFF25C5C),
+                size: 20,
+              ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Flexible(
               child: Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.buttonBg,
-                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : const Color(0xFFF25C5C),
+                  fontWeight: FontWeight.w500,
                   fontSize: 13,
+                  fontFamily: 'Roboto',
+                  letterSpacing: 0.1,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,

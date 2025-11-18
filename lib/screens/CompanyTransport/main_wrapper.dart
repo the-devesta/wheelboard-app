@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:wheelboard/controllers/main_wrapper_controller.dart';
 import 'home_screen.dart';
 import 'fleet_screen.dart';
 import 'trips_screen.dart';
@@ -18,11 +20,22 @@ class CompanyTransportMainWrapper extends StatefulWidget {
 
 class _CompanyTransportMainWrapperState extends State<CompanyTransportMainWrapper> {
   late int _currentIndex;
+  final MainWrapperController _wrapperController = Get.put(MainWrapperController(), permanent: true);
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _wrapperController.currentTabIndex.value = widget.initialIndex;
+    
+    // Listen to tab changes from controller
+    ever(_wrapperController.currentTabIndex, (int index) {
+      if (mounted && _currentIndex != index) {
+        setState(() {
+          _currentIndex = index;
+        });
+      }
+    });
   }
 
   final List<Widget> _screens = [
@@ -37,6 +50,8 @@ class _CompanyTransportMainWrapperState extends State<CompanyTransportMainWrappe
     setState(() {
       _currentIndex = index;
     });
+    // Update controller when user taps tab
+    _wrapperController.currentTabIndex.value = index;
   }
 
   @override

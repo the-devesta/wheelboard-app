@@ -8,6 +8,8 @@ class ViewDriverScreen extends StatelessWidget {
   final String address;
   final String phoneNumber;
   final String email;
+  final String? tripId;
+  final String? bidId;
 
   const ViewDriverScreen({
     super.key,
@@ -16,6 +18,8 @@ class ViewDriverScreen extends StatelessWidget {
     this.address = '750 Sarangpur, GJ 70663',
     this.phoneNumber = '+91 9876543210',
     this.email = 'jondoe@example.com',
+    this.tripId,
+    this.bidId,
   });
 
   @override
@@ -129,35 +133,35 @@ class ViewDriverScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  // Assign to Trip Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Get.to(() => AssignTripScreen(
-                          driverName: driverName,
-                          driverImage: driverImage,
-                        ));
-                      },
-                      icon: const Icon(Icons.directions_car, size: 20),
-                      label: const Text(
-                        'Assign to Trip',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
+                  if (tripId != null && tripId!.isNotEmpty)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Get.to(() => AssignTripScreen(
+                                tripId: tripId!,
+                                bidId: bidId,
+                              ));
+                        },
+                        icon: const Icon(Icons.directions_car, size: 20),
+                        label: const Text(
+                          'Assign to Trip',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00B894),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00B894),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

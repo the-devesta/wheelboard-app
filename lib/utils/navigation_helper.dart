@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/auth_service.dart';
+import '../controllers/main_wrapper_controller.dart';
 import '../screens/Professional/main_wrapper.dart';
 import '../screens/CompanyTransport/main_wrapper.dart';
 import '../screens/CompanyServiceProvider/main_wrapper.dart';
@@ -45,6 +46,23 @@ class NavigationHelper {
     } else {
       // Default fallback
       return const ProfessionalMainWrapper();
+    }
+  }
+  
+  /// Navigate to Trips tab in bottom navigation (index 2)
+  static void navigateToTripsTab() {
+    final authService = AuthService.to;
+    final userType = authService.currentUserType;
+    
+    if (userType == "Transport" || userType == "transport") {
+      // Use GetX controller to switch tabs without navigation
+      try {
+        final wrapperController = Get.find<MainWrapperController>();
+        wrapperController.switchToTripsTab();
+      } catch (e) {
+        // If controller not found, navigate to main wrapper with trips tab
+        Get.offAll(() => const CompanyTransportMainWrapper(initialIndex: 2));
+      }
     }
   }
 }

@@ -194,7 +194,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                         ),
                       ),
                       child: const Text(
-                        "Schedule Now",
+                        "Post Trip",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,

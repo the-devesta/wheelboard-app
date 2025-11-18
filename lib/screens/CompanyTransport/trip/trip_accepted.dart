@@ -12,11 +12,11 @@ class TripAccepted extends StatelessWidget {
 
   const TripAccepted({
     super.key,
-    this.tripId = 'ST0624ADI2024',
+    required this.tripId,
     this.vehicleType = 'Bus',
-    this.driverName = 'Jon Doe',
-    this.date = 'July 25th, 2024',
-    this.time = '13:55 P.M',
+    this.driverName = 'Driver',
+    this.date = 'Date TBD',
+    this.time = 'Time TBD',
   });
 
   @override
@@ -27,38 +27,37 @@ class TripAccepted extends StatelessWidget {
         children: [
           // Main Content
           SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 100),
             child: Column(
               children: [
-            
-                
                 // Logo
                 const CommonHeaderWidget(),
-                const SizedBox(height: 100),
+                const SizedBox(height: 30),
                 
                 // Success Image
                 Center(
                   child: Container(
-                    height: 120,
-                    width: 121,
+                    height: 100,
+                    width: 100,
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.check_circle,
-                      size: 80,
+                      size: 70,
                       color: Color(0xFF34B27D),
                     ),
                   ),
                 ),
                 
-                const SizedBox(height: 25),
+                const SizedBox(height: 16),
                 
                 // Congratulations Text
                 const Text(
                   'Congratulations!',
                   style: TextStyle(
-                    fontSize: 29.3,
+                    fontSize: 24,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Poppins',
                     color: Color(0xFF545454),
@@ -68,18 +67,21 @@ class TripAccepted extends StatelessWidget {
                 const SizedBox(height: 8),
                 
                 // Success Message
-                const Text(
-                  'You have Successfully Scheduled your trip',
-                  style: TextStyle(
-                    fontSize: 16.9,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Poppins',
-                    color: Color(0xFF6B7280),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: const Text(
+                    'You have Successfully Scheduled your trip',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Poppins',
+                      color: Color(0xFF6B7280),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 
-                const SizedBox(height: 50),
+                const SizedBox(height: 24),
                 
                 // Trip Details Card
                 Container(
@@ -101,7 +103,7 @@ class TripAccepted extends StatelessWidget {
                           color: Color(0xFF6C7278),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       
                       // Vehicle
                       _buildDetailRow(
@@ -109,7 +111,7 @@ class TripAccepted extends StatelessWidget {
                         label: 'Vehicle',
                         value: vehicleType,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       
                       // Driver
                       _buildDetailRow(
@@ -117,7 +119,7 @@ class TripAccepted extends StatelessWidget {
                         label: 'Driver',
                         value: driverName,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       
                       // Date
                       _buildDetailRow(
@@ -125,7 +127,7 @@ class TripAccepted extends StatelessWidget {
                         label: 'Date',
                         value: date,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       
                       // Time
                       _buildDetailRow(
@@ -133,59 +135,70 @@ class TripAccepted extends StatelessWidget {
                         label: 'Time',
                         value: time,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       
-                      // Trip ID Label
-                      const Text(
-                        'Trip ID',
-                        style: TextStyle(
-                          fontSize: 16.8,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF575757),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      // Trip ID Button
-                      Container(
-                        width: double.infinity,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF34B27D),
-                              Color(0xFF34B27D),
-                            ],
+                      // Trip ID in same row
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.confirmation_number,
+                            size: 11,
+                            color: Color(0xFF575757),
                           ),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            tripId,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Trip ID:',
+                            style: TextStyle(
+                              fontSize: 16.8,
+                              fontWeight: FontWeight.w500,
                               fontFamily: 'Poppins',
-                              color: Colors.white,
-                              letterSpacing: -0.14,
+                              color: Color(0xFF575757),
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              height: 32,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF34B27D),
+                                    Color(0xFF34B27D),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  tripId,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Poppins',
+                                    color: Colors.white,
+                                    letterSpacing: -0.14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
                 
-                const SizedBox(height: 100),
+                const SizedBox(height: 20),
               ],
             ),
           ),

@@ -150,10 +150,23 @@ class TripController extends GetxController {
       final savedUserType = await sessionManager.getString("userType");
       final savedUserId = await sessionManager.getString("userId");
 
+      // ✅ Get vehicle number from selected vehicle
+      String vehicleNumber = "";
+      if (trip.vehicleId.isNotEmpty) {
+        try {
+          final selectedVehicle = vehicles.firstWhere(
+            (v) => v.vehicleId == trip.vehicleId,
+          );
+          vehicleNumber = selectedVehicle.vehicleNumber;
+        } catch (e) {
+          print("⚠️ Vehicle not found for vehicleId: ${trip.vehicleId}");
+        }
+      }
+
       // ✅ Prepare fields according to new API structure
       // PayRange and SpecialInstructions are optional - send empty string if not provided
       // TripId not needed for new trips - backend will generate it
-      // DriverId is only included if provided (not empty) - new trip screen doesn't have driver selection
+      // DriverId should NOT be sent for new trips (post trip) - only for scheduled trips with driver selection
       final fields = <String, String>{
         "UserId": trip.userId,
         "VehicleId": trip.vehicleId,
@@ -176,9 +189,17 @@ class TripController extends GetxController {
             : "Pending",
       };
       
-      // Only include DriverId if it's provided and not empty
-      if (trip.driverId.trim().isNotEmpty) {
+      // ✅ DriverId should NOT be sent for new trips (when tripId is empty)
+      // Only include DriverId for scheduled trips where driver is explicitly selected
+      // For new post trips, driverId should always be empty and not sent
+      final isNewTrip = trip.tripId.isEmpty || trip.tripId.trim().isEmpty;
+      if (!isNewTrip && trip.driverId.trim().isNotEmpty) {
         fields["DriverId"] = trip.driverId.trim();
+      }
+      
+      // ✅ Include VehicleNo if available (optional field from backend)
+      if (vehicleNumber.isNotEmpty) {
+        fields["VehicleNo"] = vehicleNumber;
       }
       
       // 🔍 Debug: Log all fields before sending
@@ -188,8 +209,9 @@ class TripController extends GetxController {
       print("👤 Current User Type: ${savedUserType ?? 'NOT FOUND'}");
       print("👤 Current User ID: ${savedUserId ?? 'NOT FOUND'}");
       print("👉 Endpoint: ${API.addTrip}");
-      print("👉 Authentication: userId-based (no token sent)");
+      print("👉 Authentication: userId-based (UserId in headers)");
       print("👉 Trip UserId: ${trip.userId}");
+      print("👉 Headers: {Accept: */*, UserId: ${trip.userId}}");
       print("👉 Fields: $fields");
       print("==================================");
       
@@ -199,7 +221,7 @@ class TripController extends GetxController {
       }
 
       // ✅ Call HttpHelper (no files for now, so pass empty list)
-      // NOTE: Backend accepts userId-based auth, so we DO NOT send Authorization header
+      // NOTE: Backend uses userId-based auth - include userId in headers for authentication
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.addTrip,
         fields: fields,
@@ -207,6 +229,7 @@ class TripController extends GetxController {
         fieldKey: "file", // backend field name for files (ignored here)
         headers: {
           "Accept": "*/*",
+          "UserId": trip.userId, // Include userId in headers for userId-based authentication
         },
       );
 

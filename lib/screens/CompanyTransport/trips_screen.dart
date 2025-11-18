@@ -4,11 +4,14 @@ import 'package:wheelboard/screens/CompanyTransport/newtripscreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/schedulescreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/bids_screen.dart';
 import 'package:wheelboard/controllers/add_trip_controller.dart';
+import 'package:wheelboard/controllers/trip_page_controller.dart';
 import 'package:wheelboard/utils/session_manager.dart';
-import 'trip_confirmation.dart';
+import 'package:wheelboard/utils/navigation_helper.dart';
 
 class TripPage extends StatefulWidget {
-  const TripPage({super.key});
+  final int initialTabIndex;
+  
+  const TripPage({super.key, this.initialTabIndex = 0});
 
   @override
   State<TripPage> createState() => _TripPageState();
@@ -17,11 +20,33 @@ class TripPage extends StatefulWidget {
 class _TripPageState extends State<TripPage>
     with SingleTickerProviderStateMixin {
   final TripController tripController = Get.put(TripController());
+  final TripPageTabController tabPageController = Get.put(TripPageTabController(), permanent: true);
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
+    // Register tab controller with GetX controller
+    tabPageController.setTabController(_tabController);
     _fetchTrips();
+    
+    // Listen to tab changes from GetX controller
+    ever(tabPageController.currentTabIndex, (int index) {
+      if (_tabController.index != index && mounted) {
+        _tabController.animateTo(index);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchTrips() async {
@@ -34,9 +59,16 @@ class _TripPageState extends State<TripPage>
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
+    // Update tab controller if initialTabIndex changed
+    if (_tabController.index != widget.initialTabIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _tabController.index != widget.initialTabIndex) {
+          _tabController.animateTo(widget.initialTabIndex);
+        }
+      });
+    }
+
+    return Scaffold(
         backgroundColor: const Color(0xFFF9F9F9),
 
         body: SafeArea(
@@ -208,6 +240,7 @@ class _TripPageState extends State<TripPage>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: TabBar(
+                        controller: _tabController,
                         indicator: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -249,7 +282,10 @@ class _TripPageState extends State<TripPage>
             ],
 
             // Tab content
-            body: _TripsTabViews(tripController: tripController),
+            body: _TripsTabViews(
+              tripController: tripController,
+              tabController: _tabController,
+            ),
           ),
         ),
 
@@ -323,7 +359,12 @@ class _TripPageState extends State<TripPage>
             // Manage Trips Button
             ElevatedButton(
               onPressed: () {
-                Get.to(ConfirmTripPage());
+                // Check if TripPage is already in the navigation stack
+                final tabController = Get.find<TripPageTabController>();
+                tabController.switchToUpcoming(); // Switch to Upcoming tab (index 2)
+                
+                // Navigate to trips tab in bottom nav if not already there
+                NavigationHelper.navigateToTripsTab();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF26868),
@@ -349,7 +390,6 @@ class _TripPageState extends State<TripPage>
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -525,8 +565,12 @@ class _TabBarHeader extends SliverPersistentHeaderDelegate {
 /// The 3 tab lists
 class _TripsTabViews extends StatelessWidget {
   final TripController tripController;
+  final TabController tabController;
   
-  const _TripsTabViews({required this.tripController});
+  const _TripsTabViews({
+    required this.tripController,
+    required this.tabController,
+  });
 
   Color _getStatusColor(String status) {
     final lowerStatus = status.toLowerCase();
@@ -559,6 +603,7 @@ class _TripsTabViews extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TabBarView(
+      controller: tabController,
       children: [
         // Completed
         Obx(() {

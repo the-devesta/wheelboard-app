@@ -12,6 +12,9 @@ import 'package:share_plus/share_plus.dart';
 import 'job_form_screen.dart';
 import 'add_expense_screen.dart';
 import 'professional_list.dart';
+import 'fleet_screen.dart';
+import '../../controllers/user_profile_controller.dart';
+import '../../utils/constants.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -44,8 +47,16 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize profile controller
+    final profileController = Get.put(UserProfileController());
+    
+    // Fetch profile on first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      profileController.fetchCurrentUserProfile();
+    });
+
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      // backgroundColor: const Color(0xFFF4E3E3), // Pink background from Figma
       appBar: null,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -55,17 +66,36 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 /// Header
-                Row(
+                Obx(() {
+                  final profile = profileController.userProfile.value;
+                  final companyName = profile?.displayName ?? 'Delhi Transport.';
+                  
+                  // Use random profile image - fallback to random avatar service
+                  String profileImageUrl = 'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
+                  
+                  // Get profile image URL - handle both full URLs and relative paths
+                  if (profile != null && profile.profileImage != null && profile.profileImage!.isNotEmpty) {
+                    final imagePath = profile.profileImage!;
+                    // If it's already a full URL, use it as is; otherwise prepend base URL
+                    profileImageUrl = imagePath.startsWith('http://') || imagePath.startsWith('https://')
+                        ? imagePath
+                        : ApiConstants.baseUrl + imagePath;
+                  }
+                  
+                  return Row(
                   children: [
                     GestureDetector(
                       onTap: () {
                         Get.to(CompanyProfileScreen());
                       },
                       child: CircleAvatar(
-                        radius: 32,
-                        backgroundImage: NetworkImage(
-                          'https://i.pravatar.cc/150?img=4',
-                        ),
+                        radius: 25,
+                        backgroundColor: const Color(0xFFF25C5C),
+                        backgroundImage: NetworkImage(profileImageUrl),
+                        onBackgroundImageError: (exception, stackTrace) {
+                          // Fallback to another random image if first fails
+                        },
+                        child: Icon(Icons.person, size: 20, color: Colors.white), // Always show image, no initials fallback
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -80,7 +110,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'Delhi Transport.',
+                              companyName,
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Colors.teal,
@@ -127,43 +157,8 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Stack(
-                    //   clipBehavior: Clip.none,
-                    //   children: [
-                    //     // Red square with rounded corners and white bell
-                    //     Container(
-                    //       padding: EdgeInsets.all(8),
-                    //       decoration: BoxDecoration(
-                    //         color:
-                    //             AppColors.buttonBg, // AppColors.buttonBg (red)
-                    //         borderRadius: BorderRadius.circular(10),
-                    //       ),
-                    //       child: Icon(
-                    //         Icons.notifications,
-                    //         color: Colors.white,
-                    //         size: 26,
-                    //       ),
-                    //     ),
-
-                    //     // Small teal-green badge
-                    //     Positioned(
-                    //       top: 4,
-                    //       right: 4,
-                    //       child: Container(
-                    //         width: 10,
-                    //         height: 10,
-                    //         decoration: BoxDecoration(
-                    //           color: Color(
-                    //             0xFF317873,
-                    //           ), // Example: AppColors.badge (teal green)
-                    //           shape: BoxShape.circle,
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
-                  ],
-                ),
+                    ]);
+                  }),
                 const SizedBox(height: 20),
 
                 /// Banner Image
@@ -193,6 +188,11 @@ class HomeScreen extends StatelessWidget {
                               'Tapped on item: ${item['label']} (Index: $index)',
                             );
 
+                            // Vehicles tab
+                            if (index == 0) {
+                              // Navigate to Fleet Vehicles Screen
+                              Get.to(FleetVehiclesScreen());
+                            }
                             // Professional tab
                             if (index == 1) {
                               // Navigate to Professional List Screen
@@ -248,11 +248,28 @@ class HomeScreen extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 24),
-                Text(
-                  "My Services",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Recent Jobs Created",
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        // handle navigation or callback
+                      },
+                      child: Text(
+                        "view more",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
 
@@ -337,16 +354,19 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {},
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Get.to(ServicesScreen());
+                              },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD1E5E2),
+                                backgroundColor: AppColors.buttonBg,
                                 shape: const StadiumBorder(),
                               ),
-                              child: Text(
-                                "Edit",
+                              icon: const Icon(Icons.grid_view, color: Colors.white),
+                              label: Text(
+                                "Services",
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppColors.buttonBg,
+                                  color: AppColors.white,
                                 ),
                               ),
                             ),
@@ -357,30 +377,6 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Popular Feeds",
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        // handle navigation or callback
-                      },
-                      child: Text(
-                        "View More",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 16),
                 buildPostCard(context),
 
@@ -438,107 +434,132 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget buildPostCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          InkWell(
-            onTap: () {
-              // handle tap here
-              Get.to(FleetUserprofile());
-            },
-            borderRadius: BorderRadius.circular(50), // optional ripple radius
-            child: Row(
+    final profileController = Get.find<UserProfileController>();
+    
+    return Obx(() {
+      final profile = profileController.userProfile.value;
+      final companyName = profile?.displayName ?? 'Delhi Transport';
+      
+      // Use random profile image - fallback to random avatar service
+      String profileImageUrl = 'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
+      
+      if (profile != null && profile.profileImage != null && profile.profileImage!.isNotEmpty) {
+        final imagePath = profile.profileImage!;
+        profileImageUrl = imagePath.startsWith('http://') || imagePath.startsWith('https://')
+            ? imagePath
+            : ApiConstants.baseUrl + imagePath;
+      }
+      
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            InkWell(
+              onTap: () {
+                Get.to(FleetUserprofile());
+              },
+              borderRadius: BorderRadius.circular(50),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: const Color(0xFFF25C5C),
+                    backgroundImage: NetworkImage(profileImageUrl),
+                    onBackgroundImageError: (exception, stackTrace) {
+                      // Fallback handled by NetworkImage
+                    },
+                    child: Icon(Icons.person, size: 20, color: Colors.white), // Always show image, no initials fallback
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    companyName,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Post Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset("assets/truck.png"),
+            ),
+            const SizedBox(height: 10),
+
+            // Reactions
+            Row(
               children: [
-                CircleAvatar(backgroundImage: NetworkImage(profileImage)),
+                SvgPicture.asset(
+                  'assets/heart.svg',
+                  width: 28,
+                  height: 28,
+                  fit: BoxFit.contain,
+                ),
                 const SizedBox(width: 10),
+                SvgPicture.asset(
+                  'assets/share.svg',
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 10),
+                SvgPicture.asset(
+                  'assets/eye.svg',
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Title + Description
+            Text(
+              "Tips For Fleet Management",
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Learn how to optimize your fleet operations and reduce costs",
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Footer
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Text(
-                  "Delhi Transport",
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  "Posted 2 days ago", 
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey,
+                  ),
+                ),
+                Text(
+                  "Read More", 
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.blueAccent,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 10),
-
-          // Post Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset("assets/truck.png"),
-          ),
-          const SizedBox(height: 10),
-
-          // Reactions
-          Row(
-            children: [
-              SvgPicture.asset(
-                'assets/heart.svg',
-                width: 28,
-                height: 28,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(width: 10),
-              SvgPicture.asset(
-                'assets/share.svg',
-                width: 24,
-                height: 24,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(width: 10),
-              SvgPicture.asset(
-                'assets/eye.svg',
-                width: 24,
-                height: 24,
-                fit: BoxFit.contain,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Title + Description
-          Text(
-            "Tips For Fleet Management",
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Learn how to optimize your fleet operations and reduce costs",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Footer
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Posted 2 days ago", 
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey,
-                ),
-              ),
-              Text(
-                "Read More", 
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.blueAccent,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 }
+

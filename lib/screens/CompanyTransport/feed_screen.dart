@@ -3,7 +3,7 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/screens/CompanyTransport/fleet_userprofile.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'new_post_screen.dart';
+import 'newtripscreen.dart';
 import '../../controllers/post_controller.dart';
 
 class FeedScreen extends StatelessWidget {
@@ -349,8 +349,8 @@ class FeedScreen extends StatelessWidget {
       ),
       floatingActionButton: ElevatedButton(
         onPressed: () {
-          Get.to(NetworkPostScreen())?.then((_) {
-            // Refresh posts when coming back from new post screen
+          Get.to(const Newtripscreen())?.then((_) {
+            // Refresh posts when coming back from new post trip screen
             postController.refreshPosts();
           });
         },
@@ -363,7 +363,7 @@ class FeedScreen extends StatelessWidget {
         ),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-          child: Text("New Post", style: TextStyle(color: AppColors.white)),
+          child: Text("New Post Trip", style: TextStyle(color: AppColors.white)),
         ),
       ),
     );

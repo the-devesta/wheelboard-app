@@ -6,6 +6,7 @@ import '../../../widgets/custom_snackbar.dart';
 import '../../../controllers/user_profile_controller.dart';
 import '../../../models/user_profile_model.dart';
 import '../../auth/onboarding_screen.dart' show RegisterScreen;
+import '../EditYourProfile01/EditYourProfile01Screen.dart';
 
 class YourProfileScreen extends StatelessWidget {
   const YourProfileScreen({super.key});
@@ -128,7 +129,7 @@ class YourProfileScreen extends StatelessWidget {
           ),
           GestureDetector(
             onTap: () {
-              // Navigate to edit profile screen
+              Get.to(const EditYourProfile01Screen());
             },
             child: Container(
               width: 44,

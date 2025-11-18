@@ -282,48 +282,38 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                               ),
                               const SizedBox(height: 8),
                               // Rating, Location, Experience
-                              Row(
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  const Icon(
-                                    Icons.star,
-                                    color: Color(0xFFF25C5C),
-                                    size: 16,
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.star,
+                                        color: Color(0xFFF25C5C),
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${user['rating']}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF1E1E1E),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 4),
                                   Text(
-                                    '${user['rating']}',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF1E1E1E),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '•',
+                                    '• ${user['location']}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey.shade600,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
                                   Text(
-                                    user['location'],
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '•',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    user['experience'],
+                                    '• ${user['experience']}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey.shade600,
@@ -438,23 +428,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
           ),
         ],
       ),
-      floatingActionButton: Container(
-        margin: const EdgeInsets.only(bottom: 80, right: 16),
-        child: FloatingActionButton.extended(
-          onPressed: () {
-            // Navigate to add new professional
-          },
-          backgroundColor: const Color(0xFFF25C5C),
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            'Add New',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
+    
     );
   }
 }

@@ -1,20 +1,115 @@
+import 'dart:io' show File;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../../controllers/user_profile_controller.dart';
+import '../../../models/user_profile_model.dart';
+import '../../../services/profile_service.dart';
+import '../../../widgets/custom_snackbar.dart';
 
 class EditYourProfile01Screen extends StatefulWidget {
   const EditYourProfile01Screen({super.key});
 
   @override
-  State<EditYourProfile01Screen> createState() => _EditYourProfile01ScreenState();
+  State<EditYourProfile01Screen> createState() =>
+      _EditYourProfile01ScreenState();
 }
 
 class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _fatherNameController = TextEditingController();
-  final TextEditingController _yearsOfExperienceController = TextEditingController();
+  final TextEditingController _yearsOfExperienceController =
+      TextEditingController();
   final TextEditingController _birthDateController = TextEditingController();
+
+  final ImagePicker _picker = ImagePicker();
+  final ProfileService _profileService = ProfileService();
+
+  late UserProfileController _profileController;
+  Worker? _profileWorker;
+
   String? _selectedState;
   String? _selectedCity;
+  DateTime? _selectedDob;
+  XFile? _pickedDriverImage;
+  String? _existingDriverImageUrl;
+  bool _isSaving = false;
+  bool _hasPrefilled = false;
+
+  final List<String> _states = [
+    'Delhi',
+    'Uttar Pradesh',
+    'Maharashtra',
+    'Karnataka',
+    'Gujarat',
+  ];
+
+  final Map<String, List<String>> _citiesByState = {
+    'Delhi': ['New Delhi', 'Dwarka', 'Saket', 'Rohini'],
+    'Uttar Pradesh': ['Noida', 'Ghaziabad', 'Lucknow', 'Kanpur'],
+    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik'],
+    'Karnataka': ['Bengaluru', 'Mysuru', 'Mangalore'],
+    'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara'],
+  };
+
+  List<String> get _cityOptions =>
+      _selectedState != null ? (_citiesByState[_selectedState] ?? []) : [];
+
+  File? get _driverImageFile =>
+      _pickedDriverImage != null && !kIsWeb ? File(_pickedDriverImage!.path) : null;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileController = Get.put(UserProfileController());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final profile = _profileController.userProfile.value;
+      if (profile != null) {
+        _applyProfile(profile);
+      } else {
+        _profileController.fetchCurrentUserProfile();
+      }
+
+      _profileWorker = ever<UserProfileModel?>(
+        _profileController.userProfile,
+        (profile) {
+          if (!_hasPrefilled && profile != null) {
+            _applyProfile(profile);
+          }
+        },
+      );
+    });
+  }
+
+  void _applyProfile(UserProfileModel profile) {
+    setState(() {
+      _fullNameController.text = profile.name ?? '';
+      _fatherNameController.text = profile.fatherName ?? '';
+      _selectedState = profile.state;
+
+      if (_selectedState != null && !_states.contains(_selectedState)) {
+        _selectedState = null;
+      }
+
+      _selectedCity =
+          _cityOptions.contains(profile.city) ? profile.city : null;
+      _existingDriverImageUrl = profile.profileImagePath;
+
+      if (profile.dateOfBirth != null) {
+        final parsed = DateTime.tryParse(profile.dateOfBirth!);
+        if (parsed != null) {
+          _selectedDob = parsed;
+          _birthDateController.text = _formatDate(parsed);
+        }
+      }
+
+      _hasPrefilled = true;
+    });
+  }
 
   @override
   void dispose() {
@@ -22,7 +117,62 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
     _fatherNameController.dispose();
     _yearsOfExperienceController.dispose();
     _birthDateController.dispose();
+    _profileWorker?.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDriverImage() async {
+    final XFile? image =
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    if (image != null) {
+      setState(() {
+        _pickedDriverImage = image;
+        _existingDriverImageUrl = null;
+      });
+    }
+  }
+
+  Future<void> _submitProfile() async {
+    if (_isSaving) return;
+
+    final userId = _profileController.userProfile.value?.userId ?? '';
+    if (userId.isEmpty) {
+      SnackBarHelper.error("User ID not found. Please login again.");
+      return;
+    }
+
+    if (_fullNameController.text.trim().isEmpty ||
+        _fatherNameController.text.trim().isEmpty ||
+        _selectedDob == null ||
+        _selectedState == null ||
+        _selectedCity == null) {
+      SnackBarHelper.warning("Please complete all required fields.");
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      await _profileService.updateProfessionalProfile(
+        userId: userId,
+        fullName: _fullNameController.text.trim(),
+        fathersName: _fatherNameController.text.trim(),
+        yearsOfExperience: _yearsOfExperienceController.text.trim().isEmpty
+            ? '0'
+            : _yearsOfExperienceController.text.trim(),
+        birthDateIso: _selectedDob!.toIso8601String(),
+        state: _selectedState ?? '',
+        city: _selectedCity ?? '',
+        driverImage: _driverImageFile,
+      );
+
+      SnackBarHelper.success("Profile updated successfully.");
+      await _profileController.fetchCurrentUserProfile();
+      Get.back();
+    } catch (e) {
+      SnackBarHelper.error("Failed to update profile: $e");
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -172,12 +322,12 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                           ),
                           const SizedBox(height: 16),
                           // Years Of Experience
-                          _buildTextField(
-                            controller: _yearsOfExperienceController,
-                            label: 'Years Of Experience',
-                            hint: 'Eg. 6',
-                            keyboardType: TextInputType.number,
-                          ),
+                    _buildTextField(
+                      controller: _yearsOfExperienceController,
+                      label: 'Years Of Experience',
+                      hint: 'Eg. 6',
+                      keyboardType: TextInputType.number,
+                    ),
                           const SizedBox(height: 16),
                           // Birth of Date
                           _buildDateField(),
@@ -188,9 +338,13 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                             value: _selectedState,
                             hint: 'Select state',
                             icon: Icons.location_on,
+                            options: _states,
                             onChanged: (value) {
                               setState(() {
                                 _selectedState = value;
+                                if (!_cityOptions.contains(_selectedCity)) {
+                                  _selectedCity = null;
+                                }
                               });
                             },
                           ),
@@ -199,13 +353,15 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                           _buildDropdownField(
                             label: 'Select City',
                             value: _selectedCity,
-                            hint: 'Select City',
+                            hint: 'Select city',
                             icon: Icons.location_city,
+                            options: _cityOptions,
                             onChanged: (value) {
                               setState(() {
                                 _selectedCity = value;
                               });
                             },
+                            enabled: _selectedState != null,
                           ),
                           const SizedBox(height: 24),
                           // Upload Driver Image
@@ -215,10 +371,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () {
-                                // Handle save
-                                Navigator.pop(context);
-                              },
+                              onPressed: _isSaving ? null : _submitProfile,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFF25C5C),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -227,15 +380,24 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                                 ),
                                 elevation: 0,
                               ),
-                              child: Text(
-                                'Save Now',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                  letterSpacing: -0.14,
-                                ),
-                              ),
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Save Now',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        letterSpacing: -0.14,
+                                      ),
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -326,14 +488,14 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
           onTap: () async {
             final date = await showDatePicker(
               context: context,
-              initialDate: DateTime.now(),
+              initialDate: _selectedDob ?? DateTime.now(),
               firstDate: DateTime(1950),
               lastDate: DateTime.now(),
             );
             if (date != null) {
               setState(() {
-                _birthDateController.text =
-                    '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+                _selectedDob = date;
+                _birthDateController.text = _formatDate(date);
               });
             }
           },
@@ -381,7 +543,9 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
     required String? value,
     required String hint,
     required IconData icon,
+    required List<String> options,
     required Function(String?) onChanged,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,7 +585,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButton<String>(
-                    value: value,
+                    value: enabled && options.contains(value) ? value : null,
                     isExpanded: true,
                     underline: const SizedBox(),
                     hint: Text(
@@ -431,19 +595,21 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                         color: const Color(0xFF6C7278),
                       ),
                     ),
-                    items: ['State 1', 'State 2', 'State 3']
-                        .map((item) => DropdownMenuItem(
-                              value: item,
-                              child: Text(
-                                item,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 15,
-                                  color: const Color(0xFF1F2937),
-                                ),
+                    items: options
+                        .map(
+                          (item) => DropdownMenuItem(
+                            value: item,
+                            child: Text(
+                              item,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                color: const Color(0xFF1F2937),
                               ),
-                            ))
+                            ),
+                          ),
+                        )
                         .toList(),
-                    onChanged: onChanged,
+                    onChanged: enabled ? onChanged : null,
                   ),
                 ),
                 const Icon(
@@ -491,46 +657,60 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                border: Border.all(color: const Color(0xFFEDF1F3)),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.upload_file,
-                size: 24,
-                color: Color(0xFF888888),
-              ),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Container(
-                height: 37,
+        GestureDetector(
+          onTap: _pickDriverImage,
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F5F5),
                   border: Border.all(color: const Color(0xFFEDF1F3)),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Center(
-                  child: Text(
-                    'No Image Uploaded.',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: const Color(0xFF888888),
+                child: const Icon(
+                  Icons.upload_file,
+                  size: 24,
+                  color: Color(0xFF888888),
+                ),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Container(
+                  height: 37,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    border: Border.all(color: const Color(0xFFEDF1F3)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _pickedDriverImage != null
+                          ? _pickedDriverImage!.name
+                          : (_existingDriverImageUrl != null
+                              ? 'Current image selected'
+                              : 'Tap to upload image'),
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: const Color(0xFF888888),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    return '$day/$month/$year';
   }
 }
 

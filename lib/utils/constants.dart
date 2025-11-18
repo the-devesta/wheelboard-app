@@ -24,6 +24,16 @@ class API {
   static const String getUnassignedTripDetails = 'api/Trip/unassigned-trip-details/';
   static const String submitBid = 'api/Trip/submit-bid';
   static const String getTripBids = 'api/Trip/get-trip-bids/';
+  static const String assignTrip = 'api/Trip/assign-trip/';
+  static const String createTripOrder = 'api/Trip/create-order';
+  static const String verifyTripPayment = 'api/Trip/verify-payment';
+  static const String getTripConfirmation = 'api/Trip/confirmation/';
+  
+  // Profile Update APIs
+  static const String updateProfessionalProfile =
+      'api/User/update-professional-profile';
+  static const String updateTransportProfile =
+      'api/User/update-transport-profile';
   
   // Service APIs
   static const String serviceList = 'api/Service/service-list';

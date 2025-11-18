@@ -21,6 +21,7 @@
         "image_picker",
         "mime",
         "path_provider",
+        "razorpay_flutter",
         "share_plus",
         "shared_preferences"
       ],
@@ -52,6 +53,15 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "razorpay_flutter",
+      "version": "1.4.0",
+      "dependencies": [
+        "eventify",
+        "flutter",
+        "fluttertoast"
       ]
     },
     {
@@ -313,6 +323,20 @@
         "string_scanner",
         "term_glyph"
       ]
+    },
+    {
+      "name": "fluttertoast",
+      "version": "8.2.14",
+      "dependencies": [
+        "flutter",
+        "flutter_web_plugins",
+        "web"
+      ]
+    },
+    {
+      "name": "eventify",
+      "version": "1.0.1",
+      "dependencies": []
     },
     {
       "name": "universal_io",

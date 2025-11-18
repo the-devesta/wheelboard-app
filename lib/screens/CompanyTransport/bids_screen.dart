@@ -23,7 +23,15 @@ class _BidsScreenState extends State<BidsScreen> {
   @override
   void initState() {
     super.initState();
-    bidsController.fetchTripBids(widget.tripId);
+    if (mounted) {
+      bidsController.fetchTripBids(widget.tripId);
+    }
+  }
+
+  @override
+  void dispose() {
+    // Clean up any pending operations
+    super.dispose();
   }
 
   @override
@@ -165,23 +173,30 @@ class _BidsScreenState extends State<BidsScreen> {
                       child: _buildBidCard(
                         bid: bid,
                         driverName: bid.name,
-                        driverImage: 'https://i.pravatar.cc/150?img=${bid.driverId.hashCode % 70}',
+                        driverImage: _getDriverImage(bid),
                         bidAmount: '₹${bid.bidAmount.toStringAsFixed(0)}',
                         rating: 4, // Default rating, can be updated if API provides
                         platform: 'WheelBoard',
                         isVerified: true,
                         onViewProfile: () {
-                          Get.to(() => ViewDriverScreen(
-                            driverName: bid.name,
-                            driverImage: 'https://i.pravatar.cc/150?img=${bid.driverId.hashCode % 70}',
-                          ));
+                          Get.to(
+                            () => ViewDriverScreen(
+                              driverName: bid.name,
+                              driverImage: _getDriverImage(bid),
+                              tripId: widget.tripId,
+                              bidId: bid.bidId,
+                            ),
+                          );
                         },
                         onAssignTrip: () {
-                          Get.to(() => AssignTripScreen(
-                            driverName: bid.name,
-                            driverImage: 'https://i.pravatar.cc/150?img=${bid.driverId.hashCode % 70}',
-                            bidAmount: '₹${bid.bidAmount.toStringAsFixed(0)}',
-                          ));
+                          Get.to(
+                            () => AssignTripScreen(
+                              tripId: bid.tripId.isNotEmpty
+                                  ? bid.tripId
+                                  : widget.tripId,
+                              bidId: bid.bidId,
+                            ),
+                          );
                         },
                       ),
                     );
@@ -450,12 +465,7 @@ class _BidsScreenState extends State<BidsScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                          Get.to(() => ViewDriverScreen(
-                            driverName: driverName,
-                            driverImage: driverImage,
-                          ));
-                        },
+                        onPressed: onViewProfile,
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFF36363), width: 1),
                           shape: RoundedRectangleBorder(
@@ -477,13 +487,7 @@ class _BidsScreenState extends State<BidsScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                          Get.to(() => AssignTripScreen(
-                            driverName: driverName,
-                            driverImage: driverImage,
-                            bidAmount: bidAmount,
-                          ));
-                        },
+                        onPressed: onAssignTrip,
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFF36363), width: 1),
                           shape: RoundedRectangleBorder(
@@ -510,5 +514,15 @@ class _BidsScreenState extends State<BidsScreen> {
         ],
       ),
     );
+  }
+
+  // Get driver image from different source
+  String _getDriverImage(TripBid bid) {
+    // Use UI Avatars service with driver name initials
+    final nameInitials = bid.name.isNotEmpty 
+        ? bid.name.split(' ').map((n) => n.isNotEmpty ? n[0] : '').take(2).join()
+        : 'DR';
+    // Use a different placeholder service - UI Avatars
+    return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(nameInitials)}&size=200&background=random&color=fff&bold=true';
   }
 }
