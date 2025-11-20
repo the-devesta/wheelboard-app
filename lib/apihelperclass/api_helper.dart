@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 // import '../controllers/apihelperclass/...';
 import '../utils/constants.dart';
 
@@ -92,11 +94,10 @@ class HttpHelper {
 
     final request = http.MultipartRequest(method, uri);
 
-    // ✅ Add headers (Content-Type will be auto-set by MultipartRequest)
-    // Remove Content-Type from headers if present, as multipart sets it automatically
+    // Let the http client set the multipart content type, but add other headers
     if (headers != null) {
       final cleanHeaders = Map<String, String>.from(headers);
-      cleanHeaders.remove('Content-Type'); // Remove if present
+      cleanHeaders.remove('Content-Type');
       request.headers.addAll(cleanHeaders);
     }
 
@@ -111,17 +112,21 @@ class HttpHelper {
     for (int i = 0; i < files.length; i++) {
       final file = files[i];
       final fileName = file.path.split("/").last;
-      
+      final mimeType = lookupMimeType(file.path);
+      final mediaType = mimeType != null ? MediaType.parse(mimeType) : null;
+
       // Use the same field name for all files (most APIs expect this)
       // The server should handle multiple files with the same field name
       final multipartFile = await http.MultipartFile.fromPath(
         fieldKey,
         file.path,
         filename: fileName,
+        contentType: mediaType,
       );
-      
+
       request.files.add(multipartFile);
-      print("📂 Attached File: $fileName as $fieldKey");
+      print(
+          "📂 Attached File: $fileName as $fieldKey with Content-Type: ${mediaType?.toString() ?? 'unknown'}");
     }
 
     // 🔍 Debug logging

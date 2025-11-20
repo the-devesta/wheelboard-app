@@ -42,7 +42,7 @@ class ProfessionLogin extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    const SizedBox(height: 68),
+                    const SizedBox(height: 24),
                     // Logo
                     Image.asset(
                       'assets/mainlogo.png',
@@ -133,66 +133,30 @@ class ProfessionLogin extends StatelessWidget {
 
                           const SizedBox(height: 16),
 
-                          /// 📌 Remember me + Forgot Password
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: Checkbox(
-                                      value: false,
-                                      onChanged: (_) {},
-                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                      visualDensity: VisualDensity.compact,
-                                      side: BorderSide(
-                                        color: const Color(0xFF49454F),
-                                        width: 2,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    "Remember me",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: const Color(0xFF6C7278),
-                                      height: 1.5,
-                                      letterSpacing: -0.12,
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                          /// 📌 Forgot Password
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                Get.to(ForgotPasswordScreen());
+                              },
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  Get.to(ForgotPasswordScreen());
-                                },
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(
-                                  "Forgot Password ?",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: const Color(0xFFF26262),
-                                    height: 1.4,
-                                    letterSpacing: -0.12,
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              child: Text(
+                                "Forgot Password ?",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: const Color(0xFFF26262),
+                                  height: 1.4,
+                                  letterSpacing: -0.12,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                           const SizedBox(height: 24),
 
@@ -234,6 +198,46 @@ class ProfessionLogin extends StatelessWidget {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 16),
+
+                          /// Quick Login Buttons (for testing)
+                          Text(
+                            "--- Quick Logins for Testing ---",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTestLoginButton("Transport", () {
+                                  phoneController.text = "9304514788";
+                                  passwordController.text = "qqqqqq";
+                                  _performLogin();
+                                }),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildTestLoginButton("Professional", () {
+                                  phoneController.text = "9304514789";
+                                  passwordController.text = "qqqqqq";
+                                  _performLogin();
+                                }),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildTestLoginButton("Service Provider", () {
+                                  phoneController.text = "9304514701";
+                                  passwordController.text = "qqqqqq";
+                                  _performLogin();
+                                }),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -246,6 +250,96 @@ class ProfessionLogin extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Helper method for test login buttons
+  Widget _buildTestLoginButton(String role, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFF26262),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        minimumSize: const Size(0, 0),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 0,
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          role,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  /// Encapsulated login logic
+  Future<void> _performLogin() async {
+    if (phoneController.text.trim().isEmpty) {
+      SnackBarHelper.error("Please enter phone number");
+      return;
+    }
+    if (passwordController.text.trim().isEmpty) {
+      SnackBarHelper.error("Please enter password");
+      return;
+    }
+    if (loginController.isLoading.value) {
+      return;
+    }
+
+    final responseData = await loginController.login(
+      phoneController.text.trim(),
+      passwordController.text.trim(),
+    );
+
+    if (responseData != null && responseData.isNotEmpty) {
+      final businessCategory = responseData['businessCategory'] ?? '';
+      final isProfileComplete = responseData['isProfileComplete'] ?? false;
+      final token = responseData['token'] ?? '';
+      final userId = responseData['userId'] ?? '';
+
+      if (token.isEmpty || userId.isEmpty) {
+        SnackBarHelper.error("Login failed: Invalid response from server");
+        return;
+      }
+
+      final authService = AuthService.to;
+      final loginSuccess = await authService.login(
+        token: token,
+        userId: userId,
+        userType: businessCategory,
+      );
+
+      if (loginSuccess) {
+        SnackBarHelper.success("Login successful! Welcome back.");
+        if (businessCategory == "Transport" && !isProfileComplete) {
+          Get.to(
+            CompanyCompleteProfile(),
+            arguments: {"userId": userId},
+          );
+        } else if (businessCategory == "Service Provider" && !isProfileComplete) {
+          Get.to(
+            AlliedBusinessRegistrationScreen(),
+            arguments: {"userId": userId},
+          );
+        } else {
+          NavigationHelper.navigateToMainWrapper();
+        }
+      } else {
+        SnackBarHelper.error("Login failed: Could not save session");
+      }
+    } else {
+      SnackBarHelper.error("Invalid credentials. Please try again.");
+    }
   }
 
   Widget _socialButton(String text, String asset) {
@@ -374,93 +468,7 @@ class ProfessionLogin extends StatelessWidget {
         child: ElevatedButton(
           onPressed: loginController.isLoading.value
               ? null // Disable button while loading
-              : () async {
-                  // ✅ Validate fields before attempting login
-                  if (phoneController.text.trim().isEmpty) {
-                    SnackBarHelper.error("Please enter phone number");
-                    return;
-                  }
-
-                  if (passwordController.text.trim().isEmpty) {
-                    SnackBarHelper.error("Please enter password");
-                    return;
-                  }
-
-                  // ✅ Prevent multiple taps
-                  if (loginController.isLoading.value) {
-                    return;
-                  }
-
-                  print("🔐 Starting login process...");
-                  final responseData = await loginController.login(
-                    phoneController.text.trim(),
-                    passwordController.text.trim(),
-                  );
-
-                  print("🔐 Login response: $responseData");
-                  
-                  // ✅ Only proceed if login was successful (responseData is not null)
-                  if (responseData != null && responseData.isNotEmpty) {
-                    final businessCategory = responseData['businessCategory'] ?? '';
-                    final isProfileComplete = responseData['isProfileComplete'] ?? false;
-                    final token = responseData['token'] ?? '';
-                    final userId = responseData['userId'] ?? '';
-                    
-                    // ✅ Validate token and userId before proceeding
-                    if (token.isEmpty || userId.isEmpty) {
-                      SnackBarHelper.error("Login failed: Invalid response from server");
-                      return; // Don't navigate
-                    }
-                    
-                    print("🔐 Business Category: $businessCategory");
-                    print("🔐 Is Profile Complete: $isProfileComplete");
-                    print("🔐 Token: ${token.isNotEmpty ? 'Present' : 'Empty'}");
-                    print("🔐 UserId: $userId");
-                    
-                    // ✅ Use AuthService for login
-                    final authService = AuthService.to;
-                    final loginSuccess = await authService.login(
-                      token: token,
-                      userId: userId,
-                      userType: businessCategory,
-                    );
-                    
-                    print("🔐 AuthService login result: $loginSuccess");
-
-                    // ✅ Only navigate if login was successful
-                    if (loginSuccess) {
-                      SnackBarHelper.success("Login successful! Welcome back.");
-                      
-                      // Navigate only after successful login
-                      if (businessCategory == "Transport" && !isProfileComplete) {
-                        print("🔐 Navigating to CompanyCompleteProfile");
-                        Get.to(
-                          CompanyCompleteProfile(),
-                          arguments: {"userId": userId},
-                        );
-                      } else if (businessCategory == "Service Provider" &&
-                          !isProfileComplete) {
-                        print("🔐 Navigating to AlliedBusinessRegistrationScreen");
-                        Get.to(
-                          AlliedBusinessRegistrationScreen(),
-                          arguments: {"userId": userId},
-                        );
-                      } else {
-                        // ✅ Navigate to appropriate wrapper based on user type
-                        print("🔐 Navigating to appropriate wrapper based on user type");
-                        NavigationHelper.navigateToMainWrapper();
-                      }
-                    } else {
-                      SnackBarHelper.error("Login failed: Could not save session");
-                      // Don't navigate on failure
-                    }
-                  } else {
-                    // ✅ Show error if login fails - DO NOT NAVIGATE
-                    SnackBarHelper.error("Invalid credentials. Please try again.");
-                    // Explicitly return to prevent any navigation
-                    return;
-                  }
-                },
+              : _performLogin, // Use the encapsulated login logic
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFF26262),
             padding: const EdgeInsets.symmetric(vertical: 10),

@@ -10,10 +10,9 @@ class ProfileService {
   final AuthService _authService = AuthService.to;
 
   Map<String, String> _defaultHeaders(String userId) {
-    final token = _authService.currentToken;
+    // APIS are authenticated via UserId in header, not bearer token
     return {
       'Accept': '*/*',
-      if (token.isNotEmpty) 'Authorization': 'Bearer $token',
       if (userId.isNotEmpty) 'UserId': userId,
     };
   }

@@ -3,7 +3,8 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/screens/CompanyTransport/fleet_userprofile.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'newtripscreen.dart';
+import 'package:wheelboard/services/auth_service.dart';
+import 'new_post_screen.dart';
 import '../../controllers/post_controller.dart';
 
 class FeedScreen extends StatelessWidget {
@@ -75,9 +76,10 @@ class FeedScreen extends StatelessWidget {
                       width: double.infinity,
                       height: 200,
                       child: Image.network(
-                        post.imageUrls[0],
+                        _formatImageUrl(post.imageUrls[0]),
                         width: double.infinity,
                         fit: BoxFit.cover,
+                        headers: _imageHeaders(),
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
                           return Container(
@@ -151,8 +153,9 @@ class FeedScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
                             child: Image.network(
-                              post.imageUrls[index],
+                              _formatImageUrl(post.imageUrls[index]),
                               fit: BoxFit.cover,
+                              headers: _imageHeaders(),
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return Container(
@@ -349,9 +352,10 @@ class FeedScreen extends StatelessWidget {
       ),
       floatingActionButton: ElevatedButton(
         onPressed: () {
-          Get.to(const Newtripscreen())?.then((_) {
-            // Refresh posts when coming back from new post trip screen
-            postController.refreshPosts();
+          Get.to(const NetworkPostScreen())?.then((result) {
+            if (result == true) {
+              postController.refreshPosts();
+            }
           });
         },
         style: ElevatedButton.styleFrom(
@@ -363,9 +367,23 @@ class FeedScreen extends StatelessWidget {
         ),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-          child: Text("New Post Trip", style: TextStyle(color: AppColors.white)),
+          child: Text("New Post ", style: TextStyle(color: AppColors.white)),
         ),
       ),
     );
   }
+}
+
+String _formatImageUrl(String url) {
+  if (url.isEmpty) return url;
+  return Uri.encodeFull(url);
+}
+
+Map<String, String>? _imageHeaders() {
+  final token = AuthService.to.currentToken;
+  if (token.isEmpty) return null;
+  return {
+    'Authorization': 'Bearer $token',
+    'Accept': '*/*',
+  };
 }

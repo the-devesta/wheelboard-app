@@ -19,23 +19,27 @@ class CompanyTransportMainWrapper extends StatefulWidget {
 }
 
 class _CompanyTransportMainWrapperState extends State<CompanyTransportMainWrapper> {
-  late int _currentIndex;
-  final MainWrapperController _wrapperController = Get.put(MainWrapperController(), permanent: true);
+  // late int _currentIndex;
+  final MainWrapperController _wrapperController =
+      Get.put(MainWrapperController(), permanent: true);
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
-    _wrapperController.currentTabIndex.value = widget.initialIndex;
-    
-    // Listen to tab changes from controller
-    ever(_wrapperController.currentTabIndex, (int index) {
-      if (mounted && _currentIndex != index) {
-        setState(() {
-          _currentIndex = index;
-        });
-      }
+    // _currentIndex = widget.initialIndex;
+    // _wrapperController.currentTabIndex.value = widget.initialIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _wrapperController.currentTabIndex.value = widget.initialIndex;
     });
+
+    // Listen to tab changes from controller
+    // ever(_wrapperController.currentTabIndex, (int index) {
+    //   if (mounted && _currentIndex != index) {
+    //     setState(() {
+    //       _currentIndex = index;
+    //     });
+    //   }
+    // });
   }
 
   final List<Widget> _screens = [
@@ -47,45 +51,47 @@ class _CompanyTransportMainWrapperState extends State<CompanyTransportMainWrappe
   ];
 
   void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    // setState(() {
+    //   _currentIndex = index;
+    // });
     // Update controller when user taps tab
     _wrapperController.currentTabIndex.value = index;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        selectedItemColor: AppColors.buttonBg,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_shipping),
-            label: "Fleet",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.alt_route),
-            label: "Trips",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.article),
-            label: "Feeds",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.work),
-            label: "Jobs",
-          ),
-        ],
+    return Obx(
+      () => Scaffold(
+        body: _screens[_wrapperController.currentTabIndex.value],
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _wrapperController.currentTabIndex.value,
+          onTap: _onTabTapped,
+          selectedItemColor: AppColors.buttonBg,
+          unselectedItemColor: Colors.grey,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: "Home",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.local_shipping),
+              label: "Fleet",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.alt_route),
+              label: "Trips",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.article),
+              label: "Feeds",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.work),
+              label: "Jobs",
+            ),
+          ],
+        ),
       ),
     );
   }

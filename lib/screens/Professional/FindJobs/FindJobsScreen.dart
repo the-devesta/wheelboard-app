@@ -38,12 +38,72 @@ class FindJobsScreen extends StatelessWidget {
   }
 }
 
-class JobBoardScreen extends StatelessWidget {
+class JobBoardScreen extends StatefulWidget {
   const JobBoardScreen({super.key});
 
   @override
+  State<JobBoardScreen> createState() => _JobBoardScreenState();
+}
+
+class _JobBoardScreenState extends State<JobBoardScreen> {
+  final UnassignedTripsController tripsController = Get.put(UnassignedTripsController());
+  final TextEditingController _searchController = TextEditingController();
+
+  // Hardcoded jobs data
+  final List<Map<String, String>> _allJobs = [
+    {
+      "company": "Transvolt Dhar",
+      "title": "Electric Truck Drivers Needed",
+      "location": "Chicago, IL",
+      "type": "Permanent",
+      "salary": "₹2,300/month",
+      "phone": "+1 555 012 5552",
+    },
+    {
+      "company": "FreightXpress",
+      "title": "CDL A Drivers for Regional Routes",
+      "location": "Dallas, TX",
+      "type": "Task-based",
+      "salary": "₹1,800/month",
+      "phone": "+1 555 988 2233",
+    },
+  ];
+
+  List<Map<String, String>> _filteredJobs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredJobs = _allJobs;
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase();
+    // Update trips search query
+    tripsController.searchQuery.value = query;
+
+    // Filter local jobs list
+    setState(() {
+      if (query.isEmpty) {
+        _filteredJobs = _allJobs;
+      } else {
+        _filteredJobs = _allJobs.where((job) {
+          return job.values.any((value) => value.toLowerCase().contains(query));
+        }).toList();
+      }
+    });
+  }
+  
+  @override
   Widget build(BuildContext context) {
-    final UnassignedTripsController tripsController = Get.put(UnassignedTripsController());
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) {
@@ -80,6 +140,7 @@ class JobBoardScreen extends StatelessWidget {
           children: [
             // Search bar
             TextField(
+              controller: _searchController,
               decoration: InputDecoration(
                 hintText: "Search Jobs or Trips...",
                 prefixIcon: const Icon(Icons.search),
@@ -100,25 +161,30 @@ class JobBoardScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Jobs Section
-            JobCard(
-              company: "Transvolt Dhar",
-              title: "Electric Truck Drivers Needed",
-              location: "Chicago, IL",
-              type: "Permanent",
-              salary: "₹2,300/month",
-              phone: "+1 555 012 5552",
-            ),
-            const SizedBox(height: 12),
-            JobCard(
-              company: "FreightXpress",
-              title: "CDL A Drivers for Regional Routes",
-              location: "Dallas, TX",
-              type: "Task-based",
-              salary: "₹1,800/month",
-              phone: "+1 555 988 2233",
-            ),
+            if (_filteredJobs.isNotEmpty) ...[
+              ..._filteredJobs.map((jobData) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: JobCard(
+                    company: jobData["company"]!,
+                    title: jobData["title"]!,
+                    location: jobData["location"]!,
+                    type: jobData["type"]!,
+                    salary: jobData["salary"]!,
+                    phone: jobData["phone"]!,
+                  ),
+                );
+              }).toList(),
+            ] else ...[
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text("No matching jobs found.", style: TextStyle(color: Colors.grey)),
+                ),
+              ),
+            ],
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             const Divider(height: 30),
             const Center(
               child: Text(
@@ -142,7 +208,9 @@ class JobBoardScreen extends StatelessWidget {
                 );
               }
 
-              if (tripsController.unassignedTrips.isEmpty) {
+              final displayedTrips = tripsController.filteredTrips;
+
+              if (displayedTrips.isEmpty) {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20.0),
@@ -155,7 +223,7 @@ class JobBoardScreen extends StatelessWidget {
               }
 
               return Column(
-                children: tripsController.unassignedTrips.map((trip) {
+                children: displayedTrips.map((trip) {
                   return TripCard(
                     trip: trip,
                     onTap: () async {

@@ -50,6 +50,13 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     AddVehicleController(),
   );
 
+  String? _normalizeVehicleType(String? value) {
+    if (value == null) return null;
+    final normalized = value.trim().toLowerCase();
+    const allowedTypes = {'truck', 'bus'};
+    return allowedTypes.contains(normalized) ? normalized : null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +68,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       _manufacturingYearController.text = vehicle.manufacturingYear?.toString() ?? '';
       _descriptionController.text = vehicle.description ?? '';
       _ownershipType = vehicle.ownershipType ?? "Owned";
-      _vehicleType = vehicle.vehicleType;
+      _vehicleType = _normalizeVehicleType(vehicle.vehicleType);
       _isDeclarationAccepted = vehicle.isDeclarationAccepted ?? false;
     }
   }
@@ -114,7 +121,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             // ✅ Auto-fill the form with fetched data
             _vehicleModelController.text = vehicleDetails.model;
             _manufacturingYearController.text = vehicleDetails.vehicleManufacturingMonthYear.split('/').last; // Extract year
-            _vehicleType = vehicleDetails.vehicleCategory;
+            _vehicleType = _normalizeVehicleType(vehicleDetails.vehicleCategory);
             
             setState(() {}); // Refresh UI
             

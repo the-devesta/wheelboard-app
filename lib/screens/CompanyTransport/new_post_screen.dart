@@ -295,13 +295,10 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
                               );
 
                               if (success) {
-                                Get.back();
-                                // Reset form
-                                _contentController.clear();
-                                _selectedCategory = null;
-                                setState(() {
-                                  _selectedImages.clear();
-                                });
+                                _resetFormState();
+                                if (mounted) {
+                                  Navigator.of(context).pop(true);
+                                }
                               }
                             },
                       icon: postController.isCreatingPost.value
@@ -337,6 +334,14 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
         ),
       ),
     );
+  }
+
+  void _resetFormState() {
+    _contentController.clear();
+    _selectedCategory = null;
+    setState(() {
+      _selectedImages.clear();
+    });
   }
 
   Widget _buildCategoryRadioTile({

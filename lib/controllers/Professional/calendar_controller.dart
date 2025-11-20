@@ -36,7 +36,7 @@ class CalendarController extends GetxController {
       final response = await HttpHelper.getData(
         endpoint: '${API.getEventsByUserId}$userId',
         headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+          'UserId': userId,
           'Accept': '*/*',
         },
       );
@@ -106,7 +106,7 @@ class CalendarController extends GetxController {
         endpoint: API.saveCalendarEvent,
         data: requestData,
         headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+          'UserId': userId,
           'Accept': '*/*',
           'Content-Type': 'application/json',
         },

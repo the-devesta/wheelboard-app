@@ -13,6 +13,27 @@ class UnassignedTripsController extends GetxController {
   var isDetailsLoading = false.obs;
   var isSubmittingBid = false.obs;
 
+  // Search functionality
+  var searchQuery = ''.obs;
+
+  List<UnassignedTrip> get filteredTrips {
+    if (searchQuery.value.isEmpty) {
+      return unassignedTrips;
+    }
+    final query = searchQuery.value.toLowerCase();
+    return unassignedTrips.where((trip) {
+      final destination = trip.destination.toLowerCase();
+      final pickup = trip.pickupLocation.toLowerCase();
+      final tripType = trip.tripType.toLowerCase();
+      final payRange = trip.payRange.toString().toLowerCase();
+
+      return destination.contains(query) ||
+          pickup.contains(query) ||
+          tripType.contains(query) ||
+          payRange.contains(query);
+    }).toList();
+  }
+
   @override
   void onInit() {
     super.onInit();

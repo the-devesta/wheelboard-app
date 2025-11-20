@@ -11,6 +11,12 @@ class SignupController extends GetxController {
   var userId = RxnString();
 
   Future<bool> registerCompany(CompanySignUpModel model) async {
+    if (isLoading.value) {
+      print("⚠️ registerCompany called while a request is already in progress");
+      SnackBarHelper.error("Registration already in progress. Please wait.");
+      return false;
+    }
+
     isLoading.value = true; // Start the loader
 
     try {

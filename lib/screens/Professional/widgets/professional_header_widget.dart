@@ -31,12 +31,13 @@ class ProfessionalHeaderWidget extends StatelessWidget {
             children: [
               // Menu Icon (Left) - Responsive
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () {
                   Get.to(const YourProfileScreen());
                 },
-                child: Container(
-                  width: screenWidth * 0.045, // Responsive width
-                  height: screenHeight * 0.025, // Responsive height
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
                   child: Icon(
                     Icons.menu,
                     color: Colors.white,
