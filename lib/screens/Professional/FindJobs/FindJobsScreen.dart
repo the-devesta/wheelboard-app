@@ -17,7 +17,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
+import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
+import '../../../models/Professional/open_job_model.dart';
 import '../TripOverview/TripOverviewScreen.dart';
 // import 'package:iconsax/iconsax.dart';
 
@@ -47,35 +49,15 @@ class JobBoardScreen extends StatefulWidget {
 
 class _JobBoardScreenState extends State<JobBoardScreen> {
   final UnassignedTripsController tripsController = Get.put(UnassignedTripsController());
+  final OpenJobsController jobsController = Get.put(OpenJobsController());
   final TextEditingController _searchController = TextEditingController();
-
-  // Hardcoded jobs data
-  final List<Map<String, String>> _allJobs = [
-    {
-      "company": "Transvolt Dhar",
-      "title": "Electric Truck Drivers Needed",
-      "location": "Chicago, IL",
-      "type": "Permanent",
-      "salary": "₹2,300/month",
-      "phone": "+1 555 012 5552",
-    },
-    {
-      "company": "FreightXpress",
-      "title": "CDL A Drivers for Regional Routes",
-      "location": "Dallas, TX",
-      "type": "Task-based",
-      "salary": "₹1,800/month",
-      "phone": "+1 555 988 2233",
-    },
-  ];
-
-  List<Map<String, String>> _filteredJobs = [];
 
   @override
   void initState() {
     super.initState();
-    _filteredJobs = _allJobs;
     _searchController.addListener(_onSearchChanged);
+    // Fetch jobs on init
+    jobsController.fetchOpenJobs();
   }
 
   @override
@@ -89,17 +71,7 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
     final query = _searchController.text.toLowerCase();
     // Update trips search query
     tripsController.searchQuery.value = query;
-
-    // Filter local jobs list
-    setState(() {
-      if (query.isEmpty) {
-        _filteredJobs = _allJobs;
-      } else {
-        _filteredJobs = _allJobs.where((job) {
-          return job.values.any((value) => value.toLowerCase().contains(query));
-        }).toList();
-      }
-    });
+    // Jobs filtering will be done in the UI using Obx
   }
   
   @override
@@ -160,29 +132,67 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
 
             const SizedBox(height: 20),
 
-            // Jobs Section
-            if (_filteredJobs.isNotEmpty) ...[
-              ..._filteredJobs.map((jobData) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: JobCard(
-                    company: jobData["company"]!,
-                    title: jobData["title"]!,
-                    location: jobData["location"]!,
-                    type: jobData["type"]!,
-                    salary: jobData["salary"]!,
-                    phone: jobData["phone"]!,
+            // Jobs Section - Dynamic from API
+            Obx(() {
+              if (jobsController.isLoading.value) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
                   ),
                 );
-              }).toList(),
-            ] else ...[
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Text("No matching jobs found.", style: TextStyle(color: Colors.grey)),
-                ),
-              ),
-            ],
+              }
+
+              if (jobsController.openJobs.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "No jobs available",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                );
+              }
+
+              // Filter jobs based on search query
+              final searchQuery = _searchController.text.toLowerCase();
+              final filteredJobs = searchQuery.isEmpty
+                  ? jobsController.openJobs
+                  : jobsController.openJobs.where((job) {
+                      return job.role.toLowerCase().contains(searchQuery) ||
+                          job.city.toLowerCase().contains(searchQuery) ||
+                          job.jobType.toLowerCase().contains(searchQuery) ||
+                          job.description.toLowerCase().contains(searchQuery);
+                    }).toList();
+
+              if (filteredJobs.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "No matching jobs found.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: filteredJobs.map((job) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: JobCard(
+                      job: job,
+                      onApply: () async {
+                        await jobsController.applyForJob(job.jobId);
+                      },
+                      isApplying: jobsController.isApplying(job.jobId),
+                    ),
+                  );
+                }).toList(),
+              );
+            }),
 
             const SizedBox(height: 12),
             const Divider(height: 30),
@@ -249,16 +259,26 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
 }
 
 class JobCard extends StatelessWidget {
-  final String company, title, location, type, salary, phone;
+  final OpenJob job;
+  final VoidCallback onApply;
+  final bool isApplying;
+
   const JobCard({
     super.key,
-    required this.company,
-    required this.title,
-    required this.location,
-    required this.type,
-    required this.salary,
-    required this.phone,
+    required this.job,
+    required this.onApply,
+    this.isApplying = false,
   });
+
+  String _formatSalary(double salary) {
+    if (salary == 0) return "Not specified";
+    if (salary >= 100000) {
+      return "₹${(salary / 100000).toStringAsFixed(1)}L";
+    } else if (salary >= 1000) {
+      return "₹${(salary / 1000).toStringAsFixed(1)}K";
+    }
+    return "₹${salary.toStringAsFixed(0)}";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -266,24 +286,25 @@ class JobCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12.withOpacity(0.05),
-            offset: const Offset(0, 3),
-            blurRadius: 8,
+            color: Colors.grey.shade200,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row
+          // Top row - Company name and Call button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                company,
+                job.role.isNotEmpty ? job.role : "Job Opening",
                 style: const TextStyle(
                   color: Colors.redAccent,
                   fontWeight: FontWeight.w600,
@@ -291,7 +312,9 @@ class JobCard extends StatelessWidget {
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Get.snackbar("Info", "Call functionality coming soon");
+                },
                 icon: const Icon(Icons.call, size: 16),
                 label: const Text("Call"),
                 style: ElevatedButton.styleFrom(
@@ -310,31 +333,72 @@ class JobCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
+          
+          // Job Title
           Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            job.description.isNotEmpty ? job.description : job.role,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: Colors.black87,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
+          
+          // Location, Type, Salary row
           Row(
             children: [
-              const Icon(Icons.location_on_outlined, size: 16),
+              const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
-              Text(location),
+              Text(
+                job.city.isNotEmpty ? job.city : "Location not specified",
+                style: const TextStyle(fontSize: 13, color: Colors.black87),
+              ),
               const SizedBox(width: 12),
-              // const Icon(Iconsax.briefcase, size: 16),
+              const Icon(Icons.work_outline, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
-              Text(type),
+              Text(
+                job.jobType,
+                style: const TextStyle(fontSize: 13, color: Colors.black87),
+              ),
               const SizedBox(width: 12),
-              // const Icon(Iconsax.money_4, size: 16),
+              const Icon(Icons.currency_rupee, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
-              Text(salary),
+              Text(
+                _formatSalary(job.salary),
+                style: const TextStyle(fontSize: 13, color: Colors.black87),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(phone, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          
+          // Contact/Additional info (optional - can show openings or duration)
+          Row(
+            children: [
+              const Icon(Icons.access_time, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                job.jobDuration,
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              if (job.openings > 0) ...[
+                const SizedBox(width: 12),
+                const Icon(Icons.people_outline, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  "${job.openings} openings",
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 10),
+          
+          // Apply now button
           ElevatedButton(
-            onPressed: () {},
+            onPressed: isApplying ? null : onApply,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.lightBlueAccent,
               foregroundColor: Colors.white,
@@ -343,7 +407,16 @@ class JobCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text("Apply now"),
+            child: isApplying
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text("Apply now"),
           ),
         ],
       ),

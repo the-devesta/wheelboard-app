@@ -177,4 +177,23 @@ class HttpHelper {
       body: jsonEncode({"number": number, "dob": dob}),
     );
   }
+
+  /// Get driver details by driver ID
+  static Future<http.Response> getDriverDetails({
+    required String driverId,
+    Map<String, String>? headers,
+  }) async {
+    // Remove trailing slash from baseUrl if present, then add endpoint
+    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    Uri uri = Uri.parse('$cleanBaseUrl/api/Transport/drivers-details/$driverId');
+    
+    print("👤 Driver Details API Request:");
+    print("👤 URL: $uri");
+    print("👤 Headers: ${headers ?? {'accept': '*/*'}}");
+    
+    return await http.get(
+      uri,
+      headers: headers ?? {'accept': '*/*'},
+    );
+  }
 }

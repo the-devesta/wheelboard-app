@@ -50,13 +50,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     AddVehicleController(),
   );
 
-  String? _normalizeVehicleType(String? value) {
-    if (value == null) return null;
-    final normalized = value.trim().toLowerCase();
-    const allowedTypes = {'truck', 'bus'};
-    return allowedTypes.contains(normalized) ? normalized : null;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -68,7 +61,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       _manufacturingYearController.text = vehicle.manufacturingYear?.toString() ?? '';
       _descriptionController.text = vehicle.description ?? '';
       _ownershipType = vehicle.ownershipType ?? "Owned";
-      _vehicleType = _normalizeVehicleType(vehicle.vehicleType);
+      _vehicleType = vehicle.vehicleType;
       _isDeclarationAccepted = vehicle.isDeclarationAccepted ?? false;
     }
   }
@@ -121,7 +114,15 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             // ✅ Auto-fill the form with fetched data
             _vehicleModelController.text = vehicleDetails.model;
             _manufacturingYearController.text = vehicleDetails.vehicleManufacturingMonthYear.split('/').last; // Extract year
-            _vehicleType = _normalizeVehicleType(vehicleDetails.vehicleCategory);
+            // Map vehicle category to our dropdown options
+            final category = vehicleDetails.vehicleCategory.toLowerCase();
+            if (category.contains('construction')) {
+              _vehicleType = 'Construction';
+            } else if (category.contains('mining')) {
+              _vehicleType = 'Mining';
+            } else {
+              _vehicleType = 'Shipment'; // Default to Shipment
+            }
             
             setState(() {}); // Refresh UI
             
@@ -495,23 +496,49 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _vehicleType,
-                        items: const [
-                          DropdownMenuItem(value: "truck", child: Text("Truck")),
-                          DropdownMenuItem(value: "bus", child: Text("Bus")),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _vehicleType = value),
-                        decoration: _inputDecoration(
-                          hint: "Select type of vehicle",
-                          borderColor: const Color(0xFFC5C6CC),
-                          height: 48,
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
                         ),
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: Color(0xFF006FFD),
-                          size: 12,
+                        child: DropdownButtonFormField<String>(
+                          value: _vehicleType,
+                          items: const [
+                            DropdownMenuItem(value: "Shipment", child: Text("Shipment")),
+                            DropdownMenuItem(value: "Construction", child: Text("Construction")),
+                            DropdownMenuItem(value: "Mining", child: Text("Mining")),
+                            DropdownMenuItem(value: "Others", child: Text("Others (specify)")),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _vehicleType = value),
+                          decoration: InputDecoration(
+                            hintText: "Select type of vehicle",
+                            hintStyle: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Poppins',
+                              color: const Color(0xFF6C7278),
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                          ),
+                          icon: const Padding(
+                            padding: EdgeInsets.only(right: 12),
+                            child: Icon(
+                              Icons.keyboard_arrow_down,
+                              color: Color(0xFF006FFD),
+                              size: 20,
+                            ),
+                          ),
+                          dropdownColor: Colors.white,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Poppins',
+                            color: const Color(0xFF1E1E1E),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 17),

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../TripProgress/TripProgressScreen.dart';
 import '../widgets/professional_header_widget.dart';
 import '../widgets/banner_header_widget.dart';
 import '../widgets/quick_action_button_widget.dart';
 import '../widgets/trip_card_widget.dart';
 import '../widgets/job_card_widget.dart';
 import '../Calendar/CalendarScreen.dart';
-import '../TrackTrip/TrackTripScreen.dart';
+
 import '../EarningSummary/EarningSummaryScreen.dart';
 import '../AddExpense/AddExpenseScreen.dart';
 import '../MyLearning/MyLearningScreen.dart';
@@ -152,14 +153,15 @@ class ProfessionalHomePageScreen extends StatelessWidget {
               ),
             ),
 
-            // Fixed Floating Action Buttons - Invite and SOS (fixed bottom right) - Responsive
+            // Fixed Bottom Action Buttons - Invite and SOS (vertical column on right) - Responsive
             Positioned(
               right: screenWidth * 0.04, // Responsive right padding
-              bottom: bottomNavBarHeight + 20, // Above bottom navigation bar - Responsive
+              bottom: bottomNavBarHeight - 50, // Much closer to bottom navigation bar - Responsive
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // Invite Button - Responsive
+                  // Invite Button - Responsive (top)
                   GestureDetector(
                     onTap: () {
                       Get.to(const AddReferralScreen());
@@ -192,7 +194,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // SOS Button - Responsive
+                  // SOS Button - Responsive (bottom)
                   GestureDetector(
                     onTap: () {
                       Get.to(const SOSScreen());
@@ -253,7 +255,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
           child: QuickActionButtonWidget(
             icon: Icons.my_location,
             title: "Track\nMy Trip",
-            onTap: () => Get.to(const TrackTripScreen()),
+            onTap: () => Get.to(const TripProgressScreen()),
           ),
         ),
         SizedBox(width: buttonSpacing),

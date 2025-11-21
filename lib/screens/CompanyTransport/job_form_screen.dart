@@ -32,6 +32,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   List<File> imageFiles = <File>[];
   JobRole selectedRole = JobRole.driver;
   bool isEditMode = false;
+  bool isSubmitting = false;
 
   @override
   void initState() {
@@ -320,7 +321,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     width: 295,
                     height: 48,
                     child: ElevatedButton(
-                            onPressed: jobController.isLoading.value
+                            onPressed: jobController.isLoading.value || isSubmitting
                                 ? null
                                 : () async {
                                     // Validate fields
@@ -356,58 +357,79 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                     final openings = int.tryParse(openingController.text.trim()) ?? 0;
                                     final salary = int.tryParse(salaryController.text.trim()) ?? 0;
 
-                                    if (isEditMode && widget.jobToEdit != null) {
-                                      // Update existing job
-                                      final success = await jobController.updateJob(
-                                        jobId: widget.jobToEdit!.jobId,
-                                        role: selectedRole.value,
-                                        jobDuration: selectedJobDuration!.value,
-                                        openings: openings,
-                                        salary: salary,
-                                        city: cityController.text.trim(),
-                                        jobType: selectedJobType!.value,
-                                        description: descriptionController.text.trim(),
-                                        newImages: imageFiles.isNotEmpty ? imageFiles : null,
-                                      );
-                                      
-                                      if (success) {
-                                        // Refresh jobs list before going back
-                                        await jobController.refreshJobs();
-                                        if (mounted) {
-                                          Navigator.of(context).pop();
+                                    setState(() {
+                                      isSubmitting = true;
+                                    });
+
+                                    try {
+                                      if (isEditMode) {
+                                        // Update existing job
+                                        if (widget.jobToEdit != null) {
+                                          final success =
+                                              await jobController.updateJob(
+                                            jobId: widget.jobToEdit!.jobId,
+                                            role: selectedRole.value,
+                                            jobDuration:
+                                                selectedJobDuration!.value,
+                                            openings: openings,
+                                            salary: salary,
+                                            city: cityController.text.trim(),
+                                            jobType: selectedJobType!.value,
+                                            description: descriptionController
+                                                .text
+                                                .trim(),
+                                            newImages: imageFiles,
+                                          );
+                                          if (success) {
+                                            await jobController.refreshJobs();
+                                            if (mounted) {
+                                              Navigator.of(context).pop();
+                                            }
+                                          }
+                                        }
+                                      } else {
+                                        // Add new job
+                                        final success =
+                                            await jobController.addJob(
+                                          role: selectedRole.value,
+                                          jobDuration:
+                                              selectedJobDuration!.value,
+                                          openings: openings,
+                                          salary: salary,
+                                          city: cityController.text.trim(),
+                                          jobType: selectedJobType!.value,
+                                          description:
+                                              descriptionController.text.trim(),
+                                          images: imageFiles,
+                                        );
+
+                                        if (success) {
+                                          // Refresh jobs list before going back
+                                          await jobController.refreshJobs();
+                                          if (mounted) {
+                                            Navigator.of(context).pop();
+                                          }
                                         }
                                       }
-                                    } else {
-                                      // Add new job
-                                      final success = await jobController.addJob(
-                                        role: selectedRole.value,
-                                        jobDuration: selectedJobDuration!.value,
-                                        openings: openings,
-                                        salary: salary,
-                                        city: cityController.text.trim(),
-                                        jobType: selectedJobType!.value,
-                                        description: descriptionController.text.trim(),
-                                        images: imageFiles,
-                                      );
-                                      
-                                      if (success) {
-                                        // Refresh jobs list before going back
-                                        await jobController.refreshJobs();
-                                        if (mounted) {
-                                          Navigator.of(context).pop();
-                                        }
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() {
+                                          isSubmitting = false;
+                                        });
                                       }
                                     }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF25C5C),
+                        backgroundColor: isSubmitting
+                            ? Colors.grey // Disabled color
+                            : const Color(0xFFF36C6C),
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                               elevation: 0,
                       ),
-                            child: jobController.isLoading.value
+                            child: jobController.isLoading.value || isSubmitting
                                 ? const SizedBox(
                                     height: 20,
                                     width: 20,

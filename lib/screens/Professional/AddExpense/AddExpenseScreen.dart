@@ -94,7 +94,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final padding = ResponsiveUtils.getResponsiveHorizontalPadding(context);
 
     return Scaffold(
@@ -326,6 +325,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ),
       child: DropdownButtonFormField<String>(
         value: value,
+        isExpanded: true, // Prevents overflow
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.inter(
@@ -347,10 +347,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF424242),
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           );
         }).toList(),
         onChanged: onChanged,
+        selectedItemBuilder: (BuildContext context) {
+          return items.map<Widget>((String item) {
+            return Text(
+              item,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF424242),
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            );
+          }).toList();
+        },
       ),
     );
   }

@@ -153,21 +153,50 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                             itemCount: driverController.vehicles.length,
                             itemBuilder: (context, index) {
                               final vehicle = driverController.vehicles[index];
-                              final imageUrl = vehicle.imageUrls.first;
+                              final imageUrl = vehicle.imageUrls.isNotEmpty 
+                                  ? vehicle.imageUrls.first 
+                                  : '';
+
+                              // Determine status color and border color
+                              Color statusColor;
+                              Color borderColor;
+                              String displayStatus = vehicle.status;
+                              
+                              switch (vehicle.status.toLowerCase()) {
+                                case 'in-transit':
+                                case 'in transit':
+                                  statusColor = const Color(0xFF00B894); // Teal
+                                  borderColor = const Color(0xFF00B894);
+                                  displayStatus = 'In-Transit';
+                                  break;
+                                case 'assigned':
+                                  statusColor = const Color(0xFF0984E3); // Blue
+                                  borderColor = const Color(0xFF0984E3);
+                                  displayStatus = 'Assigned';
+                                  break;
+                                case 'available':
+                                  statusColor = const Color(0xFFFDBE4D); // Yellow
+                                  borderColor = const Color(0xFFFDBE4D);
+                                  displayStatus = 'Available';
+                                  break;
+                                default:
+                                  statusColor = const Color(0xFF00B894);
+                                  borderColor = const Color(0xFF00B894);
+                              }
 
                               return _vehicleCard(
-                                status: vehicle.status,
-                                statusColor: Colors.blue,
+                                status: displayStatus,
+                                statusColor: statusColor,
                                 image: imageUrl.isNotEmpty
                                     ? imageUrl
                                     : 'assets/truckImg.png',
                                 title: vehicle.vehicleModel,
-                                type: vehicle.vehicleType,
-                                driver: vehicle.ownershipType,
-                                plate: vehicle.vehicleModel,
-                                rating: 0,
-                                borderColor: Colors.blue,
-                                vehicleData: vehicle, // ✅ Pass vehicle data for editing
+                                type: vehicle.ownershipType,
+                                driver: '',
+                                plate: vehicle.vehicleNumber,
+                                rating: 4.2,
+                                borderColor: borderColor,
+                                vehicleData: vehicle,
                               );
                             },
                           );
@@ -190,20 +219,32 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                             itemBuilder: (context, index) {
                               final driver = driverController.drivers[index];
                               final imageUrl = driver.driverImagePath;
+                              
+                              // Randomly assign status for demo (you can implement actual logic)
+                              final statuses = [
+                                {'name': 'Hired', 'color': const Color(0xFF00B894), 'border': const Color(0xFF00B894)},
+                                {'name': 'Wheelboard', 'color': const Color(0xFF0984E3), 'border': const Color(0xFF0984E3)},
+                              ];
+                              final statusInfo = statuses[index % statuses.length];
+                              
                               return _vehicleCard(
-                                status: "Available",
-                                statusColor: Color(0xFF00B894),
+                                status: statusInfo['name'] as String,
+                                statusColor: statusInfo['color'] as Color,
                                 image: imageUrl.isNotEmpty
                                     ? imageUrl
                                     : "assets/google.png",
                                 title: driver.fullName,
-                                type: "Driver",
-                                driver: "Assigned: ${driver.description}",
+                                type: '',
+                                driver: driver.description.isNotEmpty 
+                                    ? driver.description 
+                                    : "Vehicle no.",
                                 plate: driver.vehicleNumber,
-                                rating: 0,
-                                borderColor: Colors.green,
-                                driverData: driver, // ✅ Pass driver data for editing
-                                onTap: () => {Get.to(DriverProfileScreen())},
+                                rating: 4.7,
+                                borderColor: statusInfo['border'] as Color,
+                                driverData: driver,
+                                onTap: () {
+                                  Get.to(() => DriverProfileScreen(driverId: driver.driverId));
+                                },
                               );
                             },
                           );
@@ -214,24 +255,30 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
           ),
           floatingActionButton: isVehicleSelected
               ? FloatingActionButton.extended(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: const Color(0xFFF26868),
                   onPressed: () => Get.to(AddVehicleScreen()),
+                  elevation: 2,
+                  icon: const Icon(Icons.add, color: Colors.white, size: 18),
                   label: const Text(
-                    '+ Add Vehicle',
+                    'Add Vehicle',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
+                      fontSize: 15,
                     ),
                   ),
                 )
               : FloatingActionButton.extended(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: const Color(0xFFF26868),
                   onPressed: () => Get.to(AddNewDriverScreen()),
+                  elevation: 2,
+                  icon: const Icon(Icons.add, color: Colors.white, size: 18),
                   label: const Text(
-                    '+ Add Driver',
+                    'Add Driver',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
+                      fontSize: 15,
                     ),
                   ),
                 ),
@@ -243,13 +290,13 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
   // --- Widgets ---
   Widget _tabBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
       child: Container(
-        height: 50,
+        height: 48,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: const Color(0xFFF4F6F6),
           borderRadius: BorderRadius.circular(40),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: const Color(0xFFD9D9D9)),
         ),
         child: Row(
           children: [
@@ -272,19 +319,19 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: selected ? Colors.redAccent : Colors.transparent,
+            color: selected ? const Color(0xFFF36767) : Colors.transparent,
             borderRadius: BorderRadius.circular(40),
           ),
           alignment: Alignment.center,
           child: Text(
             title,
             style: TextStyle(
-              color: selected ? Colors.white : Colors.redAccent,
+              color: selected ? const Color(0xFFF4E3E3) : const Color(0xFFF36767),
               fontWeight: FontWeight.w600,
-              fontSize: 16,
+              fontSize: 14,
             ),
           ),
         ),
@@ -293,23 +340,46 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
   }
 
   Widget _filterButton() {
-    return Row(
-      children: [
-        const SizedBox(width: 16),
-        ElevatedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.tune, color: Colors.teal),
-          label: const Text("Filter", style: TextStyle(color: Colors.teal)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            side: const BorderSide(color: Colors.teal),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              // Handle filter action
+              print("Filter button tapped");
+              // You can show a filter dialog or navigate to filter screen
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFFE4E8EB)),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.tune,
+                    size: 16,
+                    color: Color(0xFF00B894),
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    "Filter",
+                    style: TextStyle(
+                      color: Color(0xFF636E72),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -323,90 +393,167 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     required String plate,
     required double rating,
     required Color borderColor,
-    VoidCallback? onTap, // 👈 Add onTap
-    Driver? driverData, // ✅ For driver editing
-    Vehicle? vehicleData, // ✅ For vehicle editing
+    VoidCallback? onTap,
+    Driver? driverData,
+    Vehicle? vehicleData,
   }) {
     final isNetwork = image.startsWith("http");
 
     return GestureDetector(
-      onTap: onTap, // 👈 Trigger tap
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: const Color(0xFFF4F4F4),
-        margin: const EdgeInsets.only(bottom: 16),
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border(
+            left: BorderSide(
+              color: borderColor,
+              width: 4,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left: Status + Image
+              // Left: Image with status badge on top
               Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Status Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.work, size: 14, color: Colors.white),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           status,
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
                           ),
+                          maxLines: 1,
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(40),
-                    child: isNetwork
-                        ? Image.network(
-                            image,
-                            height: 60,
-                            width: 60,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.person, size: 50),
-                          )
-                        : Image.asset(
-                            image,
-                            height: 60,
-                            width: 60,
-                            fit: BoxFit.cover,
-                          ),
+                  // Image
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey[100],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: isNetwork
+                          ? Image.network(
+                              image,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Center(
+                                    child: Icon(
+                                      driverData != null ? Icons.person : Icons.local_shipping,
+                                      size: 32,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                            )
+                          : Image.asset(
+                              image,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Center(
+                                    child: Icon(
+                                      driverData != null ? Icons.person : Icons.local_shipping,
+                                      size: 32,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                            ),
+                    ),
                   ),
                 ],
               ),
-
+              
               const SizedBox(width: 12),
-
+              
               // Center: Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "$title $type",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    const SizedBox(height: 28), // Align with image after status badge
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF2D3436),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (type.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            type,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF535353),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
+                    const SizedBox(height: 4),
+                    if (driver.isNotEmpty)
+                      Text(
+                        driver,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF636E72),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 2),
                     Text(
                       "Plate: $plate",
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF636E72),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -417,45 +564,31 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.teal.withOpacity(0.1),
+                            color: const Color(0xFF00B894).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Text(
                             "Shipment",
                             style: TextStyle(
-                              color: Colors.teal,
+                              color: Color(0xFF00B894),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.star,
-                                size: 14,
-                                color: Colors.redAccent,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                rating.toStringAsFixed(1),
-                                style: const TextStyle(
-                                  color: Colors.redAccent,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                        const Icon(
+                          Icons.star,
+                          size: 14,
+                          color: Color(0xFFE74C3C),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            color: Color(0xFFE74C3C),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -463,75 +596,108 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                   ],
                 ),
               ),
-
-              // Right: action icons
+              
+              // Right: Heart + Edit + Arrow
               Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SvgPicture.asset('assets/heart.svg', width: 32, height: 32),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 28), // Align with content after status badge
                   GestureDetector(
-                    onTap: () async {
-                      // ✅ Handle edit based on data type
-                      if (driverData != null) {
-                        // Edit Driver
-                        final sessionManager = SessionManager();
-                        final userId = await sessionManager.getString("userId");
-                        
-                        final editDriverModel = DriverModel(
-                          userId: userId,
-                          driverId: driverData.driverId,
-                          fullName: driverData.fullName,
-                          contactNumber: driverData.contactNumber,
-                          vehicleType: driverData.vehicleType,
-                          vehicleNumber: driverData.vehicleNumber,
-                          description: driverData.description,
-                          isDeclarationAccepted: driverData.isDeclarationAccepted,
-                          modifiedUserId: userId,
-                        );
-                        
-                        Get.to(AddNewDriverScreen(
-                          isEditMode: true,
-                          driverData: editDriverModel,
-                        ));
-                      } else if (vehicleData != null) {
-                        // Edit Vehicle
-                        final sessionManager = SessionManager();
-                        final userId = await sessionManager.getString("userId");
-                        
-                        // Convert image URLs to Files (if needed)
-                        List<File> imageFiles = [];
-                        // Note: For editing, we might not have the actual files
-                        // The user can select new images if needed
-                        
-                        final editVehicleModel = VehicleModel(
-                          userId: userId,
-                          vehicleId: vehicleData.vehicleId,
-                          vehicleModel: vehicleData.vehicleModel,
-                          vehicleNumber: vehicleData.vehicleNumber,
-                          manufacturingYear: vehicleData.manufacturingYear,
-                          ownershipType: vehicleData.ownershipType,
-                          vehicleType: vehicleData.vehicleType,
-                          description: vehicleData.description,
-                          isDeclarationAccepted: vehicleData.isDeclarationAccepted,
-                          images: imageFiles,
-                        );
-                        
-                        Get.to(AddVehicleScreen(
-                          isEditMode: true,
-                          vehicleData: editVehicleModel,
-                        ));
-                      }
+                    onTap: () {
+                      // Toggle favorite
+                      print("Favorite tapped for $title");
                     },
-                    child: const Icon(Icons.edit, color: Colors.red, size: 18),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      child: const Icon(
+                        Icons.favorite_border,
+                        color: Color(0xFFF36969),
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          // Handle edit based on data type
+                          if (driverData != null) {
+                            // Edit Driver
+                            final sessionManager = SessionManager();
+                            final userId = await sessionManager.getString("userId");
+                            
+                            final editDriverModel = DriverModel(
+                              userId: userId,
+                              driverId: driverData.driverId,
+                              fullName: driverData.fullName,
+                              contactNumber: driverData.contactNumber,
+                              vehicleType: driverData.vehicleType,
+                              vehicleNumber: driverData.vehicleNumber,
+                              description: driverData.description,
+                              isDeclarationAccepted: driverData.isDeclarationAccepted,
+                              modifiedUserId: userId,
+                            );
+                            
+                            Get.to(AddNewDriverScreen(
+                              isEditMode: true,
+                              driverData: editDriverModel,
+                            ));
+                          } else if (vehicleData != null) {
+                            // Edit Vehicle
+                            final sessionManager = SessionManager();
+                            final userId = await sessionManager.getString("userId");
+                            
+                            List<File> imageFiles = [];
+                            
+                            final editVehicleModel = VehicleModel(
+                              userId: userId,
+                              vehicleId: vehicleData.vehicleId,
+                              vehicleModel: vehicleData.vehicleModel,
+                              vehicleNumber: vehicleData.vehicleNumber,
+                              manufacturingYear: vehicleData.manufacturingYear,
+                              ownershipType: vehicleData.ownershipType,
+                              vehicleType: vehicleData.vehicleType,
+                              description: vehicleData.description,
+                              isDeclarationAccepted: vehicleData.isDeclarationAccepted,
+                              images: imageFiles,
+                            );
+                            
+                            Get.to(AddVehicleScreen(
+                              isEditMode: true,
+                              vehicleData: editVehicleModel,
+                            ));
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: const Icon(
+                            Icons.edit,
+                            color: Color(0xFFF36969),
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: onTap,
+                        child: const Icon(
+                          Icons.chevron_right,
+                          color: Color(0xFF535353),
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, color: Colors.black54),
             ],
           ),
         ),
       ),
     );
   }
+
 }

@@ -29,6 +29,10 @@ class API {
   static const String verifyTripPayment = 'api/Trip/verify-payment';
   static const String getTripConfirmation = 'api/Trip/confirmation/';
   
+  // Professional Management
+  static const String professionalList = 'api/Transport/professional-list/';
+  static const String professionalDetails = 'api/Transport/professional-details/';
+  
   // Profile Update APIs
   static const String updateProfessionalProfile =
       'api/User/update-professional-profile';
