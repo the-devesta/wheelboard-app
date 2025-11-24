@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:get/get.dart';
+import 'dart:io';
 import '../../../utils/responsive_utils.dart';
+import '../../../controllers/Professional/expense_controller.dart';
+import '../../../controllers/Professional/assigned_trip_controller.dart';
+import '../../../models/expense_purpose_model.dart';
+import '../../../models/assigned_trip_model.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -11,28 +17,27 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  String? _selectedExpensePurpose;
-  String? _selectedTrip;
+  final ExpenseController expenseController = Get.put(ExpenseController());
+  final AssignedTripController tripController = Get.put(AssignedTripController());
+
+  ExpensePurpose? _selectedExpensePurpose;
+  AssignedTrip? _selectedTrip;
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   DateTime? _selectedDate;
-  String? _uploadedFileName;
+  File? _uploadedFile;
 
-  final List<String> _expensePurposes = [
-    'Fuel',
-    'Toll',
-    'Parking',
-    'Maintenance',
-    'Food',
-    'Other',
-  ];
-
-  final List<String> _trips = [
-    'Trip 1 - Delhi to Mumbai',
-    'Trip 2 - Mumbai to Bangalore',
-    'Trip 3 - Bangalore to Chennai',
-  ];
+  // Color mapping for expense types
+  final Map<String, Color> _expenseColors = {
+    'Advance': const Color(0xFFE74C3C), // Red
+    'Fuel': const Color(0xFF3498DB), // Light Blue
+    'Challan': const Color(0xFF9B59B6), // Purple
+    'Food': const Color(0xFFE67E22), // Orange
+    'Salary': const Color(0xFFF1C40F), // Yellow
+    'Enroute': const Color(0xFF95A5A6), // Light Grey
+    'Other': const Color(0xFF34495E), // Dark Grey
+  };
 
   @override
   void initState() {
@@ -72,9 +77,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         allowedExtensions: ['jpg', 'png', 'pdf'],
       );
 
-      if (result != null) {
+      if (result != null && result.files.single.path != null) {
         setState(() {
-          _uploadedFileName = result.files.single.name;
+          _uploadedFile = File(result.files.single.path!);
         });
       }
     } catch (e) {
@@ -82,14 +87,304 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
   }
 
-  void _saveExpense() {
-    // TODO: Implement save functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Expense saved successfully'),
-        backgroundColor: Color(0xFF27AE60),
+  void _showExpensePurposeModal() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (context) => Obx(() {
+        if (expenseController.isLoadingPurposes.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F2FD),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF2196F3),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Select expense type',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFE74C3C),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Expense Purpose List
+              ...expenseController.expensePurposes.map((purpose) {
+                final color = _expenseColors[purpose.purposeName] ?? Colors.grey;
+                final isSelected = _selectedExpensePurpose?.expensePurposeId ==
+                    purpose.expensePurposeId;
+
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedExpensePurpose = purpose;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            purpose.purposeName,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          const Icon(Icons.check, color: Color(0xFF2196F3)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        );
+      }),
     );
+  }
+
+  void _showTripSelectionModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Obx(() {
+        if (tripController.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F2FD),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF2196F3),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Select Trip',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Trip List
+              Expanded(
+                child: tripController.assignedTrips.isEmpty
+                    ? const Center(
+                        child: Text('No trips available'),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: tripController.assignedTrips.length,
+                        itemBuilder: (context, index) {
+                          final trip = tripController.assignedTrips[index];
+                          final isSelected =
+                              _selectedTrip?.bidId == trip.bidId;
+
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedTrip = trip;
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: isSelected
+                                    ? Border.all(
+                                        color: const Color(0xFF2196F3), width: 2)
+                                    : Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Route
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.location_on,
+                                          color: Color(0xFF2196F3), size: 18),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          '${trip.pickupLocation} → ${trip.deliveryLocation}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        'Trip ID: ${trip.bidId.substring(0, 12)}...',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Vehicle Type and Date
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Vehicle Type: ${trip.bidDescription.isNotEmpty ? trip.bidDescription : "N/A"}',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Date: ${trip.pickupDate.day}/${trip.pickupDate.month}/${trip.pickupDate.year}',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Future<void> _saveExpense() async {
+    if (_selectedExpensePurpose == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select an expense purpose'),
+          backgroundColor: Color(0xFFE74C3C),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedTrip == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a trip'),
+          backgroundColor: Color(0xFFE74C3C),
+        ),
+      );
+      return;
+    }
+
+    if (_amountController.text.isEmpty ||
+        double.tryParse(_amountController.text) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid amount'),
+          backgroundColor: Color(0xFFE74C3C),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a date'),
+          backgroundColor: Color(0xFFE74C3C),
+        ),
+      );
+      return;
+    }
+
+    final amount = double.parse(_amountController.text);
+    final description = _descriptionController.text.isEmpty
+        ? 'No description'
+        : _descriptionController.text;
+
+    final success = await expenseController.saveExpense(
+      tripId: _selectedTrip!.bidId, // Using bidId as tripId
+      expensePurposeId: _selectedExpensePurpose!.expensePurposeId,
+      expenseDate: _selectedDate!,
+      amount: amount,
+      description: description,
+      receiptFile: _uploadedFile,
+    );
+
+    if (success && mounted) {
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -110,17 +405,21 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 padding: EdgeInsets.only(
                   left: padding.horizontal,
                   right: padding.horizontal,
-                  top: ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 20, large: 24),
-                  bottom: ResponsiveUtils.getResponsiveSpacing(context, small: 100, medium: 110, large: 120),
+                  top: ResponsiveUtils.getResponsiveSpacing(
+                      context, small: 16, medium: 20, large: 24),
+                  bottom: ResponsiveUtils.getResponsiveSpacing(
+                      context, small: 100, medium: 110, large: 120),
                 ),
                 child: Container(
                   padding: EdgeInsets.all(
-                    ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 18, large: 20),
+                    ResponsiveUtils.getResponsiveSpacing(
+                        context, small: 16, medium: 18, large: 20),
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(
-                      ResponsiveUtils.getResponsiveBorderRadius(context, small: 10, medium: 12, large: 14),
+                      ResponsiveUtils.getResponsiveBorderRadius(
+                          context, small: 10, medium: 12, large: 14),
                     ),
                   ),
                   child: Column(
@@ -131,17 +430,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         context,
                         label: 'Expense Purpose',
                         required: true,
-                        child: _buildDropdown(
-                          context,
-                          value: _selectedExpensePurpose,
-                          hint: 'Select expense purpose...',
-                          items: _expensePurposes,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedExpensePurpose = value;
-                            });
-                          },
-                        ),
+                        child: _buildExpensePurposeField(context),
                       ),
                       const SizedBox(height: 20),
                       // Amount
@@ -171,17 +460,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       _buildFormField(
                         context,
                         label: 'Choose Trip',
-                        child: _buildDropdown(
-                          context,
-                          value: _selectedTrip,
-                          hint: 'Select a trip...',
-                          items: _trips,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedTrip = value;
-                            });
-                          },
-                        ),
+                        child: _buildTripField(context),
                       ),
                       const SizedBox(height: 20),
                       // Upload Receipt
@@ -192,7 +471,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       ),
                       const SizedBox(height: 32),
                       // Save Button
-                      _buildSaveButton(context),
+                      Obx(() => _buildSaveButton(context)),
                     ],
                   ),
                 ),
@@ -212,7 +491,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 20, large: 23),
+        horizontal: ResponsiveUtils.getResponsiveSpacing(
+            context, small: 16, medium: 20, large: 23),
       ),
       child: Row(
         children: [
@@ -236,7 +516,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               child: Text(
                 'ADD Expenses',
                 style: GoogleFonts.poppins(
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 18, medium: 20, large: 22),
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                      context, small: 18, medium: 20, large: 22),
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFF36969),
                   letterSpacing: 0.5,
@@ -274,7 +555,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 13, medium: 14, large: 15),
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context, small: 13, medium: 14, large: 15),
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF424242),
               ),
@@ -309,64 +591,90 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  Widget _buildDropdown(
-    BuildContext context, {
-    required String? value,
-    required String hint,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
-    return Container(
-      height: 46,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        isExpanded: true, // Prevents overflow
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFADAEBC),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          suffixIcon: const Icon(Icons.arrow_drop_down, size: 16),
+  Widget _buildExpensePurposeField(BuildContext context) {
+    final color = _selectedExpensePurpose != null
+        ? _expenseColors[_selectedExpensePurpose!.purposeName] ?? Colors.grey
+        : Colors.grey;
+
+    return GestureDetector(
+      onTap: _showExpensePurposeModal,
+      child: Container(
+        height: 46,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
         ),
-        items: items.map((String item) {
-          return DropdownMenuItem<String>(
-            value: item,
-            child: Text(
-              item,
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF424242),
+        child: Row(
+          children: [
+            const SizedBox(width: 16),
+            if (_selectedExpensePurpose != null) ...[
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                _selectedExpensePurpose?.purposeName ?? 'Select expense purpose...',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: _selectedExpensePurpose != null
+                      ? const Color(0xFF424242)
+                      : const Color(0xFFADAEBC),
+                ),
+              ),
             ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-        selectedItemBuilder: (BuildContext context) {
-          return items.map<Widget>((String item) {
-            return Text(
-              item,
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF424242),
+            const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Icon(Icons.arrow_drop_down, size: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTripField(BuildContext context) {
+    return GestureDetector(
+      onTap: _showTripSelectionModal,
+      child: Container(
+        height: 46,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                _selectedTrip != null
+                    ? '${_selectedTrip!.pickupLocation} → ${_selectedTrip!.deliveryLocation}'
+                    : 'Select a trip...',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: _selectedTrip != null
+                      ? const Color(0xFF424242)
+                      : const Color(0xFFADAEBC),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            );
-          }).toList();
-        },
+            ),
+            const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Icon(Icons.arrow_drop_down, size: 16),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -521,8 +829,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _uploadedFileName != null
-                  ? _uploadedFileName!
+              _uploadedFile != null
+                  ? _uploadedFile!.path.split('/').last
                   : 'Drag & drop or tap to upload (.jpg, .png, .pdf)',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
@@ -539,23 +847,35 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   Widget _buildSaveButton(BuildContext context) {
     return GestureDetector(
-      onTap: _saveExpense,
+      onTap: expenseController.isSaving.value ? null : _saveExpense,
       child: Container(
         width: double.infinity,
         height: 48,
         decoration: BoxDecoration(
-          color: const Color(0xFFE74C3C),
+          color: expenseController.isSaving.value
+              ? Colors.grey
+              : const Color(0xFFE74C3C),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
-          child: Text(
-            'SAVE NOW',
-            style: GoogleFonts.inter(
-              fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
+          child: expenseController.isSaving.value
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(
+                  'SAVE NOW',
+                  style: GoogleFonts.inter(
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(
+                        context, small: 14, medium: 15, large: 16),
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
         ),
       ),
     );

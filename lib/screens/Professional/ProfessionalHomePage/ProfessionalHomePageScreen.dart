@@ -15,8 +15,7 @@ import '../MyLearning/MyLearningScreen.dart';
 import '../SOS/SOSScreen.dart';
 import '../AddReferral/AddReferralScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
-import '../../../controllers/Professional/unassigned_trips_controller.dart';
-import '../TripOverview/TripOverviewScreen.dart';
+import '../../../controllers/Professional/assigned_trip_controller.dart';
 
 /// Professional Homepage Screen
 /// Main screen matching Figma design exactly
@@ -35,13 +34,11 @@ class ProfessionalHomePageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize controllers
-    Get.put(OpenJobsController());
-    final tripsController = Get.put(UnassignedTripsController());
-    
-    // Get screen dimensions for responsive design
-    final screenWidth = MediaQuery.of(context).size.width;
+    final AssignedTripController assignedTripController =
+        Get.put(AssignedTripController());
+
     final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final bottomNavBarHeight = bottomPadding + 76; // Bottom nav height (76) + safe area padding
     
@@ -82,7 +79,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                         left: screenWidth * 0.04, // Responsive left padding
                         right: screenWidth * 0.04, // Responsive right padding
                         child: Obx(() {
-                          if (tripsController.isLoading.value) {
+                          if (assignedTripController.isLoading.value) {
                             return Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
@@ -102,33 +99,30 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                             );
                           }
 
-                          if (tripsController.unassignedTrips.isEmpty) {
+                          if (assignedTripController.assignedTrips.isEmpty) {
                             return const TripCardWidget(
                               pickupAddress: "No trips available",
-                              destinationAddress: "Check back later for new trips",
+                              destinationAddress:
+                                  "Check back later for new trips",
                               dateTime: "",
                               tags: [],
                             );
                           }
 
-                          final trip = tripsController.unassignedTrips.first;
-                          final tags = [trip.tripType].where((t) => t.isNotEmpty).toList();
+                          final trip = assignedTripController.assignedTrips.first;
+                          final tags = ['Assigned']
+                              .where((t) => t.isNotEmpty)
+                              .toList();
 
                           return GestureDetector(
                             onTap: () async {
-                              await tripsController.fetchTripDetails(trip.tripId);
-                              if (tripsController.tripDetails.value != null) {
-                                TripOverviewPopup.show(
-                                  context,
-                                  tripId: trip.tripId,
-                                  tripDetails: tripsController.tripDetails.value!,
-                                );
-                              }
+                              // TODO: Implement navigation to trip details, might need a tripId on AssignedTrip model
                             },
                             child: TripCardWidget(
                               pickupAddress: trip.pickupLocation,
-                              destinationAddress: trip.destination,
-                              dateTime: _formatDate(trip.pickupDate, trip.pickupTime),
+                              destinationAddress: trip.deliveryLocation,
+                              dateTime:
+                                  _formatDate(trip.pickupDate, trip.pickupTime),
                               tags: tags,
                             ),
                           );
@@ -286,9 +280,9 @@ class ProfessionalHomePageScreen extends StatelessWidget {
     );
   }
 
-  /// Jobs Section - Responsive
+  /// Builds the jobs section with a title and a list of job cards
   Widget _buildJobsSection(BuildContext context) {
-    final jobsController = Get.find<OpenJobsController>();
+    final OpenJobsController jobsController = Get.put(OpenJobsController());
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(

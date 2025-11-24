@@ -198,7 +198,7 @@ class JobController extends GetxController {
         headers: {
           'Accept': '*/*',
         },
-        method: 'PUT', // Changed from PUT to POST
+        method: 'POST', 
       );
 
       print("💼 Update job response status: ${streamedResponse.statusCode}");

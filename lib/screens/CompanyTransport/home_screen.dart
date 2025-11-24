@@ -64,7 +64,7 @@ class HomeScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      backgroundColor:  Colors.white, // Pink background from Figma
+      backgroundColor: const Color(0xFFF4E3E3), // Light pink background from Figma
       appBar: null,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -176,7 +176,8 @@ class HomeScreen extends StatelessWidget {
                 /// Menu Grid
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final crossAxisCount = constraints.maxWidth > 600 ? 4 : 3;
+                    final crossAxisCount = 3;
+                    
                     return GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
@@ -185,7 +186,7 @@ class HomeScreen extends StatelessWidget {
                         crossAxisCount: crossAxisCount,
                         mainAxisSpacing: 16,
                         crossAxisSpacing: 16,
-                        childAspectRatio: 1,
+                        childAspectRatio: 0.85,
                       ),
                       itemBuilder: (context, index) {
                         final item = menuItems[index];
@@ -227,24 +228,41 @@ class HomeScreen extends StatelessWidget {
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                SvgPicture.asset(
-                                  item['icon'],
-                                  height: 32,
-                                  width: 32,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  item['label'],
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w500,
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: _getIconBgColor(index),
+                                    shape: BoxShape.circle,
                                   ),
-                                  textAlign: TextAlign.center,
+                                  child: Center(
+                                    child: SvgPicture.asset(
+                                      item['icon'],
+                                      height: 30,
+                                      width: 30,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Flexible(
+                                  child: Text(
+                                    item['label'],
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12,
+                                      color: const Color(0xFF535353),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
@@ -329,11 +347,11 @@ class HomeScreen extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
-                                    vertical: 6,
+                                    vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.teal[100],
-                                    borderRadius: BorderRadius.circular(30),
+                                    color: const Color(0xFFD1E5E2), // Light green from Figma
+                                    borderRadius: BorderRadius.circular(9999),
                                   ),
                                   child: Text(
                                     "Call Now",
@@ -341,8 +359,9 @@ class HomeScreen extends StatelessWidget {
                                         .textTheme
                                         .bodySmall
                                         ?.copyWith(
-                                          color: AppColors.buttonBg,
+                                          color: const Color(0xFFFF5E5E),
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 13,
                                         ),
                                   ),
                                 ),
@@ -380,7 +399,10 @@ class HomeScreen extends StatelessWidget {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor:
                                           const Color(0xFF00AEEF),
-                                      shape: const StadiumBorder(),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(9999),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 11),
                                     ),
                                     icon: const Icon(Icons.share,
                                         color: Colors.white),
@@ -402,8 +424,11 @@ class HomeScreen extends StatelessWidget {
                                       Get.to(() => PostJobScreen(jobToEdit: job));
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.buttonBg,
-                                      shape: const StadiumBorder(),
+                                      backgroundColor: const Color(0xFFD1E5E2), // Light green from Figma
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(9999),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 11),
                                     ),
                                     icon: const Icon(Icons.edit,
                                         color: Colors.white),
@@ -413,7 +438,9 @@ class HomeScreen extends StatelessWidget {
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
-                                            color: AppColors.white,
+                                            color: const Color(0xFFFF5E5E),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
                                           ),
                                     ),
                                   ),
@@ -491,16 +518,34 @@ class HomeScreen extends StatelessWidget {
               Get.to(ServicesScreen());
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFD6C6C),
-              minimumSize: const Size(120, 44),
+              backgroundColor: const Color(0xFFFF5252),
+              minimumSize: const Size(137.906, 48),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(9999),
               ),
-              elevation: 4,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 14),
             ),
-            child: const Text(
-              "Services",
-              style: TextStyle(color: Colors.white),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/servicelogo.svg',
+                  width: 20,
+                  height: 20,
+                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  "Services",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -509,16 +554,29 @@ class HomeScreen extends StatelessWidget {
               Get.to(PostJobScreen());
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.buttonBg,
-              minimumSize: const Size(120, 44),
+              backgroundColor: const Color(0xFFFF5252),
+              minimumSize: const Size(137.906, 48),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(9999),
               ),
-              elevation: 4,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
-            child: const Text(
-              "+ Post Job",
-              style: TextStyle(color: Colors.white),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                const Text(
+                  "Post Job",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -791,6 +849,26 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getIconBgColor(int index) {
+    // Color mapping for menu items based on Figma design
+    switch (index) {
+      case 0:
+        return const Color(0xFFE3F2FD); // Vehicles - Light blue
+      case 1:
+        return const Color(0xFFE0F7FA); // Professional - Light teal
+      case 2:
+        return const Color(0xFFFFF3E0); // Expenses - Light orange
+      case 3:
+        return const Color(0xFFFCE4EC); // Hire - Light pink
+      case 4:
+        return const Color(0xFFFFF8E1); // Services - Light yellow
+      case 5:
+        return const Color(0xFFE0E0E0); // Dashboard - Light grey
+      default:
+        return Colors.grey;
+    }
   }
 
   String _formatImageUrl(String url) {

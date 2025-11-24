@@ -120,24 +120,31 @@ class TripDropdown extends StatelessWidget {
                     Row(
                       children: [
                         // Origin
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 12,
-                              color: Color(0xFF2196F3),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              item.origin,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFFF36969),
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 12,
+                                color: Color(0xFF2196F3),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  item.origin,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFFF36969),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 8),
                         // Arrow
@@ -148,34 +155,45 @@ class TripDropdown extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         // Destination
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 12,
-                              color: Color(0xFFFF5E5E),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              item.destination,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFFF36969),
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 12,
+                                color: Color(0xFFFF5E5E),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  item.destination,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFFF36969),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         // Trip ID
-                        Text(
-                          "Trip ID: ${item.tripId}",
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF27AE60),
+                        Flexible(
+                          child: Text(
+                            "Trip ID: ${item.tripId}",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF27AE60),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
                       ],
@@ -184,42 +202,64 @@ class TripDropdown extends StatelessWidget {
                     Row(
                       children: [
                         // Vehicle Type
-                        Text(
-                          "Vehicle Type: ",
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF27AE60),
-                          ),
-                        ),
-                        Text(
-                          item.vehicleType,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFFF5E5E),
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Vehicle Type: ",
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF27AE60),
+                                ),
+                              ),
+                              Flexible(
+                                child: Text(
+                                  item.vehicleType,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFFFF5E5E),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const Spacer(),
                         // Date
-                        Text(
-                          "Date: ",
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF27AE60),
-                          ),
-                        ),
-                        Text(
-                          item.date,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFFF5E5E),
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Date: ",
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF27AE60),
+                                ),
+                              ),
+                              Flexible(
+                                child: Text(
+                                  item.date,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFFFF5E5E),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

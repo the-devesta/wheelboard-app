@@ -25,6 +25,7 @@ class API {
   static const String submitBid = 'api/Trip/submit-bid';
   static const String getTripBids = 'api/Trip/get-trip-bids/';
   static const String assignTrip = 'api/Trip/assign-trip/';
+  static const String getAssignedTrips = 'api/Trip/assign-trip/';
   static const String createTripOrder = 'api/Trip/create-order';
   static const String verifyTripPayment = 'api/Trip/verify-payment';
   static const String getTripConfirmation = 'api/Trip/confirmation/';
@@ -67,4 +68,8 @@ class API {
   // Calendar Events APIs
   static const String saveCalendarEvent = 'api/Trip/save-calendar-events';
   static const String getEventsByUserId = 'api/Trip/get-events-by-userId/';
+  
+  // Expense APIs
+  static const String getExpensePurposes = 'api/Trip/trip_expense_purposes';
+  static const String saveTripExpense = 'api/Trip/trip_expense_save';
 }

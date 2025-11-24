@@ -5,6 +5,8 @@ import '../CompanyTransport/banner_carousel.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'profile_screen.dart';
 import 'earnings_screen.dart';
+import 'add_service_screen.dart';
+import 'service_details_screen.dart';
 
 class ServiceProviderHomeScreen extends StatelessWidget {
   const ServiceProviderHomeScreen({super.key});
@@ -176,24 +178,30 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildServiceCard(
-                      context,
-                      imageUrl: 'https://i.pravatar.cc/60?img=1',
-                      title: 'Tyre Replacement',
-                      tag: 'Tyre Repair',
-                      description: 'Puncture and flat tyre repair service.\nQuick turnaround and warranty\nincluded for every job.',
-                      onEdit: () {},
-                      onUnpublish: () {},
+                    GestureDetector(
+                      onTap: () => Get.to(() => const ServiceDetailsScreen()),
+                      child: _buildServiceCard(
+                        context,
+                        imageUrl: 'https://i.pravatar.cc/60?img=1',
+                        title: 'Tyre Replacement',
+                        tag: 'Tyre Repair',
+                        description: 'Puncture and flat tyre repair service.\nQuick turnaround and warranty\nincluded for every job.',
+                        onEdit: () {},
+                        onUnpublish: () {},
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    _buildServiceCard(
-                      context,
-                      imageUrl: '',
-                      title: 'Oil Change',
-                      tag: 'Lubrication',
-                      description: 'High-quality engine oil replacement\nwith filter change. Fast and reliable\nservice every time.',
-                      onEdit: () {},
-                      onUnpublish: () {},
+                    GestureDetector(
+                      onTap: () => Get.to(() => const ServiceDetailsScreen()),
+                      child: _buildServiceCard(
+                        context,
+                        imageUrl: '',
+                        title: 'Oil Change',
+                        tag: 'Lubrication',
+                        description: 'High-quality engine oil replacement\nwith filter change. Fast and reliable\nservice every time.',
+                        onEdit: () {},
+                        onUnpublish: () {},
+                      ),
                     ),
                   ],
                 ),
@@ -250,7 +258,7 @@ class ServiceProviderHomeScreen extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 80),
         child: ElevatedButton.icon(
           onPressed: () {
-            // Navigate to add service
+            Get.to(() => const AddServiceScreen());
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFF5252),
