@@ -41,23 +41,82 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
   bool _hasPrefilled = false;
 
   final List<String> _states = [
-    'Delhi',
-    'Uttar Pradesh',
-    'Maharashtra',
-    'Karnataka',
+    'Andhra Pradesh',
+    'Arunachal Pradesh',
+    'Assam',
+    'Bihar',
+    'Chhattisgarh',
+    'Goa',
     'Gujarat',
+    'Haryana',
+    'Himachal Pradesh',
+    'Jharkhand',
+    'Karnataka',
+    'Kerala',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Manipur',
+    'Meghalaya',
+    'Mizoram',
+    'Nagaland',
+    'Odisha',
+    'Punjab',
+    'Rajasthan',
+    'Sikkim',
+    'Tamil Nadu',
+    'Telangana',
+    'Tripura',
+    'Uttar Pradesh',
+    'Uttarakhand',
+    'West Bengal',
+    'Delhi',
+    'Jammu and Kashmir',
+    'Ladakh',
   ];
 
   final Map<String, List<String>> _citiesByState = {
-    'Delhi': ['New Delhi', 'Dwarka', 'Saket', 'Rohini'],
-    'Uttar Pradesh': ['Noida', 'Ghaziabad', 'Lucknow', 'Kanpur'],
-    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik'],
-    'Karnataka': ['Bengaluru', 'Mysuru', 'Mangalore'],
-    'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara'],
+    'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool'],
+    'Arunachal Pradesh': ['Itanagar', 'Naharlagun', 'Tawang'],
+    'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat', 'Nagaon'],
+    'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia'],
+    'Chhattisgarh': ['Raipur', 'Bhilai', 'Bilaspur', 'Durg', 'Korba'],
+    'Goa': ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa'],
+    'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar'],
+    'Haryana': ['Gurgaon', 'Faridabad', 'Panipat', 'Ambala', 'Karnal'],
+    'Himachal Pradesh': ['Shimla', 'Mandi', 'Dharamshala', 'Solan'],
+    'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Hazaribagh'],
+    'Karnataka': ['Bangalore', 'Bengaluru', 'Mysore', 'Mysuru', 'Hubli', 'Mangalore', 'Belgaum'],
+    'Kerala': ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kollam'],
+    'Madhya Pradesh': ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain'],
+    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad'],
+    'Manipur': ['Imphal', 'Thoubal', 'Bishnupur'],
+    'Meghalaya': ['Shillong', 'Tura', 'Jowai'],
+    'Mizoram': ['Aizawl', 'Lunglei', 'Saiha'],
+    'Nagaland': ['Kohima', 'Dimapur', 'Mokokchung'],
+    'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur'],
+    'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda'],
+    'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur'],
+    'Sikkim': ['Gangtok', 'Namchi', 'Mangan'],
+    'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem'],
+    'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar'],
+    'Tripura': ['Agartala', 'Udaipur', 'Dharmanagar'],
+    'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Allahabad', 'Noida', 'Ghaziabad'],
+    'Uttarakhand': ['Dehradun', 'Haridwar', 'Roorkee', 'Haldwani'],
+    'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri'],
+    'Delhi': ['New Delhi', 'Delhi', 'Dwarka', 'Saket', 'Rohini'],
+    'Jammu and Kashmir': ['Srinagar', 'Jammu', 'Anantnag'],
+    'Ladakh': ['Leh', 'Kargil'],
   };
 
-  List<String> get _cityOptions =>
-      _selectedState != null ? (_citiesByState[_selectedState] ?? []) : [];
+  List<String> get _cityOptions {
+    if (_selectedState == null) return [];
+    final cities = List<String>.from(_citiesByState[_selectedState] ?? []);
+    // If city from profile is not in the list, add it
+    if (_selectedCity != null && !cities.contains(_selectedCity)) {
+      cities.add(_selectedCity!);
+    }
+    return cities;
+  }
 
   File? get _driverImageFile =>
       _pickedDriverImage != null && !kIsWeb ? File(_pickedDriverImage!.path) : null;
@@ -89,14 +148,17 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
     setState(() {
       _fullNameController.text = profile.name ?? '';
       _fatherNameController.text = profile.fatherName ?? '';
+      
+      // Set state from profile - if not in list, add it temporarily
       _selectedState = profile.state;
-
       if (_selectedState != null && !_states.contains(_selectedState)) {
-        _selectedState = null;
+        // Add state to list if it's not there
+        _states.add(_selectedState!);
       }
 
-      _selectedCity =
-          _cityOptions.contains(profile.city) ? profile.city : null;
+      // Set city from profile - will be handled in getter
+      _selectedCity = profile.city;
+      
       _existingDriverImageUrl = profile.profileImagePath;
 
       if (profile.dateOfBirth != null) {
@@ -201,6 +263,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 16),
           child: Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -211,42 +274,67 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
               children: [
                 Center(
                   child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFF36969),
-                            width: 4,
+                      GestureDetector(
+                        onTap: _pickDriverImage,
+                        child: Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFFF36969),
+                              width: 4,
+                            ),
+                            image: _existingDriverImageUrl != null && _existingDriverImageUrl!.isNotEmpty
+                                ? DecorationImage(
+                                    image: NetworkImage(_existingDriverImageUrl!),
+                                    fit: BoxFit.cover,
+                                    onError: (exception, stackTrace) {
+                                      // Handle image load error
+                                    },
+                                  )
+                                : _pickedDriverImage != null
+                                    ? DecorationImage(
+                                        image: FileImage(File(_pickedDriverImage!.path)),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                            color: _existingDriverImageUrl == null || _existingDriverImageUrl!.isEmpty
+                                ? (_pickedDriverImage == null ? Colors.grey[200] : null)
+                                : null,
                           ),
-                          color: Colors.grey[200],
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 48,
-                          color: Colors.grey,
+                          child: (_existingDriverImageUrl == null || _existingDriverImageUrl!.isEmpty) && _pickedDriverImage == null
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 48,
+                                  color: Colors.grey,
+                                )
+                              : null,
                         ),
                       ),
                       Positioned(
                         right: 0,
                         bottom: 0,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF36969),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 2,
+                        child: GestureDetector(
+                          onTap: _pickDriverImage,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF36969),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 2,
+                              ),
                             ),
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 16,
-                            color: Colors.white,
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 16,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -284,7 +372,12 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                   onChanged: (value) {
                     setState(() {
                       _selectedState = value;
-                      if (!_cityOptions.contains(_selectedCity)) {
+                      // Only clear city if it's not in the new state's city list
+                      // But keep it if it was from profile (will be added to list by getter)
+                      final cityOptions = _citiesByState[_selectedState] ?? [];
+                      if (_selectedCity != null && !cityOptions.contains(_selectedCity) && _hasPrefilled) {
+                        // Keep the city - it will be added to options by getter
+                      } else if (_selectedCity != null && !cityOptions.contains(_selectedCity)) {
                         _selectedCity = null;
                       }
                     });
@@ -519,7 +612,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButton<String>(
-                    value: enabled && options.contains(value) ? value : null,
+                    value: enabled && value != null && options.contains(value) ? value : null,
                     isExpanded: true,
                     underline: const SizedBox(),
                     hint: Text(
@@ -594,6 +687,69 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
           ],
         ),
         const SizedBox(height: 8),
+        // Image Preview
+        if (_pickedDriverImage != null || (_existingDriverImageUrl != null && _existingDriverImageUrl!.isNotEmpty))
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFEDF1F3)),
+                    image: _pickedDriverImage != null
+                        ? DecorationImage(
+                            image: FileImage(File(_pickedDriverImage!.path)),
+                            fit: BoxFit.cover,
+                          )
+                        : _existingDriverImageUrl != null && _existingDriverImageUrl!.isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(_existingDriverImageUrl!),
+                                fit: BoxFit.cover,
+                                onError: (exception, stackTrace) {
+                                  // Handle error
+                                },
+                              )
+                            : null,
+                    color: Colors.grey[200],
+                  ),
+                  child: (_pickedDriverImage == null && (_existingDriverImageUrl == null || _existingDriverImageUrl!.isEmpty))
+                      ? const Icon(Icons.image, size: 40, color: Colors.grey)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _pickedDriverImage != null
+                            ? _pickedDriverImage!.name
+                            : 'Current profile image',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF424242),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _pickedDriverImage != null
+                            ? 'Tap to change image'
+                            : 'Tap to upload new image',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: const Color(0xFF888888),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         GestureDetector(
           onTap: _pickDriverImage,
           child: Row(
@@ -624,9 +780,9 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                   child: Center(
                     child: Text(
                       _pickedDriverImage != null
-                          ? _pickedDriverImage!.name
-                          : (_existingDriverImageUrl != null
-                              ? 'Current image selected'
+                          ? 'Change image'
+                          : (_existingDriverImageUrl != null && _existingDriverImageUrl!.isNotEmpty
+                              ? 'Change current image'
                               : 'Tap to upload image'),
                       style: GoogleFonts.poppins(
                         fontSize: 12,

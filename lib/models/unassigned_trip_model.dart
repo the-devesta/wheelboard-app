@@ -5,7 +5,7 @@ class UnassignedTrip {
   final String destination;
   final DateTime? pickupDate;
   final String pickupTime;
-  final int payRange;
+  final String payRange;
   final String tripStatus;
   final String tripType;
 
@@ -31,7 +31,7 @@ class UnassignedTrip {
           ? DateTime.tryParse(json['pickupDate'])
           : null,
       pickupTime: json['pickupTime'] ?? '',
-      payRange: json['payRange'] is int ? json['payRange'] : int.tryParse(json['payRange']?.toString() ?? '0') ?? 0,
+      payRange: json['payRange']?.toString().trim() ?? json['PayRange']?.toString().trim() ?? '',
       tripStatus: json['tripStatus'] ?? '',
       tripType: json['tripType'] ?? '',
     );
@@ -46,7 +46,7 @@ class UnassignedTripDetails {
   final DateTime? pickupDate;
   final String pickupTime;
   final String specialInstructions;
-  final int payRange;
+  final String payRange;
   final String tripStatus;
   final String vehicleId;
   final String vehicleNumber;
@@ -92,7 +92,7 @@ class UnassignedTripDetails {
           : null,
       pickupTime: json['pickupTime'] ?? '',
       specialInstructions: json['specialInstructions'] ?? '',
-      payRange: json['payRange'] is int ? json['payRange'] : int.tryParse(json['payRange']?.toString() ?? '0') ?? 0,
+      payRange: json['payRange']?.toString().trim() ?? json['PayRange']?.toString().trim() ?? '',
       tripStatus: json['tripStatus'] ?? '',
       vehicleId: json['vehicleId'] ?? '',
       vehicleNumber: json['vehicleNumber'] ?? '',

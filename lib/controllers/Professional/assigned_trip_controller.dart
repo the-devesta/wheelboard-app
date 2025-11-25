@@ -22,25 +22,71 @@ class AssignedTripController extends GetxController {
       isLoading(true);
       final userId = _authService.currentUserId;
       if (userId.isEmpty) {
-        print('User not logged in or userId is missing');
+        print('⚠️ User not logged in or userId is missing');
+        assignedTrips.value = [];
         isLoading(false);
         return;
       }
 
+      print("🚗 Fetching assigned trips for userId: $userId");
+
       final response = await HttpHelper.getData(
         endpoint: '${API.getAssignedTrips}$userId',
-        headers: {'Authorization': 'Bearer ${_authService.currentToken}'},
+        headers: {
+          'Authorization': 'Bearer ${_authService.currentToken}',
+          'Accept': 'application/json',
+        },
       );
 
+      print("🚗 Assigned trips response status: ${response.statusCode}");
+      print("🚗 Assigned trips response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}");
+
+      // Check if response is HTML (error page)
+      if (response.body.trim().startsWith('<!DOCTYPE') || response.body.trim().startsWith('<html')) {
+        print("❌ Server returned HTML instead of JSON - API endpoint may be incorrect");
+        assignedTrips.value = [];
+        isLoading(false);
+        return;
+      }
+
       if (response.statusCode == 200) {
-        final List<dynamic> tripData = jsonDecode(response.body);
-        assignedTrips.value =
-            tripData.map((data) => AssignedTrip.fromJson(data)).toList();
+        try {
+          final List<dynamic> tripData = jsonDecode(response.body);
+          if (tripData.isEmpty) {
+            print('ℹ️ No assigned trips found for this user');
+            assignedTrips.value = [];
+          } else {
+            assignedTrips.value =
+                tripData.map((data) => AssignedTrip.fromJson(data)).toList();
+            print("✅ Fetched ${assignedTrips.length} assigned trips");
+          }
+        } catch (parseError) {
+          print('❌ Error parsing assigned trips: $parseError');
+          // Check if it's an error message
+          try {
+            final errorData = jsonDecode(response.body);
+            final errorMessage = errorData['message'] ?? errorData['error'] ?? 'No bids found for this trip';
+            print('ℹ️ $errorMessage');
+          } catch (e) {
+            print('❌ Failed to parse error message');
+          }
+          assignedTrips.value = [];
+        }
       } else {
-        print('Failed to load assigned trips: ${response.body}');
+        print('❌ Failed to load assigned trips: ${response.statusCode}');
+        // Try to parse error message
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMessage = errorData['message'] ?? errorData['error'] ?? 'Failed to load assigned trips';
+          print('ℹ️ $errorMessage');
+        } catch (e) {
+          print('❌ Response body: ${response.body}');
+        }
+        assignedTrips.value = [];
       }
     } catch (e) {
-      print('Error fetching assigned trips: $e');
+      print('❌ Error fetching assigned trips: $e');
+      assignedTrips.value = [];
     } finally {
       isLoading(false);
     }

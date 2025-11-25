@@ -33,18 +33,20 @@ class CompanyProfileController extends GetxController {
   File? get logoFile =>
       pickedLogo != null && !kIsWeb ? File(pickedLogo!.path) : null;
 
+  Worker? _profileWorker;
+
   @override
   void onInit() {
     super.onInit();
     // Listen to changes in userProfile and pre-fill the form
-    ever<UserProfileModel?>(_profileController.userProfile, (profile) {
-      if (profile != null) {
+    _profileWorker = ever<UserProfileModel?>(_profileController.userProfile, (profile) {
+      if (profile != null && !isClosed) {
         _applyProfile(profile);
       }
     });
 
     // If profile is already available, pre-fill the form
-    if (_profileController.userProfile.value != null) {
+    if (_profileController.userProfile.value != null && !isClosed) {
       _applyProfile(_profileController.userProfile.value!);
     } else {
       _profileController.fetchCurrentUserProfile();
@@ -52,15 +54,23 @@ class CompanyProfileController extends GetxController {
   }
 
   void _applyProfile(UserProfileModel profile) {
-    _userId = profile.userId;
-    companyNameController.text = profile.companyName ?? '';
-    fullNameController.text = profile.name ?? '';
-    emailController.text = profile.email ?? '';
-    businessCategoryController.text = profile.businessCategory ?? '';
-    locationController.text = profile.city ?? profile.state ?? '';
-    fleetSizeController.text = ''; // Assuming this is intentional
-    gstController.text = profile.gstNumber ?? '';
-    _existingLogoUrl.value = profile.companyLogoPath;
+    // Check if controller is still valid before accessing TextEditingControllers
+    if (isClosed) return;
+    
+    try {
+      _userId = profile.userId;
+      companyNameController.text = profile.companyName ?? '';
+      fullNameController.text = profile.fullName ?? profile.name ?? '';
+      emailController.text = profile.email ?? '';
+      businessCategoryController.text = profile.businessCategory ?? '';
+      locationController.text = profile.address ?? profile.city ?? profile.state ?? '';
+      fleetSizeController.text = profile.fleetSize ?? '';
+      gstController.text = profile.gstNumber ?? '';
+      _existingLogoUrl.value = profile.companyLogoPath;
+    } catch (e) {
+      // Controller was disposed, ignore the error
+      print("⚠️ Controller disposed, skipping profile application: $e");
+    }
   }
 
   Future<void> pickLogo() async {
@@ -139,6 +149,10 @@ class CompanyProfileController extends GetxController {
 
   @override
   void onClose() {
+    // Dispose the worker first to prevent callbacks after disposal
+    _profileWorker?.dispose();
+    
+    // Dispose controllers
     companyNameController.dispose();
     fullNameController.dispose();
     emailController.dispose();

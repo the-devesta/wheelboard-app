@@ -6,8 +6,8 @@ import '../../controllers/complete_profile_controller.dart';
 import '../../models/company_profilemodel.dart';
 import '../../constants/apps_colors.dart';
 import '../../utils/session_manager.dart';
-import '../../utils/navigation_helper.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../auth/login.dart';
 
 class CompanyCompleteProfile extends StatefulWidget {
   const CompanyCompleteProfile({super.key});
@@ -30,6 +30,29 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
   
   final String userId = Get.arguments?["userId"] ?? "";
   final Rx<Country> selectedCountry = Country.parse('IN').obs;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Pre-fill data from registration if available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final registrationData = Get.arguments;
+      if (registrationData != null) {
+        // Pre-fill company name
+        if (registrationData["companyName"] != null && registrationData["companyName"].toString().isNotEmpty) {
+          companyNameController.text = registrationData["companyName"].toString();
+        }
+        // Pre-fill email
+        if (registrationData["email"] != null && registrationData["email"].toString().isNotEmpty) {
+          emailController.text = registrationData["email"].toString();
+        }
+        // Pre-fill phone number
+        if (registrationData["mobileNo"] != null && registrationData["mobileNo"].toString().isNotEmpty) {
+          phoneController.text = registrationData["mobileNo"].toString();
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -192,8 +215,8 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
 
                 // Fleet
                 _buildInputField(
-                  label: "Fleet",
-                  hint: "No of Fleet Size",
+                  label: "Fleet Size",
+                  hint: "No of vehicles",
                   controller: fleetSizeController,
                   keyboardType: TextInputType.number,
                 ),
@@ -202,7 +225,7 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                 // Company GST (Optional)
                 _buildInputField(
                   label: "Company GST (Optional)",
-                  hint: "Company GST(Optional)",
+                  hint: "Enter GST number (optional)",
                   controller: gstController,
                 ),
                 const SizedBox(height: 24),
@@ -465,10 +488,21 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
 
           if (success) {
             await SessionManager.setProfileCompleted(true);
-            SnackBarHelper.success("Profile completed successfully!");
+            
+            // ✅ Clear registration data from SessionManager after successful profile completion
+            final sessionManager = SessionManager();
+            await sessionManager.remove("registration_companyName");
+            await sessionManager.remove("registration_email");
+            await sessionManager.remove("registration_mobileNo");
+            await sessionManager.remove("registration_businessCategory");
+            
+            SnackBarHelper.success("Profile completed successfully! Please login to continue.");
             
             await Future.delayed(const Duration(milliseconds: 2000));
-            NavigationHelper.navigateToMainWrapper();
+            
+            // ✅ Redirect to login page after complete profile
+            // User will login and then be redirected to correct screen based on userType
+            Get.offAll(() => const LoginScreen());
           }
         },
         style: ElevatedButton.styleFrom(
@@ -552,14 +586,17 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
       return false;
     }
 
+    // ✅ GST is optional - only validate if provided
     final gstNumber = gstController.text.trim();
     if (gstNumber.isNotEmpty) {
+      // Validate GST format only if user has entered something
       if (gstNumber.length != 15 ||
           !RegExp(r'^[0-9A-Z]{15}$').hasMatch(gstNumber.toUpperCase())) {
-        SnackBarHelper.error("GST Number must be 15 characters alphanumeric");
+        SnackBarHelper.error("GST Number must be 15 characters alphanumeric (or leave empty)");
         return false;
       }
     }
+    // ✅ If GST is empty, it's fine - field is optional
 
     return true;
   }

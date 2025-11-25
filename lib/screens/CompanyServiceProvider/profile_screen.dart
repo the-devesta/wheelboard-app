@@ -87,15 +87,19 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
                       // View Subscription Plans Button
                       _buildSubscriptionButton(),
                       const SizedBox(height: 20),
-                      // Log Out Button
+                      // Edit Profile Button
+                      _buildEditProfileButton(),
+                      const SizedBox(height: 12),
+                      // Switch Profile Button
+                      _buildSwitchProfileButton(),
+                      const SizedBox(height: 12),
+                      // Log Out Button (moved inside scrollview)
                       _buildLogOutButton(),
-                      const SizedBox(height: 100), // Space for bottom buttons
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
               ),
-              // Bottom Action Buttons
-              _buildBottomButtons(),
             ],
           );
         }),
@@ -130,7 +134,13 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
               ),
             ),
           ),
-          const SizedBox(width: 48), // Balance the back button
+          IconButton(
+            onPressed: () {
+              // Navigate to edit profile - TODO: Add edit profile screen
+              // Get.to(() => EditServiceProviderProfileScreen());
+            },
+            icon: const Icon(Icons.edit, color: Color(0xFFF36969)),
+          ),
         ],
       ),
     );
@@ -138,6 +148,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
 
   Widget _buildProfileCard(UserProfileModel? profile) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -623,72 +634,60 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
     );
   }
 
-  Widget _buildBottomButtons() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFF5F5F5), width: 1),
+  Widget _buildEditProfileButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          // Navigate to edit profile - TODO: Add edit profile screen
+          // Get.to(() => EditServiceProviderProfileScreen());
+        },
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Color(0xFFF36969), width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: const Icon(
+          Icons.edit,
+          color: Color(0xFFF36969),
+          size: 18,
+        ),
+        label: Text(
+          'Edit Profile',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFFF36969),
+          ),
         ),
       ),
-      child: Column(
-        children: [
-          // Edit Profile Button
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // Navigate to edit profile
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFF36969), width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              icon: const Icon(
-                Icons.edit,
-                color: Color(0xFFF36969),
-                size: 18,
-              ),
-              label: Text(
-                'Edit Profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFF36969),
-                ),
-              ),
-            ),
+    );
+  }
+
+  Widget _buildSwitchProfileButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: () {
+          // Navigate to switch profile - TODO: Add switch profile functionality
+        },
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Color(0xFFF36969), width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 12),
-          // Switch Profile Button
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: OutlinedButton(
-              onPressed: () {
-                // Navigate to switch profile
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFF36969), width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Switch Profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFF36969),
-                ),
-              ),
-            ),
+        ),
+        child: Text(
+          'Switch Profile',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFFF36969),
           ),
-        ],
+        ),
       ),
     );
   }

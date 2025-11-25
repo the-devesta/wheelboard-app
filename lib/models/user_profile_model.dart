@@ -12,6 +12,9 @@ class UserProfileModel {
   final String? gstNumber;
   final String? businessCategory;
   final String? companyLogoPath;
+  final String? fullName;
+  final String? address;
+  final String? fleetSize;
   
   // Professional fields
   final String? name;
@@ -37,6 +40,9 @@ class UserProfileModel {
     this.gstNumber,
     this.businessCategory,
     this.companyLogoPath,
+    this.fullName,
+    this.address,
+    this.fleetSize,
     // Professional fields
     this.name,
     this.fatherName,
@@ -66,6 +72,9 @@ class UserProfileModel {
       gstNumber: json['gstNumber'] as String?,
       businessCategory: json['businessCategory'] as String?,
       companyLogoPath: json['companyLogoPath'] as String?,
+      fullName: json['fullName'] as String?,
+      address: json['address'] as String?,
+      fleetSize: json['fleetSize'] as String?,
       
       // Professional fields
       name: json['name'] as String?,
@@ -94,6 +103,9 @@ class UserProfileModel {
       if (gstNumber != null) 'gstNumber': gstNumber,
       if (businessCategory != null) 'businessCategory': businessCategory,
       if (companyLogoPath != null) 'companyLogoPath': companyLogoPath,
+      if (fullName != null) 'fullName': fullName,
+      if (address != null) 'address': address,
+      if (fleetSize != null) 'fleetSize': fleetSize,
       // Professional fields
       if (name != null) 'name': name,
       if (fatherName != null) 'fatherName': fatherName,

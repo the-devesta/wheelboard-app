@@ -8,6 +8,7 @@ import '../../controllers/login_controller.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/navigation_helper.dart';
+import '../../utils/session_manager.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../auth/forget_password_screen.dart';
@@ -322,9 +323,19 @@ class ProfessionLogin extends StatelessWidget {
       if (loginSuccess) {
         SnackBarHelper.success("Login successful! Welcome back.");
         if (businessCategory == "Transport" && !isProfileComplete) {
+          // ✅ Get registration data from SessionManager
+          final sessionManager = SessionManager();
+          final registrationData = {
+            "userId": userId,
+            "companyName": await sessionManager.getString("registration_companyName") ?? "",
+            "email": await sessionManager.getString("registration_email") ?? "",
+            "mobileNo": await sessionManager.getString("registration_mobileNo") ?? "",
+            "businessCategory": await sessionManager.getString("registration_businessCategory") ?? "Transport",
+          };
+          
           Get.to(
             CompanyCompleteProfile(),
-            arguments: {"userId": userId},
+            arguments: registrationData,
           );
         } else if (businessCategory == "Service Provider" && !isProfileComplete) {
           Get.to(

@@ -24,31 +24,57 @@ class OpenJobsController extends GetxController {
 
       final authService = AuthService.to;
       final token = authService.currentToken;
+      final userId = authService.currentUserId;
 
       print("💼 Fetching open jobs...");
+      print("💼 User ID: $userId");
 
       final response = await HttpHelper.getData(
         endpoint: API.getOpenJobs,
         headers: {
           if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Accept': '*/*',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
         },
       );
 
       print("💼 Open jobs response status: ${response.statusCode}");
-      print("💼 Open jobs response body: ${response.body}");
+      print("💼 Open jobs response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}");
+
+      // Check if response is HTML (error page)
+      if (response.body.trim().startsWith('<!DOCTYPE') || response.body.trim().startsWith('<html')) {
+        print("❌ Server returned HTML instead of JSON - API endpoint may be incorrect");
+        SnackBarHelper.error("Server error: Please try again later");
+        openJobs.value = []; // Clear jobs list
+        return;
+      }
 
       if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        openJobs.value = data.map((e) => OpenJob.fromJson(e)).toList();
-        print("✅ Fetched ${openJobs.length} open jobs");
+        try {
+          final List data = json.decode(response.body);
+          openJobs.value = data.map((e) => OpenJob.fromJson(e)).toList();
+          print("✅ Fetched ${openJobs.length} open jobs");
+        } catch (parseError) {
+          print("❌ Error parsing open jobs response: $parseError");
+          SnackBarHelper.error("Failed to parse jobs data");
+          openJobs.value = [];
+        }
       } else {
         print("❌ Failed to fetch open jobs: ${response.statusCode}");
-        SnackBarHelper.error("Failed to load jobs");
+        // Try to parse error message if it's JSON
+        try {
+          final errorData = json.decode(response.body);
+          final errorMessage = errorData['message'] ?? errorData['error'] ?? "Failed to load jobs";
+          SnackBarHelper.error(errorMessage);
+        } catch (e) {
+          SnackBarHelper.error("Failed to load jobs (${response.statusCode})");
+        }
+        openJobs.value = [];
       }
     } catch (e) {
       print("❌ Error fetching open jobs: $e");
       SnackBarHelper.error("Failed to load jobs: ${e.toString()}");
+      openJobs.value = [];
     } finally {
       isLoading.value = false;
     }

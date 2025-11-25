@@ -60,7 +60,8 @@ class EditCompanyProfileScreen extends StatelessWidget {
 
   Widget _buildFormCard(CompanyProfileController controller) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -102,9 +103,9 @@ class EditCompanyProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _buildTextField(
-            label: "Fleet",
+            label: "Fleet Size",
             controller: controller.fleetSizeController,
-            hint: "No of Fleet Size",
+            hint: "No of vehicles",
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
@@ -174,43 +175,53 @@ class EditCompanyProfileScreen extends StatelessWidget {
         imageProvider = NetworkImage(controller.existingLogoUrl!);
       }
 
-      return Stack(
-        alignment: Alignment.bottomRight,
-        children: [
-          Container(
-            width: 110,
-            height: 110,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFF36969), width: 4),
-              color: Colors.grey.shade200,
-              image: imageProvider != null
-                  ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
-                  : null,
-            ),
-            child: imageProvider == null
-                ? const Icon(Icons.business, size: 40, color: Colors.grey)
-                : null,
-          ),
-          Positioned(
-            bottom: 6,
-            right: 8,
-            child: GestureDetector(
+      return Center(
+        child: Stack(
+          alignment: Alignment.bottomRight,
+          children: [
+            GestureDetector(
               onTap: controller.pickLogo,
               child: Container(
-                width: 36,
-                height: 36,
+                width: 110,
+                height: 110,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFF36969),
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: const Color(0xFFF36969), width: 4),
+                  color: Colors.grey.shade200,
+                  image: imageProvider != null
+                      ? DecorationImage(
+                          image: imageProvider,
+                          fit: BoxFit.cover,
+                          onError: (exception, stackTrace) {
+                            // Handle image load error
+                          },
+                        )
+                      : null,
                 ),
-                child:
-                    const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                child: imageProvider == null
+                    ? const Icon(Icons.business, size: 40, color: Colors.grey)
+                    : null,
               ),
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 6,
+              right: 8,
+              child: GestureDetector(
+                onTap: controller.pickLogo,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFF36969),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     });
   }

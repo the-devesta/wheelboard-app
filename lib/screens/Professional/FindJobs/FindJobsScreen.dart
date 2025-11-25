@@ -533,7 +533,14 @@ class TripCard extends StatelessWidget {
             children: [
               const Icon(Icons.currency_rupee, size: 16),
               const SizedBox(width: 4),
-              Text("Pay Range: ₹${trip!.payRange}"),
+              Text(
+                trip!.payRange.isNotEmpty 
+                    ? "Pay Range: ${trip!.payRange}" 
+                    : "Pay Range: Not specified",
+                style: TextStyle(
+                  color: trip!.payRange.isNotEmpty ? Colors.black87 : Colors.grey,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),

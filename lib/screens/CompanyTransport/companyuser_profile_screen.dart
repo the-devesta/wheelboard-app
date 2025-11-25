@@ -189,6 +189,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
 
   Widget _buildProfileHeader(UserProfileModel? profile) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -199,38 +200,49 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           Stack(
             alignment: Alignment.center,
             children: [
-              Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFF36969), width: 4),
-                  image: profile?.companyLogoPath != null
-                      ? DecorationImage(
-                          image: NetworkImage(profile!.companyLogoPath!),
-                          fit: BoxFit.cover,
-                        )
+              GestureDetector(
+                onTap: () => Get.to(const EditCompanyProfileScreen()),
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFF36969), width: 4),
+                    image: profile?.companyLogoPath != null && profile!.companyLogoPath!.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(profile.companyLogoPath!),
+                            fit: BoxFit.cover,
+                            onError: (exception, stackTrace) {
+                              // Handle image load error
+                            },
+                          )
+                        : null,
+                    color: profile?.companyLogoPath == null || profile!.companyLogoPath!.isEmpty
+                        ? Colors.grey[300]
+                        : null,
+                  ),
+                  child: profile?.companyLogoPath == null || profile!.companyLogoPath!.isEmpty
+                      ? const Icon(Icons.business, size: 50, color: Colors.grey)
                       : null,
-                  color: profile?.companyLogoPath == null ? Colors.grey[300] : null,
                 ),
-                child: profile?.companyLogoPath == null
-                    ? const Icon(Icons.business, size: 50, color: Colors.grey)
-                    : null,
               ),
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF36969),
-                    shape: BoxShape.circle,
-                    border: Border.fromBorderSide(
-                      BorderSide(color: Colors.white, width: 2),
+                child: GestureDetector(
+                  onTap: () => Get.to(const EditCompanyProfileScreen()),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF36969),
+                      shape: BoxShape.circle,
+                      border: Border.fromBorderSide(
+                        BorderSide(color: Colors.white, width: 2),
+                      ),
                     ),
+                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                   ),
-                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                 ),
               ),
             ],
@@ -249,7 +261,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                 const Icon(Icons.local_shipping, size: 20, color: Colors.white),
                 const SizedBox(width: 8),
                 Text(
-                  profile?.companyName ?? 'Delhi Transport',
+                  profile?.companyName ?? 'N/A',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -262,7 +274,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           const SizedBox(height: 8),
           // Name
           Text(
-            profile?.name ?? 'Deepak Kumar',
+            profile?.fullName ?? profile?.name ?? 'N/A',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -270,22 +282,6 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          // Rating
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.star, size: 14, color: Color(0xFFF36969)),
-              const SizedBox(width: 4),
-              Text(
-                '4.7 / 5',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFF36969),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -348,13 +344,13 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         ),
       ),
       children: [
-        _buildInfoItem(Icons.person_outline, 'Name', profile?.name ?? 'Deepak Kumar'),
+        _buildInfoItem(Icons.person_outline, 'Name', profile?.fullName ?? profile?.name ?? 'N/A'),
         _buildInfoItem(Icons.lock_outline, 'Change Password', '************'),
-        _buildInfoItem(Icons.location_on, 'Location', 'Block C, Street 12, Noida, UP'),
-        _buildInfoItem(Icons.business, 'Company Name', profile?.companyName ?? 'Delhi Transport'),
-        _buildInfoItem(Icons.category, 'Business Category', profile?.businessCategory ?? 'Transport'),
-        _buildInfoItem(Icons.local_shipping, 'Fleet Size', '42'),
-        _buildInfoItem(Icons.account_balance, 'GST number', profile?.gstNumber ?? '43464984931316'),
+        _buildInfoItem(Icons.location_on, 'Location', profile?.address ?? profile?.city ?? profile?.state ?? 'N/A'),
+        _buildInfoItem(Icons.business, 'Company Name', profile?.companyName ?? 'N/A'),
+        _buildInfoItem(Icons.category, 'Business Category', profile?.businessCategory ?? 'N/A'),
+        _buildInfoItem(Icons.local_shipping, 'Fleet Size', profile?.fleetSize ?? 'N/A'),
+        _buildInfoItem(Icons.account_balance, 'GST number', profile?.gstNumber ?? 'N/A'),
       ],
     );
   }
@@ -363,9 +359,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     return _buildCard(
       title: 'Contact Information',
       children: [
-        _buildEditableItem(Icons.phone, 'Mobile Number', profile?.mobileNo ?? '+91 98765 43210'),
-        _buildEditableItem(Icons.email, 'Email Address', profile?.email ?? 'deepak.kumar@email.com'),
-        _buildEditableItem(Icons.message, 'WhatsApp Number', profile?.mobileNo ?? '+91 98765 43210'),
+        _buildEditableItem(Icons.phone, 'Mobile Number', profile?.mobileNo ?? 'N/A'),
+        _buildEditableItem(Icons.email, 'Email Address', profile?.email ?? 'N/A'),
+        _buildEditableItem(Icons.message, 'WhatsApp Number', profile?.mobileNo ?? 'N/A'),
       ],
     );
   }

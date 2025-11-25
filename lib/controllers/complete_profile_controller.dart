@@ -1,29 +1,4 @@
-// import 'dart:io';
-// import 'package:get/get.dart';
-// import 'package:image_picker/image_picker.dart';
-// import 'package:country_picker/country_picker.dart';
 
-// class CompleteProfileController extends GetxController {
-//   var selectedDialCode = '+91'.obs; // Initial value
-//   var selectedCountryCode = 'IN'.obs; // Optional
-//   var profileImage = Rx<File?>(null); // holds picked image
-//   final ImagePicker _picker = ImagePicker();
-
-//   Future<void> pickImage(ImageSource source) async {
-//     final XFile? pickedFile = await _picker.pickImage(
-//       source: source,
-//       imageQuality: 80,
-//     );
-//     if (pickedFile != null) {
-//       profileImage.value = File(pickedFile.path);
-//     }
-//   }
-
-//   void updateCountry(Country country) {
-//     selectedDialCode.value = '+${country.phoneCode}';
-//     selectedCountryCode.value = country.countryCode;
-//   }
-// }
 
 import 'dart:io';
 import 'dart:convert';
@@ -34,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 import '../models/company_profilemodel.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
-import '../utils/session_manager.dart';
 import '../widgets/custom_snackbar.dart';
 import 'package:http/http.dart' as http;
 
@@ -87,14 +61,10 @@ class CompleteProfileController extends GetxController {
   Future<bool> submitProfile(CompleteProfileModel model, String userId) async {
     isLoading.value = true;
     try {
-      // ✅ Get auth token from session
-      final sessionManager = SessionManager();
-      final token = await sessionManager.getString("authToken");
-      
-      if (token == null || token.isEmpty) {
-        SnackBarHelper.error("Please login again");
-        return false;
-      }
+      // ✅ Complete profile API works based on userId only - token not required
+      final Map<String, String> headers = {
+        "Accept": "*/*",
+      };
 
       // ✅ Prepare fields - ensure all required fields are present
       final fields = model.toJsonFields();
@@ -128,10 +98,7 @@ class CompleteProfileController extends GetxController {
         fields: fields,
         files: files,
         fieldKey: "CompanyLogo",
-        headers: {
-          "Authorization": "Bearer $token",
-          "Accept": "*/*",
-        },
+        headers: headers,
       );
 
       // 🔍 Convert to a normal Response so you can read the body

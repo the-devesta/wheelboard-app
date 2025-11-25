@@ -35,7 +35,10 @@ class DriverModel {
       "FullName": fullName ?? "",
       "ContactNumber": contactNumber ?? "",
       "VehicleType": vehicleType ?? "",
-      "VehicleNumber": vehicleNumber ?? "",
+      // ✅ Backend requires VehicleNumber - send "Not Assigned" if null/empty
+      "VehicleNumber": (vehicleNumber != null && vehicleNumber!.trim().isNotEmpty) 
+          ? vehicleNumber!.trim() 
+          : "Not Assigned",
       "Description": description ?? "",
       "IsDeclarationAccepted": isDeclarationAccepted?.toString() ?? "false",
       "PartnerId": partnerId?.toString() ?? "0",

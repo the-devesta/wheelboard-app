@@ -1,24 +1,5 @@
-// import 'package:flutter/material.dart';
-
-// class AddReferralScreen extends StatelessWidget {
-//   const AddReferralScreen({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Add Referral'),
-//       ),
-//       body: const Center(
-//         child: Text('Add Referral Screen'),
-//       ),
-//     );
-//   }
-// }
 
 import 'package:flutter/material.dart';
-import 'package:iconsax/iconsax.dart';
-// import 'package:wheelboard/screens/Professional/NewReferral/newreferralscreen.dart';
 import 'package:get/get.dart';
 import '../NewReferral/newreferralscreen.dart';
 
@@ -388,31 +369,37 @@ class AddReferralScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 90),
-          ],
-        ),
-      ),
-
-      /// 🚀 Bottom Button
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton.icon(
-          onPressed: () {
-            Get.to(() => NewReferralScreen());
-          },
-          icon: const Icon(Icons.add),
-          label: const Text(
-            "NEW REFERRAL",
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent,
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
+            const SizedBox(height: 20),
+            // New Referral Button (moved inside scrollview)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Get.to(() => NewReferralScreen());
+                  },
+                  icon: const Icon(Icons.person_add, color: Colors.white, size: 18),
+                  label: const Text(
+                    "NEW REFERRAL",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5E5E),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );

@@ -47,11 +47,13 @@ class LoginController extends GetxController {
 
       if (response.statusCode == 200) {
         try {
-        final data = json.decode(response.body);
-        print("🔐 Login successful, data received: ${data.toString()}");
+          final data = json.decode(response.body);
+          print("🔐 Login successful, data received: ${data.toString()}");
 
-          // ✅ Check if data exists and has required fields
-          if (data.containsKey('data') && data['data'] != null) {
+          // ✅ Check for success field and data object
+          final isSuccess = data['success'] == true;
+          
+          if (isSuccess && data.containsKey('data') && data['data'] != null) {
             final responseData = data['data'] as Map<String, dynamic>;
             
             // ✅ Validate required fields
@@ -59,11 +61,15 @@ class LoginController extends GetxController {
                 responseData.containsKey('userId') &&
                 responseData['token'] != null &&
                 responseData['userId'] != null) {
+              print("✅ Login data extracted successfully");
               return responseData; // Return the data object
             } else {
               print("❌ Login failed: Missing token or userId in response");
               return null;
             }
+          } else if (!isSuccess) {
+            print("❌ Login failed: success field is false");
+            return null;
           } else {
             print("❌ Login failed: No data in response");
             return null;

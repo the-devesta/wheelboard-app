@@ -59,6 +59,7 @@ class YourProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 20),
                   child: Column(
                     children: [
+                      const SizedBox(height: 12),
                       _buildProfileCard(profile),
                       const SizedBox(height: 24),
                       _buildKycBanner(),
@@ -148,6 +149,7 @@ class YourProfileScreen extends StatelessWidget {
 
   Widget _buildProfileCard(UserProfileModel? profile) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -160,38 +162,49 @@ class YourProfileScreen extends StatelessWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFF36969), width: 4),
-                  image: profile?.profileImagePath != null
-                      ? DecorationImage(
-                          image: NetworkImage(profile!.profileImagePath!),
-                          fit: BoxFit.cover,
-                        )
+              GestureDetector(
+                onTap: () => Get.to(const EditYourProfile01Screen()),
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFF36969), width: 4),
+                    image: profile?.profileImagePath != null && profile!.profileImagePath!.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(profile.profileImagePath!),
+                            fit: BoxFit.cover,
+                            onError: (exception, stackTrace) {
+                              // Handle image load error
+                            },
+                          )
+                        : null,
+                    color: profile?.profileImagePath == null || profile!.profileImagePath!.isEmpty
+                        ? Colors.grey[300]
+                        : null,
+                  ),
+                  child: profile?.profileImagePath == null || profile!.profileImagePath!.isEmpty
+                      ? const Icon(Icons.person, size: 50, color: Colors.grey)
                       : null,
-                  color: profile?.profileImagePath == null ? Colors.grey[300] : null,
                 ),
-                child: profile?.profileImagePath == null
-                    ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                    : null,
               ),
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF36969),
-                    shape: BoxShape.circle,
-                    border: Border.fromBorderSide(
-                      BorderSide(color: Colors.white, width: 2),
+                child: GestureDetector(
+                  onTap: () => Get.to(const EditYourProfile01Screen()),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF36969),
+                      shape: BoxShape.circle,
+                      border: Border.fromBorderSide(
+                        BorderSide(color: Colors.white, width: 2),
+                      ),
                     ),
+                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                   ),
-                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                 ),
               ),
             ],
@@ -208,21 +221,22 @@ class YourProfileScreen extends StatelessWidget {
           const SizedBox(height: 8),
           if (profile?.professionalType != null && profile!.professionalType!.isNotEmpty)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF36969),
-                borderRadius: BorderRadius.circular(5),
+                color: const Color(0xFFFF8B8B), // Salmon/pink color like Figma
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 profile.professionalType!,
                 style: GoogleFonts.poppins(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
               ),
             ),
           const SizedBox(height: 8),
+          // Rating
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -245,6 +259,7 @@ class YourProfileScreen extends StatelessWidget {
 
   Widget _buildKycBanner() {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -274,6 +289,7 @@ class YourProfileScreen extends StatelessWidget {
 
   Widget _buildGoldMemberCard() {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -355,7 +371,7 @@ class YourProfileScreen extends StatelessWidget {
     return _buildCard(
       title: 'Personal Details',
       trailing: GestureDetector(
-        onTap: () {},
+        onTap: () => Get.to(const EditYourProfile01Screen()),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -386,7 +402,6 @@ class YourProfileScreen extends StatelessWidget {
         if (profile?.dateOfBirth != null)
           _buildInfoItem(Icons.calendar_today, 'Date of Birth', formatDate(profile?.dateOfBirth)),
         _buildInfoItem(Icons.location_on, 'Address/Location', location),
-        _buildInfoItem(Icons.work_outline, 'Years of Experience', '4 Years'),
       ],
     );
   }
@@ -907,6 +922,7 @@ class YourProfileScreen extends StatelessWidget {
     required List<Widget> children,
   }) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

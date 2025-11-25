@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../models/company_signupmodel.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
+import '../utils/session_manager.dart';
 import '../widgets/custom_snackbar.dart';
 
 class SignupController extends GetxController {
@@ -28,6 +29,24 @@ class SignupController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         userId.value = data['userId'];
+        
+        // ✅ Check if registration response includes token
+        // Some APIs return token directly, others return it in 'data' object
+        String? token;
+        if (data['token'] != null) {
+          token = data['token'].toString();
+        } else if (data['data'] != null && data['data']['token'] != null) {
+          token = data['data']['token'].toString();
+        }
+        
+        // ✅ Store token if available
+        if (token != null && token.isNotEmpty) {
+          final sessionManager = SessionManager();
+          await sessionManager.saveString("authToken", token);
+          print("✅ Token stored from registration: ${token.substring(0, 20)}...");
+        } else {
+          print("⚠️ No token in registration response - user will need to login");
+        }
 
         // Don't show snackbar here - let the screen handle it
         // SnackBarHelper.success('Company registered successfully');

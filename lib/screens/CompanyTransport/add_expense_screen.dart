@@ -40,6 +40,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'Other': const Color(0xFF34495E), // Dark Grey
   };
 
+  // Icon mapping for expense types
+  final Map<String, IconData> _expenseIcons = {
+    'Advance': Icons.account_balance_wallet,
+    'Fuel': Icons.local_gas_station,
+    'Challan': Icons.receipt_long,
+    'Food': Icons.restaurant,
+    'Salary': Icons.payments,
+    'Enroute': Icons.directions_car,
+    'Other': Icons.category,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -153,6 +164,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               // Expense Purpose List
               ...expenseController.expensePurposes.map((purpose) {
                 final color = _expenseColors[purpose.purposeName] ?? Colors.grey;
+                final icon = _expenseIcons[purpose.purposeName] ?? Icons.category;
                 final isSelected = _selectedExpensePurpose?.expensePurposeId ==
                     purpose.expensePurposeId;
 
@@ -174,6 +186,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                             color: color,
                             shape: BoxShape.circle,
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          icon,
+                          size: 20,
+                          color: color,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -607,6 +625,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final color = _selectedExpensePurpose != null
         ? _expenseColors[_selectedExpensePurpose!.purposeName] ?? Colors.grey
         : Colors.grey;
+    final icon = _selectedExpensePurpose != null
+        ? _expenseIcons[_selectedExpensePurpose!.purposeName] ?? Icons.category
+        : null;
 
     return GestureDetector(
       onTap: _showExpensePurposeModal,
@@ -630,6 +651,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 ),
               ),
               const SizedBox(width: 12),
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 20,
+                  color: color,
+                ),
+                const SizedBox(width: 12),
+              ],
             ],
             Expanded(
               child: Text(
@@ -719,9 +748,21 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           Expanded(
             child: TextField(
               controller: _amountController,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onTap: () {
+                // Clear "0.00" when user taps to enter amount
+                if (_amountController.text == '0.00' || _amountController.text == '0') {
+                  _amountController.clear();
+                }
+              },
+              onChanged: (value) {
+                // Clear "0.00" when user starts typing
+                if (value == '0.00' || value == '0') {
+                  _amountController.clear();
+                }
+              },
               decoration: InputDecoration(
-                hintText: 'Enter amount',
+                hintText: '0.00',
                 hintStyle: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Poppins',

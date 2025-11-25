@@ -7,6 +7,8 @@ import 'package:country_picker/country_picker.dart';
 
 import '../../models/company_signupmodel.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../utils/session_manager.dart';
+import '../../screens/CompanyTransport/complete_company_profile.dart';
 import 'login.dart';
 
 class Signup extends StatelessWidget {
@@ -514,9 +516,33 @@ class Signup extends StatelessWidget {
                   final success = await controller.registerCompany(model);
 
                   if (success) {
-                    SnackBarHelper.success("Company registered successfully! Please login to continue.");
-                    await Future.delayed(const Duration(milliseconds: 2000));
-                    Get.offAll(() => LoginScreen());
+                    final userId = controller.userId.value;
+                    if (userId == null || userId.isEmpty) {
+                      SnackBarHelper.error("Registration successful but user ID not received");
+                      return;
+                    }
+                    
+                    // ✅ Store registration data in SessionManager for complete profile
+                    final sessionManager = SessionManager();
+                    await sessionManager.saveString("registration_companyName", companyController.text.trim());
+                    await sessionManager.saveString("registration_email", emailController.text.trim());
+                    await sessionManager.saveString("registration_mobileNo", phoneController.text.trim());
+                    await sessionManager.saveString("registration_businessCategory", selectedCompanyType.value ?? 'Transport');
+                    
+                    // ✅ Prepare registration data for complete profile
+                    final registrationData = {
+                      "userId": userId,
+                      "companyName": companyController.text.trim(),
+                      "email": emailController.text.trim(),
+                      "mobileNo": phoneController.text.trim(),
+                      "businessCategory": selectedCompanyType.value ?? 'Transport',
+                    };
+                    
+                    SnackBarHelper.success("Company registered successfully!");
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    
+                    // ✅ Navigate directly to complete profile screen
+                    Get.offAll(() => CompanyCompleteProfile(), arguments: registrationData);
                   }
                 },
           style: ElevatedButton.styleFrom(

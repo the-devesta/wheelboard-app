@@ -42,6 +42,14 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   bool _isDeclarationAccepted = false;
   bool _isSearchingVehicle = false; // ✅ For vehicle search loading
 
+  // Valid vehicle types for dropdown
+  static const List<String> validVehicleTypes = [
+    "Shipment",
+    "Construction",
+    "Mining",
+    "Others",
+  ];
+
   // Hold selected images
   List<PlatformFile> _pickedImages = [];
 
@@ -61,7 +69,13 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       _manufacturingYearController.text = vehicle.manufacturingYear?.toString() ?? '';
       _descriptionController.text = vehicle.description ?? '';
       _ownershipType = vehicle.ownershipType ?? "Owned";
-      _vehicleType = vehicle.vehicleType;
+      // ✅ Only set _vehicleType if it's in the valid list
+      final vehicleType = vehicle.vehicleType;
+      if (vehicleType != null && validVehicleTypes.contains(vehicleType)) {
+        _vehicleType = vehicleType;
+      } else {
+        _vehicleType = null; // Set to null if not in valid list
+      }
       _isDeclarationAccepted = vehicle.isDeclarationAccepted ?? false;
     }
   }

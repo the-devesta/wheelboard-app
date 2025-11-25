@@ -34,9 +34,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
 
   final TextEditingController driverNameController = TextEditingController();
   final TextEditingController contactNumberController = TextEditingController();
-  final TextEditingController vehicleNumberController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController partnerIdController = TextEditingController();
   
   // ✅ Driver License Search Fields
   final TextEditingController licenseNumberController = TextEditingController();
@@ -46,6 +44,15 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
   bool isDeclarationAccepted = false;
   bool _isSearchingDriver = false; // ✅ For driver search loading
   XFile? _pickedImage; // ✅ Single image only
+  DateTime? _selectedDob; // ✅ For date of birth
+
+  // Valid vehicle types for dropdown
+  static const List<String> validVehicleTypes = [
+    "Shipment",
+    "Construction",
+    "Mining",
+    "Others",
+  ];
 
   @override
   void initState() {
@@ -55,10 +62,14 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
       final driver = widget.driverData!;
       driverNameController.text = driver.fullName ?? '';
       contactNumberController.text = driver.contactNumber ?? '';
-      vehicleNumberController.text = driver.vehicleNumber ?? '';
       descriptionController.text = driver.description ?? '';
-      partnerIdController.text = driver.partnerId?.toString() ?? '';
-      selectedVehicleType = driver.vehicleType;
+      // ✅ Only set selectedVehicleType if it's in the valid list
+      final vehicleType = driver.vehicleType;
+      if (vehicleType != null && validVehicleTypes.contains(vehicleType)) {
+        selectedVehicleType = vehicleType;
+      } else {
+        selectedVehicleType = null; // Set to null if not in valid list
+      }
       isDeclarationAccepted = driver.isDeclarationAccepted ?? false;
     }
   }
@@ -72,6 +83,48 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
         _pickedImage = image;
       });
     }
+  }
+
+  /// Select Date of Birth
+  Future<void> _selectDateOfBirth() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDob ?? DateTime.now().subtract(const Duration(days: 365 * 18)), // Default to 18 years ago
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)), // Must be at least 18 years old
+      helpText: 'Select Date of Birth',
+      cancelText: 'Cancel',
+      confirmText: 'Select',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1976D2), // Header background color
+              onPrimary: Colors.white, // Header text color
+              onSurface: Colors.black, // Body text color
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF1976D2), // Button text color
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        _selectedDob = pickedDate;
+        dobController.text = _formatDate(pickedDate);
+      });
+    }
+  }
+
+  /// Format date to DD/MM/YYYY
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   /// Search driver license details by license number and DOB
@@ -91,9 +144,14 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
     try {
       SnackBarHelper.info("Searching driver license details...");
       
+      // Use selected DOB if available, otherwise use text from controller
+      final dobToUse = _selectedDob != null 
+          ? _formatDate(_selectedDob!) 
+          : dob;
+      
       final response = await HttpHelper.getLicenseDetails(
         number: licenseNumber,
-        dob: dob,
+        dob: dobToUse,
       );
 
       if (response.statusCode == 200) {
@@ -109,7 +167,18 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
           if (licenseDetails.badgeDetails.isNotEmpty) {
             final vehicleClasses = licenseDetails.badgeDetails.first.classOfVehicle;
             if (vehicleClasses.isNotEmpty) {
-              selectedVehicleType = vehicleClasses.first; // Use first vehicle class
+              final licenseVehicleType = vehicleClasses.first;
+              // ✅ Only set if it's in the valid vehicle types list
+              // License returns "LMV", "MCWG" etc. which are not in our dropdown
+              // So we'll set it to null and let user select manually
+              if (validVehicleTypes.contains(licenseVehicleType)) {
+                selectedVehicleType = licenseVehicleType;
+              } else {
+                // License vehicle type doesn't match our dropdown options
+                // Set to null so user can select from dropdown
+                selectedVehicleType = null;
+                print("⚠️ License vehicle type '$licenseVehicleType' not in valid list. User needs to select manually.");
+              }
             }
           }
           
@@ -161,19 +230,17 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
         ? File(_pickedImage!.path)
         : null;
 
-    final partnerId = int.tryParse(partnerIdController.text.trim());
-
     final driverModel = DriverModel(
       userId: userId,
       driverId: widget.isEditMode ? widget.driverData?.driverId : null,
       fullName: driverNameController.text.trim(),
       contactNumber: contactNumberController.text.trim(),
       vehicleType: selectedVehicleType,
-      vehicleNumber: vehicleNumberController.text.trim(),
+      vehicleNumber: null, // ✅ Removed vehicle number field
       description: descriptionController.text.trim(),
       isDeclarationAccepted: isDeclarationAccepted,
       image: imageFile, // ✅ single file
-      partnerId: partnerId, // ✅ integer
+      partnerId: null, // ✅ Removed partner ID field
       modifiedUserId: userId, // ✅ For update operations
     );
 
@@ -380,35 +447,43 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                         ),
                         const SizedBox(height: 8),
                         
-                        // Date of Birth Field
-                        Container(
-                          width: double.infinity,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
-                          ),
-                          child: TextField(
-                            controller: dobController,
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Poppins',
-                              color: const Color(0xFF6C7278),
+                        // Date of Birth Field with Calendar
+                        GestureDetector(
+                          onTap: _selectDateOfBirth,
+                          child: Container(
+                            width: double.infinity,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
                             ),
-                            decoration: InputDecoration(
-                              hintText: "Date of Birth (DD/MM/YYYY)",
-                              hintStyle: TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Poppins',
-                                color: const Color(0xFF6C7278),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 14,
-                              ),
+                            child: Row(
+                              children: [
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Text(
+                                    _selectedDob != null
+                                        ? _formatDate(_selectedDob!)
+                                        : "Date of Birth (DD/MM/YYYY)",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontFamily: 'Poppins',
+                                      color: _selectedDob != null
+                                          ? const Color(0xFF1E1E1E)
+                                          : const Color(0xFF6C7278),
+                                    ),
+                                  ),
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 14),
+                                  child: Icon(
+                                    Icons.calendar_today,
+                                    size: 18,
+                                    color: Color(0xFF1976D2),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -524,26 +599,12 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                     ),
                   ),
                   const SizedBox(height: 17),
-
-                  _buildTextField(
-                    "Enter Vehicle Number",
-                    "Enter Vehicle Number",
-                    controller: vehicleNumberController,
-                  ),
-                  const SizedBox(height: 17),
                   
                   _buildTextField(
                     "Description",
                     "Enter Description",
                     controller: descriptionController,
                     maxLines: 3,
-                  ),
-                  const SizedBox(height: 17),
-                  
-                  _buildTextField(
-                    "Partner Id",
-                    "Enter Partner Id",
-                    controller: partnerIdController,
                   ),
                   const SizedBox(height: 17),
 
