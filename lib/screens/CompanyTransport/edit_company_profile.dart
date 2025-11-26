@@ -1,14 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/controllers/company_profile_controller.dart';
+import '../../utils/placeservices.dart';
 
-class EditCompanyProfileScreen extends StatelessWidget {
+class EditCompanyProfileScreen extends StatefulWidget {
   const EditCompanyProfileScreen({super.key});
 
   @override
+  State<EditCompanyProfileScreen> createState() => _EditCompanyProfileScreenState();
+}
+
+class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
+  final CompanyProfileController controller =
+      Get.put(CompanyProfileController());
+  
+  final PlacesService placesService = PlacesService(
+    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+  );
+  
+  List<Suggestion> locationSuggestions = [];
+  final FocusNode _locationFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _locationFocusNode.addListener(() {
+      if (!_locationFocusNode.hasFocus) {
+        setState(() {
+          locationSuggestions = [];
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _locationFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final CompanyProfileController controller =
-        Get.put(CompanyProfileController());
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4E3E3),
@@ -96,11 +128,7 @@ class EditCompanyProfileScreen extends StatelessWidget {
             hint: "Enter Business...",
           ),
           const SizedBox(height: 16),
-          _buildTextField(
-            label: "Location",
-            controller: controller.locationController,
-            hint: "Current location",
-          ),
+          _buildLocationField(controller),
           const SizedBox(height: 16),
           _buildTextField(
             label: "Fleet Size",
@@ -277,6 +305,149 @@ class EditCompanyProfileScreen extends StatelessWidget {
               fillColor: Colors.white,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationField(CompanyProfileController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Location",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6C7278),
+              letterSpacing: -0.24,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: controller.locationController,
+            focusNode: _locationFocusNode,
+            decoration: InputDecoration(
+              hintText: "Search location...",
+              hintStyle: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6C7278),
+              ),
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF6C7278)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFF36969)),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            onChanged: (value) async {
+              if (value.isNotEmpty && value.length > 2) {
+                try {
+                  final results = await placesService.fetchSuggestions(value);
+                  if (mounted) {
+                    setState(() {
+                      locationSuggestions = results;
+                    });
+                  }
+                } catch (e) {
+                  print("Error fetching suggestions: $e");
+                  if (mounted) {
+                    setState(() {
+                      locationSuggestions = [];
+                    });
+                  }
+                }
+              } else {
+                if (mounted) {
+                  setState(() {
+                    locationSuggestions = [];
+                  });
+                }
+              }
+            },
+            onTap: () {
+              // Clear suggestions when tapping the field again
+              if (locationSuggestions.isNotEmpty) {
+                setState(() {
+                  locationSuggestions = [];
+                });
+              }
+            },
+          ),
+          if (locationSuggestions.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFFEDF1F3)),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: locationSuggestions.length > 5 ? 5 : locationSuggestions.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final suggestion = locationSuggestions[index];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(
+                      Icons.location_on,
+                      color: Color(0xFFF36969),
+                      size: 20,
+                    ),
+                    title: Text(
+                      suggestion.description,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: suggestion.subTitle.isNotEmpty
+                        ? Text(
+                            suggestion.subTitle,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6C7278),
+                            ),
+                          )
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        controller.locationController.text = suggestion.description;
+                        locationSuggestions = [];
+                      });
+                      // Hide keyboard and remove focus
+                      _locationFocusNode.unfocus();
+                      FocusScope.of(context).unfocus();
+                    },
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );

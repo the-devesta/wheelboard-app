@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../controllers/Professional/assigned_trip_controller.dart';
+import '../../../models/assigned_trip_model.dart';
+import '../TripDetails/TripDetailsScreen.dart';
 
 class TripDashboardScreen extends StatefulWidget {
   const TripDashboardScreen({super.key});
@@ -11,6 +15,7 @@ class TripDashboardScreen extends StatefulWidget {
 class _TripDashboardScreenState extends State<TripDashboardScreen> {
   String _selectedChartType = 'Trips';
   String _selectedCompletedFilter = 'Recent';
+  final AssignedTripController tripController = Get.put(AssignedTripController());
 
   @override
   Widget build(BuildContext context) {
@@ -391,51 +396,123 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
   }
 
   Widget _buildActiveTripsSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Obx(() {
+      if (tripController.isLoading.value) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      final activeTrips = tripController.assignedTrips.where((trip) {
+        // Consider trips as active if pickup date is today or in the future
+        final now = DateTime.now();
+        final tripDate = trip.pickupDate;
+        return tripDate.isAfter(now) || tripDate.isAtSameMomentAs(now);
+      }).toList();
+
+      if (activeTrips.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.local_shipping, size: 16, color: Color(0xFFF36969)),
-              const SizedBox(width: 8),
-              Text(
-                'Active Trips',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFF36969),
+              Row(
+                children: [
+                  const Icon(Icons.local_shipping, size: 16, color: Color(0xFFF36969)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Active Trips',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFF36969),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    'No active trips',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildTripCard(
-            from: 'Warehouse A',
-            to: 'Store Z',
-            time: 'Today, 09:35 AM',
-            vehicleNumber: 'MH12AB3456',
-            status: 'In Transit',
-            statusColor: const Color(0xFF2F80ED),
-            statusBgColor: const Color(0xFFEBF4FF),
-          ),
-          const SizedBox(height: 12),
-          _buildTripCard(
-            from: 'Depot B',
-            to: 'Outlet 21',
-            time: 'Today, 10:20 AM',
-            vehicleNumber: 'MH09NM1234',
-            status: 'Pending',
-            statusColor: const Color(0xFFF39C12),
-            statusBgColor: const Color(0xFFFFF7E3),
-          ),
-        ],
-      ),
-    );
+        );
+      }
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.local_shipping, size: 16, color: Color(0xFFF36969)),
+                const SizedBox(width: 8),
+                Text(
+                  'Active Trips',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFF36969),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...activeTrips.map((trip) {
+              final isToday = trip.pickupDate.day == DateTime.now().day &&
+                  trip.pickupDate.month == DateTime.now().month &&
+                  trip.pickupDate.year == DateTime.now().year;
+              final timeStr = isToday
+                  ? 'Today, ${trip.pickupTime.substring(0, trip.pickupTime.length > 5 ? 5 : trip.pickupTime.length)}'
+                  : _formatDate(trip.pickupDate, trip.pickupTime);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildTripCard(
+                  trip: trip,
+                  from: trip.pickupLocation,
+                  to: trip.deliveryLocation,
+                  time: timeStr,
+                  vehicleNumber: 'N/A',
+                  status: 'Active',
+                  statusColor: const Color(0xFF2F80ED),
+                  statusBgColor: const Color(0xFFEBF4FF),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      );
+    });
+  }
+
+  String _formatDate(DateTime? date, String time) {
+    if (date == null) return time;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    final timeStr = time.isNotEmpty
+        ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
+        : '';
+    return "$dateStr$timeStr";
   }
 
   Widget _buildTripCard({
+    AssignedTrip? trip,
     required String from,
     required String to,
     required String time,
@@ -456,23 +533,29 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             children: [
               const Icon(Icons.location_on, size: 12, color: Color(0xFFF36969)),
               const SizedBox(width: 4),
-              Text(
-                from,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFF36969),
+              Expanded(
+                child: Text(
+                  from,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFFF36969),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
               const Icon(Icons.arrow_forward, size: 16, color: Color(0xFFF36969)),
               const SizedBox(width: 4),
-              Text(
-                to,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFF36969),
+              Expanded(
+                child: Text(
+                  to,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFFF36969),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -491,16 +574,29 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                 ),
               ),
               const Spacer(),
-              const Icon(Icons.local_shipping, size: 12, color: Color(0xFF6B7280)),
-              const SizedBox(width: 4),
-              Text(
-                vehicleNumber,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xFF6B7280),
+              if (trip != null) ...[
+                const Icon(Icons.currency_rupee, size: 12, color: Color(0xFF6B7280)),
+                const SizedBox(width: 4),
+                Text(
+                  '₹${trip.bidAmount.toStringAsFixed(0)}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF6B7280),
+                  ),
                 ),
-              ),
+              ] else ...[
+                const Icon(Icons.local_shipping, size: 12, color: Color(0xFF6B7280)),
+                const SizedBox(width: 4),
+                Text(
+                  vehicleNumber,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 12),
@@ -523,7 +619,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: trip != null
+                    ? () {
+                        Get.to(() => TripDetailsScreen(trip: trip));
+                      }
+                    : null,
                 child: Text(
                   'View Details',
                   style: GoogleFonts.poppins(
@@ -541,45 +641,92 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
   }
 
   Widget _buildCompletedTripsSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.check_circle, size: 16, color: Color(0xFFF36969)),
-              const SizedBox(width: 8),
-              Text(
-                'Completed Trips',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFF36969),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+    return Obx(() {
+      if (tripController.isLoading.value) {
+        return const SizedBox.shrink();
+      }
+
+      final completedTrips = tripController.assignedTrips.where((trip) {
+        // Consider trips as completed if pickup date is in the past
+        final now = DateTime.now();
+        final tripDate = trip.pickupDate;
+        return tripDate.isBefore(now);
+      }).toList();
+
+      // Sort based on filter
+      List<AssignedTrip> sortedTrips = List.from(completedTrips);
+      if (_selectedCompletedFilter == 'Highest Earning') {
+        sortedTrips.sort((a, b) => b.bidAmount.compareTo(a.bidAmount));
+      } else if (_selectedCompletedFilter == 'Recent') {
+        sortedTrips.sort((a, b) => b.pickupDate.compareTo(a.pickupDate));
+      }
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                _buildCompletedFilterButton('Recent', _selectedCompletedFilter == 'Recent'),
+                const Icon(Icons.check_circle, size: 16, color: Color(0xFFF36969)),
                 const SizedBox(width: 8),
-                _buildCompletedFilterButton('Highest Rated', _selectedCompletedFilter == 'Highest Rated'),
-                const SizedBox(width: 8),
-                _buildCompletedFilterButton('Highest Earning', _selectedCompletedFilter == 'Highest Earning'),
+                Text(
+                  'Completed Trips',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFF36969),
+                  ),
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 12),
-          _buildCompletedTripItem('Warehouse A', 'Store Z', '+₹9,400'),
-          const SizedBox(height: 8),
-          _buildCompletedTripItem('Depot B', 'Outlet 21', '+₹7,800'),
-        ],
-      ),
-    );
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildCompletedFilterButton('Recent', _selectedCompletedFilter == 'Recent'),
+                  const SizedBox(width: 8),
+                  _buildCompletedFilterButton('Highest Rated', _selectedCompletedFilter == 'Highest Rated'),
+                  const SizedBox(width: 8),
+                  _buildCompletedFilterButton('Highest Earning', _selectedCompletedFilter == 'Highest Earning'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (sortedTrips.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    'No completed trips',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              )
+            else
+              ...sortedTrips.map((trip) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildCompletedTripItem(
+                    trip: trip,
+                    from: trip.pickupLocation,
+                    to: trip.deliveryLocation,
+                    earning: '+₹${trip.bidAmount.toStringAsFixed(0)}',
+                  ),
+                );
+              }).toList(),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildCompletedFilterButton(String label, bool isSelected) {
@@ -610,46 +757,68 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
     );
   }
 
-  Widget _buildCompletedTripItem(String from, String to, String earning) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.location_on, size: 12, color: Color(0xFFF36969)),
-          const SizedBox(width: 4),
-          Text(
-            from,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFFF36969),
+  Widget _buildCompletedTripItem({
+    AssignedTrip? trip,
+    required String from,
+    required String to,
+    required String earning,
+  }) {
+    return GestureDetector(
+      onTap: trip != null
+          ? () {
+              Get.to(() => TripDetailsScreen(trip: trip));
+            }
+          : null,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.location_on, size: 12, color: Color(0xFFF36969)),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                from,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFF36969),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(Icons.arrow_forward, size: 16, color: Color(0xFFF36969)),
-          const SizedBox(width: 4),
-          Text(
-            to,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFFF36969),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward, size: 16, color: Color(0xFFF36969)),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                to,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFF36969),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          const Spacer(),
-          Text(
-            earning,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF27AE60),
+            const Spacer(),
+            Text(
+              earning,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF27AE60),
+              ),
             ),
-          ),
-        ],
+            if (trip != null) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right, size: 16, color: Color(0xFF6B7280)),
+            ],
+          ],
+        ),
       ),
     );
   }

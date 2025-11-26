@@ -167,6 +167,7 @@ class Post {
   final String status;
   final List<String> imageUrls;
   final DateTime dateEntered;
+  final String userName;
 
   Post({
     required this.postId,
@@ -175,6 +176,7 @@ class Post {
     required this.status,
     required this.imageUrls,
     required this.dateEntered,
+    required this.userName,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -189,6 +191,7 @@ class Post {
       dateEntered: json['dateEntered'] != null
           ? DateTime.parse(json['dateEntered'])
           : DateTime.now(),
+      userName: json['userName'] ?? '',
     );
   }
 

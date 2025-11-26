@@ -5,12 +5,16 @@ import 'package:get/get.dart';
 import 'dart:io';
 import '../../controllers/Professional/expense_controller.dart';
 import '../../controllers/add_trip_controller.dart';
+import '../../controllers/Professional/assigned_trip_controller.dart';
 import '../../models/expense_purpose_model.dart';
 import '../../models/add_new_trip_model.dart';
+import '../../models/assigned_trip_model.dart';
 import '../../utils/session_manager.dart';
 
 class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key});
+  final bool isProfessional;
+  
+  const AddExpenseScreen({super.key, this.isProfessional = false});
 
   @override
   State<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -18,10 +22,12 @@ class AddExpenseScreen extends StatefulWidget {
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final ExpenseController expenseController = Get.put(ExpenseController());
-  final TripController tripController = Get.put(TripController());
+  late final dynamic tripController;
+  
+  bool get isProfessional => widget.isProfessional;
 
   ExpensePurpose? _selectedExpensePurpose;
-  Trip? _selectedTrip;
+  dynamic _selectedTrip; // Can be Trip or AssignedTrip
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -54,6 +60,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   void initState() {
     super.initState();
+    // Initialize appropriate controller based on user type
+    if (isProfessional) {
+      tripController = Get.put(AssignedTripController());
+    } else {
+      tripController = Get.put(TripController());
+    }
+    
     _selectedDate = DateTime.now();
     _dateController.text = _formatDate(_selectedDate!);
     _amountController.text = '0.00';
@@ -61,10 +74,15 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Future<void> _fetchTrips() async {
-    final sessionManager = SessionManager();
-    final userId = await sessionManager.getString("userId");
-    if (userId != null && userId.isNotEmpty) {
-      tripController.fetchTrips(userId);
+    if (isProfessional) {
+      // AssignedTripController automatically fetches on init
+      return;
+    } else {
+      final sessionManager = SessionManager();
+      final userId = await sessionManager.getString("userId");
+      if (userId != null && userId.isNotEmpty) {
+        tripController.fetchTrips(userId);
+      }
     }
   }
 
@@ -228,147 +246,273 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Obx(() {
-        if (tripController.isTripsLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final allTrips = tripController.trips;
-
-        return Container(
-          padding: const EdgeInsets.all(20),
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
-                      borderRadius: BorderRadius.circular(8),
+        if (isProfessional) {
+          final assignedTripController = tripController as AssignedTripController;
+          if (assignedTripController.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final allTrips = assignedTripController.assignedTrips;
+          
+          return Container(
+            padding: const EdgeInsets.all(20),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF2196F3),
+                        size: 24,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Color(0xFF2196F3),
-                      size: 24,
+                    const SizedBox(width: 12),
+                    Text(
+                      'Select Trip',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Select Trip',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Trip List
-              Expanded(
-                child: allTrips.isEmpty
-                    ? const Center(
-                        child: Text('No trips available'),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: allTrips.length,
-                        itemBuilder: (context, index) {
-                          final trip = allTrips[index];
-                          final isSelected =
-                              _selectedTrip?.tripId == trip.tripId;
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Trip List
+                Expanded(
+                  child: allTrips.isEmpty
+                      ? const Center(
+                          child: Text('No trips available'),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: allTrips.length,
+                          itemBuilder: (context, index) {
+                            final trip = allTrips[index];
+                            final isSelected = _selectedTrip != null && 
+                                (_selectedTrip as AssignedTrip).bidId == trip.bidId;
 
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedTrip = trip;
-                              });
-                              Navigator.pop(context);
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: isSelected
-                                    ? Border.all(
-                                        color: const Color(0xFF2196F3), width: 2)
-                                    : Border.all(color: Colors.grey.shade300),
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedTrip = trip;
+                                });
+                                Navigator.pop(context);
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: isSelected
+                                      ? Border.all(
+                                          color: const Color(0xFF2196F3), width: 2)
+                                      : Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Route
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.location_on,
+                                            color: Color(0xFF2196F3), size: 18),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            '${trip.pickupLocation} → ${trip.deliveryLocation}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        Flexible(
+                                          child: Text(
+                                            'Trip ID: ${trip.bidId.length > 12 ? trip.bidId.substring(0, 12) + '...' : trip.bidId}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Date
+                                    Text(
+                                      'Date: ${trip.pickupDate.day}/${trip.pickupDate.month}/${trip.pickupDate.year}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Route
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.location_on,
-                                          color: Color(0xFF2196F3), size: 18),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          '${trip.pickupLocation} → ${trip.deliveryLocation}',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          final tripControllerTyped = tripController as TripController;
+          if (tripControllerTyped.isTripsLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final allTrips = tripControllerTyped.trips;
+
+          return Container(
+            padding: const EdgeInsets.all(20),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF2196F3),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Select Trip',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Trip List
+                Expanded(
+                  child: allTrips.isEmpty
+                      ? const Center(
+                          child: Text('No trips available'),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: allTrips.length,
+                          itemBuilder: (context, index) {
+                            final trip = allTrips[index];
+                            final isSelected = _selectedTrip != null && 
+                                (_selectedTrip as Trip).tripId == trip.tripId;
+
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedTrip = trip;
+                                });
+                                Navigator.pop(context);
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: isSelected
+                                      ? Border.all(
+                                          color: const Color(0xFF2196F3), width: 2)
+                                      : Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Route
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.location_on,
+                                            color: Color(0xFF2196F3), size: 18),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            '${trip.pickupLocation} → ${trip.deliveryLocation}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      Flexible(
-                                        child: Text(
-                                          'Trip ID: ${trip.tripId.length > 12 ? trip.tripId.substring(0, 12) + '...' : trip.tripId}',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            color: Colors.grey,
+                                        Flexible(
+                                          child: Text(
+                                            'Trip ID: ${trip.tripId.length > 12 ? trip.tripId.substring(0, 12) + '...' : trip.tripId}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Vehicle Type and Date
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          'Vehicle Type: ${trip.vehicleType ?? "N/A"}',
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Vehicle Type and Date
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            'Vehicle Type: ${trip.vehicleType ?? "N/A"}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Text(
+                                          trip.pickupDate != null
+                                              ? 'Date: ${trip.pickupDate!.day}/${trip.pickupDate!.month}/${trip.pickupDate!.year}'
+                                              : 'Date: N/A',
                                           style: GoogleFonts.inter(
                                             fontSize: 12,
                                             color: Colors.grey.shade600,
                                           ),
-                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                      Text(
-                                        trip.pickupDate != null
-                                            ? 'Date: ${trip.pickupDate!.day}/${trip.pickupDate!.month}/${trip.pickupDate!.year}'
-                                            : 'Date: N/A',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        );
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        }
       }),
     );
   }
@@ -441,8 +585,27 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ? 'No description'
         : _descriptionController.text;
 
+    // Get tripId based on trip type
+    String tripId;
+    if (isProfessional && _selectedTrip is AssignedTrip) {
+      tripId = (_selectedTrip as AssignedTrip).bidId;
+    } else if (_selectedTrip is Trip) {
+      tripId = (_selectedTrip as Trip).tripId;
+    } else {
+      setState(() {
+        _isSaving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid trip selected'),
+          backgroundColor: Color(0xFFE74C3C),
+        ),
+      );
+      return;
+    }
+
     final success = await expenseController.saveExpense(
-      tripId: _selectedTrip!.tripId,
+      tripId: tripId,
       expensePurposeId: _selectedExpensePurpose!.expensePurposeId,
       expenseDate: _selectedDate!,
       amount: amount,
@@ -699,7 +862,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             Expanded(
               child: Text(
                 _selectedTrip != null
-                    ? '${_selectedTrip!.pickupLocation} → ${_selectedTrip!.deliveryLocation}'
+                    ? (isProfessional && _selectedTrip is AssignedTrip
+                        ? '${(_selectedTrip as AssignedTrip).pickupLocation} → ${(_selectedTrip as AssignedTrip).deliveryLocation}'
+                        : (_selectedTrip is Trip
+                            ? '${(_selectedTrip as Trip).pickupLocation} → ${(_selectedTrip as Trip).deliveryLocation}'
+                            : 'Select a trip...'))
                     : 'Select a trip...',
                 style: TextStyle(
                   fontSize: 16,

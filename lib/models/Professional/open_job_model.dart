@@ -8,6 +8,9 @@ class OpenJob {
   final String jobType;
   final String description;
   final List<String> imagePaths;
+  final bool isApplied;
+  final int likeCount;
+  final bool isLiked;
 
   OpenJob({
     required this.jobId,
@@ -19,6 +22,9 @@ class OpenJob {
     required this.jobType,
     required this.description,
     required this.imagePaths,
+    required this.isApplied,
+    required this.likeCount,
+    required this.isLiked,
   });
 
   factory OpenJob.fromJson(Map<String, dynamic> json) {
@@ -44,6 +50,9 @@ class OpenJob {
       imagePaths: json['imagePaths'] != null
           ? List<String>.from(json['imagePaths'])
           : [],
+      isApplied: json['isApplied'] ?? false,
+      likeCount: json['likeCount'] ?? 0,
+      isLiked: json['isLiked'] ?? false,
     );
   }
 
@@ -58,6 +67,9 @@ class OpenJob {
       'jobType': jobType,
       'description': description,
       'imagePaths': imagePaths,
+      'isApplied': isApplied,
+      'likeCount': likeCount,
+      'isLiked': isLiked,
     };
   }
 }

@@ -9,8 +9,11 @@ class JobCardWidget extends StatelessWidget {
   final int likes;
   final int applicants;
   final bool isApplying; // Show loading state when applying
+  final bool isApplied; // Whether user has already applied
+  final bool isLiked; // Whether user has liked this job
   final VoidCallback? onCallNow;
   final VoidCallback? onApplyNow;
+  final VoidCallback? onLikeToggle; // Callback for like toggle
 
   const JobCardWidget({
     super.key,
@@ -19,8 +22,11 @@ class JobCardWidget extends StatelessWidget {
     this.likes = 0,
     this.applicants = 0,
     this.isApplying = false,
+    this.isApplied = false,
+    this.isLiked = false,
     this.onCallNow,
     this.onApplyNow,
+    this.onLikeToggle,
   });
 
   @override
@@ -55,14 +61,26 @@ class JobCardWidget extends StatelessWidget {
           // Likes and Applicants
           Row(
             children: [
-              const Icon(Icons.thumb_up_outlined, size: 13, color: Colors.black),
-              const SizedBox(width: 6),
-              Text(
-                "$likes Likes",
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF1F1F1F),
+              // Like button (clickable)
+              GestureDetector(
+                onTap: onLikeToggle,
+                child: Row(
+                  children: [
+                    Icon(
+                      isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                      size: 13,
+                      color: isLiked ? const Color(0xFF00AEEF) : Colors.black,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      "$likes Likes",
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: isLiked ? const Color(0xFF00AEEF) : const Color(0xFF1F1F1F),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 16),
@@ -140,6 +158,27 @@ class JobCardWidget extends StatelessWidget {
   }
 
   Widget _buildApplyButton({VoidCallback? onTap}) {
+    // If already applied, show disabled state
+    if (isApplied) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300, // Gray for disabled
+          borderRadius: BorderRadius.circular(9999),
+        ),
+        child: Center(
+          child: Text(
+            "Applied",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: isApplying ? null : onTap,
       child: Container(
@@ -173,48 +212,5 @@ class JobCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildInviteButton() {
-    return Container(
-      width: 120,
-      height: 43.5,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF5E5E),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          "Invite",
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-            letterSpacing: 0.325,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSOSButton() {
-    return Container(
-      width: 120,
-      height: 43.5,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF5E5E),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          "SOS",
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-            letterSpacing: 0.325,
-          ),
-        ),
-      ),
-    );
-  }
 }
 

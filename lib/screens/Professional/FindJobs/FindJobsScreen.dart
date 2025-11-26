@@ -16,6 +16,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
@@ -185,7 +186,15 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
                     child: JobCard(
                       job: job,
                       onApply: () async {
-                        await jobsController.applyForJob(job.jobId);
+                        if (!job.isApplied) {
+                          final success = await jobsController.applyForJob(job.jobId);
+                          if (success) {
+                            await jobsController.refreshOpenJobs();
+                          }
+                        }
+                      },
+                      onLikeToggle: () async {
+                        await jobsController.toggleJobLike(job.jobId);
                       },
                       isApplying: jobsController.isApplying(job.jobId),
                     ),
@@ -261,12 +270,14 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
 class JobCard extends StatelessWidget {
   final OpenJob job;
   final VoidCallback onApply;
+  final VoidCallback? onLikeToggle;
   final bool isApplying;
 
   const JobCard({
     super.key,
     required this.job,
     required this.onApply,
+    this.onLikeToggle,
     this.isApplying = false,
   });
 
@@ -278,6 +289,109 @@ class JobCard extends StatelessWidget {
       return "₹${(salary / 1000).toStringAsFixed(1)}K";
     }
     return "₹${salary.toStringAsFixed(0)}";
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    try {
+      // Remove any spaces, dashes, or special characters
+      final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      
+      // Ensure the number starts with tel: protocol
+      final Uri phoneUri = Uri.parse('tel:$cleanNumber');
+      
+      // Use launchUrl with mode: LaunchMode.externalApplication for better compatibility
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(
+          phoneUri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        // Fallback: try to launch directly without checking
+        await launchUrl(
+          phoneUri,
+          mode: LaunchMode.externalApplication,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to make phone call. Please check if your device supports phone calls.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      print('Phone call error: $e');
+    }
+  }
+
+  void _showCallDialog(BuildContext context, OpenJob job) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final TextEditingController phoneController = TextEditingController();
+        
+        return AlertDialog(
+          title: const Text('Call Employer'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Job: ${job.role.isNotEmpty ? job.role : job.description}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Enter contact number to call:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  hintText: 'Enter phone number',
+                  prefixIcon: Icon(Icons.phone),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final phoneNumber = phoneController.text.trim();
+                if (phoneNumber.isNotEmpty) {
+                  Navigator.of(context).pop();
+                  _makePhoneCall(phoneNumber);
+                } else {
+                  Get.snackbar(
+                    'Error',
+                    'Please enter a phone number',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Call'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -313,7 +427,7 @@ class JobCard extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  Get.snackbar("Info", "Call functionality coming soon");
+                  _showCallDialog(context, job);
                 },
                 icon: const Icon(Icons.call, size: 16),
                 label: const Text("Call"),
@@ -394,14 +508,44 @@ class JobCard extends StatelessWidget {
               ],
             ],
           ),
+          const SizedBox(height: 8),
+          
+          // Likes row
+          if (onLikeToggle != null)
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: onLikeToggle,
+                  child: Row(
+                    children: [
+                      Icon(
+                        job.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                        size: 16,
+                        color: job.isLiked ? Colors.blue : Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${job.likeCount} Likes",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: job.isLiked ? Colors.blue : Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(height: 10),
           
           // Apply now button
           ElevatedButton(
-            onPressed: isApplying ? null : onApply,
+            onPressed: (isApplying || job.isApplied) ? null : onApply,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.lightBlueAccent,
-              foregroundColor: Colors.white,
+              backgroundColor: job.isApplied 
+                  ? Colors.grey.shade300 
+                  : Colors.lightBlueAccent,
+              foregroundColor: job.isApplied ? Colors.grey.shade600 : Colors.white,
               minimumSize: const Size(double.infinity, 35),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -416,7 +560,7 @@ class JobCard extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text("Apply now"),
+                : Text(job.isApplied ? "Applied" : "Apply now"),
           ),
         ],
       ),

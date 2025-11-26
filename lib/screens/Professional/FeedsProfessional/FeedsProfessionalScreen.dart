@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../constants/apps_colors.dart';
 import '../../../controllers/Professional/feeds_controller.dart';
 import '../../../controllers/post_controller.dart';
 
@@ -38,7 +37,7 @@ class FeedsProfessionalScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "User", // You can fetch user name from profile if available
+                        post.userName.isNotEmpty ? post.userName : "User",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(

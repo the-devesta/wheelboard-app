@@ -10,7 +10,7 @@ import '../widgets/job_card_widget.dart';
 import '../Calendar/CalendarScreen.dart';
 
 import '../EarningSummary/EarningSummaryScreen.dart';
-import '../AddExpense/AddExpenseScreen.dart';
+import '../../CompanyTransport/add_expense_screen.dart';
 import '../MyLearning/MyLearningScreen.dart';
 import '../SOS/SOSScreen.dart';
 import '../AddReferral/AddReferralScreen.dart';
@@ -265,7 +265,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
           child: QuickActionButtonWidget(
             icon: Icons.add_circle_outline,
             title: "Add\nExpenses",
-            onTap: () => Get.to(const AddExpenseScreen()),
+            onTap: () => Get.to(const AddExpenseScreen(isProfessional: true)),
           ),
         ),
         SizedBox(width: buttonSpacing),
@@ -393,19 +393,26 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                   child: JobCardWidget(
                     companyName: displayName,
                     jobId: job.jobId,
-                    likes: 0, // API doesn't provide likes, can be updated later
+                    likes: job.likeCount,
                     applicants: job.openings, // Using openings as applicants count
                     isApplying: jobsController.isApplying(job.jobId),
+                    isApplied: job.isApplied,
+                    isLiked: job.isLiked,
                     onCallNow: () {
                       // TODO: Implement call functionality
                       Get.snackbar("Info", "Call functionality coming soon");
                     },
-                    onApplyNow: () async {
+                    onLikeToggle: () async {
                       if (job.jobId.isNotEmpty) {
+                        await jobsController.toggleJobLike(job.jobId);
+                      }
+                    },
+                    onApplyNow: () async {
+                      if (job.jobId.isNotEmpty && !job.isApplied) {
                         final success = await jobsController.applyForJob(job.jobId);
                         if (success) {
-                          // Optionally refresh jobs after applying
-                          // await jobsController.refreshOpenJobs();
+                          // Refresh jobs after applying to update isApplied status
+                          await jobsController.refreshOpenJobs();
                         }
                       }
                     },

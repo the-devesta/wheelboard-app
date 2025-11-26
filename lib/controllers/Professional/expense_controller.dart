@@ -51,28 +51,40 @@ class ExpenseController extends GetxController {
     required String description,
     File? receiptFile,
     String? expenseId,
+    String? receiptPath,
   }) async {
     try {
       isSaving(true);
       final userId = _authService.currentUserId;
 
+      // Format date as ISO8601 string
+      final formattedDate = expenseDate.toIso8601String();
+
       final fields = <String, String>{
         'TripId': tripId,
         'ExpensePurposeId': expensePurposeId.toString(),
-        'ExpenseDate': expenseDate.toIso8601String(),
+        'ExpenseDate': formattedDate,
         'Amount': amount.toString(),
         'Description': description,
         'CreatedBy': userId,
+        'ExpenseId': expenseId ?? '', // Always send, empty if creating new
+        'ReceiptPath': receiptPath ?? 'string', // Always send, default to 'string' if not provided
       };
-
-      if (expenseId != null && expenseId.isNotEmpty) {
-        fields['ExpenseId'] = expenseId;
-      }
 
       final files = <File>[];
       if (receiptFile != null) {
         files.add(receiptFile);
       }
+
+      print("💾 Saving expense:");
+      print("💾 TripId: $tripId");
+      print("💾 ExpensePurposeId: $expensePurposeId");
+      print("💾 ExpenseDate: $formattedDate");
+      print("💾 Amount: $amount");
+      print("💾 Description: $description");
+      print("💾 ExpenseId: ${fields['ExpenseId']}");
+      print("💾 ReceiptPath: ${fields['ReceiptPath']}");
+      print("💾 Has Receipt File: ${receiptFile != null}");
 
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.saveTripExpense,
@@ -86,21 +98,43 @@ class ExpenseController extends GetxController {
 
       final response = await http.Response.fromStream(streamedResponse);
 
+      print("💾 Expense save response status: ${response.statusCode}");
+      print("💾 Expense save response body: ${response.body}");
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        SnackBarHelper.success('Expense saved successfully');
-        return true;
+        try {
+          final responseBody = jsonDecode(response.body);
+          final success = responseBody['success'] ?? false;
+          final message = responseBody['message'] ?? 'Expense saved successfully';
+          
+          if (success) {
+            SnackBarHelper.success(message);
+            return true;
+          } else {
+            SnackBarHelper.error(message);
+            return false;
+          }
+        } catch (_) {
+          // If response is not JSON or doesn't have success field, assume success
+          SnackBarHelper.success('Expense saved successfully');
+          return true;
+        }
       } else {
         try {
           final errorBody = jsonDecode(response.body);
-          final errorMessage = errorBody['title'] ?? 'Failed to save expense';
+          final errorMessage = errorBody['message'] ?? 
+                              errorBody['title'] ?? 
+                              errorBody['error'] ?? 
+                              'Failed to save expense';
           SnackBarHelper.error(errorMessage);
         } catch (_) {
-          SnackBarHelper.error('Failed to save expense');
+          SnackBarHelper.error('Failed to save expense (${response.statusCode})');
         }
         return false;
       }
     } catch (e) {
-      SnackBarHelper.error('Error saving expense: $e');
+      print("❌ Error saving expense: $e");
+      SnackBarHelper.error('Error saving expense: ${e.toString()}');
       return false;
     } finally {
       isSaving(false);

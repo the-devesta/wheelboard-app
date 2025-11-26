@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/driver_details_controller.dart';
 import '../../utils/constants.dart';
 
@@ -149,12 +150,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               _actionButton(
                                 Icons.call,
                                 "Call",
-                                onTap: () {
-                                  Get.snackbar(
-                                    'Call',
-                                    'Calling ${driver.contactNumber}',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                  );
+                                onTap: () async {
+                                  await _makePhoneCall(driver.contactNumber);
                                 },
                               ),
                               
@@ -181,8 +178,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               _actionButton(
                                 Icons.email,
                                 "Email",
-                                onTap: () {
-                                  // Email action if available
+                                onTap: () async {
+                                  await _sendEmail(driver.fullName, driver.contactNumber);
                                 },
                               ),
                             ],
@@ -497,5 +494,78 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         ),
       ],
     );
+  }
+
+  /// Make a phone call
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    try {
+      // Remove any spaces, dashes, or special characters
+      final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      
+      // Ensure the number starts with tel: protocol
+      final Uri phoneUri = Uri.parse('tel:$cleanNumber');
+      
+      // Use launchUrl with mode: LaunchMode.externalApplication for better compatibility
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(
+          phoneUri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        // Fallback: try to launch directly without checking
+        await launchUrl(
+          phoneUri,
+          mode: LaunchMode.externalApplication,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to make phone call. Please check if your device supports phone calls.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      print('Phone call error: $e');
+    }
+  }
+
+  /// Send an email
+  Future<void> _sendEmail(String driverName, String contactNumber) async {
+    try {
+      // Create email URI with subject and body
+      final Uri emailUri = Uri(
+        scheme: 'mailto',
+        queryParameters: {
+          'subject': 'Contact regarding driver: $driverName',
+          'body': 'Hello,\n\nI would like to get in touch regarding driver $driverName.\nContact Number: $contactNumber\n\nThank you.',
+        },
+      );
+
+      // Use launchUrl with mode: LaunchMode.externalApplication for better compatibility
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(
+          emailUri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        // Fallback: try to launch directly without checking
+        await launchUrl(
+          emailUri,
+          mode: LaunchMode.externalApplication,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to open email. Please check if you have an email app installed.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      print('Email error: $e');
+    }
   }
 }

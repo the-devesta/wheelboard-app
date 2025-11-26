@@ -628,7 +628,9 @@ class HomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        profile?.displayName ?? "User",
+                        post.userName.isNotEmpty 
+                            ? post.userName 
+                            : (profile?.displayName ?? "User"),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(

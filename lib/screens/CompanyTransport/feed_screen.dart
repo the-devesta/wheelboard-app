@@ -38,7 +38,7 @@ class FeedScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "User", // You can fetch user name from profile if available
+                        post.userName.isNotEmpty ? post.userName : "User",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(

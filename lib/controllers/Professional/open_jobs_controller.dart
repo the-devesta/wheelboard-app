@@ -29,8 +29,13 @@ class OpenJobsController extends GetxController {
       print("💼 Fetching open jobs...");
       print("💼 User ID: $userId");
 
+      // Build endpoint with userId query parameter
+      final endpoint = userId.isNotEmpty 
+          ? '${API.getOpenJobs}?userId=$userId'
+          : API.getOpenJobs;
+
       final response = await HttpHelper.getData(
-        endpoint: API.getOpenJobs,
+        endpoint: endpoint,
         headers: {
           if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -147,6 +152,87 @@ class OpenJobsController extends GetxController {
   /// Check if a job is being applied
   bool isApplying(String jobId) {
     return applyingJobId.value == jobId;
+  }
+
+  /// Toggle like on a job
+  Future<bool> toggleJobLike(String jobId) async {
+    try {
+      final authService = AuthService.to;
+      final token = authService.currentToken;
+      final userId = authService.currentUserId;
+
+      if (token.isEmpty || userId.isEmpty) {
+        SnackBarHelper.error("Please login to like jobs");
+        return false;
+      }
+
+      print("👍 Toggling like for job: $jobId");
+      print("👍 User ID: $userId");
+
+      // Build endpoint with both jobId and userId query parameters
+      final endpoint = '${API.toggleJobLike}?jobId=$jobId&userId=$userId';
+
+      final response = await HttpHelper.postData(
+        endpoint: endpoint,
+        data: {}, // Empty body as per API
+        headers: {
+          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': '*/*',
+        },
+      );
+
+      print("👍 Toggle like response status: ${response.statusCode}");
+      print("👍 Toggle like response body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Find the job in the list and update its like status
+        final jobIndex = openJobs.indexWhere((job) => job.jobId == jobId);
+        if (jobIndex != -1) {
+          final job = openJobs[jobIndex];
+          // Toggle the like status and update count
+          final newIsLiked = !job.isLiked;
+          final newLikeCount = newIsLiked ? job.likeCount + 1 : job.likeCount - 1;
+          
+          // Create updated job
+          final updatedJob = OpenJob(
+            jobId: job.jobId,
+            role: job.role,
+            jobDuration: job.jobDuration,
+            openings: job.openings,
+            salary: job.salary,
+            city: job.city,
+            jobType: job.jobType,
+            description: job.description,
+            imagePaths: job.imagePaths,
+            isApplied: job.isApplied,
+            likeCount: newLikeCount >= 0 ? newLikeCount : 0,
+            isLiked: newIsLiked,
+          );
+          
+          // Update the job in the list
+          openJobs[jobIndex] = updatedJob;
+          print("✅ Successfully toggled like for job: $jobId");
+        }
+        return true;
+      } else {
+        print("❌ Failed to toggle like: ${response.statusCode}");
+        try {
+          final errorData = json.decode(response.body);
+          final errorMessage = errorData['message'] ?? 
+                              errorData['error'] ?? 
+                              "Failed to toggle like";
+          SnackBarHelper.error(errorMessage);
+        } catch (e) {
+          SnackBarHelper.error("Failed to toggle like");
+        }
+        return false;
+      }
+    } catch (e) {
+      print("❌ Error toggling like: $e");
+      SnackBarHelper.error("Failed to toggle like: ${e.toString()}");
+      return false;
+    }
   }
 }
 
