@@ -7,6 +7,8 @@ import 'profile_screen.dart';
 import 'earnings_screen.dart';
 import 'add_service_screen.dart';
 import 'service_details_screen.dart';
+import '../CompanyTransport/service_dashboard.dart';
+import '../CompanyTransport/job_screen.dart';
 
 class ServiceProviderHomeScreen extends StatelessWidget {
   const ServiceProviderHomeScreen({super.key});
@@ -97,13 +99,18 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard(
-                        context,
-                        icon: Icons.work_outline,
-                        iconBgColor: const Color(0xFFFFE5C2),
-                        iconColor: const Color(0xFFFBAE4B),
-                        label: 'Services',
-                        value: '5',
+                      child: GestureDetector(
+                        onTap: () {
+                          Get.to(() => const ServiceDashboardScreen());
+                        },
+                        child: _buildStatCard(
+                          context,
+                          icon: Icons.work_outline,
+                          iconBgColor: const Color(0xFFFFE5C2),
+                          iconColor: const Color(0xFFFBAE4B),
+                          label: 'Services',
+                          value: '5',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -142,20 +149,30 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildQuickActionCard(
-                        context,
-                        icon: Icons.handshake,
-                        iconBgColor: const Color(0xFFFCE4EC),
-                        label: 'Hire',
+                      child: GestureDetector(
+                        onTap: () {
+                          Get.to(() => const JobsScreen());
+                        },
+                        child: _buildQuickActionCard(
+                          context,
+                          icon: Icons.handshake,
+                          iconBgColor: const Color(0xFFFCE4EC),
+                          label: 'Hire',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildQuickActionCard(
-                        context,
-                        icon: Icons.list_alt,
-                        iconBgColor: const Color(0xFFFFF3E0),
-                        label: 'Active\nListing',
+                      child: GestureDetector(
+                        onTap: () {
+                          Get.to(() => const ServiceDashboardScreen());
+                        },
+                        child: _buildQuickActionCard(
+                          context,
+                          icon: Icons.list_alt,
+                          iconBgColor: const Color(0xFFFFF3E0),
+                          label: 'Active\nListing',
+                        ),
                       ),
                     ),
                   ],

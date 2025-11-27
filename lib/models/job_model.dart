@@ -8,6 +8,8 @@ class JobModel {
   final String jobType;
   final String description;
   final List<String> imagePaths;
+  final int likeCount;
+  final bool isLiked;
 
   JobModel({
     required this.jobId,
@@ -19,6 +21,8 @@ class JobModel {
     required this.jobType,
     required this.description,
     required this.imagePaths,
+    this.likeCount = 0,
+    this.isLiked = false,
   });
 
   factory JobModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +39,8 @@ class JobModel {
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      likeCount: (json['likeCount'] as num?)?.toInt() ?? 0,
+      isLiked: json['isLiked'] == null ? false : (json['isLiked'] is bool ? json['isLiked'] as bool : false),
     );
   }
 
@@ -49,7 +55,37 @@ class JobModel {
       'jobType': jobType,
       'description': description,
       'imagePaths': imagePaths,
+      'likeCount': likeCount,
+      'isLiked': isLiked,
     };
+  }
+  
+  JobModel copyWith({
+    String? jobId,
+    String? role,
+    String? jobDuration,
+    int? openings,
+    int? salary,
+    String? city,
+    String? jobType,
+    String? description,
+    List<String>? imagePaths,
+    int? likeCount,
+    bool? isLiked,
+  }) {
+    return JobModel(
+      jobId: jobId ?? this.jobId,
+      role: role ?? this.role,
+      jobDuration: jobDuration ?? this.jobDuration,
+      openings: openings ?? this.openings,
+      salary: salary ?? this.salary,
+      city: city ?? this.city,
+      jobType: jobType ?? this.jobType,
+      description: description ?? this.description,
+      imagePaths: imagePaths ?? this.imagePaths,
+      likeCount: likeCount ?? this.likeCount,
+      isLiked: isLiked ?? this.isLiked,
+    );
   }
 }
 

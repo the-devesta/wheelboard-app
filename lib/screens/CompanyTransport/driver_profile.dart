@@ -85,17 +85,16 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                 ),
                               ),
                             ),
+                            // Left side: Logo + Back Button
                             Align(
                               alignment: Alignment.centerLeft,
-                              child: GestureDetector(
-                                onTap: () {
-                                  if (Get.previousRoute.isNotEmpty) {
-                                    Get.back();
-                                  }
-                                },
-                                child: Container(
-                                  width: 53,
-                                  height: 53,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Logo
+                                  Container(
+                                    width: 37,
+                                    height: 37,
                                   decoration: const BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: Colors.white,
@@ -104,10 +103,38 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                   child: Image.asset(
                                     'assets/logobg.png',
                                     fit: BoxFit.contain,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: Colors.grey[200],
+                                          child: const Icon(Icons.image, size: 20),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // Back Button
+                                  GestureDetector(
+                                    onTap: () {
+                                      Get.back();
+                                    },
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
+                                      ),
+                                      child: const Icon(
+                                        Icons.arrow_back,
+                                        color: Colors.black87,
+                                        size: 24,
                                   ),
                                 ),
+                                  ),
+                                ],
                               ),
                             ),
+                            // Right side: Calendar Icon
                             Align(
                               alignment: Alignment.centerRight,
                               child: IconButton(
@@ -115,6 +142,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                 icon: const Icon(
                                   Icons.calendar_month,
                                   color: Colors.white,
+                                  size: 24,
                                 ),
                               ),
                             ),

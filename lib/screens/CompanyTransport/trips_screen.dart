@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 import 'package:wheelboard/screens/CompanyTransport/newtripscreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/schedulescreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/bids_screen.dart';
+import 'package:wheelboard/screens/CompanyTransport/trip_details_screen.dart';
 import 'package:wheelboard/controllers/add_trip_controller.dart';
 import 'package:wheelboard/controllers/trip_page_controller.dart';
 import 'package:wheelboard/utils/session_manager.dart';
 import 'package:wheelboard/utils/navigation_helper.dart';
+import 'package:wheelboard/models/add_new_trip_model.dart';
 
 class TripPage extends StatefulWidget {
   final int initialTabIndex;
@@ -676,6 +678,7 @@ class _TripsTabViews extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
             children: upcomingTrips.map((trip) {
               return _UpcomingTripCard(
+                trip: trip,
                 tripId: trip.tripId,
                 title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
                 subtitle: "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
@@ -697,6 +700,7 @@ class _TripsTabViews extends StatelessWidget {
 
 /// Upcoming Trip Card with View Bids functionality
 class _UpcomingTripCard extends StatelessWidget {
+  final Trip trip;
   final String tripId;
   final String title;
   final String subtitle;
@@ -709,6 +713,7 @@ class _UpcomingTripCard extends StatelessWidget {
   final int bidsAvailable;
 
   const _UpcomingTripCard({
+    required this.trip,
     required this.tripId,
     required this.title,
     required this.subtitle,
@@ -905,13 +910,13 @@ class _UpcomingTripCard extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          // View Details
+                          Get.to(() => TripDetailsScreen(trip: trip));
                         },
                         icon: const Icon(Icons.arrow_forward, size: 16),
                         label: const Text("View Details"),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.grey),
-                          foregroundColor: Colors.grey,
+                          side: const BorderSide(color: Colors.green),
+                          foregroundColor: Colors.green,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),

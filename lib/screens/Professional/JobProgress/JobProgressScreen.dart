@@ -21,6 +21,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:get/get.dart';
 import '../../../controllers/Professional/job_progress_controller.dart';
 import '../../../models/Professional/applied_job_model.dart';
+import '../JobDetails/JobDetailsScreen.dart';
 
 class JobProgressScreen extends StatelessWidget {
   const JobProgressScreen({super.key});
@@ -333,7 +334,9 @@ class JobCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  Get.to(() => JobDetailsScreen(job: job));
+                },
                 child: const Text(
                   "→ View Details",
                   style: TextStyle(

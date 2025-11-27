@@ -103,7 +103,6 @@ class HomeScreen extends StatelessWidget {
                         onBackgroundImageError: (exception, stackTrace) {
                           // Fallback to another random image if first fails
                         },
-                        child: Icon(Icons.person, size: 20, color: Colors.white), // Always show image, no initials fallback
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -372,12 +371,37 @@ class HomeScreen extends StatelessWidget {
                             /// Likes + Applicants
                             Row(
                               children: [
-                                const Icon(Icons.thumb_up_alt_outlined,
-                                    size: 16),
-                                const SizedBox(width: 4),
-                                Text("35 Likes",
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall),
+                                GestureDetector(
+                                  onTap: () {
+                                    jobController.toggleJobLike(job.jobId);
+                                  },
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        job.isLiked 
+                                            ? Icons.thumb_up 
+                                            : Icons.thumb_up_alt_outlined,
+                                        size: 16,
+                                        color: job.isLiked 
+                                            ? AppColors.buttonBg 
+                                            : Colors.grey,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "${job.likeCount} Likes",
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: job.isLiked 
+                                                  ? AppColors.buttonBg 
+                                                  : null,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 const SizedBox(width: 12),
                                 const Icon(Icons.person_outline, size: 16),
                                 const SizedBox(width: 4),
@@ -394,7 +418,15 @@ class HomeScreen extends StatelessWidget {
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: () {
-                                      Share.share("WheelBoard");
+                                      final shareText = "Job Opportunity: ${job.role}\n"
+                                          "Location: ${job.city}\n"
+                                          "Type: ${job.jobType}\n"
+                                          "Duration: ${job.jobDuration}\n"
+                                          "Openings: ${job.openings}\n"
+                                          "Salary: ₹${job.salary}\n"
+                                          "Description: ${job.description}\n\n"
+                                          "Check out this job on WheelBoard!";
+                                      Share.share(shareText);
                                     },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor:
@@ -620,7 +652,6 @@ class HomeScreen extends StatelessWidget {
                   onBackgroundImageError: (exception, stackTrace) {
                     // Fallback handled by NetworkImage
                   },
-                  child: const Icon(Icons.person, size: 20, color: Colors.white),
                 ),
                 const SizedBox(width: 10),
                 Expanded(

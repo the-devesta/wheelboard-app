@@ -62,6 +62,8 @@ class API {
   static const String updateJob = 'api/Job/update-job';
   static const String getJobList = 'api/Job/job-list/';
   static const String toggleJobLike = 'api/Job/job-like-toggle';
+  static const String getJobApplications = 'api/Job/get-applications/';
+  static const String updateJobStatus = 'api/Job/update-job-status';
   
 
 

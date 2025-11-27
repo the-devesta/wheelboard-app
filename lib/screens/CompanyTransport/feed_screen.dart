@@ -288,12 +288,15 @@ class FeedScreen extends StatelessWidget {
       backgroundColor: Color(0xFFFCECEC),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Image.asset('assets/headingImg.png', width: 210, height: 30),
-          ],
-        ),
         elevation: 0,
+        centerTitle: false,
+        titleSpacing: 16,
+        title: Image.asset(
+          'assets/headingImg.png',
+          width: 180,
+          height: 30,
+          fit: BoxFit.contain,
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),

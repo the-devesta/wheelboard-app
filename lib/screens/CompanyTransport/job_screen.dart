@@ -17,11 +17,13 @@ class JobsScreen extends StatefulWidget {
 }
 
 class _JobsScreenState extends State<JobsScreen> {
-  final JobController jobController = Get.put(JobController());
+  late final JobController jobController;
 
   @override
   void initState() {
     super.initState();
+    // Get or create controller instance
+    jobController = Get.put(JobController(), permanent: false);
     // Refresh jobs when screen is opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
       jobController.refreshJobs();
@@ -98,6 +100,7 @@ class _JobsScreenState extends State<JobsScreen> {
                 ),
                 child: JobCard(
                   job: job,
+                  jobController: jobController,
                   onEdit: () async {
                     await Get.to(() => PostJobScreen(jobToEdit: job));
                     // Refresh jobs after returning from edit screen
@@ -130,11 +133,13 @@ class _JobsScreenState extends State<JobsScreen> {
 
 class JobCard extends StatelessWidget {
   final JobModel job;
+  final JobController jobController;
   final VoidCallback onEdit;
 
   const JobCard({
     super.key,
     required this.job,
+    required this.jobController,
     required this.onEdit,
   });
 
@@ -224,12 +229,42 @@ class JobCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        SvgPicture.asset(
-                          'assets/heart.svg',
-                          width: 32,
-                          height: 32,
-                          fit: BoxFit.contain,
-                        ),
+                        Obx(() {
+                          final currentJob = jobController.jobs.firstWhere(
+                            (j) => j.jobId == job.jobId,
+                            orElse: () => job,
+                          );
+                          return GestureDetector(
+                            onTap: () {
+                              jobController.toggleJobLike(job.jobId);
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  currentJob.isLiked 
+                                      ? Icons.favorite 
+                                      : Icons.favorite_border,
+                                  size: 24,
+                                  color: currentJob.isLiked 
+                                      ? AppColors.buttonBg 
+                                      : Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${currentJob.likeCount}",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: currentJob.isLiked 
+                                        ? AppColors.buttonBg 
+                                        : Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () {
