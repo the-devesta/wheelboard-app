@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
-import '../Notification1/Notification1Screen.dart';
+import '../../CompanyTransport/notification_screen.dart';
+import '../../../controllers/notification_controller.dart';
 import '../YourProfile/YourProfileScreen.dart';
 
 /// Professional Header Widget
@@ -58,24 +59,60 @@ class ProfessionalHeaderWidget extends StatelessWidget {
               ),
               const Spacer(),
               // Notification Bell - Responsive
-              GestureDetector(
-                onTap: () {
-                  Get.to(const Notification1Screen());
-                },
-                child: Container(
-                  width: screenWidth * 0.1, // Responsive width (10% of screen width)
-                  height: screenWidth * 0.1, // Responsive height
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
+              Obx(() {
+                final notificationController = Get.put(NotificationController());
+                final unreadCount = notificationController.unreadCount;
+                
+                return GestureDetector(
+                  onTap: () {
+                    Get.to(const NotificationScreen());
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: screenWidth * 0.1, // Responsive width (10% of screen width)
+                        height: screenWidth * 0.1, // Responsive height
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                          size: screenWidth * 0.06, // Responsive icon size (6% of screen width)
+                        ),
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF317873),
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Center(
+                              child: Text(
+                                unreadCount > 99 ? '99+' : '$unreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  child: Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.white,
-                    size: screenWidth * 0.06, // Responsive icon size (6% of screen width)
-                  ),
-                ),
-              ),
+                );
+              }),
             ],
           ),
         ),

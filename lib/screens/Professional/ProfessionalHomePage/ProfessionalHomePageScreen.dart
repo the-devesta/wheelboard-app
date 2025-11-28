@@ -16,6 +16,7 @@ import '../SOS/SOSScreen.dart';
 import '../AddReferral/AddReferralScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
+import '../../../controllers/notification_controller.dart';
 
 /// Professional Homepage Screen
 /// Main screen matching Figma design exactly
@@ -36,6 +37,12 @@ class ProfessionalHomePageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final AssignedTripController assignedTripController =
         Get.put(AssignedTripController());
+    final notificationController = Get.put(NotificationController());
+    
+    // Fetch notifications on first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notificationController.fetchNotifications();
+    });
 
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;

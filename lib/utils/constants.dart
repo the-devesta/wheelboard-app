@@ -75,4 +75,8 @@ class API {
   // Expense APIs
   static const String getExpensePurposes = 'api/Trip/trip_expense_purposes';
   static const String saveTripExpense = 'api/Trip/trip_expense_save';
+  
+  // Notification APIs
+  static const String getNotifications = 'api/NotificationsApi/notifications';
+  static const String markNotificationRead = 'api/NotificationsApi/notification/read';
 }

@@ -9,12 +9,21 @@ import 'add_service_screen.dart';
 import 'service_details_screen.dart';
 import '../CompanyTransport/service_dashboard.dart';
 import '../CompanyTransport/job_screen.dart';
+import '../CompanyTransport/notification_screen.dart';
+import '../../controllers/notification_controller.dart';
 
 class ServiceProviderHomeScreen extends StatelessWidget {
   const ServiceProviderHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final notificationController = Get.put(NotificationController());
+    
+    // Fetch notifications on first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notificationController.fetchNotifications();
+    });
+    
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: SafeArea(
@@ -65,23 +74,58 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                       ),
                     ),
                     // Notification Bell
-                    GestureDetector(
-                      onTap: () {
-                        // Navigate to notifications
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF36969),
-                          borderRadius: BorderRadius.circular(11),
+                    Obx(() {
+                      final unreadCount = notificationController.unreadCount;
+                      
+                      return GestureDetector(
+                        onTap: () {
+                          Get.to(const NotificationScreen());
+                        },
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF36969),
+                                borderRadius: BorderRadius.circular(11),
+                              ),
+                              child: const Icon(
+                                Icons.notifications,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            if (unreadCount > 0)
+                              Positioned(
+                                top: -2,
+                                right: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF317873),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 18,
+                                    minHeight: 18,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      unreadCount > 99 ? '99+' : '$unreadCount',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        child: const Icon(
-                          Icons.notifications,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                    ),
+                      );
+                    }),
                   ],
                 ),
               ),

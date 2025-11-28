@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/CompanyTransport/dashboard.dart';
-import 'package:wheelboard/screens/CompanyTransport/notification.dart';
+import 'package:wheelboard/screens/CompanyTransport/notification_screen.dart';
+import '../../controllers/notification_controller.dart';
 import 'banner_carousel.dart';
 import 'fleet_userprofile.dart';
 import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'companyuser_profile_screen.dart';
+import 'service_dashboard.dart';
 import 'services_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'job_form_screen.dart';
@@ -53,14 +55,16 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize profile controller
+    // Initialize controllers
     final profileController = Get.put(UserProfileController());
     final jobController = Get.put(JobController());
     final feedsController = Get.put(FeedsController());
+    final notificationController = Get.put(NotificationController());
     
-    // Fetch profile on first build
+    // Fetch profile and notifications on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       profileController.fetchCurrentUserProfile();
+      notificationController.fetchNotifications();
     });
 
     return Scaffold(
@@ -126,44 +130,63 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Get.to(NotificationsScreen());
-                      },
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          // Red square with rounded corners and white bell
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors
-                                  .buttonBg, // AppColors.buttonBg (red)
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.notifications,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-
-                          // Small teal-green badge
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF317873), // AppColors.badge
-                                shape: BoxShape.circle,
+                    Obx(() {
+                      final notificationController = Get.find<NotificationController>();
+                      final unreadCount = notificationController.unreadCount;
+                      
+                      return GestureDetector(
+                        onTap: () {
+                          Get.to(const NotificationScreen());
+                        },
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            // Red square with rounded corners and white bell
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors
+                                    .buttonBg, // AppColors.buttonBg (red)
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.notifications,
+                                color: Colors.white,
+                                size: 26,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
+
+                            // Unread count badge
+                            if (unreadCount > 0)
+                              Positioned(
+                                top: -2,
+                                right: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF317873), // AppColors.badge
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 18,
+                                    minHeight: 18,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      unreadCount > 99 ? '99+' : '$unreadCount',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
                     ]);
                   }),
                 const SizedBox(height: 20),
@@ -216,7 +239,7 @@ class HomeScreen extends StatelessWidget {
                             }
                             if (index == 4) {
                               // Navigate, show dialog, etc.
-                              Get.to(ServicesScreen());
+                              Get.to(ServiceDashboardScreen());
                             }
 
                             if (index == 5) {
