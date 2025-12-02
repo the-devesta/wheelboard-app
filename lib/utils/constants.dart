@@ -42,12 +42,17 @@ class API {
   
   // Service APIs
   static const String serviceList = 'api/Service/service-list';
+  static const String serviceListByUser = 'api/Service/service-list/'; // With userId
   static const String serviceDetail = 'api/Service/details/';
+  static const String serviceAssignList = 'api/Service/service-assign-list'; // With serviceId query param
   static const String assignService = 'api/Service/assign-service';
+  static const String addService = 'api/Service/add-service';
+  static const String updateService = 'api/Service/update-service';
   
   // Vehicle and Driver Details APIs
   static const String getVehicleDetails = 'api/VehicleApi/GetVehicleDetails';
   static const String getLicenseDetails = 'api/VehicleApi/GetLicenceDetails';
+  static const String getVehicleDetailsById = 'api/Transport/vehicle-details/';
   
   // Post APIs
   static const String createPost = 'api/Post/add';

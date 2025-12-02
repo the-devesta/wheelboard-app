@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import '../models/get_driver_model.dart';
 import '../models/get_vehicle_model.dart';
+import '../models/vehicle_detail_response_model.dart';
 import '../utils/constants.dart';
 import '../apihelperclass/api_helper.dart'; // adjust import path if needed
 
@@ -44,7 +45,7 @@ class DriverController extends GetxController {
       } else {
         Get.snackbar("Error", "Failed to load drivers: ${response.statusCode}");
       }
-    } catch (e, stack) {
+    } catch (e) {
       Get.snackbar("Error", "Exception: $e");
     } finally {
       isLoading.value = false;
@@ -123,12 +124,60 @@ class DriverController extends GetxController {
           "Failed to load vehicles: ${response.statusCode}",
         );
       }
-    } catch (e, stack) {
+    } catch (e) {
       //  print("❌ Exception in fetchVehicles: $e");
-      //   print("🪜 Stacktrace: $stack");
       Get.snackbar("Error", "Exception: $e");
     } finally {
       isVehicleLoading.value = false;
+    }
+  }
+
+  // ================================
+  // FETCH VEHICLE DETAILS BY ID
+  // ================================
+  var vehicleDetails = Rx<VehicleDetailResponseModel?>(null);
+  var isVehicleDetailsLoading = false.obs;
+
+  Future<void> fetchVehicleDetails(String vehicleId, String token) async {
+    try {
+      isVehicleDetailsLoading.value = true;
+
+      final url = "${API.getVehicleDetailsById}$vehicleId";
+
+      print("==================================");
+      print("📡 Fetching Vehicle Details");
+      print("👉 URL: $url");
+      print("==================================");
+
+      final response = await HttpHelper.getData(
+        endpoint: url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "accept": "*/*",
+        },
+      );
+
+      print("==================================");
+      print("📩 Response from Vehicle Details API");
+      print("🔹 Status Code: ${response.statusCode}");
+      print("🔹 Body: ${response.body}");
+      print("==================================");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        vehicleDetails.value = VehicleDetailResponseModel.fromJson(data);
+        print("✅ Vehicle details loaded successfully");
+      } else {
+        Get.snackbar(
+          "Error",
+          "Failed to load vehicle details: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      print("❌ Exception in fetchVehicleDetails: $e");
+      Get.snackbar("Error", "Exception: $e");
+    } finally {
+      isVehicleDetailsLoading.value = false;
     }
   }
 }

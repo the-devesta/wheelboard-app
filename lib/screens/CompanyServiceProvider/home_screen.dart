@@ -6,24 +6,116 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'profile_screen.dart';
 import 'earnings_screen.dart';
 import 'add_service_screen.dart';
+import 'my_listings_screen.dart';
 import 'service_details_screen.dart';
-import '../CompanyTransport/service_dashboard.dart';
 import '../CompanyTransport/job_screen.dart';
 import '../CompanyTransport/notification_screen.dart';
 import '../../controllers/notification_controller.dart';
+import '../../controllers/user_profile_controller.dart';
+import '../../models/service_model.dart';
+import '../../utils/session_manager.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import 'dart:convert';
 
-class ServiceProviderHomeScreen extends StatelessWidget {
+class ServiceProviderHomeScreen extends StatefulWidget {
   const ServiceProviderHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final notificationController = Get.put(NotificationController());
-    
-    // Fetch notifications on first build
+  State<ServiceProviderHomeScreen> createState() => _ServiceProviderHomeScreenState();
+}
+
+class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
+  final notificationController = Get.put(NotificationController());
+  final userProfileController = Get.put(UserProfileController());
+  List<ServiceModel> _services = [];
+  bool _isLoadingServices = false;
+  final Map<String, String> _serviceImages = {}; // Store service images by serviceId
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch notifications and profile on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notificationController.fetchNotifications();
+      userProfileController.fetchCurrentUserProfile();
+      _fetchMyServices();
     });
-    
+  }
+
+  Future<void> _fetchMyServices() async {
+    setState(() {
+      _isLoadingServices = true;
+    });
+
+    try {
+      final sessionManager = SessionManager();
+      final userId = await sessionManager.getString("userId");
+      final token = await sessionManager.getString("authToken");
+
+      if (userId == null || userId.isEmpty) {
+        return;
+      }
+
+      final response = await HttpHelper.getData(
+        endpoint: '${API.serviceListByUser}$userId',
+        headers: {
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          'Accept': '*/*',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // API returns array directly, not wrapped in data object
+        final List<dynamic> data = jsonDecode(response.body) as List<dynamic>? ?? [];
+
+        // Map API response to ServiceModel
+        setState(() {
+          _services = data.map((e) {
+            final json = e as Map<String, dynamic>;
+            return ServiceModel(
+              serviceId: json['serviceId'] ?? '',
+              serviceTitle: json['title'] ?? json['serviceTitle'] ?? '',
+              city: json['city'] ?? '',
+              fullAddress: json['fullAddress'] ?? '',
+              isAvailable: json['isVisible'] ?? false,
+              businessName: json['businessName'] ?? '',
+              businessType: json['businessType'] ?? '',
+              contactNumber: json['contactNumber'],
+              whatsappNumber: json['whatsappNumber'],
+              description: json['description'],
+              pricingOption: json['isFlatPrice'] == true ? 'Flat Price' : 'Per Hour',
+              amount: json['price'],
+              businessHoursFrom: json['businessFrom'],
+              businessHoursTo: json['businessTo'],
+              daysOpen: json['daysOpen'],
+            );
+          }).toList();
+          
+          // Store images separately for each service
+          for (int i = 0; i < data.length && i < _services.length; i++) {
+            final json = data[i] as Map<String, dynamic>;
+            final images = json['images'] as List<dynamic>? ?? [];
+            if (images.isNotEmpty) {
+              // Store first image URL in a way we can access it
+              // We'll use a Map to store service images
+              _serviceImages[_services[i].serviceId] = images[0].toString();
+            }
+          }
+        });
+      }
+    } catch (e) {
+      // Silently handle errors for home screen
+      print('Error fetching services: $e');
+    } finally {
+      setState(() {
+        _isLoadingServices = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: SafeArea(
@@ -37,41 +129,61 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     // Profile Picture
-                    GestureDetector(
-                      onTap: () {
-                        Get.to(() => const ServiceProviderProfileScreen());
-                      },
-                      child: CircleAvatar(
-                        radius: 33,
-                        backgroundImage: NetworkImage(
-                          'https://i.pravatar.cc/150?img=4',
-                        ),
-                      ),
-                    ),
+                    Obx(() {
+                      final profile = userProfileController.userProfile.value;
+                      final profileImage = profile?.profileImage;
+                      
+                      return GestureDetector(
+                        onTap: () {
+                          Get.to(() => const ServiceProviderProfileScreen());
+                        },
+                        child: profileImage != null && profileImage.isNotEmpty
+                            ? CircleAvatar(
+                                radius: 33,
+                                backgroundImage: NetworkImage(profileImage),
+                                onBackgroundImageError: (exception, stackTrace) {
+                                  // Handle image error
+                                },
+                                child: const Icon(Icons.person, size: 33, color: Color(0xFF333333)),
+                              )
+                            : const CircleAvatar(
+                                radius: 33,
+                                backgroundColor: Color(0xFFE0E0E0),
+                                child: Icon(Icons.person, size: 33, color: Color(0xFF333333)),
+                              ),
+                      );
+                    }),
                     const SizedBox(width: 12),
                     // Welcome Text
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome!',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF333333),
-                              fontSize: 16,
+                      child: Obx(() {
+                        final profile = userProfileController.userProfile.value;
+                        final businessName = profile?.businessName ?? profile?.displayName ?? 'Welcome';
+                        
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome!',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF333333),
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Patel Services',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF333333),
-                              fontSize: 20,
+                            Text(
+                              businessName,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF333333),
+                                fontSize: 20,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        );
+                      }),
                     ),
                     // Notification Bell
                     Obx(() {
@@ -145,7 +257,7 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          Get.to(() => const ServiceDashboardScreen());
+                          Get.to(() => const MyListingsScreen());
                         },
                         child: _buildStatCard(
                           context,
@@ -153,7 +265,7 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                           iconBgColor: const Color(0xFFFFE5C2),
                           iconColor: const Color(0xFFFBAE4B),
                           label: 'Services',
-                          value: '5',
+                          value: '${_services.length}',
                         ),
                       ),
                     ),
@@ -209,7 +321,7 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          Get.to(() => const ServiceDashboardScreen());
+                          Get.to(() => const MyListingsScreen());
                         },
                         child: _buildQuickActionCard(
                           context,
@@ -230,40 +342,100 @@ class ServiceProviderHomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'My Services',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: const Color(0xFF2D3436),
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'My Services',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: const Color(0xFF2D3436),
+                          ),
+                        ),
+                        if (_services.isNotEmpty)
+                          TextButton(
+                            onPressed: () {
+                              Get.to(() => const MyListingsScreen());
+                            },
+                            child: Text(
+                              'View All',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF00AAFF),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: () => Get.to(() => const ServiceDetailsScreen()),
-                      child: _buildServiceCard(
-                        context,
-                        imageUrl: 'https://i.pravatar.cc/60?img=1',
-                        title: 'Tyre Replacement',
-                        tag: 'Tyre Repair',
-                        description: 'Puncture and flat tyre repair service.\nQuick turnaround and warranty\nincluded for every job.',
-                        onEdit: () {},
-                        onUnpublish: () {},
+                    if (_isLoadingServices)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_services.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.inbox_outlined,
+                              size: 48,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No services yet',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Create your first service to get started',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...List.generate(
+                        _services.length > 2 ? 2 : _services.length,
+                        (index) {
+                          final service = _services[index];
+                          // Get first image from stored images map
+                          final serviceImage = _serviceImages[service.serviceId] ?? '';
+                          
+                          return Column(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  Get.to(() => ServiceDetailsScreen(serviceId: service.serviceId));
+                                },
+                                child: _buildServiceCardFromModel(
+                                  context,
+                                  service: service,
+                                  imageUrl: serviceImage,
+                                ),
+                              ),
+                              if (index < (_services.length > 2 ? 1 : _services.length - 1))
+                                const SizedBox(height: 12),
+                            ],
+                          );
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: () => Get.to(() => const ServiceDetailsScreen()),
-                      child: _buildServiceCard(
-                        context,
-                        imageUrl: '',
-                        title: 'Oil Change',
-                        tag: 'Lubrication',
-                        description: 'High-quality engine oil replacement\nwith filter change. Fast and reliable\nservice every time.',
-                        onEdit: () {},
-                        onUnpublish: () {},
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -430,6 +602,38 @@ class ServiceProviderHomeScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildServiceCardFromModel(
+    BuildContext context, {
+    required ServiceModel service,
+    String imageUrl = '',
+  }) {
+    final title = service.serviceTitle.isNotEmpty ? service.serviceTitle : 'Untitled Service';
+    // Use businessType if available, otherwise use city or "Service" as fallback
+    final tag = service.businessType.isNotEmpty 
+        ? service.businessType 
+        : (service.city.isNotEmpty ? service.city : 'Service');
+    final description = service.description ?? 'No description available';
+    
+    // Try to get image from API response if available
+    String serviceImage = imageUrl;
+
+    return _buildServiceCard(
+      context,
+      imageUrl: serviceImage,
+      title: title,
+      tag: tag,
+      description: description.length > 100 
+          ? '${description.substring(0, 100)}...' 
+          : description,
+      onEdit: () {
+        Get.to(() => AddServiceScreen(service: service));
+      },
+      onUnpublish: () {
+        // Handle unpublish action - can be implemented later
+      },
     );
   }
 

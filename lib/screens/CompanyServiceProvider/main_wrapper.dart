@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
-import 'package:wheelboard/screens/CompanyTransport/service_dashboard.dart';
 import 'home_screen.dart';
-import '../CompanyTransport/services_screen.dart';
+import 'my_listings_screen.dart';
 import '../CompanyTransport/feed_screen.dart';
 import '../CompanyTransport/job_screen.dart';
 
@@ -27,7 +26,7 @@ class _CompanyServiceProviderMainWrapperState extends State<CompanyServiceProvid
 
   final List<Widget> _screens = [
     const ServiceProviderHomeScreen(), // Home
-    const ServiceDashboardScreen(), // Listings
+    const MyListingsScreen(), // Listings
     const FeedScreen(), // Feeds
     const JobsScreen(), // Jobs
   ];

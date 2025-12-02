@@ -1,16 +1,86 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../controllers/service_provider_controller.dart';
+import '../../models/add_service_model.dart';
+import '../../models/update_service_model.dart';
+import '../../models/service_model.dart';
+import '../../utils/session_manager.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class AddServiceScreen extends StatefulWidget {
-  const AddServiceScreen({super.key});
+  final ServiceModel? service; // Optional service for edit mode
+  
+  const AddServiceScreen({super.key, this.service});
 
   @override
   State<AddServiceScreen> createState() => _AddServiceScreenState();
 }
 
 class _AddServiceScreenState extends State<AddServiceScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final ServiceProviderController _controller;
+  
+  // Form Controllers
+  final TextEditingController _serviceTitleController = TextEditingController();
+  final TextEditingController _contactNumberController = TextEditingController();
+  final TextEditingController _whatsappNumberController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _fullAddressController = TextEditingController();
+  
+  int _descriptionLength = 0;
+  
   String _pricingOption = 'Flat Price';
   final Set<String> _selectedDays = {'Mon'};
+  String _businessFrom = '09:00';
+  String _businessTo = '18:00';
+  bool _isVisible = true;
+  List<File> _selectedImages = [];
+  final ImagePicker _imagePicker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(ServiceProviderController(), permanent: false);
+    _descriptionController.addListener(() {
+      setState(() {
+        _descriptionLength = _descriptionController.text.length;
+      });
+    });
+    
+    // Populate form if editing
+    if (widget.service != null) {
+      _populateFormForEdit();
+    }
+  }
+  
+  void _populateFormForEdit() {
+    final service = widget.service!;
+    _serviceTitleController.text = service.serviceTitle;
+    _contactNumberController.text = service.contactNumber ?? '';
+    _whatsappNumberController.text = service.whatsappNumber ?? '';
+    _descriptionController.text = service.description ?? '';
+    _priceController.text = service.amount?.toString() ?? '';
+    _cityController.text = service.city;
+    _fullAddressController.text = service.fullAddress;
+    _pricingOption = service.pricingOption ?? 'Flat Price';
+    _isVisible = service.isAvailable;
+    if (service.daysOpen != null && service.daysOpen!.isNotEmpty) {
+      _selectedDays.clear();
+      _selectedDays.addAll(service.daysOpen!.split(','));
+    }
+    if (service.businessHoursFrom != null) {
+      _businessFrom = service.businessHoursFrom!;
+    }
+    if (service.businessHoursTo != null) {
+      _businessTo = service.businessHoursTo!;
+    }
+    _descriptionLength = _descriptionController.text.length;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +94,8 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Add New Service',
+        title: Text(
+          widget.service != null ? 'Edit Service' : 'Add New Service',
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -34,24 +104,38 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              _buildServiceDetailsSection(),
-              const SizedBox(height: 24),
-              _buildPricingSection(),
-              const SizedBox(height: 24),
-              _buildBusinessHoursSection(),
-              const SizedBox(height: 24),
-              _buildLocationSection(),
-              const SizedBox(height: 24),
-              _buildImageGallerySection(),
-              const SizedBox(height: 24),
-              _buildVisibilitySection(),
-            ],
-          ),
+      body: Form(
+        key: _formKey,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildServiceDetailsSection(),
+                      const SizedBox(height: 24),
+                      _buildPricingSection(),
+                      const SizedBox(height: 24),
+                      _buildBusinessHoursSection(),
+                      const SizedBox(height: 24),
+                      _buildLocationSection(),
+                      const SizedBox(height: 24),
+                      _buildImageGallerySection(),
+                      const SizedBox(height: 24),
+                      _buildVisibilitySection(),
+                      const SizedBox(height: 100), // Space for bottom buttons
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
       bottomNavigationBar: _buildBottomButtons(),
@@ -90,22 +174,63 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     return _buildSection(
       '',
       [
-        const _CustomTextField(labelText: 'Service Title *'),
+        _CustomTextField(
+          labelText: 'Service Title *',
+          controller: _serviceTitleController,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Service title is required';
+            }
+            return null;
+          },
+        ),
         const SizedBox(height: 16),
-        const _CustomTextField(labelText: 'Contact number *'),
+        _CustomTextField(
+          labelText: 'Contact number *',
+          controller: _contactNumberController,
+          keyboardType: TextInputType.phone,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Contact number is required';
+            }
+            if (value.length < 10) {
+              return 'Please enter a valid contact number';
+            }
+            return null;
+          },
+        ),
         const SizedBox(height: 16),
-        const _CustomTextField(labelText: 'Whatsapp number (optional)'),
+        _CustomTextField(
+          labelText: 'Whatsapp number (optional)',
+          controller: _whatsappNumberController,
+          keyboardType: TextInputType.phone,
+        ),
         const SizedBox(height: 16),
-        const _CustomTextField(
+        _CustomTextField(
           labelText: 'Description *',
           maxLines: 4,
+          minLines: 1,
+          controller: _descriptionController,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Description is required';
+            }
+            if (value.length > 500) {
+              return 'Description cannot exceed 500 characters';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 8),
-        const Align(
+        Align(
           alignment: Alignment.centerRight,
           child: Text(
-            '0/500',
-            style: TextStyle(color: Colors.grey),
+            '$_descriptionLength/500',
+            style: TextStyle(
+              color: _descriptionLength > 500 
+                  ? Colors.red 
+                  : Colors.grey,
+            ),
           ),
         ),
       ],
@@ -124,9 +249,23 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        const _CustomTextField(
-          labelText: 'Amount',
-          prefixIcon: Icon(Icons.currency_rupee, color: Colors.grey),
+        _CustomTextField(
+          labelText: _pricingOption == 'Flat Price' ? 'Amount *' : 'Amount (optional)',
+          prefixIcon: const Icon(Icons.currency_rupee, color: Colors.grey),
+          controller: _priceController,
+          keyboardType: TextInputType.number,
+          enabled: _pricingOption == 'Flat Price',
+          validator: _pricingOption == 'Flat Price' 
+              ? (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Amount is required for flat price';
+                  }
+                  if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                    return 'Please enter a valid amount';
+                  }
+                  return null;
+                }
+              : null,
         ),
       ],
     );
@@ -210,41 +349,73 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   }
 
   Widget _buildTimePicker(String label, String time) {
+    final isFrom = label == 'From';
+    final currentTime = isFrom ? _businessFrom : _businessTo;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(color: Colors.grey)),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(time),
-              const Icon(Icons.access_time, color: Colors.grey),
-            ],
+        GestureDetector(
+          onTap: () => _selectTime(context, isFrom),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(currentTime),
+                const Icon(Icons.access_time, color: Colors.grey),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
+  Future<void> _selectTime(BuildContext context, bool isFrom) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        final timeString = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+        if (isFrom) {
+          _businessFrom = timeString;
+        } else {
+          _businessTo = timeString;
+        }
+      });
+    }
+  }
+
   Widget _buildLocationSection() {
     return _buildSection(
       '',
       [
-        const _CustomTextField(
-          labelText: 'City',
-          suffixIcon: Icon(Icons.arrow_drop_down),
+        _CustomTextField(
+          labelText: 'City *',
+          controller: _cityController,
+          suffixIcon: const Icon(Icons.arrow_drop_down),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'City is required';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 16),
-        const _CustomTextField(
+        _CustomTextField(
           labelText: 'Full Address (optional)',
           maxLines: 4,
+          minLines: 1,
+          controller: _fullAddressController,
         ),
       ],
     );
@@ -265,7 +436,10 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           ),
           itemCount: 4,
           itemBuilder: (context, index) {
-            return _buildImagePlaceholder();
+            if (index < _selectedImages.length) {
+              return _buildImageItem(_selectedImages[index], index);
+            }
+            return _buildImagePlaceholder(index);
           },
         ),
         const SizedBox(height: 8),
@@ -277,29 +451,139 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     );
   }
 
-  Widget _buildImagePlaceholder() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-          style: BorderStyle.solid,
+  Widget _buildImagePlaceholder(int index) {
+    return GestureDetector(
+      onTap: () => _pickImage(index),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.grey.shade300,
+            width: 1,
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_a_photo, color: Color(0xFF00B894)),
+            SizedBox(height: 8),
+            Text(
+              'Add Image',
+              style: TextStyle(color: Color(0xFF00B894)),
+            ),
+          ],
         ),
       ),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_a_photo, color: Color(0xFF00B894)),
-          SizedBox(height: 8),
-          Text(
-            'Add Image',
-            style: TextStyle(color: Color(0xFF00B894)),
-          ),
-        ],
-      ),
     );
+  }
+
+  Widget _buildImageItem(File image, int index) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            image,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedImages.removeAt(index);
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickImage(int index) async {
+    if (_selectedImages.length >= 4) {
+      SnackBarHelper.error("Maximum 4 images allowed");
+      return;
+    }
+
+    try {
+      final ImageSource? source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (BuildContext context) {
+          return SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt, color: Color(0xFF00B894)),
+                  title: const Text('Take Photo'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library, color: Color(0xFF00B894)),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.cancel, color: Colors.grey),
+                  title: const Text('Cancel'),
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      if (source != null) {
+        final XFile? pickedFile = await _imagePicker.pickImage(
+          source: source,
+          imageQuality: 80,
+          maxWidth: 1920,
+          maxHeight: 1920,
+        );
+
+        if (pickedFile != null) {
+          final file = File(pickedFile.path);
+          final fileSizeInMB = await file.length() / (1024 * 1024);
+          
+          if (fileSizeInMB > 2) {
+            SnackBarHelper.error("Image size should be less than 2MB");
+            return;
+          }
+
+          setState(() {
+            if (index < _selectedImages.length) {
+              _selectedImages[index] = file;
+            } else {
+              _selectedImages.add(file);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      SnackBarHelper.error("Failed to pick image: ${e.toString()}");
+    }
   }
 
   Widget _buildVisibilitySection() {
@@ -327,8 +611,12 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
               ],
             ),
             Switch(
-              value: true,
-              onChanged: (value) {},
+              value: _isVisible,
+              onChanged: (value) {
+                setState(() {
+                  _isVisible = value;
+                });
+              },
               activeColor: const Color(0xFF00B894),
             ),
           ],
@@ -338,7 +626,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   }
 
   Widget _buildBottomButtons() {
-    return Container(
+    return Obx(() => Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Column(
@@ -347,7 +635,10 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: _controller.isLoading.value ? null : () {
+                // Save as draft - same as publish but with isVisible = false
+                _saveService(isVisible: false);
+              },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -365,7 +656,9 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _controller.isLoading.value ? null : () {
+                _saveService(isVisible: true);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF36969),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -373,35 +666,185 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Save & Publish',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
+              child: _controller.isLoading.value
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Save & Publish',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
             ),
           ),
         ],
       ),
-    );
+    ));
+  }
+
+  Future<void> _saveService({required bool isVisible}) async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedDays.isEmpty) {
+      SnackBarHelper.error("Please select at least one day");
+      return;
+    }
+
+    if (_pricingOption == 'Flat Price' && _priceController.text.trim().isEmpty) {
+      SnackBarHelper.error("Please enter amount for flat price");
+      return;
+    }
+
+    try {
+      final sessionManager = SessionManager();
+      final userId = await sessionManager.getString("userId");
+      
+      if (userId == null || userId.isEmpty) {
+        SnackBarHelper.error("User ID not found. Please login again.");
+        return;
+      }
+
+      final daysOpen = _selectedDays.join(',');
+      final isFlatPrice = _pricingOption == 'Flat Price';
+      final price = isFlatPrice 
+          ? double.tryParse(_priceController.text.trim()) ?? 0.0
+          : 0.0;
+
+      Map<String, dynamic>? result;
+
+      // Check if we're editing an existing service
+      if (widget.service != null) {
+        // Update existing service
+        final updateModel = UpdateServiceModel(
+          serviceId: widget.service!.serviceId,
+          userId: userId,
+          serviceTitle: _serviceTitleController.text.trim(),
+          fullAddress: _fullAddressController.text.trim(),
+          city: _cityController.text.trim(),
+          contactNumber: _contactNumberController.text.trim(),
+          whatsappNumber: _whatsappNumberController.text.trim().isEmpty 
+              ? null 
+              : _whatsappNumberController.text.trim(),
+          description: _descriptionController.text.trim(),
+          isFlatPrice: isFlatPrice,
+          price: price,
+          isVisible: isVisible,
+          daysOpen: daysOpen,
+          businessFrom: _businessFrom,
+          businessTo: _businessTo,
+          modifiedBy: userId,
+          newImages: _selectedImages.isNotEmpty ? _selectedImages : null,
+        );
+
+        result = await _controller.updateService(updateModel);
+      } else {
+        // Add new service
+        final serviceModel = AddServiceModel(
+          userId: userId,
+          serviceTitle: _serviceTitleController.text.trim(),
+          fullAddress: _fullAddressController.text.trim(),
+          city: _cityController.text.trim(),
+          contactNumber: _contactNumberController.text.trim(),
+          whatsappNumber: _whatsappNumberController.text.trim().isEmpty 
+              ? null 
+              : _whatsappNumberController.text.trim(),
+          description: _descriptionController.text.trim(),
+          isFlatPrice: isFlatPrice,
+          price: price,
+          isVisible: isVisible,
+          daysOpen: daysOpen,
+          businessFrom: _businessFrom,
+          businessTo: _businessTo,
+          createdBy: userId,
+          images: _selectedImages,
+        );
+
+        result = await _controller.addService(serviceModel);
+      }
+      
+      if (result != null && result['success'] == true) {
+        // Clear form and go back
+        if (widget.service == null) {
+          _clearForm();
+        }
+        Navigator.of(context).pop(true); // Return true to indicate success
+      }
+    } catch (e) {
+      SnackBarHelper.error("Failed to save service: ${e.toString()}");
+    }
+  }
+
+  void _clearForm() {
+    _serviceTitleController.clear();
+    _contactNumberController.clear();
+    _whatsappNumberController.clear();
+    _descriptionController.clear();
+    _priceController.clear();
+    _cityController.clear();
+    _fullAddressController.clear();
+    setState(() {
+      _pricingOption = 'Flat Price';
+      _selectedDays.clear();
+      _selectedDays.add('Mon');
+      _businessFrom = '09:00';
+      _businessTo = '18:00';
+      _isVisible = true;
+      _selectedImages.clear();
+    });
+  }
+
+  @override
+  void dispose() {
+    _serviceTitleController.dispose();
+    _contactNumberController.dispose();
+    _whatsappNumberController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _cityController.dispose();
+    _fullAddressController.dispose();
+    super.dispose();
   }
 }
 
 class _CustomTextField extends StatelessWidget {
   final String labelText;
-  final int maxLines;
+  final int? maxLines;
+  final int? minLines;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  final bool enabled;
 
   const _CustomTextField({
     required this.labelText,
-    this.maxLines = 1,
+    this.maxLines,
+    this.minLines,
     this.prefixIcon,
     this.suffixIcon,
+    this.controller,
+    this.keyboardType,
+    this.validator,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      maxLines: maxLines,
+      controller: controller,
+      maxLines: maxLines ?? 1,
+      minLines: minLines ?? 1,
+      keyboardType: keyboardType,
+      validator: validator,
+      enabled: enabled,
+      textInputAction: maxLines != null && maxLines! > 1 ? TextInputAction.newline : TextInputAction.next,
       decoration: InputDecoration(
         labelText: labelText,
         labelStyle: const TextStyle(color: Colors.grey),
@@ -418,6 +861,14 @@ class _CustomTextField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFF0075FF)),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: maxLines != null && maxLines! > 1 ? 12 : 16,
         ),
       ),
     );

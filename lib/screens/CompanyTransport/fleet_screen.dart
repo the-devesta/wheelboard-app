@@ -5,6 +5,7 @@ import 'package:wheelboard/screens/CompanyTransport/driver_profile.dart';
 
 import 'add_vehicle.dart';
 import 'add_new_driver.dart';
+import 'vehicle_detail_screen.dart';
 import '../../controllers/fleet_controller.dart'; // adjust the path
 import '../../utils/session_manager.dart';
 import '../../models/get_driver_model.dart';
@@ -197,6 +198,9 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                                 rating: 4.2,
                                 borderColor: borderColor,
                                 vehicleData: vehicle,
+                                onTap: () {
+                                  Get.to(() => VehicleDetailScreen(vehicle: vehicle));
+                                },
                               );
                             },
                           );
