@@ -16,6 +16,7 @@ class JobController extends GetxController {
   var isApplicationsLoading = false.obs;
   var applications = <JobApplicationModel>[].obs;
   var allApplications = <JobApplicationModel>[].obs; // Store all applications for filtering
+  var applicationCounts = <String, int>{}.obs; // Map of jobId -> application count
 
   @override
   void onInit() {
@@ -54,6 +55,9 @@ class JobController extends GetxController {
         final List data = json.decode(response.body);
         jobs.value = data.map((e) => JobModel.fromJson(e)).toList();
         print("✅ Fetched ${jobs.length} jobs");
+        
+        // Fetch application counts for each job
+        _fetchApplicationCounts();
       } else {
         print("❌ Failed to fetch jobs: ${response.statusCode}");
         SnackBarHelper.error("Failed to load jobs");
@@ -535,6 +539,48 @@ class JobController extends GetxController {
     }
 
     applications.value = filtered;
+  }
+
+  /// Fetch application counts for all jobs
+  Future<void> _fetchApplicationCounts() async {
+    try {
+      final authService = AuthService.to;
+      final token = authService.currentToken;
+
+      final Map<String, int> counts = {};
+
+      for (var job in jobs) {
+        try {
+          final response = await HttpHelper.getData(
+            endpoint: '${API.getJobApplications}${job.jobId}',
+            headers: {
+              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+              'Accept': '*/*',
+            },
+          );
+
+          if (response.statusCode == 200) {
+            final List data = json.decode(response.body);
+            counts[job.jobId] = data.length;
+          } else {
+            counts[job.jobId] = 0;
+          }
+        } catch (e) {
+          print("⚠️ Error fetching count for job ${job.jobId}: $e");
+          counts[job.jobId] = 0;
+        }
+      }
+
+      applicationCounts.value = counts;
+      print("✅ Fetched application counts: $counts");
+    } catch (e) {
+      print("❌ Error fetching application counts: $e");
+    }
+  }
+
+  /// Get application count for a specific job
+  int getApplicationCount(String jobId) {
+    return applicationCounts[jobId] ?? 0;
   }
 }
 

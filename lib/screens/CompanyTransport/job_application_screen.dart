@@ -14,74 +14,28 @@ class JobApplicationsScreen extends StatefulWidget {
 
 class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   late final JobController jobController;
-  String? selectedLocation;
-  String? selectedRole;
-  final List<String> locations = ['All'];
-  final List<String> roles = ['All'];
 
   @override
   void initState() {
     super.initState();
     jobController = Get.put(JobController(), permanent: false);
     
-    // Fetch all applications from all jobs
+    // Fetch applications - if jobId is provided, fetch only for that job, otherwise fetch all
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await jobController.fetchAllJobApplications();
-      _updateFilterOptions();
+      if (widget.jobId != null && widget.jobId!.isNotEmpty) {
+        await jobController.fetchJobApplications(widget.jobId!);
+      } else {
+        await jobController.fetchAllJobApplications();
+      }
     });
   }
 
   Future<void> _fetchApplications() async {
-    await jobController.fetchAllJobApplications();
-    _updateFilterOptions();
-  }
-
-  void _updateFilterOptions() {
-    // Extract unique locations and roles from all applications
-    final allApps = jobController.allApplications;
-    
-    // Get unique locations - trim whitespace and filter empty
-    final uniqueLocationsSet = <String>{};
-    for (var app in allApps) {
-      final loc = app.location.trim();
-      if (loc.isNotEmpty) {
-        uniqueLocationsSet.add(loc);
-      }
+    if (widget.jobId != null && widget.jobId!.isNotEmpty) {
+      await jobController.fetchJobApplications(widget.jobId!);
+    } else {
+      await jobController.fetchAllJobApplications();
     }
-    final uniqueLocations = uniqueLocationsSet.toList()..sort();
-    
-    locations.clear();
-    locations.add('All');
-    locations.addAll(uniqueLocations);
-    
-    // Get unique roles - trim whitespace, filter empty, and handle case
-    final uniqueRolesSet = <String>{};
-    for (var app in allApps) {
-      if (app.jobTitle != null && app.jobTitle!.trim().isNotEmpty) {
-        // Normalize to title case for consistency
-        final role = app.jobTitle!.trim();
-        uniqueRolesSet.add(role);
-      }
-    }
-    final uniqueRoles = uniqueRolesSet.toList()..sort();
-    
-    roles.clear();
-    roles.add('All');
-    roles.addAll(uniqueRoles);
-    
-    // Reset filters if current selections are not available
-    if (selectedLocation != null && !locations.contains(selectedLocation)) {
-      selectedLocation = 'All';
-    }
-    if (selectedRole != null && !roles.contains(selectedRole)) {
-      selectedRole = 'All';
-    }
-    
-    // Apply filters
-    jobController.filterApplications(
-      location: selectedLocation == 'All' ? null : selectedLocation,
-      role: selectedRole == 'All' ? null : selectedRole,
-    );
   }
 
   String _formatDate(String dateString) {
@@ -171,126 +125,6 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
 
         return Column(
           children: [
-            // Filters
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFF3F4F6), width: 1),
-              ),
-              child: Row(
-                children: [
-                  // Location Filter
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Location',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                            color: const Color(0xFF6B7280),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: selectedLocation ?? 'All',
-                              isExpanded: true,
-                              items: locations.map((location) {
-                                return DropdownMenuItem<String>(
-                                  value: location,
-                                  child: Text(
-                                    location,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontFamily: 'Inter',
-                                      color: Color(0xFF1E1E1E),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  selectedLocation = newValue ?? 'All';
-                                });
-                                jobController.filterApplications(
-                                  location: selectedLocation == 'All' ? null : selectedLocation,
-                                  role: selectedRole == 'All' ? null : selectedRole,
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Role Filter
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Role',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                            color: const Color(0xFF6B7280),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: selectedRole ?? 'All',
-                              isExpanded: true,
-                              items: roles.map((role) {
-                                return DropdownMenuItem<String>(
-                                  value: role,
-                                  child: Text(
-                                    role,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontFamily: 'Inter',
-                                      color: Color(0xFF1E1E1E),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  selectedRole = newValue ?? 'All';
-                                });
-                                jobController.filterApplications(
-                                  location: selectedLocation == 'All' ? null : selectedLocation,
-                                  role: selectedRole == 'All' ? null : selectedRole,
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // Applications List
             Expanded(
               child: Obx(() {
@@ -324,13 +158,14 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                 return RefreshIndicator(
                   onRefresh: _fetchApplications,
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     itemCount: jobController.applications.length,
                     itemBuilder: (context, index) {
                       final application = jobController.applications[index];
                       
                       return Padding(
                         padding: EdgeInsets.only(
+                          top: index == 0 ? 0 : 0,
                           bottom: index < jobController.applications.length - 1 ? 16 : 100,
                         ),
                         child: _buildApplicationCard(

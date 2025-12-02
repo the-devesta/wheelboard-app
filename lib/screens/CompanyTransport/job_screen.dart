@@ -41,22 +41,7 @@ class _JobsScreenState extends State<JobsScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Get.back(),
         ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            const Text("Your Jobs", style: TextStyle(color: Colors.black)),
-            const SizedBox(width: 40),
-            GestureDetector(
-              onTap: () {
-                Get.to(() => JobApplicationsScreen());
-              },
-              child: const Text(
-                "Applications",
-                style: TextStyle(color: Colors.black38),
-              ),
-            ),
-          ],
-        ),
+        title: const Text("Your Jobs", style: TextStyle(color: Colors.black)),
         centerTitle: true,
       ),
       body: Obx(() {
@@ -106,6 +91,10 @@ class _JobsScreenState extends State<JobsScreen> {
                     // Refresh jobs after returning from edit screen
                     jobController.refreshJobs();
                   },
+                  onCardTap: () {
+                    // Navigate to applications screen filtered by this job
+                    Get.to(() => JobApplicationsScreen(jobId: job.jobId));
+                  },
                 ),
               );
             }).toList(),
@@ -135,12 +124,14 @@ class JobCard extends StatelessWidget {
   final JobModel job;
   final JobController jobController;
   final VoidCallback onEdit;
+  final VoidCallback? onCardTap;
 
   const JobCard({
     super.key,
     required this.job,
     required this.jobController,
     required this.onEdit,
+    this.onCardTap,
   });
 
   @override
@@ -148,15 +139,17 @@ class JobCard extends StatelessWidget {
     return Stack(
       children: [
         // Main Card
-        Container(
-          margin: const EdgeInsets.only(
-            bottom: 30,
-          ), // leave space for overlay button
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
+        GestureDetector(
+          onTap: onCardTap,
+          child: Container(
+            margin: const EdgeInsets.only(
+              bottom: 30,
+            ), // leave space for overlay button
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
             children: [
               // Image
               ClipRRect(
@@ -219,13 +212,45 @@ class JobCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: Text(
-                            job.role,
-                            style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 16,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                job.role,
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Obx(() {
+                                final applicationCount = jobController.getApplicationCount(job.jobId);
+                                if (applicationCount > 0) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF317873),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '$applicationCount',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              }),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -300,6 +325,7 @@ class JobCard extends StatelessWidget {
             ],
           ),
         ),
+          ),
 
         // Floating Edit Button (Overlayed)
         Positioned(
