@@ -187,4 +187,55 @@ class ServiceProviderController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  /// Delete a service
+  Future<bool> deleteService(String serviceId, String userId) async {
+    if (isLoading.value) return false;
+
+    try {
+      isLoading.value = true;
+
+      print("🗑️ Deleting service: $serviceId for user: $userId");
+
+      // Construct the delete endpoint URL
+      final endpoint = '${API.deleteService}/$serviceId/user/$userId/delete';
+
+      final response = await HttpHelper.postData(
+        endpoint: endpoint,
+        data: {}, // Empty body for delete
+        headers: {
+          'UserId': userId,
+          'Accept': '*/*',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print("🗑️ Delete response status: ${response.statusCode}");
+      print("🗑️ Delete response body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
+        SnackBarHelper.success("Service deleted successfully!");
+        return true;
+      }
+
+      String errorMessage = "Failed to delete service";
+      try {
+        final body = json.decode(response.body);
+        errorMessage = body['message'] ?? body['error'] ?? errorMessage;
+      } catch (_) {
+        if (response.body.isNotEmpty) {
+          errorMessage = response.body;
+        }
+      }
+
+      SnackBarHelper.error(errorMessage);
+      return false;
+    } catch (e) {
+      print("❌ Error deleting service: $e");
+      SnackBarHelper.error("Something went wrong: ${e.toString()}");
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }

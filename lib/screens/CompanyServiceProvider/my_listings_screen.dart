@@ -5,6 +5,7 @@ import '../../utils/session_manager.dart';
 import '../../apihelperclass/api_helper.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../controllers/service_provider_controller.dart';
 import 'add_service_screen.dart';
 import 'service_details_screen.dart';
 import 'dart:convert';
@@ -18,10 +19,12 @@ class MyListingsScreen extends StatefulWidget {
 
 class _MyListingsScreenState extends State<MyListingsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ServiceProviderController _serviceProviderController = Get.put(ServiceProviderController(), permanent: false);
   String _selectedFilter = 'All';
   bool _isLoading = false;
   List<ServiceModel> _services = [];
   List<ServiceModel> _filteredServices = [];
+  String? _userId;
 
   @override
   void initState() {
@@ -44,6 +47,9 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       final sessionManager = SessionManager();
       final userId = await sessionManager.getString("userId");
       final token = await sessionManager.getString("authToken");
+
+      // Store userId for delete operations
+      _userId = userId;
 
       if (userId == null || userId.isEmpty) {
         if (mounted) {
@@ -75,6 +81,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             isAvailable: json['isVisible'] ?? false,
             businessName: json['businessName'] ?? '',
             businessType: json['businessType'] ?? '',
+            serviceCategory: json['serviceCategory'],
             contactNumber: json['contactNumber'],
             whatsappNumber: json['whatsappNumber'],
             description: json['description'],
@@ -86,43 +93,56 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
           );
         }).toList();
 
-        _filteredServices = _services;
+        // Apply current filter and search query
+        _applyFilters();
       } else {
         SnackBarHelper.error("Failed to load services");
       }
     } catch (e) {
       SnackBarHelper.error("Error: ${e.toString()}");
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  void _filterServices(String query) {
+  void _applyFilters() {
     setState(() {
-      if (query.isEmpty) {
-        _filteredServices = _services;
+      // Apply search filter first
+      if (_searchController.text.isEmpty) {
+        _filteredServices = List.from(_services);
       } else {
         _filteredServices = _services
             .where((service) {
-              final titleMatch = service.serviceTitle.toLowerCase().contains(query.toLowerCase());
+              final titleMatch = service.serviceTitle.toLowerCase().contains(_searchController.text.toLowerCase());
               final descMatch = service.description != null && 
-                  service.description!.toLowerCase().contains(query.toLowerCase());
+                  service.description!.toLowerCase().contains(_searchController.text.toLowerCase());
               return titleMatch || descMatch;
             })
             .toList();
       }
+
+      // Apply status filter
+      if (_selectedFilter != 'All') {
+        final isVisible = _selectedFilter == 'Visible';
+        _filteredServices = _filteredServices.where((service) => service.isAvailable == isVisible).toList();
+      }
     });
+  }
+
+  void _filterServices(String query) {
+    _applyFilters();
   }
 
   void _onFilterChanged(String? value) {
     if (value != null) {
       setState(() {
         _selectedFilter = value;
-        // Apply filter logic here if needed
-        _filterServices(_searchController.text);
       });
+      _applyFilters();
     }
   }
 
@@ -381,10 +401,12 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
   }
 
   Widget _buildServiceCard(ServiceModel service) {
-    // Use businessType if available, otherwise use city or "Service" as fallback
-    final category = service.businessType.isNotEmpty 
-        ? service.businessType 
-        : (service.city.isNotEmpty ? service.city : 'Service');
+    // Use serviceCategory if available, otherwise fallback to businessType or city
+    final category = (service.serviceCategory != null && service.serviceCategory!.isNotEmpty)
+        ? service.serviceCategory!
+        : (service.businessType.isNotEmpty 
+            ? service.businessType 
+            : (service.city.isNotEmpty ? service.city : 'Service'));
     final categoryColor = _getCategoryColor(category);
     final categoryTextColor = _getCategoryTextColor(category);
     final isPublished = service.isAvailable; // Assuming isAvailable means published
@@ -618,20 +640,69 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
   void _showDeleteDialog(ServiceModel service) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Service'),
         content: Text('Are you sure you want to delete "${service.serviceTitle}"?'),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              // Implement delete functionality
-              Get.back();
-              SnackBarHelper.success('Service deleted');
-              _fetchMyServices();
+            onPressed: () async {
+              // Close confirmation dialog first
+              Navigator.of(dialogContext).pop();
+              
+              if (_userId == null || _userId!.isEmpty) {
+                if (mounted) {
+                  SnackBarHelper.error("User ID not found. Please login again.");
+                }
+                return;
+              }
+
+              // Show loading indicator
+              if (!mounted) return;
+              
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (loadingContext) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+
+              try {
+                // Call delete API
+                final success = await _serviceProviderController.deleteService(
+                  service.serviceId,
+                  _userId!,
+                );
+
+                // Close loading dialog
+                if (mounted) {
+                  Navigator.of(context, rootNavigator: true).pop();
+                }
+
+                // Refresh the list if delete was successful
+                if (success && mounted) {
+                  // Wait a bit for backend to process, then refresh from server
+                  await Future.delayed(const Duration(milliseconds: 500));
+                  
+                  // Refresh from server - backend should return updated list without deleted service
+                  if (mounted) {
+                    await _fetchMyServices();
+                  }
+                }
+              } catch (e) {
+                // Close loading dialog on error
+                if (mounted) {
+                  Navigator.of(context, rootNavigator: true).pop();
+                }
+                if (mounted) {
+                  SnackBarHelper.error("Failed to delete service: ${e.toString()}");
+                }
+              }
             },
             child: const Text(
               'Delete',

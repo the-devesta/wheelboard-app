@@ -6,6 +6,7 @@ class ServiceModel {
   final bool isAvailable;
   final String businessName;
   final String businessType;
+  final String? serviceCategory;
 
   // Detail specific fields
   final String? contactNumber;
@@ -25,6 +26,7 @@ class ServiceModel {
     required this.isAvailable,
     required this.businessName,
     required this.businessType,
+    this.serviceCategory,
     this.contactNumber,
     this.whatsappNumber,
     this.description,
@@ -44,6 +46,7 @@ class ServiceModel {
       isAvailable: json['isAvailable'] as bool? ?? false,
       businessName: json['businessName'] as String? ?? '',
       businessType: json['businessType'] as String? ?? '',
+      serviceCategory: json['serviceCategory'] as String?,
       contactNumber: json['contactNumber'] as String?,
       whatsappNumber: json['whatsappNumber'] as String?,
       description: json['description'] as String?,
@@ -64,6 +67,7 @@ class ServiceModel {
       isAvailable: isAvailable,
       businessName: businessName,
       businessType: businessType,
+      serviceCategory: other.serviceCategory ?? serviceCategory,
       contactNumber: other.contactNumber ?? contactNumber,
       whatsappNumber: other.whatsappNumber ?? whatsappNumber,
       description: other.description ?? description,

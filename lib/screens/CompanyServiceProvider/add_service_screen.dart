@@ -35,12 +35,23 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   int _descriptionLength = 0;
   
   String _pricingOption = 'Flat Price';
+  String _selectedCategory = 'Tyre Repair';
   final Set<String> _selectedDays = {'Mon'};
   String _businessFrom = '09:00';
   String _businessTo = '18:00';
   bool _isVisible = true;
   List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
+  
+  // Category options
+  final List<String> _categoryOptions = [
+    'Tyre Repair',
+    'Engine',
+    'Oil Change',
+    'Brake Service',
+    'Battery',
+    'AC Service',
+  ];
 
   @override
   void initState() {
@@ -68,6 +79,26 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     _cityController.text = service.city;
     _fullAddressController.text = service.fullAddress;
     _pricingOption = service.pricingOption ?? 'Flat Price';
+    
+    // Set category from serviceCategory first, then fallback to businessType
+    String categoryToSet = 'Tyre Repair'; // Default
+    if (service.serviceCategory != null && service.serviceCategory!.isNotEmpty) {
+      categoryToSet = service.serviceCategory!;
+    } else if (service.businessType.isNotEmpty) {
+      categoryToSet = service.businessType;
+    }
+    
+    // Validate that the category exists in _categoryOptions
+    // If not, use default to avoid dropdown error
+    if (_categoryOptions.contains(categoryToSet)) {
+      _selectedCategory = categoryToSet;
+    } else {
+      // If category doesn't exist in options, use default
+      // You could also add it to the list if needed
+      print("⚠️ Category '$categoryToSet' not found in options, using default: 'Tyre Repair'");
+      _selectedCategory = 'Tyre Repair';
+    }
+    
     _isVisible = service.isAvailable;
     if (service.daysOpen != null && service.daysOpen!.isNotEmpty) {
       _selectedDays.clear();
@@ -113,25 +144,25 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildServiceDetailsSection(),
-                      const SizedBox(height: 24),
-                      _buildPricingSection(),
-                      const SizedBox(height: 24),
-                      _buildBusinessHoursSection(),
-                      const SizedBox(height: 24),
-                      _buildLocationSection(),
-                      const SizedBox(height: 24),
-                      _buildImageGallerySection(),
-                      const SizedBox(height: 24),
-                      _buildVisibilitySection(),
+            children: [
+              _buildServiceDetailsSection(),
+              const SizedBox(height: 24),
+              _buildPricingSection(),
+              const SizedBox(height: 24),
+              _buildBusinessHoursSection(),
+              const SizedBox(height: 24),
+              _buildLocationSection(),
+              const SizedBox(height: 24),
+              _buildImageGallerySection(),
+              const SizedBox(height: 24),
+              _buildVisibilitySection(),
                       const SizedBox(height: 100), // Space for bottom buttons
-                    ],
-                  ),
+            ],
+          ),
                 ),
               ),
             );
@@ -183,6 +214,67 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
             }
             return null;
           },
+        ),
+        const SizedBox(height: 16),
+        // Category Dropdown
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Category *',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 6),
+            DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF0075FF)),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              items: _categoryOptions.map((category) {
+                return DropdownMenuItem<String>(
+                  value: category,
+                  child: Text(
+                    category,
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedCategory = value;
+                  });
+                }
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Category is required';
+                }
+                return null;
+              },
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         _CustomTextField(
@@ -360,17 +452,17 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         GestureDetector(
           onTap: () => _selectTime(context, isFrom),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
                 Text(currentTime),
-                const Icon(Icons.access_time, color: Colors.grey),
-              ],
+              const Icon(Icons.access_time, color: Colors.grey),
+            ],
             ),
           ),
         ),
@@ -455,26 +547,26 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     return GestureDetector(
       onTap: () => _pickImage(index),
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.grey.shade300,
-            width: 1,
-            style: BorderStyle.solid,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+          style: BorderStyle.solid,
+        ),
+      ),
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_a_photo, color: Color(0xFF00B894)),
+          SizedBox(height: 8),
+          Text(
+            'Add Image',
+            style: TextStyle(color: Color(0xFF00B894)),
           ),
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_a_photo, color: Color(0xFF00B894)),
-            SizedBox(height: 8),
-            Text(
-              'Add Image',
-              style: TextStyle(color: Color(0xFF00B894)),
-            ),
-          ],
-        ),
+        ],
+      ),
       ),
     );
   }
@@ -676,9 +768,9 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                       ),
                     )
                   : const Text(
-                      'Save & Publish',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                'Save & Publish',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
             ),
           ),
         ],
@@ -739,6 +831,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           businessFrom: _businessFrom,
           businessTo: _businessTo,
           modifiedBy: userId,
+          serviceCategory: _selectedCategory,
           newImages: _selectedImages.isNotEmpty ? _selectedImages : null,
         );
 
@@ -762,6 +855,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           businessFrom: _businessFrom,
           businessTo: _businessTo,
           createdBy: userId,
+          serviceCategory: _selectedCategory,
           images: _selectedImages,
         );
 

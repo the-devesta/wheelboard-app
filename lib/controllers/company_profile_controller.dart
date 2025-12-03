@@ -132,7 +132,8 @@ class CompanyProfileController extends GetxController {
         print("✅ Profile updated successfully.");
         SnackBarHelper.success("Profile updated successfully.");
         await _profileController.fetchCurrentUserProfile();
-        Get.back();
+        // Navigation will be handled by screen level listener
+        // No need to navigate from controller
       } else {
         print("❌ Failed to update profile. Status Code: ${resolved.statusCode}");
         print("❌ Response Body: ${resolved.body}");

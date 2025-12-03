@@ -15,7 +15,9 @@ class AddServiceModel {
   final String businessFrom;
   final String businessTo;
   final String createdBy;
+  final String serviceCategory;
   final List<File> images;
+  
 
   AddServiceModel({
     required this.userId,
@@ -32,6 +34,7 @@ class AddServiceModel {
     required this.businessFrom,
     required this.businessTo,
     required this.createdBy,
+    required this.serviceCategory,
     required this.images,
   });
 
@@ -53,6 +56,7 @@ class AddServiceModel {
       'BusinessFrom': businessFrom,
       'BusinessTo': businessTo,
       'CreatedBy': createdBy,
+      'ServiceCategory': serviceCategory,
     };
   }
 

@@ -48,6 +48,10 @@ class API {
   static const String assignService = 'api/Service/assign-service';
   static const String addService = 'api/Service/add-service';
   static const String updateService = 'api/Service/update-service';
+  static const String deleteService = 'api/Service'; // Base path, will append /{serviceId}/user/{userId}/delete
+  static const String cancelService = 'api/Service/cancel-service'; // With assignmentId query param
+  static const String updateServiceStatus = 'api/Service/update-service-status'; // With assignmentId and status query params
+  static const String completeService = 'api/Service/complete-service'; // With assignmentId query param
   
   // Vehicle and Driver Details APIs
   static const String getVehicleDetails = 'api/VehicleApi/GetVehicleDetails';

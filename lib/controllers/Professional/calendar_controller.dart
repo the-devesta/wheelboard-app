@@ -10,6 +10,8 @@ import '../../widgets/custom_snackbar.dart';
 class CalendarController extends GetxController {
   var isLoading = false.obs;
   var events = <CalendarEvent>[].obs;
+  var hasError = false.obs;
+  var errorMessage = ''.obs;
 
   @override
   void onInit() {
@@ -21,13 +23,16 @@ class CalendarController extends GetxController {
   Future<void> fetchEvents() async {
     try {
       isLoading.value = true;
+      hasError.value = false;
+      errorMessage.value = '';
 
       final authService = AuthService.to;
       final userId = authService.currentUserId;
-      final token = authService.currentToken;
 
       if (userId.isEmpty) {
         print("⚠️ User not logged in, cannot fetch events");
+        // Silently handle - just show empty calendar
+        events.value = [];
         return;
       }
 
@@ -45,16 +50,32 @@ class CalendarController extends GetxController {
       print("📅 Events response body: ${response.body}");
 
       if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        events.value = data.map((e) => CalendarEvent.fromJson(e)).toList();
-        print("✅ Fetched ${events.length} calendar events");
+        try {
+          final List data = json.decode(response.body);
+          events.value = data.map((e) => CalendarEvent.fromJson(e)).toList();
+          print("✅ Fetched ${events.length} calendar events");
+          hasError.value = false;
+        } catch (e) {
+          // If response is not valid JSON, treat as empty
+          print("⚠️ Invalid JSON response, treating as empty: $e");
+          events.value = [];
+          hasError.value = false;
+        }
       } else {
-        print("❌ Failed to fetch events: ${response.statusCode}");
-        SnackBarHelper.error("Failed to load calendar events");
+        // Silently handle error - just show empty calendar
+        print("⚠️ Failed to fetch events: ${response.statusCode} - Handling silently");
+        events.value = [];
+        hasError.value = true;
+        errorMessage.value = 'Unable to load events';
+        // Don't show error message to user - just show empty calendar
       }
     } catch (e) {
-      print("❌ Error fetching calendar events: $e");
-      SnackBarHelper.error("Failed to load calendar events: ${e.toString()}");
+      // Silently handle error - just show empty calendar
+      print("⚠️ Error fetching calendar events (handled silently): $e");
+      events.value = [];
+      hasError.value = true;
+      errorMessage.value = 'Unable to load events';
+      // Don't show error message to user - just show empty calendar
     } finally {
       isLoading.value = false;
     }
@@ -74,7 +95,6 @@ class CalendarController extends GetxController {
 
       final authService = AuthService.to;
       final userId = authService.currentUserId;
-      final token = authService.currentToken;
 
       if (userId.isEmpty) {
         SnackBarHelper.error("Please login to save events");

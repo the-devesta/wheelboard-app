@@ -166,7 +166,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             firstImage != null
                 ? Image.network(
                     firstImage,
-                    fit: BoxFit.cover,
+              fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: const Color(0xFFF36969),
                       child: const Icon(Icons.image, size: 64, color: Colors.white70),
@@ -175,7 +175,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 : Container(
                     color: const Color(0xFFF36969),
                     child: const Icon(Icons.image, size: 64, color: Colors.white70),
-                  ),
+            ),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -248,15 +248,15 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         if (businessType.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Chip(
+        const SizedBox(height: 8),
+        Chip(
             label: Text(businessType),
-            backgroundColor: const Color(0xFFF36969).withOpacity(0.1),
-            labelStyle: const TextStyle(color: Color(0xFFF36969)),
-          ),
+          backgroundColor: const Color(0xFFF36969).withOpacity(0.1),
+          labelStyle: const TextStyle(color: Color(0xFFF36969)),
+        ),
         ],
         if (address.isNotEmpty) ...[
-          const SizedBox(height: 16),
+        const SizedBox(height: 16),
           _buildInfoRow(Icons.location_on, address),
         ],
       ],
@@ -329,16 +329,16 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           ],
         ),
         if (daysOpen.isNotEmpty || businessFrom.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
               if (daysOpen.isNotEmpty)
                 _buildDetailItem(Icons.date_range, daysOpen, 'Available Days'),
               if (businessFrom.isNotEmpty && businessTo.isNotEmpty)
                 _buildDetailItem(Icons.access_time, '${formatTime(businessFrom)} – ${formatTime(businessTo)}', 'Working Hours'),
-            ],
-          ),
+          ],
+        ),
         ],
       ],
     );
@@ -531,6 +531,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       padding: const EdgeInsets.all(16),
       child: ElevatedButton(
         onPressed: () {
+          print("🔍 Navigating to BookingDetailsScreen...");
+          print("🔍 Service ID being passed: ${widget.serviceId}");
           Get.to(() => BookingDetailsScreen(serviceId: widget.serviceId));
         },
         style: ElevatedButton.styleFrom(

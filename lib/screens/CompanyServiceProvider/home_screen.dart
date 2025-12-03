@@ -26,12 +26,12 @@ class ServiceProviderHomeScreen extends StatefulWidget {
 }
 
 class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
-  final notificationController = Get.put(NotificationController());
+    final notificationController = Get.put(NotificationController());
   final userProfileController = Get.put(UserProfileController());
   List<ServiceModel> _services = [];
   bool _isLoadingServices = false;
   final Map<String, String> _serviceImages = {}; // Store service images by serviceId
-
+    
   @override
   void initState() {
     super.initState();
@@ -80,8 +80,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               fullAddress: json['fullAddress'] ?? '',
               isAvailable: json['isVisible'] ?? false,
               businessName: json['businessName'] ?? '',
-              businessType: json['businessType'] ?? '',
-              contactNumber: json['contactNumber'],
+            businessType: json['businessType'] ?? '',
+            serviceCategory: json['serviceCategory'],
+            contactNumber: json['contactNumber'],
               whatsappNumber: json['whatsappNumber'],
               description: json['description'],
               pricingOption: json['isFlatPrice'] == true ? 'Flat Price' : 'Per Hour',
@@ -134,9 +135,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       final profileImage = profile?.profileImage;
                       
                       return GestureDetector(
-                        onTap: () {
-                          Get.to(() => const ServiceProviderProfileScreen());
-                        },
+                      onTap: () {
+                        Get.to(() => const ServiceProviderProfileScreen());
+                      },
                         child: profileImage != null && profileImage.isNotEmpty
                             ? CircleAvatar(
                                 radius: 33,
@@ -147,10 +148,10 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                                 child: const Icon(Icons.person, size: 33, color: Color(0xFF333333)),
                               )
                             : const CircleAvatar(
-                                radius: 33,
+                        radius: 33,
                                 backgroundColor: Color(0xFFE0E0E0),
                                 child: Icon(Icons.person, size: 33, color: Color(0xFF333333)),
-                              ),
+                        ),
                       );
                     }),
                     const SizedBox(width: 12),
@@ -161,27 +162,27 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                         final businessName = profile?.businessName ?? profile?.displayName ?? 'Welcome';
                         
                         return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Welcome!',
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF333333),
-                                fontSize: 16,
-                              ),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome!',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF333333),
+                              fontSize: 16,
                             ),
-                            Text(
+                          ),
+                          Text(
                               businessName,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF333333),
-                                fontSize: 20,
-                              ),
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF333333),
+                              fontSize: 20,
+                            ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                          ),
+                        ],
                         );
                       }),
                     ),
@@ -344,14 +345,14 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'My Services',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: const Color(0xFF2D3436),
-                          ),
+                  children: [
+                    Text(
+                      'My Services',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: const Color(0xFF2D3436),
+                      ),
                         ),
                         if (_services.isNotEmpty)
                           TextButton(
@@ -389,8 +390,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                               Icons.inbox_outlined,
                               size: 48,
                               color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 12),
+                    ),
+                    const SizedBox(height: 12),
                             Text(
                               'No services yet',
                               style: TextStyle(
@@ -420,12 +421,12 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                           
                           return Column(
                             children: [
-                              GestureDetector(
+                    GestureDetector(
                                 onTap: () {
                                   Get.to(() => ServiceDetailsScreen(serviceId: service.serviceId));
                                 },
                                 child: _buildServiceCardFromModel(
-                                  context,
+                        context,
                                   service: service,
                                   imageUrl: serviceImage,
                                 ),
@@ -435,7 +436,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                             ],
                           );
                         },
-                      ),
+                    ),
                   ],
                 ),
               ),
@@ -611,10 +612,12 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     String imageUrl = '',
   }) {
     final title = service.serviceTitle.isNotEmpty ? service.serviceTitle : 'Untitled Service';
-    // Use businessType if available, otherwise use city or "Service" as fallback
-    final tag = service.businessType.isNotEmpty 
-        ? service.businessType 
-        : (service.city.isNotEmpty ? service.city : 'Service');
+    // Use serviceCategory if available, otherwise fallback to businessType or city
+    final tag = (service.serviceCategory != null && service.serviceCategory!.isNotEmpty)
+        ? service.serviceCategory!
+        : (service.businessType.isNotEmpty 
+            ? service.businessType 
+            : (service.city.isNotEmpty ? service.city : 'Service'));
     final description = service.description ?? 'No description available';
     
     // Try to get image from API response if available

@@ -16,6 +16,7 @@ class UpdateServiceModel {
   final String businessFrom;
   final String businessTo;
   final String modifiedBy;
+  final String serviceCategory;
   final List<File>? newImages; // Optional - only new images to add
 
   UpdateServiceModel({
@@ -34,6 +35,7 @@ class UpdateServiceModel {
     required this.businessFrom,
     required this.businessTo,
     required this.modifiedBy,
+    required this.serviceCategory,
     this.newImages,
   });
 
@@ -56,6 +58,7 @@ class UpdateServiceModel {
       'BusinessFrom': businessFrom,
       'BusinessTo': businessTo,
       'ModifiedBy': modifiedBy,
+      'ServiceCategory': serviceCategory,
     };
   }
 

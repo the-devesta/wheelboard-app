@@ -20,6 +20,7 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
   
   List<Suggestion> locationSuggestions = [];
   final FocusNode _locationFocusNode = FocusNode();
+  Worker? _savingWorker;
 
   @override
   void initState() {
@@ -31,10 +32,32 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
         });
       }
     });
+    
+    // Listen to isSaving to detect when save completes successfully
+    _savingWorker = ever(controller.isSaving, (bool saving) async {
+      if (!saving) {
+        // Save completed, wait a bit then navigate back
+        await Future.delayed(const Duration(milliseconds: 1200));
+        if (mounted) {
+          try {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context, true);
+              print("✅ Navigation: Navigator.pop() called from screen");
+            } else {
+              Get.back(result: true);
+              print("✅ Navigation: Get.back() called from screen");
+            }
+          } catch (e) {
+            print("⚠️ Navigation error from screen: $e");
+          }
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _savingWorker?.dispose();
     _locationFocusNode.dispose();
     super.dispose();
   }

@@ -229,7 +229,14 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
 
       SnackBarHelper.success("Profile updated successfully.");
       await _profileController.fetchCurrentUserProfile();
-      Get.back();
+      // Navigate back to profile screen after successful update
+      // Add small delay to ensure snackbar is shown and profile is refreshed
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context, true);
+      } else if (mounted) {
+        Get.back(result: true);
+      }
     } catch (e) {
       SnackBarHelper.error("Failed to update profile: $e");
     } finally {

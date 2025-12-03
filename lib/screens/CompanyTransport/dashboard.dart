@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -87,17 +88,34 @@ class DashboardScreen extends StatelessWidget {
 
             const SizedBox(height: 0),
 
-            // ---------------- Trip Completion Trend ----------------
-            _sectionTitle("Trip Completion Trend (Last 7 Days)"),
+            // ---------------- Trip Completion Trend ---------------- 
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _sectionTitle("Trip Completion Trend"),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Text(
+                    "Last 7 Days",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             Container(
-              height: 200,
+              height: 250,
               margin: const EdgeInsets.symmetric(vertical: 10),
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
               ),
-              child: const Center(child: Text("📊 Chart Placeholder")),
+              child: _buildTripCompletionChart(),
             ),
 
             Card(
@@ -164,18 +182,17 @@ class DashboardScreen extends StatelessWidget {
 
             const SizedBox(height: 15),
 
-            // ---------------- Expense Overview ----------------
+            // ---------------- Expense Overview ---------------- 
             _sectionTitle("Expense Overview"),
             Container(
-              height: 180,
               width: double.infinity,
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
               ),
-              child: const Center(
-                child: Text("🟢 Expense Pie Chart Placeholder"),
-              ),
+              child: _buildExpenseOverviewChart(),
             ),
 
             const SizedBox(height: 15),
@@ -810,6 +827,213 @@ class DashboardScreen extends StatelessWidget {
         title,
         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
       ),
+    );
+  }
+
+  // Trip Completion Trend Chart
+  static Widget _buildTripCompletionChart() {
+    // Sample data: Monday to Sunday
+    final tripData = [
+      10.0, // Monday
+      12.0, // Tuesday
+      24.0, // Wednesday
+      16.0, // Thursday
+      24.0, // Friday
+      8.0,  // Saturday
+      18.0, // Sunday
+    ];
+
+    final maxY = 30.0;
+    final minY = 0.0;
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: true,
+          horizontalInterval: 3,
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: Colors.grey.shade200,
+              strokeWidth: 1,
+            );
+          },
+          getDrawingVerticalLine: (value) {
+            return FlLine(
+              color: Colors.grey.shade200,
+              strokeWidth: 1,
+            );
+          },
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                if (value.toInt() >= 0 && value.toInt() < days.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      days[value.toInt()],
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }
+                return const Text('');
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 3,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                if (value == meta.min || value == meta.max) {
+                  return const Text('');
+                }
+                return Text(
+                  value.toInt().toString(),
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+        ),
+        minX: 0,
+        maxX: 6,
+        minY: minY,
+        maxY: maxY,
+        lineBarsData: [
+          LineChartBarData(
+            spots: List.generate(tripData.length, (index) {
+              return FlSpot(index.toDouble(), tripData[index]);
+            }),
+            isCurved: true,
+            color: Colors.red,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: const FlDotData(show: true),
+            belowBarData: BarAreaData(
+              show: true,
+              color: Colors.purple.withOpacity(0.2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Expense Overview Chart (Donut Chart)
+  static Widget _buildExpenseOverviewChart() {
+    // Sample expense data
+    final expenses = [
+      {'category': 'Advance', 'amount': 4000, 'color': Colors.purple},
+      {'category': 'Fuel', 'amount': 3500, 'color': Colors.red.shade400},
+      {'category': 'Challan', 'amount': 1500, 'color': Colors.lightBlue},
+      {'category': 'Food', 'amount': 1200, 'color': Colors.orange.shade300},
+      {'category': 'Salary', 'amount': 1500, 'color': Colors.blue},
+      {'category': 'Enroute', 'amount': 640, 'color': Colors.lightGreen},
+    ];
+
+    final totalAmount = expenses.fold<double>(
+      0,
+      (sum, item) => sum + (item['amount'] as int).toDouble(),
+    );
+
+    return Row(
+      children: [
+        // Donut Chart
+        SizedBox(
+          width: 180,
+          height: 180,
+          child: PieChart(
+            PieChartData(
+              sectionsSpace: 2,
+              centerSpaceRadius: 50,
+              sections: expenses.map((expense) {
+                final amount = expense['amount'] as int;
+                return PieChartSectionData(
+                  value: amount.toDouble(),
+                  title: '',
+                  color: expense['color'] as Color,
+                  radius: 60,
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Legend and Total
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Total Amount
+              Text(
+                totalAmount.toInt().toString(),
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Legend
+              ...expenses.map((expense) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: expense['color'] as Color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          expense['category'] as String,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

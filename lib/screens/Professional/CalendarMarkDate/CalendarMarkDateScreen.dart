@@ -17,14 +17,14 @@ class CalendarMarkDateScreen extends StatefulWidget {
 class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
   final CalendarController calendarController = Get.find<CalendarController>();
   final TextEditingController _eventNameController = TextEditingController();
-  final TextEditingController _startTimeController = TextEditingController();
-  final TextEditingController _endTimeController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
   String _selectedCategory = 'Trip';
   bool _isActive = true;
   DateTime _selectedDate = DateTime.now();
-  TimeOfDay? _selectedStartTime;
-  TimeOfDay? _selectedEndTime;
+  DateTime? _selectedStartDate;
+  DateTime? _selectedEndDate;
 
   @override
   void initState() {
@@ -37,8 +37,8 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
   @override
   void dispose() {
     _eventNameController.dispose();
-    _startTimeController.dispose();
-    _endTimeController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -144,33 +144,52 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  // Start Time and End Time
+                                  // Start Date and End Date
                                   Row(
                                     children: [
                                       Expanded(
                                         child: TextField(
-                                          controller: _startTimeController,
+                                          controller: _startDateController,
                                           readOnly: true,
                                           onTap: () async {
-                                            final time = await showTimePicker(
+                                            // First select date
+                                            final date = await showDatePicker(
                                               context: context,
-                                              initialTime: _selectedStartTime ?? TimeOfDay.now(),
+                                              initialDate: _selectedStartDate ?? _selectedDate,
+                                              firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                                              lastDate: DateTime.now().add(const Duration(days: 365)),
                                             );
-                                            if (time != null) {
-                                              setState(() {
-                                                _selectedStartTime = time;
-                                                _startTimeController.text = time.format(context);
-                                              });
+                                            if (date != null) {
+                                              // Then select time
+                                              final time = await showTimePicker(
+                                                context: context,
+                                                initialTime: _selectedStartDate != null
+                                                    ? TimeOfDay.fromDateTime(_selectedStartDate!)
+                                                    : TimeOfDay.now(),
+                                              );
+                                              if (time != null) {
+                                                final dateTime = DateTime(
+                                                  date.year,
+                                                  date.month,
+                                                  date.day,
+                                                  time.hour,
+                                                  time.minute,
+                                                );
+                                                setState(() {
+                                                  _selectedStartDate = dateTime;
+                                                  _startDateController.text = _formatDateTime(dateTime);
+                                                });
+                                              }
                                             }
                                           },
                                           decoration: InputDecoration(
-                                            hintText: 'Start time',
+                                            hintText: 'Start date',
                                             hintStyle: GoogleFonts.poppins(
                                               fontSize: 15,
                                               color: const Color(0xFF8F9BB3),
                                             ),
                                             suffixIcon: const Icon(
-                                              Icons.access_time,
+                                              Icons.calendar_today,
                                               size: 18,
                                               color: Color(0xFF8F9BB3),
                                             ),
@@ -202,28 +221,47 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                       const SizedBox(width: 14),
                                       Expanded(
                                         child: TextField(
-                                          controller: _endTimeController,
+                                          controller: _endDateController,
                                           readOnly: true,
                                           onTap: () async {
-                                            final time = await showTimePicker(
+                                            // First select date
+                                            final date = await showDatePicker(
                                               context: context,
-                                              initialTime: _selectedEndTime ?? TimeOfDay.now(),
+                                              initialDate: _selectedEndDate ?? _selectedDate,
+                                              firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                                              lastDate: DateTime.now().add(const Duration(days: 365)),
                                             );
-                                            if (time != null) {
-                                              setState(() {
-                                                _selectedEndTime = time;
-                                                _endTimeController.text = time.format(context);
-                                              });
+                                            if (date != null) {
+                                              // Then select time
+                                              final time = await showTimePicker(
+                                                context: context,
+                                                initialTime: _selectedEndDate != null
+                                                    ? TimeOfDay.fromDateTime(_selectedEndDate!)
+                                                    : TimeOfDay.now(),
+                                              );
+                                              if (time != null) {
+                                                final dateTime = DateTime(
+                                                  date.year,
+                                                  date.month,
+                                                  date.day,
+                                                  time.hour,
+                                                  time.minute,
+                                                );
+                                                setState(() {
+                                                  _selectedEndDate = dateTime;
+                                                  _endDateController.text = _formatDateTime(dateTime);
+                                                });
+                                              }
                                             }
                                           },
                                           decoration: InputDecoration(
-                                            hintText: 'End time',
+                                            hintText: 'End date',
                                             hintStyle: GoogleFonts.poppins(
                                               fontSize: 15,
                                               color: const Color(0xFF8F9BB3),
                                             ),
                                             suffixIcon: const Icon(
-                                              Icons.access_time,
+                                              Icons.calendar_today,
                                               size: 18,
                                               color: Color(0xFF8F9BB3),
                                             ),
@@ -462,42 +500,26 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                         width: double.infinity,
                                         child: ElevatedButton(
                                         onPressed: calendarController.isLoading.value ? null : () async {
-                                          // Validate form
-                                          if (_eventNameController.text.trim().isEmpty) {
-                                            Get.snackbar("Error", "Please enter event name");
-                                            return;
-                                          }
+                                          // Use default values if fields are empty
+                                          final eventName = _eventNameController.text.trim().isEmpty 
+                                              ? 'Calendar Event' 
+                                              : _eventNameController.text.trim();
                                           
-                                          if (_selectedStartTime == null) {
-                                            Get.snackbar("Error", "Please select start time");
-                                            return;
-                                          }
-                                          
-                                          if (_selectedEndTime == null) {
-                                            Get.snackbar("Error", "Please select end time");
-                                            return;
-                                          }
-
-                                          // Combine selected date with selected times
-                                          final startDateTime = DateTime(
+                                          // Use selected date with current time if start date not selected
+                                          final startDateTime = _selectedStartDate ?? DateTime(
                                             _selectedDate.year,
                                             _selectedDate.month,
                                             _selectedDate.day,
-                                            _selectedStartTime!.hour,
-                                            _selectedStartTime!.minute,
+                                            DateTime.now().hour,
+                                            DateTime.now().minute,
                                           );
                                           
-                                          final endDateTime = DateTime(
-                                            _selectedDate.year,
-                                            _selectedDate.month,
-                                            _selectedDate.day,
-                                            _selectedEndTime!.hour,
-                                            _selectedEndTime!.minute,
-                                          );
+                                          // Use start date + 1 hour if end date not selected
+                                          final endDateTime = _selectedEndDate ?? startDateTime.add(const Duration(hours: 1));
 
                                           // Save event
                                           final success = await calendarController.saveEvent(
-                                            eventName: _eventNameController.text.trim(),
+                                            eventName: eventName,
                                             startTime: startDateTime,
                                             endTime: endDateTime,
                                             note: _noteController.text.trim(),
@@ -553,6 +575,13 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
         ),
       ),
     );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dateStr = '${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}';
+    final timeStr = '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    return '$dateStr, $timeStr';
   }
 }
 
