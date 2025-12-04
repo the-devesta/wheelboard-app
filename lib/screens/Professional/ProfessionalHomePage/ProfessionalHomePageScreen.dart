@@ -17,6 +17,7 @@ import '../AddReferral/AddReferralScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../controllers/notification_controller.dart';
+import '../../../widgets/custom_loader.dart';
 
 /// Professional Homepage Screen
 /// Main screen matching Figma design exactly
@@ -100,9 +101,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
+                              child: const CustomLoader.small(),
                             );
                           }
 
@@ -346,7 +345,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(),
+                  child: const CustomLoader(message: "Loading jobs..."),
                 ),
               );
             }

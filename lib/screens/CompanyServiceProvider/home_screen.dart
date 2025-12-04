@@ -12,6 +12,7 @@ import '../CompanyTransport/job_screen.dart';
 import '../CompanyTransport/notification_screen.dart';
 import '../../controllers/notification_controller.dart';
 import '../../controllers/user_profile_controller.dart';
+import '../../widgets/custom_loader.dart';
 import '../../models/service_model.dart';
 import '../../utils/session_manager.dart';
 import '../../apihelperclass/api_helper.dart';
@@ -372,9 +373,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                     const SizedBox(height: 12),
                     if (_isLoadingServices)
                       const Center(
-                        child: Padding(
+                        child: const Padding(
                           padding: EdgeInsets.all(20.0),
-                          child: CircularProgressIndicator(),
+                          child: CustomLoader.small(),
                         ),
                       )
                     else if (_services.isEmpty)

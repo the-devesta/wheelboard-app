@@ -9,6 +9,7 @@ import '../../controllers/service_provider_controller.dart';
 import 'add_service_screen.dart';
 import 'service_details_screen.dart';
 import 'dart:convert';
+import '../../widgets/custom_loader.dart';
 
 class MyListingsScreen extends StatefulWidget {
   const MyListingsScreen({super.key});
@@ -192,7 +193,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             // Services List
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const CustomLoader(message: "Loading services...")
                   : _filteredServices.isEmpty
                       ? _buildEmptyState()
                       : _buildServicesList(),
@@ -668,7 +669,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                 context: context,
                 barrierDismissible: false,
                 builder: (loadingContext) => const Center(
-                  child: CircularProgressIndicator(),
+                  child: CustomLoader.small(),
                 ),
               );
 

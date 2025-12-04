@@ -7,6 +7,7 @@ import '../../../controllers/user_profile_controller.dart';
 import '../../../models/user_profile_model.dart';
 import '../../auth/onboarding_screen.dart' show RegisterScreen;
 import '../EditYourProfile01/EditYourProfile01Screen.dart';
+import '../../../widgets/custom_loader.dart';
 
 class YourProfileScreen extends StatelessWidget {
   const YourProfileScreen({super.key});
@@ -27,7 +28,7 @@ class YourProfileScreen extends StatelessWidget {
         child: Obx(() {
           if (controller.isLoading.value) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: const CustomLoader(message: "Loading profile..."),
             );
           }
 

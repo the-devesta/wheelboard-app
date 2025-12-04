@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../widgets/custom_loader.dart';
 
 /// Job Card Widget matching Figma design
 class JobCardWidget extends StatelessWidget {
@@ -194,10 +195,7 @@ class JobCardWidget extends StatelessWidget {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF003366)),
-                  ),
+                  child: const CustomLoader.small(),
                 )
               : Text(
                   "Apply now",

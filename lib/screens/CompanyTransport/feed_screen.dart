@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import 'new_post_screen.dart';
 import '../../controllers/post_controller.dart';
+import '../../widgets/custom_loader.dart';
 
 class FeedScreen extends StatelessWidget {
   final String profileImage = 'https://i.pravatar.cc/100';
@@ -309,7 +310,7 @@ class FeedScreen extends StatelessWidget {
       body: Obx(
         () {
           if (postController.isLoading.value) {
-            return Center(child: CircularProgressIndicator());
+            return const CustomLoader(message: "Loading posts...");
           }
 
           if (postController.posts.isEmpty) {

@@ -10,6 +10,7 @@ import '../../models/expense_purpose_model.dart';
 import '../../models/add_new_trip_model.dart';
 import '../../models/assigned_trip_model.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/custom_loader.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final bool isProfessional;
@@ -143,7 +144,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ),
       builder: (context) => Obx(() {
         if (expenseController.isLoadingPurposes.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const CustomLoader.small(message: "Loading...");
         }
 
         return Container(
@@ -249,7 +250,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         if (isProfessional) {
           final assignedTripController = tripController as AssignedTripController;
           if (assignedTripController.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+            return const CustomLoader.small(message: "Loading trips...");
           }
           final allTrips = assignedTripController.assignedTrips;
           
@@ -724,13 +725,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           onTap: isSaving ? null : _saveExpense,
                           borderRadius: BorderRadius.circular(14),
                           child: Center(
-                            child: isSaving
+                                child: isSaving
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    child: CustomLoader.small(
+                                      color: Colors.white,
                                     ),
                                   )
                                 : Text(

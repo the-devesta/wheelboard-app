@@ -6,6 +6,7 @@ import 'dart:io';
 import './services/auth_service.dart';
 import './utils/navigation_helper.dart';
 import 'screens/auth/onboarding_screen.dart';
+import 'widgets/custom_loader.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -88,6 +89,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return const Scaffold(body: CustomLoader(message: "Initializing..."));
   }
 }

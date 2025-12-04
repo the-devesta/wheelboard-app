@@ -23,6 +23,7 @@ import '../../controllers/Professional/feeds_controller.dart';
 import 'feed_screen.dart';
 import '../../services/auth_service.dart';
 import '../../controllers/post_controller.dart';
+import '../../widgets/custom_loader.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -324,7 +325,7 @@ class HomeScreen extends StatelessWidget {
                 /// Job Card
                 Obx(() {
                   if (jobController.isLoading.isTrue) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const CustomLoader(message: "Loading jobs...");
                   }
 
                   if (jobController.jobs.isEmpty) {
@@ -536,7 +537,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Obx(() {
                   if (feedsController.isLoading.isTrue) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const CustomLoader(message: "Loading feeds...");
                   }
 
                   if (feedsController.feeds.isEmpty) {

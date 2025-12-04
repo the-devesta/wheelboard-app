@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../widgets/common_header_widget.dart';
 import '../driver/view_driver_screen.dart';
+import '../../../widgets/custom_loader.dart';
 
 class ManageTrip extends StatelessWidget {
   const ManageTrip({super.key});
@@ -175,7 +176,7 @@ class ManageTrip extends StatelessWidget {
                     return Container(
                       height: 147,
                       color: Colors.grey[200],
-                      child: const Center(child: CircularProgressIndicator()),
+                      child: const CustomLoader.small(),
                     );
                   },
                 ),

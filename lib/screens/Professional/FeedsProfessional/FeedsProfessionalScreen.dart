@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../controllers/Professional/feeds_controller.dart';
 import '../../../controllers/post_controller.dart';
+import '../../../widgets/custom_loader.dart';
 
 /// Feeds Professional Screen
 /// Same design as CompanyTransport feed_screen.dart
@@ -84,12 +85,7 @@ class FeedsProfessionalScreen extends StatelessWidget {
                             height: 200,
                             color: Colors.grey[200],
                             child: Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
-                              ),
+                              child: const CustomLoader.small(),
                             ),
                           );
                         },
@@ -158,12 +154,7 @@ class FeedsProfessionalScreen extends StatelessWidget {
                                 return Container(
                                   color: Colors.grey[200],
                                   child: Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded /
-                                              loadingProgress.expectedTotalBytes!
-                                          : null,
-                                    ),
+                                    child: const CustomLoader.small(),
                                   ),
                                 );
                               },
@@ -303,7 +294,7 @@ class FeedsProfessionalScreen extends StatelessWidget {
       body: Obx(
         () {
           if (controller.isLoading.value) {
-            return Center(child: CircularProgressIndicator());
+            return const CustomLoader(message: "Loading feeds...");
           }
 
           if (controller.feeds.isEmpty) {

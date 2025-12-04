@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/job_controller.dart';
 import '../../models/job_application_model.dart';
+import '../../widgets/custom_loader.dart';
 
 class JobApplicationsScreen extends StatefulWidget {
   final String? jobId; // Optional jobId if navigating from a specific job
@@ -97,9 +98,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       ),
       body: Obx(() {
         if (jobController.isLoading.value && jobController.jobs.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const CustomLoader(message: "Loading jobs...");
         }
 
         if (jobController.jobs.isEmpty) {
@@ -129,9 +128,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             Expanded(
               child: Obx(() {
                 if (jobController.isApplicationsLoading.value) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const CustomLoader(message: "Loading applications...");
                 }
 
                 if (jobController.applications.isEmpty) {

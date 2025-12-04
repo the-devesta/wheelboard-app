@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../models/assigned_trip_model.dart';
 import '../TripDetails/TripDetailsScreen.dart';
+import '../../../widgets/custom_loader.dart';
 
 class TripDashboardScreen extends StatefulWidget {
   const TripDashboardScreen({super.key});
@@ -400,7 +401,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
       if (tripController.isLoading.value) {
         return const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Center(child: CircularProgressIndicator()),
+          child: const CustomLoader(message: "Loading trips..."),
         );
       }
 

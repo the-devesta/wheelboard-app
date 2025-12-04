@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
+import '../../../widgets/custom_loader.dart';
 
 class BidSubmissionScreen extends StatefulWidget {
   final String tripId;
@@ -248,9 +249,8 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        child: const CustomLoader.small(
+                          color: Colors.white,
                         ),
                       )
                     : const Icon(Icons.send, size: 18),

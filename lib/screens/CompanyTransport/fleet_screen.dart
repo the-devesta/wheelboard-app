@@ -12,6 +12,7 @@ import '../../models/get_driver_model.dart';
 import '../../models/get_vehicle_model.dart';
 import '../../models/add_drivermodel.dart';
 import '../../models/add_new_vehicle_model.dart';
+import '../../widgets/custom_loader.dart';
 import 'dart:io';
 
 class FleetVehiclesScreen extends StatefulWidget {
@@ -139,9 +140,9 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                 Expanded(
                   child: isVehicleSelected
                       ? Obx(() {
-                          if (driverController.isLoading.value) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
+                          if (driverController.isVehicleLoading.value) {
+                            return const CustomLoader(
+                              message: "Loading vehicles...",
                             );
                           }
                           if (driverController.vehicles.isEmpty) {
@@ -207,8 +208,8 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                         })
                       : Obx(() {
                           if (driverController.isLoading.value) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
+                            return const CustomLoader(
+                              message: "Loading drivers...",
                             );
                           }
                           if (driverController.drivers.isEmpty) {

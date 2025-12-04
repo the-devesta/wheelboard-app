@@ -22,6 +22,7 @@ import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
 import '../../../models/Professional/open_job_model.dart';
 import '../TripOverview/TripOverviewScreen.dart';
+import '../../../widgets/custom_loader.dart';
 // import 'package:iconsax/iconsax.dart';
 
 class FindJobsScreen extends StatelessWidget {
@@ -139,7 +140,7 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20.0),
-                    child: CircularProgressIndicator(),
+                    child: const CustomLoader(message: "Loading jobs..."),
                   ),
                 );
               }
@@ -222,7 +223,7 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20.0),
-                    child: CircularProgressIndicator(),
+                    child: const CustomLoader(message: "Loading jobs..."),
                   ),
                 );
               }
@@ -555,10 +556,7 @@ class JobCard extends StatelessWidget {
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+                    child: const CustomLoader.small(color: Colors.white),
                   )
                 : Text(job.isApplied ? "Applied" : "Apply now"),
           ),

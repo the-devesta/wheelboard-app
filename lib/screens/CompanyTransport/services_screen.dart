@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/service_controller.dart';
 import '../../models/service_model.dart';
 import 'service_details.dart';
+import '../../widgets/custom_loader.dart';
 import 'success_popup.dart';
 
 
@@ -176,7 +177,7 @@ class ServicesScreen extends StatelessWidget {
           Expanded(
             child: Obx(() {
               if (_serviceController.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
+                return const CustomLoader(message: "Loading services...");
               }
 
               if (_serviceController.services.isEmpty) {

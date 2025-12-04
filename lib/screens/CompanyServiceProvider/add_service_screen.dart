@@ -9,6 +9,7 @@ import '../../models/update_service_model.dart';
 import '../../models/service_model.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../widgets/custom_loader.dart';
 
 class AddServiceScreen extends StatefulWidget {
   final ServiceModel? service; // Optional service for edit mode
@@ -762,9 +763,8 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      child: CustomLoader.small(
+                        color: Colors.white,
                       ),
                     )
                   : const Text(

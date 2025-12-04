@@ -13,6 +13,7 @@ import '../../controllers/fleet_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../apihelperclass/api_helper.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../widgets/custom_loader.dart';
 
 class AddVehicleScreen extends StatefulWidget {
   final VehicleModel? vehicleData; // ✅ For edit mode
@@ -717,7 +718,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
         // Add loader overlay if loading
         if (_vehicleController.isLoading.value) {
-          children.add(const Center(child: CircularProgressIndicator()));
+          children.add(const CustomLoader.small());
         }
 
         return Stack(children: children);

@@ -22,6 +22,7 @@ import 'package:get/get.dart';
 import '../../../controllers/Professional/job_progress_controller.dart';
 import '../../../models/Professional/applied_job_model.dart';
 import '../JobDetails/JobDetailsScreen.dart';
+import '../../../widgets/custom_loader.dart';
 
 class JobProgressScreen extends StatelessWidget {
   const JobProgressScreen({super.key});
@@ -146,9 +147,7 @@ class JobProgressScreen extends StatelessWidget {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(40.0),
-                        child: CircularProgressIndicator(
-                          color: Colors.redAccent,
-                        ),
+                        child: const CustomLoader.small(),
                       ),
                     );
                   }

@@ -10,6 +10,7 @@ import '../../../controllers/user_profile_controller.dart';
 import '../../../models/user_profile_model.dart';
 import '../../../services/profile_service.dart';
 import '../../../widgets/custom_snackbar.dart';
+import '../../../widgets/custom_loader.dart';
 
 class EditYourProfile01Screen extends StatefulWidget {
   const EditYourProfile01Screen({super.key});
@@ -423,8 +424,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
+                            child: const CustomLoader.small(
                               color: Colors.white,
                             ),
                           )

@@ -9,6 +9,7 @@ import '../../../services/razorpay_service.dart';
 import '../../../services/trip_payment_service.dart';
 import '../../../utils/session_manager.dart';
 import '../../../widgets/custom_snackbar.dart';
+import '../../../widgets/custom_loader.dart';
 import 'trip_accepted.dart';
 
 class AssignTripScreen extends StatefulWidget {
@@ -95,7 +96,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
       ),
       body: Obx(() {
         if (_controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const CustomLoader(message: "Loading trip details...");
         }
 
         if (_controller.errorMessage.value.isNotEmpty) {

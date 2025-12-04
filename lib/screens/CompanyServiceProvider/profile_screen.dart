@@ -6,6 +6,7 @@ import '../../widgets/custom_snackbar.dart';
 import '../../controllers/user_profile_controller.dart';
 import '../../models/user_profile_model.dart';
 import '../auth/onboarding_screen.dart';
+import '../../widgets/custom_loader.dart';
 
 class ServiceProviderProfileScreen extends StatefulWidget {
   const ServiceProviderProfileScreen({super.key});
@@ -34,9 +35,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
         child: Obx(() {
           if (controller.isLoading.value) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFF36969),
-              ),
+              child: const CustomLoader(message: "Loading profile..."),
             );
           }
 

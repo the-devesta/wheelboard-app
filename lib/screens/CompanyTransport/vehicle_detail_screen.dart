@@ -5,6 +5,7 @@ import '../../models/vehicle_detail_response_model.dart';
 import '../../controllers/main_wrapper_controller.dart';
 import '../../controllers/fleet_controller.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/custom_loader.dart';
 
 class VehicleDetailScreen extends StatefulWidget {
   final Vehicle vehicle;
@@ -111,9 +112,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                           },
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
+                            return const CustomLoader.small();
                           },
                         )
                       : vehicleImage.isNotEmpty && vehicleImage != 'assets/truckImg.png'
@@ -650,7 +649,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                               ? const Center(
                                   child: Padding(
                                     padding: EdgeInsets.all(20.0),
-                                    child: CircularProgressIndicator(),
+                                    child: const CustomLoader.small(),
                                   ),
                                 )
                               : recentTrips.isEmpty

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../widgets/calendar_header_widget.dart';
 import '../widgets/calendar_widget.dart';
 import '../../../controllers/Professional/calendar_controller.dart';
+import '../../../widgets/custom_loader.dart';
 
 class CalendarInactiveScreen extends StatefulWidget {
   final DateTime? initialDate;
@@ -520,9 +521,8 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                           ? const SizedBox(
                                               height: 20,
                                               width: 20,
-                                              child: CircularProgressIndicator(
+                                              child: const CustomLoader.small(
                                                 color: Colors.white,
-                                                strokeWidth: 2,
                                               ),
                                             )
                                           : Text(

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/driver_details_controller.dart';
 import '../../utils/constants.dart';
+import '../../widgets/custom_loader.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   final String driverId;
@@ -37,7 +38,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           body: Obx(() {
             if (controller.isLoading.value) {
               return const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: CustomLoader.small(),
               );
             }
 

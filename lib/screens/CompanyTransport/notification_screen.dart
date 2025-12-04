@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/notification_controller.dart';
 import '../../models/notification_model.dart';
+import '../../widgets/custom_loader.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -39,8 +40,8 @@ class NotificationScreen extends StatelessWidget {
       body: Obx(() {
         if (controller.isLoading.value && controller.notifications.isEmpty) {
           return const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFFFF6B6B),
+            child: const CustomLoader(
+              message: "Loading notifications...",
             ),
           );
         }

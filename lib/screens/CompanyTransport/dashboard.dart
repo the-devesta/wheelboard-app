@@ -1,281 +1,571 @@
 import 'package:flutter/material.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:get/get.dart';
+import '../../controllers/dashboard_controller.dart';
+import '../../models/dashboard_model.dart';
+import '../../widgets/custom_loader.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(DashboardController());
+
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: const Color(0xFFF5F7FA), // Light grey background for better contrast
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        leading: BackButton(),
+        leading: const BackButton(color: Colors.black87),
         title: Text(
-          "DashBoard",
+          "Dashboard",
           style: GoogleFonts.poppins(
-            fontSize: 20, // 👈 set your size here
-            fontWeight: FontWeight.bold,
-            color: AppColors.buttonBg,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
           ),
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ---------------- Metrics Section ----------------
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-                return GridView.count(
-                  crossAxisCount: crossAxisCount,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 1.4,
-                  children: [
-                _statCard(
-                  Icons.directions_car,
-                  "Active Trips",
-                  "25 Trips",
-                  "5 Scheduled Today",
-                  Colors.green,
-                ),
-                _statCard(
-                  Icons.local_shipping,
-                  "Active Vehicles",
-                  "16 Active",
-                  "2 in Maintenance",
-                  Colors.blue,
-                ),
-                _statCard(
-                  Icons.wallet,
-                  "Monthly Expenses",
-                  "₹2,65,000",
-                  "Fuel Highest (92k)",
-                  Colors.red,
-                ),
-                _statCard(
-                  Icons.work,
-                  "Jobs Posted",
-                  "12 Active",
-                  "8 Unfilled",
-                  Colors.blue,
-                ),
-                _statCard(
-                  Icons.route,
-                  "Trip Efficiency",
-                  "₹3/km Avg",
-                  "15,000 km/mo",
-                  Colors.teal,
-                ),
-                _statCard(
-                  Icons.car_rental,
-                  "Vehicles on lease",
-                  "4",
-                  "2 Leased this week",
-                  Colors.orange,
-                ),
-                  ],
-                );
-              },
-            ),
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const CustomLoader(
+            message: "Loading dashboard...",
+          );
+        }
 
-            const SizedBox(height: 0),
-
-            // ---------------- Trip Completion Trend ---------------- 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _sectionTitle("Trip Completion Trend"),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Text(
-                    "Last 7 Days",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Container(
-              height: 250,
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: _buildTripCompletionChart(),
-            ),
-
-            Card(
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          "Vehicle Availability",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text("Now", style: TextStyle(color: Colors.grey)),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _availabilityItem("12", "Available", Colors.green),
-                        _availabilityItem("3", "On Trip", Colors.blue),
-                        _availabilityItem("1", "On Rent", Colors.red),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ---------------- Top Rated Professionals ----------------
-            _sectionTitle("Top Rated Professionals"),
-            Row(
-              children: [
-                _chip("Drivers", true),
-                const SizedBox(width: 5),
-                _chip("Technicians", false),
-                const SizedBox(width: 5),
-                _chip("Helpers", false),
-              ],
-            ),
-            const SizedBox(height: 10),
-            _professionalTile("Sanjana Mehta", "Driver • South Zone", 4.8),
-            _professionalTile("Kiran Kumar", "Technician • East Zone", 4.7),
-
-            const SizedBox(height: 15),
-
-            // ---------------- Jobs You Posted ----------------
-            _sectionTitle("Jobs You Posted"),
-            _jobCard("Driver Mumbai", "8 Applicants", "35 Likes"),
-            _jobCard("Technician Pune", "4 Applicants", "10 Likes"),
-            _addButton("+ Post New Job", Color(0xFFF44336)),
-
-            const SizedBox(height: 15),
-
-            // ---------------- Expense Overview ---------------- 
-            _sectionTitle("Expense Overview"),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: _buildExpenseOverviewChart(),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ---------------- Recent Transactions ----------------
-            _sectionTitle("Recent Transactions"),
-            _transactionTile(
-              icon: Icons.local_gas_station,
-              iconColor: Colors.blue,
-              title: "Fuel",
-              subtitle: "25 May • Diesel",
-              amount: "₹12,000",
-            ),
-            _transactionTile(
-              icon: Icons.local_gas_station,
-              iconColor: Colors.blue,
-              title: "Maintenance",
-              subtitle: "24 May • Brake Repair",
-              amount: "₹3500",
-            ),
-            _addButton("+ Add Expense", Color(0xFF1A73E8)),
-
-            const SizedBox(height: 15),
-
-            // ---------------- Assigned Services ----------------
-            _sectionTitle("Assigned Services"),
-            _serviceTile(
-              title: "Tyre Replacement",
-              desc:
-                  "Professional tyre replacement service for all vehicle types",
-              tag: "Tyre Repair",
-              updatedAt: "2 days ago",
-              onDelete: () {
-                print("Delete tapped");
-              },
-            ),
-            _serviceTile(
-              title: "Engine Diagnostics",
-              desc: "Complete engine diagnostic and repair services",
-              tag: "Engine",
-              updatedAt: "2 days ago",
-              onDelete: () {
-                print("Delete tapped");
-              },
-            ),
-
-            const SizedBox(height: 15),
-
-            // ---------------- Upcoming Trips ----------------
-            _sectionTitle("Upcoming Trips"),
-            _tripTile(
-              id: "TR1042",
-              route: "Chennai → Pune",
-              time: "28 May, 07:00 AM",
-              driver: "A. Rajesh",
-              onManage: () {
-                print("Manage Trip tapped");
-              },
-            ),
-            _tripTile(
-              id: "TR1042",
-              route: "Chennai → Pune",
-              time: "28 May, 07:00 AM",
-              driver: "A. Rajesh",
-              onManage: () {
-                print("Manage Trip tapped");
-              },
-            ),
-
-            const SizedBox(height: 30),
-            Center(
+        if (controller.errorMessage.value.isNotEmpty && controller.dashboardData.value == null) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
               child: Column(
-                children: const [
-                  Text("App v1.3.2", style: TextStyle(color: Colors.grey)),
-                  SizedBox(height: 5),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
                   Text(
-                    "Terms & Conditions  •  Privacy Policy",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    controller.errorMessage.value,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => controller.fetchDashboardData(),
+                    child: const Text('Retry'),
                   ),
                 ],
               ),
             ),
-          ],
+          );
+        }
+
+        final data = controller.dashboardData.value;
+        if (data == null) {
+          return const Center(child: Text('No data available'));
+        }
+
+        return RefreshIndicator(
+          onRefresh: controller.fetchDashboardData,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ---------------- Metrics Section ----------------
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+                    // Provide more height for cards to prevent overflow
+                    final double itemHeight = 130;
+                    final double itemWidth = (constraints.maxWidth - (crossAxisCount - 1) * 12) / crossAxisCount;
+                    final double childAspectRatio = itemWidth / itemHeight;
+
+                    return GridView.count(
+                      crossAxisCount: crossAxisCount,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: childAspectRatio,
+                      children: [
+                        _statCard(
+                          Icons.directions_car,
+                          "Active Trips",
+                          "${data.tripSummary.totalTrips} Trips",
+                          "${data.tripSummary.scheduledToday} Scheduled Today",
+                          Colors.green,
+                        ),
+                        _statCard(
+                          Icons.local_shipping,
+                          "Active Vehicles",
+                          "${data.activeVehicles.activeVehicles} Active",
+                          "${data.activeVehicles.inMaintenance} in Maintenance",
+                          Colors.blue,
+                        ),
+                        _statCard(
+                          Icons.wallet,
+                          "Monthly Expenses",
+                          "₹${_formatCurrency(data.monthlyExpenses.totalExpenses)}",
+                          data.monthlyExpenses.highestFuelAmount > 0
+                              ? "Highest Fuel: ₹${_formatCurrency(data.monthlyExpenses.highestFuelAmount)}"
+                              : "No expenses",
+                          Colors.red,
+                        ),
+                        _statCard(
+                          Icons.work,
+                          "Jobs Posted",
+                          "${data.jobsSummary.activeJobs} Active",
+                          "${data.jobsSummary.unfilledJobs} Unfilled",
+                          Colors.purple,
+                        ),
+                        _statCard(
+                          Icons.route,
+                          "Trip Efficiency",
+                          data.tripEfficiency?.avgCostPerKm != null
+                              ? "₹${data.tripEfficiency!.avgCostPerKm!.toStringAsFixed(1)}/km"
+                              : "N/A",
+                          data.tripEfficiency?.totalKmPerMonth != null
+                              ? "${_formatNumber(data.tripEfficiency!.totalKmPerMonth!)} km/mo"
+                              : "No data",
+                          Colors.teal,
+                        ),
+                        _statCard(
+                          Icons.car_rental,
+                          "Vehicles on Lease",
+                          data.vehiclesOnLease != null
+                              ? "${data.vehiclesOnLease!.total}"
+                              : "0",
+                          data.vehiclesOnLease != null && data.vehiclesOnLease!.leasedThisWeek > 0
+                              ? "+${data.vehiclesOnLease!.leasedThisWeek} this week"
+                              : "No new leases",
+                          Colors.orange,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                // ---------------- Trip Completion Trend ----------------
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sectionTitle("Trip Completion Trend"),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "Last 7 Days",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  height: 280,
+                  padding: const EdgeInsets.fromLTRB(12, 24, 24, 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: _buildTripCompletionChart(data.tripCompletionTrend),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ---------------- Vehicle Availability ----------------
+                Card(
+                  color: Colors.white,
+                  elevation: 2,
+                  shadowColor: Colors.black.withOpacity(0.1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            Text(
+                              "Vehicle Availability",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Icon(Icons.access_time, size: 16, color: Colors.grey),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _availabilityItem(
+                              "${data.vehicleAvailability.available}",
+                              "Available",
+                              Colors.green,
+                              Icons.check_circle_outline,
+                            ),
+                            Container(width: 1, height: 40, color: Colors.grey[200]),
+                            _availabilityItem(
+                              "${data.vehicleAvailability.onTrip}",
+                              "On Trip",
+                              Colors.blue,
+                              Icons.directions_car,
+                            ),
+                            Container(width: 1, height: 40, color: Colors.grey[200]),
+                            _availabilityItem(
+                              "${data.vehicleAvailability.onRent}",
+                              "On Rent",
+                              Colors.orange,
+                              Icons.key,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ---------------- Top Rated Professionals ----------------
+                _sectionTitle("Top Rated Professionals"),
+                const SizedBox(height: 12),
+                Obx(() {
+                  // Get unique professional types from data
+                  final Set<String> professionalTypes = {'All'};
+                  for (var professional in data.topProfessionals) {
+                    if (professional.professionalType.isNotEmpty) {
+                      professionalTypes.add(professional.professionalType);
+                    } else {
+                      professionalTypes.add('Other');
+                    }
+                  }
+                  
+                  final List<String> filterOptions = professionalTypes.toList()..sort();
+                  
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: filterOptions.map((filter) {
+                        final isSelected = controller.selectedProfessionalFilter.value == filter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () => controller.setProfessionalFilter(filter),
+                            child: _chip(filter, isSelected),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+                Obx(() {
+                  // Filter professionals based on selected filter
+                  List<TopProfessional> filteredProfessionals = data.topProfessionals;
+                  
+                  if (controller.selectedProfessionalFilter.value != 'All') {
+                    filteredProfessionals = data.topProfessionals.where((professional) {
+                      if (controller.selectedProfessionalFilter.value == 'Other') {
+                        return professional.professionalType.isEmpty;
+                      }
+                      return professional.professionalType == controller.selectedProfessionalFilter.value;
+                    }).toList();
+                  }
+                  
+                  return filteredProfessionals.isNotEmpty
+                      ? Column(
+                          children: filteredProfessionals.take(3).map((professional) {
+                            final role = professional.professionalType.isNotEmpty
+                                ? "${professional.professionalType} • ${professional.city}"
+                                : professional.city;
+                            // Fix image URL - replace backslashes with forward slashes
+                            String imageUrl = professional.driverImagePath.replaceAll('\\', '/');
+                            return _professionalTile(
+                              professional.fullName,
+                              role,
+                              4.5,
+                              imageUrl: imageUrl,
+                            );
+                          }).toList(),
+                        )
+                      : _emptyState("No professionals available for this filter");
+                }),
+
+                const SizedBox(height: 24),
+
+                // ---------------- Jobs You Posted ----------------
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sectionTitle("Jobs You Posted"),
+                    TextButton(onPressed: () {}, child: const Text("View All")),
+                  ],
+                ),
+                ...(data.jobList.isNotEmpty
+                    ? data.jobList.take(3).map((job) {
+                        final jobTitle = job.role ?? job.jobType ?? "Untitled Job";
+                        return _jobCard(
+                          jobTitle,
+                          "${job.applicants ?? 0} Applicants",
+                          "${job.likeCount ?? 0} Likes",
+                          job.city ?? "",
+                          job.salary ?? 0,
+                        );
+                      }).toList()
+                    : [
+                        _emptyState("No jobs posted"),
+                      ]),
+                const SizedBox(height: 12),
+                _addButton("+ Post New Job", const Color(0xFFF44336)),
+
+                const SizedBox(height: 24),
+
+                // ---------------- Expense Overview ----------------
+                _sectionTitle("Expense Overview"),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: _buildExpenseOverviewChart(data.recentTransactions),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ---------------- Recent Transactions ----------------
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sectionTitle("Recent Transactions"),
+                    TextButton(onPressed: () {}, child: const Text("View All")),
+                  ],
+                ),
+                ...(data.recentTransactions.isNotEmpty
+                    ? data.recentTransactions.take(5).map((transaction) {
+                        IconData icon;
+                        Color iconColor;
+                        final expenseType = transaction.expenseType?.toLowerCase() ?? '';
+                        switch (expenseType) {
+                          case 'fuel':
+                            icon = Icons.local_gas_station;
+                            iconColor = Colors.blue;
+                            break;
+                          case 'maintenance':
+                            icon = Icons.build;
+                            iconColor = Colors.orange;
+                            break;
+                          case 'challan':
+                            icon = Icons.receipt;
+                            iconColor = Colors.orangeAccent;
+                            break;
+                          case 'advance':
+                            icon = Icons.account_balance_wallet;
+                            iconColor = Colors.purple;
+                            break;
+                          case 'salary':
+                            icon = Icons.payments;
+                            iconColor = Colors.green;
+                            break;
+                          case 'food':
+                            icon = Icons.restaurant;
+                            iconColor = Colors.redAccent;
+                            break;
+                          default:
+                            icon = Icons.receipt_long;
+                            iconColor = Colors.grey;
+                        }
+                        
+                        // Format date
+                        String formattedDate = "Unknown date";
+                        if (transaction.dateEntered != null) {
+                          try {
+                            final date = DateTime.parse(transaction.dateEntered!);
+                            formattedDate = "${date.day} ${_getMonthName(date.month)} • ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+                          } catch (e) {
+                            formattedDate = transaction.dateEntered!;
+                          }
+                        }
+                        
+                        return _transactionTile(
+                          icon: icon,
+                          iconColor: iconColor,
+                          title: transaction.expenseType ?? "Transaction",
+                          subtitle: formattedDate,
+                          amount: transaction.amount != null
+                              ? "₹${_formatCurrency(transaction.amount!)}"
+                              : "₹0",
+                        );
+                      }).toList()
+                    : [
+                        _emptyState("No recent transactions"),
+                      ]),
+                const SizedBox(height: 12),
+                _addButton("+ Add Expense", const Color(0xFF1A73E8)),
+
+                const SizedBox(height: 24),
+
+                // ---------------- Assigned Services ----------------
+                _sectionTitle("Assigned Services"),
+                const SizedBox(height: 12),
+                ...(data.assignedServices.isNotEmpty
+                    ? data.assignedServices.take(3).map((service) {
+                        // Format date
+                        String formattedDate = "Unknown";
+                        if (service.dateModified != null) {
+                          try {
+                            final date = DateTime.parse(service.dateModified!);
+                            final now = DateTime.now();
+                            final difference = now.difference(date);
+                            
+                            if (difference.inDays == 0) {
+                              formattedDate = "Today";
+                            } else if (difference.inDays == 1) {
+                              formattedDate = "Yesterday";
+                            } else if (difference.inDays < 7) {
+                              formattedDate = "${difference.inDays} days ago";
+                            } else if (difference.inDays < 30) {
+                              formattedDate = "${(difference.inDays / 7).floor()} weeks ago";
+                            } else {
+                              formattedDate = "${(difference.inDays / 30).floor()} months ago";
+                            }
+                          } catch (e) {
+                            formattedDate = service.dateModified!;
+                          }
+                        }
+                        
+                        return _serviceTile(
+                          title: service.serviceTitle ?? "Service",
+                          desc: service.category?.isNotEmpty == true ? service.category! : "No category",
+                          tag: service.category?.isNotEmpty == true ? service.category! : "General",
+                          updatedAt: formattedDate,
+                          onDelete: () {
+                            print("Delete tapped");
+                          },
+                        );
+                      }).toList()
+                    : [
+                        _emptyState("No assigned services"),
+                      ]),
+
+                const SizedBox(height: 24),
+
+                // ---------------- Upcoming Trips ----------------
+                _sectionTitle("Upcoming Trips"),
+                const SizedBox(height: 12),
+                ...(data.upcomingTrips.isNotEmpty
+                    ? data.upcomingTrips.take(3).map((trip) {
+                        return _tripTile(
+                          id: trip.id ?? "N/A",
+                          route: trip.route ?? "Route not specified",
+                          time: trip.time ?? "Time not specified",
+                          driver: trip.driver ?? "Driver not assigned",
+                          onManage: () {
+                            print("Manage Trip tapped");
+                          },
+                        );
+                      }).toList()
+                    : [
+                        _emptyState("No upcoming trips"),
+                      ]),
+
+                const SizedBox(height: 40),
+                Center(
+                  child: Column(
+                    children: [
+                      Text("App v1.3.2", style: TextStyle(color: Colors.grey[400])),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Terms & Conditions  •  Privacy Policy",
+                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  // ---------------- Helper Methods ----------------
+  static String _formatCurrency(double amount) {
+    if (amount >= 10000000) {
+      return "${(amount / 10000000).toStringAsFixed(2)}Cr";
+    } else if (amount >= 100000) {
+      return "${(amount / 100000).toStringAsFixed(1)}L";
+    } else if (amount >= 1000) {
+      return "${(amount / 1000).toStringAsFixed(1)}k";
+    }
+    return amount.toStringAsFixed(0);
+  }
+
+  static String _formatNumber(double number) {
+    if (number >= 1000) {
+      return "${(number / 1000).toStringAsFixed(1)}k";
+    }
+    return number.toStringAsFixed(0);
+  }
+
+  static String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
+  }
+
+  static Widget _emptyState(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Center(
+        child: Text(
+          message,
+          style: TextStyle(color: Colors.grey[500], fontSize: 14),
         ),
       ),
     );
@@ -287,53 +577,77 @@ class DashboardScreen extends StatelessWidget {
     String title,
     String value,
     String subtitle,
-    Color iconColor, {
-    Color backgroundColor = Colors.white, // default white
+    Color accentColor, {
+    Color backgroundColor = Colors.white,
   }) {
-    return Card(
-      color: backgroundColor, // ✅ background color
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2, // optional shadow
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(icon, color: iconColor, size: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: accentColor, size: 20),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
-            Flexible(
-              child: Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Flexible(
-              child: Text(
-                subtitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.grey,
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                    color: accentColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ],
         ),
@@ -341,27 +655,57 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  static Widget _availabilityItem(String value, String label, Color color) {
+  static Widget _availabilityItem(String value, String label, Color color, IconData icon) {
     return Column(
       children: [
+        Icon(icon, color: color.withOpacity(0.8), size: 28),
+        const SizedBox(height: 8),
         Text(
           value,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: color,
+            color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 5),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
 
   static Widget _chip(String text, bool selected) {
-    return Chip(
-      label: Text(text),
-      backgroundColor: selected ? Colors.blue[100] : Colors.grey[200],
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: selected ? Colors.blue : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: selected ? Colors.blue : Colors.grey.shade300,
+          width: selected ? 2 : 1,
+        ),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: selected ? Colors.white : Colors.grey[700],
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+          fontSize: 13,
+        ),
+      ),
     );
   }
 
@@ -369,96 +713,82 @@ class DashboardScreen extends StatelessWidget {
     String name,
     String role,
     double rating, {
-    String imageUrl =
-        "https://via.placeholder.com/150", // pass network image for profile
+    String imageUrl = "https://via.placeholder.com/150",
   }) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      elevation: 2,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            // Profile Image
-            CircleAvatar(radius: 26, backgroundImage: NetworkImage(imageUrl)),
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade200, width: 2),
+              ),
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.grey[100],
+                backgroundImage: NetworkImage(imageUrl),
+                onBackgroundImageError: (_, __) {},
+                child: imageUrl.isEmpty ? const Icon(Icons.person, color: Colors.grey) : null,
+              ),
+            ),
             const SizedBox(width: 12),
-
-            // Name + Role + Rating
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              rating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            const Icon(
-                              Icons.star,
-                              size: 14,
-                              color: Colors.amber,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     role,
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-
-            // View Profile Button
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF1A73E8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                "View Profile",
-                style: TextStyle(color: Colors.white, fontSize: 13),
+              child: Row(
+                children: [
+                  const Icon(Icons.star, size: 14, color: Colors.amber),
+                  const SizedBox(width: 4),
+                  Text(
+                    rating.toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -467,46 +797,86 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  static Widget _jobCard(String title, String applicants, String likes) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+  static Widget _jobCard(String title, String applicants, String likes, String city, double salary) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title + Tags
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (city.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Text(
+                              city,
+                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (salary > 0) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          "₹${_formatCurrency(salary)}",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                Row(
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     _pill(applicants, Colors.blue.shade50, Colors.blue),
-                    const SizedBox(width: 6),
+                    const SizedBox(height: 6),
                     _pill(likes, Colors.red.shade50, Colors.red),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Action Buttons
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _outlinedButton("View", Colors.red),
-                _outlinedButton("Edit", Colors.blue),
-                _outlinedButton("Share", Colors.grey),
+                Expanded(child: _outlinedButton("View", Colors.blue)),
+                const SizedBox(width: 8),
+                Expanded(child: _outlinedButton("Edit", Colors.grey)),
               ],
             ),
           ],
@@ -515,19 +885,18 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // ---------------- Reusable Widgets ----------------
   static Widget _pill(String text, Color bgColor, Color textColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
           color: textColor,
         ),
       ),
@@ -535,23 +904,20 @@ class DashboardScreen extends StatelessWidget {
   }
 
   static Widget _outlinedButton(String text, Color color) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        height: 38,
-        child: OutlinedButton(
-          onPressed: () {},
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: color),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(color: color, fontWeight: FontWeight.w600),
-          ),
+    return OutlinedButton(
+      onPressed: () {},
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color.withOpacity(0.5)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
+        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+        visualDensity: VisualDensity.compact,
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
       ),
     );
   }
@@ -563,77 +929,72 @@ class DashboardScreen extends StatelessWidget {
     required String subtitle,
     required String amount,
   }) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        child: Row(
-          children: [
-            // Leading circular icon
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-            const SizedBox(width: 12),
-
-            // Title + Subtitle
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ),
-
-            // Amount
-            Text(
-              amount,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: Colors.black87,
-              ),
-            ),
-          ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 24),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            color: Colors.black87,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+        ),
+        trailing: Text(
+          amount,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            color: amount.startsWith('-') ? Colors.red : Colors.green,
+          ),
         ),
       ),
     );
   }
 
   static Widget _addButton(String text, Color color) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      height: 50,
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      height: 48,
       child: ElevatedButton(
         onPressed: () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
+          foregroundColor: Colors.white,
+          elevation: 2,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: Text(text, style: TextStyle(color: Colors.white)),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
@@ -645,17 +1006,24 @@ class DashboardScreen extends StatelessWidget {
     required String updatedAt,
     required VoidCallback onDelete,
   }) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title + Tag Row
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -665,51 +1033,55 @@ class DashboardScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: Colors.black87,
                     ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     tag,
                     style: const TextStyle(
                       color: Colors.blue,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
                     ),
                   ),
                 ),
               ],
             ),
-
             const SizedBox(height: 8),
-
-            // Description
             Text(
               desc,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-
             const SizedBox(height: 12),
-
-            // Bottom Row (Updated text + Delete Icon)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Updated $updatedAt",
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                Row(
+                  children: [
+                    Icon(Icons.access_time, size: 14, color: Colors.grey[400]),
+                    const SizedBox(width: 4),
+                    Text(
+                      updatedAt,
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                    ),
+                  ],
                 ),
                 InkWell(
                   onTap: onDelete,
                   borderRadius: BorderRadius.circular(20),
-                  child: const Icon(Icons.delete, color: Colors.red, size: 22),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4.0),
+                    child: Icon(Icons.delete_outline, color: Colors.red, size: 22),
+                  ),
                 ),
               ],
             ),
@@ -726,91 +1098,122 @@ class DashboardScreen extends StatelessWidget {
     required String driver,
     required VoidCallback onManage,
   }) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Row: Trip ID + Route
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    "Trip #$id",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.teal.shade50,
-                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.teal.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    route,
-                    style: const TextStyle(
-                      color: Colors.teal,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: const Icon(Icons.local_shipping, color: Colors.teal, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Trip #$id",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        route,
+                        style: const TextStyle(
+                          color: Colors.teal,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 6),
-
-            // Trip time
-            Text(
-              time,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-            ),
-
-            const SizedBox(height: 4),
-
-            // Driver info
-            RichText(
-              text: TextSpan(
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                children: [
-                  const TextSpan(text: "Driver: "),
-                  TextSpan(
-                    text: driver,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 16),
-
-            // Manage Trip button
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Departure",
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        time,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Driver",
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        driver,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              height: 42,
+              child: OutlinedButton(
                 onPressed: onManage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.blue),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(40),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: const Text(
                   "Manage Trip",
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -822,57 +1225,56 @@ class DashboardScreen extends StatelessWidget {
 
   static Widget _sectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+          letterSpacing: -0.5,
+        ),
       ),
     );
   }
 
   // Trip Completion Trend Chart
-  static Widget _buildTripCompletionChart() {
-    // Sample data: Monday to Sunday
-    final tripData = [
-      10.0, // Monday
-      12.0, // Tuesday
-      24.0, // Wednesday
-      16.0, // Thursday
-      24.0, // Friday
-      8.0,  // Saturday
-      18.0, // Sunday
-    ];
+  static Widget _buildTripCompletionChart(List<TripCompletionTrend> trendData) {
+    if (trendData.isEmpty) {
+      return Center(
+        child: Text(
+          "No trend data available",
+          style: TextStyle(color: Colors.grey[500]),
+        ),
+      );
+    }
 
-    final maxY = 30.0;
-    final minY = 0.0;
+    final tripData = trendData.map((item) => item.completedTrips?.toDouble() ?? 0.0).toList();
+    
+    while (tripData.length < 7) {
+      tripData.add(0.0);
+    }
+    
+    final chartData = tripData.take(7).toList();
+    final maxY = chartData.isEmpty ? 30.0 : (chartData.reduce((a, b) => a > b ? a : b) * 1.2).clamp(10.0, double.infinity);
 
     return LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
-          drawVerticalLine: true,
-          horizontalInterval: 3,
+          drawVerticalLine: false,
+          horizontalInterval: maxY > 0 ? maxY / 5 : 5,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: Colors.grey.shade200,
-              strokeWidth: 1,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: Colors.grey.shade200,
+              color: Colors.grey.shade100,
               strokeWidth: 1,
             );
           },
         ),
         titlesData: FlTitlesData(
           show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -886,8 +1288,8 @@ class DashboardScreen extends StatelessWidget {
                     child: Text(
                       days[value.toInt()],
                       style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -900,45 +1302,56 @@ class DashboardScreen extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: 3,
-              reservedSize: 40,
+              interval: maxY > 0 ? maxY / 5 : 5,
+              reservedSize: 30,
               getTitlesWidget: (value, meta) {
-                if (value == meta.min || value == meta.max) {
-                  return const Text('');
-                }
+                if (value == meta.min || value == meta.max) return const Text('');
                 return Text(
                   value.toInt().toString(),
                   style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade400,
+                    fontSize: 12,
                   ),
                 );
               },
             ),
           ),
         ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border.all(color: Colors.grey.shade300, width: 1),
-        ),
+        borderData: FlBorderData(show: false),
         minX: 0,
         maxX: 6,
-        minY: minY,
+        minY: 0,
         maxY: maxY,
         lineBarsData: [
           LineChartBarData(
-            spots: List.generate(tripData.length, (index) {
-              return FlSpot(index.toDouble(), tripData[index]);
+            spots: List.generate(chartData.length, (index) {
+              return FlSpot(index.toDouble(), chartData[index]);
             }),
             isCurved: true,
-            color: Colors.red,
+            color: Colors.blueAccent,
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: true),
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 4,
+                  color: Colors.white,
+                  strokeWidth: 2,
+                  strokeColor: Colors.blueAccent,
+                );
+              },
+            ),
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.purple.withOpacity(0.2),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blueAccent.withOpacity(0.3),
+                  Colors.blueAccent.withOpacity(0.0),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
         ],
@@ -947,93 +1360,141 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // Expense Overview Chart (Donut Chart)
-  static Widget _buildExpenseOverviewChart() {
-    // Sample expense data
-    final expenses = [
-      {'category': 'Advance', 'amount': 4000, 'color': Colors.purple},
-      {'category': 'Fuel', 'amount': 3500, 'color': Colors.red.shade400},
-      {'category': 'Challan', 'amount': 1500, 'color': Colors.lightBlue},
-      {'category': 'Food', 'amount': 1200, 'color': Colors.orange.shade300},
-      {'category': 'Salary', 'amount': 1500, 'color': Colors.blue},
-      {'category': 'Enroute', 'amount': 640, 'color': Colors.lightGreen},
-    ];
+  static Widget _buildExpenseOverviewChart(List<RecentTransaction> transactions) {
+    if (transactions.isEmpty) {
+      return Center(
+        child: Text(
+          "No expense data available",
+          style: TextStyle(color: Colors.grey[500]),
+        ),
+      );
+    }
+
+    // Group transactions
+    final Map<String, double> categoryTotals = {};
+    final Map<String, Color> categoryColors = {
+      'Advance': Colors.purpleAccent,
+      'Fuel': Colors.redAccent,
+      'Challan': Colors.orangeAccent,
+      'Food': Colors.amber,
+      'Salary': Colors.green,
+      'Enroute': Colors.lightBlue,
+      'Maintenance': Colors.blueGrey,
+    };
+
+    for (var transaction in transactions) {
+      final category = transaction.expenseType ?? 'Other';
+      final amount = transaction.amount ?? 0.0;
+      categoryTotals[category] = (categoryTotals[category] ?? 0.0) + amount;
+    }
+
+    if (categoryTotals.isEmpty) {
+      return Center(
+        child: Text(
+          "No expense data available",
+          style: TextStyle(color: Colors.grey[500]),
+        ),
+      );
+    }
+
+    final expenses = categoryTotals.entries.map((entry) {
+      return {
+        'category': entry.key,
+        'amount': entry.value,
+        'color': categoryColors[entry.key] ?? Colors.grey,
+      };
+    }).toList();
+
+    // Sort by amount descending
+    expenses.sort((a, b) => (b['amount'] as double).compareTo(a['amount'] as double));
 
     final totalAmount = expenses.fold<double>(
       0,
-      (sum, item) => sum + (item['amount'] as int).toDouble(),
+      (sum, item) => sum + (item['amount'] as double),
     );
 
-    return Row(
+    return Column(
       children: [
-        // Donut Chart
         SizedBox(
-          width: 180,
-          height: 180,
-          child: PieChart(
-            PieChartData(
-              sectionsSpace: 2,
-              centerSpaceRadius: 50,
-              sections: expenses.map((expense) {
-                final amount = expense['amount'] as int;
-                return PieChartSectionData(
-                  value: amount.toDouble(),
-                  title: '',
-                  color: expense['color'] as Color,
-                  radius: 60,
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        // Legend and Total
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          height: 200,
+          child: Stack(
             children: [
-              // Total Amount
-              Text(
-                totalAmount.toInt().toString(),
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              PieChart(
+                PieChartData(
+                  sectionsSpace: 4,
+                  centerSpaceRadius: 60,
+                  sections: expenses.map((expense) {
+                    final amount = expense['amount'] as double;
+                    final isLarge = amount / totalAmount > 0.15;
+                    return PieChartSectionData(
+                      value: amount,
+                      title: isLarge ? "${(amount / totalAmount * 100).toStringAsFixed(0)}%" : "",
+                      titleStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      color: expense['color'] as Color,
+                      radius: isLarge ? 50 : 40,
+                    );
+                  }).toList(),
                 ),
               ),
-              const SizedBox(height: 16),
-              // Legend
-              ...expenses.map((expense) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: expense['color'] as Color,
-                          shape: BoxShape.circle,
-                        ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Total",
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                    Text(
+                      _formatCurrency(totalAmount),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          expense['category'] as String,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
+        ),
+        const SizedBox(height: 24),
+        // Legend
+        Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: expenses.map((expense) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: expense['color'] as Color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  expense['category'] as String,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
         ),
       ],
     );
   }
 }
+

@@ -88,4 +88,7 @@ class API {
   // Notification APIs
   static const String getNotifications = 'api/NotificationsApi/notifications';
   static const String markNotificationRead = 'api/NotificationsApi/notification/read';
+  
+  // Dashboard APIs
+  static const String getDashboard = 'api/Dashboard/GetDashboard';
 }

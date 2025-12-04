@@ -8,6 +8,7 @@ import 'job_application_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../controllers/job_controller.dart';
 import '../../models/job_model.dart';
+import '../../widgets/custom_loader.dart';
 
 class JobsScreen extends StatefulWidget {
   const JobsScreen({super.key});
@@ -46,9 +47,7 @@ class _JobsScreenState extends State<JobsScreen> {
       ),
       body: Obx(() {
         if (jobController.isLoading.value && jobController.jobs.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const CustomLoader(message: "Loading jobs...");
         }
 
         if (jobController.jobs.isEmpty) {
@@ -167,7 +166,7 @@ class JobCard extends StatelessWidget {
                           height: 140,
                           color: Colors.grey[200],
                           child: const Center(
-                            child: CircularProgressIndicator(),
+                            child: const CustomLoader.small(),
                           ),
                         ),
                         errorWidget: (context, url, error) => Container(

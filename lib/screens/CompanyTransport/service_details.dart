@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/service_controller.dart';
 import '../../models/service_model.dart';
 import 'service_detail_popup.dart';
+import '../../widgets/custom_loader.dart';
 
 class ServiceDetailScreen extends StatefulWidget {
   const ServiceDetailScreen({super.key, required this.serviceId});
@@ -61,7 +62,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
         final service = serviceController.selectedService.value;
 
         if (isLoading && service == null) {
-          return const Center(child: CircularProgressIndicator());
+          return const CustomLoader(message: "Loading service details...");
         }
 
         if (service == null) {
@@ -108,7 +109,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
             if (isLoading)
               Container(
                 color: Colors.black.withOpacity(0.05),
-                child: const Center(child: CircularProgressIndicator()),
+                child: const CustomLoader.small(),
               ),
           ],
         );

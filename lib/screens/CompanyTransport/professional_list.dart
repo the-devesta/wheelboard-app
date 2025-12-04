@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/professional_list_controller.dart';
 import '../../models/professional_profile_model.dart';
 import '../../utils/constants.dart';
+import '../../widgets/custom_loader.dart';
 
 class ProfessionalListScreen extends StatefulWidget {
   const ProfessionalListScreen({super.key});
@@ -59,7 +60,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
+                return const CustomLoader(message: "Loading professionals...");
               }
 
               final professionals = controller.filteredProfessionals;
@@ -243,7 +244,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFF25C5C)),
+        child: const CustomLoader.small(),
       ),
     );
 

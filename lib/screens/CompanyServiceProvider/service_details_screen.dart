@@ -8,6 +8,7 @@ import '../../models/service_model.dart';
 import 'add_service_screen.dart';
 import 'booking_details_screen.dart';
 import 'dart:convert';
+import '../../widgets/custom_loader.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -71,7 +72,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: const Color(0xFFFFF4F4),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const CustomLoader(message: "Loading service details..."),
       );
     }
 

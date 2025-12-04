@@ -5,6 +5,7 @@ import '../../apihelperclass/api_helper.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'dart:convert';
+import '../../widgets/custom_loader.dart';
 
 class BookingDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -158,7 +159,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const CustomLoader(message: "Loading booking details...")
           : _bookingData == null
               ? Center(
                   child: Column(

@@ -9,6 +9,7 @@ import 'package:wheelboard/controllers/trip_page_controller.dart';
 import 'package:wheelboard/utils/session_manager.dart';
 import 'package:wheelboard/utils/navigation_helper.dart';
 import 'package:wheelboard/models/add_new_trip_model.dart';
+import '../../widgets/custom_loader.dart';
 
 class TripPage extends StatefulWidget {
   final int initialTabIndex;
@@ -176,7 +177,7 @@ class _TripPageState extends State<TripPage>
                         if (tripController.isTripsLoading.value) {
                           return const SizedBox(
                             height: 185,
-                            child: Center(child: CircularProgressIndicator()),
+                            child: const CustomLoader.small(),
                           );
                         }
                         if (recentTrips.isEmpty) {
@@ -611,7 +612,7 @@ class _TripsTabViews extends StatelessWidget {
         Obx(() {
           final completedTrips = tripController.getTripsByStatus('Completed');
           if (tripController.isTripsLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+            return const CustomLoader(message: "Loading trips...");
           }
           if (completedTrips.isEmpty) {
             return const Center(
@@ -639,7 +640,7 @@ class _TripsTabViews extends StatelessWidget {
         Obx(() {
           final inProcessTrips = tripController.getTripsByStatus('In-Process');
           if (tripController.isTripsLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+            return const CustomLoader(message: "Loading trips...");
           }
           if (inProcessTrips.isEmpty) {
             return const Center(
@@ -667,7 +668,7 @@ class _TripsTabViews extends StatelessWidget {
         Obx(() {
           final upcomingTrips = tripController.getTripsByStatus('Upcoming');
           if (tripController.isTripsLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+            return const CustomLoader(message: "Loading trips...");
           }
           if (upcomingTrips.isEmpty) {
             return const Center(
