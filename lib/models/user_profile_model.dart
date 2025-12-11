@@ -31,6 +31,9 @@ class UserProfileModel {
   final String? businessType;
   final String? businessLogoPath;
 
+  // KYC related fields
+  final bool? isKYCCompleted;
+
   UserProfileModel({
     required this.userId,
     required this.userType,
@@ -56,6 +59,8 @@ class UserProfileModel {
     this.businessName,
     this.businessType,
     this.businessLogoPath,
+    // KYC fields
+    this.isKYCCompleted,
   });
 
   /// Factory constructor to create from JSON
@@ -89,6 +94,8 @@ class UserProfileModel {
       businessName: json['businessName'] as String?,
       businessType: json['businessType'] as String?,
       businessLogoPath: json['businessLogoPath'] as String?,
+      // KYC fields
+      isKYCCompleted: json['isKYCCompleted'] as bool?,
     );
   }
 
@@ -119,6 +126,8 @@ class UserProfileModel {
       if (businessName != null) 'businessName': businessName,
       if (businessType != null) 'businessType': businessType,
       if (businessLogoPath != null) 'businessLogoPath': businessLogoPath,
+      // KYC fields
+      if (isKYCCompleted != null) 'isKYCCompleted': isKYCCompleted,
     };
   }
 

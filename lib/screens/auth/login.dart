@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
@@ -15,7 +14,6 @@ import '../auth/forget_password_screen.dart';
 import '../auth/service_provider_login.dart';
 
 import 'onboarding_screen.dart';
-
 
 class ProfessionLogin extends StatelessWidget {
   ProfessionLogin({super.key});
@@ -36,7 +34,9 @@ class ProfessionLogin extends StatelessWidget {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+              minHeight:
+                  MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top,
             ),
             child: IntrinsicHeight(
               child: Padding(
@@ -113,7 +113,8 @@ class ProfessionLogin extends StatelessWidget {
                             () => _buildInputField(
                               controller: passwordController,
                               hintText: "Enter your password",
-                              obscureText: loginController.obscurePassword.value,
+                              obscureText:
+                                  loginController.obscurePassword.value,
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   loginController.obscurePassword.value
@@ -222,19 +223,25 @@ class ProfessionLogin extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _buildTestLoginButton("Professional", () {
-                                  phoneController.text = "9304514789";
-                                  passwordController.text = "qqqqqq";
-                                  _performLogin();
-                                }),
+                                child: _buildTestLoginButton(
+                                  "Professional",
+                                  () {
+                                    phoneController.text = "9304514789";
+                                    passwordController.text = "qqqqqq";
+                                    _performLogin();
+                                  },
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _buildTestLoginButton("Service Provider", () {
-                                  phoneController.text = "9304514701";
-                                  passwordController.text = "qqqqqq";
-                                  _performLogin();
-                                }),
+                                child: _buildTestLoginButton(
+                                  "Service Provider",
+                                  () {
+                                    phoneController.text = "9304514701";
+                                    passwordController.text = "qqqqqq";
+                                    _performLogin();
+                                  },
+                                ),
                               ),
                             ],
                           ),
@@ -263,9 +270,7 @@ class ProfessionLogin extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         minimumSize: const Size(0, 0),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 0,
       ),
       child: FittedBox(
@@ -273,15 +278,11 @@ class ProfessionLogin extends StatelessWidget {
         child: Text(
           role,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ),
     );
   }
-
 
   /// Encapsulated login logic
   Future<void> _performLogin() async {
@@ -321,23 +322,28 @@ class ProfessionLogin extends StatelessWidget {
       );
 
       if (loginSuccess) {
-        SnackBarHelper.success("Login successful! Welcome back.");
+        // Note: Success toast is already shown by AuthService.login()
         if (businessCategory == "Transport" && !isProfileComplete) {
           // ✅ Get registration data from SessionManager
           final sessionManager = SessionManager();
           final registrationData = {
             "userId": userId,
-            "companyName": await sessionManager.getString("registration_companyName") ?? "",
+            "companyName":
+                await sessionManager.getString("registration_companyName") ??
+                "",
             "email": await sessionManager.getString("registration_email") ?? "",
-            "mobileNo": await sessionManager.getString("registration_mobileNo") ?? "",
-            "businessCategory": await sessionManager.getString("registration_businessCategory") ?? "Transport",
+            "mobileNo":
+                await sessionManager.getString("registration_mobileNo") ?? "",
+            "businessCategory":
+                await sessionManager.getString(
+                  "registration_businessCategory",
+                ) ??
+                "Transport",
           };
-          
-          Get.to(
-            CompanyCompleteProfile(),
-            arguments: registrationData,
-          );
-        } else if (businessCategory == "Service Provider" && !isProfileComplete) {
+
+          Get.to(CompanyCompleteProfile(), arguments: registrationData);
+        } else if (businessCategory == "Service Provider" &&
+            !isProfileComplete) {
           Get.to(
             AlliedBusinessRegistrationScreen(),
             arguments: {"userId": userId},
@@ -392,12 +398,7 @@ class ProfessionLogin extends StatelessWidget {
   Widget _buildDivider(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            color: const Color(0xFFEDF1F3),
-          ),
-        ),
+        Expanded(child: Container(height: 1, color: const Color(0xFFEDF1F3))),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -411,16 +412,10 @@ class ProfessionLogin extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: const Color(0xFFEDF1F3),
-          ),
-        ),
+        Expanded(child: Container(height: 1, color: const Color(0xFFEDF1F3))),
       ],
     );
   }
-
 
   Widget _buildInputField({
     required TextEditingController controller,

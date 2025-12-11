@@ -21,7 +21,8 @@ class API {
   static const String addTrip = 'api/Trip/add-trip';
   static const String getTripList = 'api/Trip/trip-list/';
   static const String getUnassignedTripList = 'api/Trip/unassign-trip-list';
-  static const String getUnassignedTripDetails = 'api/Trip/unassigned-trip-details/';
+  static const String getUnassignedTripDetails =
+      'api/Trip/unassigned-trip-details/';
   static const String submitBid = 'api/Trip/submit-bid';
   static const String getTripBids = 'api/Trip/get-trip-bids/';
   static const String assignTrip = 'api/Trip/assign-trip/';
@@ -29,40 +30,47 @@ class API {
   static const String createTripOrder = 'api/Trip/create-order';
   static const String verifyTripPayment = 'api/Trip/verify-payment';
   static const String getTripConfirmation = 'api/Trip/confirmation/';
-  
+
   // Professional Management
   static const String professionalList = 'api/Transport/professional-list/';
-  static const String professionalDetails = 'api/Transport/professional-details/';
-  
+  static const String professionalDetails =
+      'api/Transport/professional-details/';
+
   // Profile Update APIs
   static const String updateProfessionalProfile =
       'api/User/update-professional-profile';
   static const String updateTransportProfile =
       'api/User/update-transport-profile';
-  
+
   // Service APIs
   static const String serviceList = 'api/Service/service-list';
-  static const String serviceListByUser = 'api/Service/service-list/'; // With userId
+  static const String serviceListByUser =
+      'api/Service/service-list/'; // With userId
   static const String serviceDetail = 'api/Service/details/';
-  static const String serviceAssignList = 'api/Service/service-assign-list'; // With serviceId query param
+  static const String serviceAssignList =
+      'api/Service/service-assign-list'; // With serviceId query param
   static const String assignService = 'api/Service/assign-service';
   static const String addService = 'api/Service/add-service';
   static const String updateService = 'api/Service/update-service';
-  static const String deleteService = 'api/Service'; // Base path, will append /{serviceId}/user/{userId}/delete
-  static const String cancelService = 'api/Service/cancel-service'; // With assignmentId query param
-  static const String updateServiceStatus = 'api/Service/update-service-status'; // With assignmentId and status query params
-  static const String completeService = 'api/Service/complete-service'; // With assignmentId query param
-  
+  static const String deleteService =
+      'api/Service'; // Base path, will append /{serviceId}/user/{userId}/delete
+  static const String cancelService =
+      'api/Service/cancel-service'; // With assignmentId query param
+  static const String updateServiceStatus =
+      'api/Service/update-service-status'; // With assignmentId and status query params
+  static const String completeService =
+      'api/Service/complete-service'; // With assignmentId query param
+
   // Vehicle and Driver Details APIs
   static const String getVehicleDetails = 'api/VehicleApi/GetVehicleDetails';
   static const String getLicenseDetails = 'api/VehicleApi/GetLicenceDetails';
   static const String getVehicleDetailsById = 'api/Transport/vehicle-details/';
-  
+
   // Post APIs
   static const String createPost = 'api/Post/add';
   // static const String getUserPosts = 'api/Post/user/';
-    static const String getAllPost = 'api/Post/get-all-post';
-  
+  static const String getAllPost = 'api/Post/get-all-post';
+
   // Job APIs
   static const String getAppliedJobs = 'api/Job/applied-jobs/';
   static const String getOpenJobs = 'api/Job/open-job-list';
@@ -73,22 +81,26 @@ class API {
   static const String toggleJobLike = 'api/Job/job-like-toggle';
   static const String getJobApplications = 'api/Job/get-applications/';
   static const String updateJobStatus = 'api/Job/update-job-status';
-  
-
-
 
   // Calendar Events APIs
   static const String saveCalendarEvent = 'api/Trip/save-calendar-events';
   static const String getEventsByUserId = 'api/Trip/get-events-by-userId/';
-  
+
   // Expense APIs
   static const String getExpensePurposes = 'api/Trip/trip_expense_purposes';
   static const String saveTripExpense = 'api/Trip/trip_expense_save';
-  
+
   // Notification APIs
   static const String getNotifications = 'api/NotificationsApi/notifications';
-  static const String markNotificationRead = 'api/NotificationsApi/notification/read';
-  
+  static const String markNotificationRead =
+      'api/NotificationsApi/notification/read';
+
   // Dashboard APIs
   static const String getDashboard = 'api/Dashboard/GetDashboard';
+
+  // Vehicle Lease APIs
+  static const String addVehicleLease = 'api/Transport/AddVehicleLease';
+
+  // KYC Verification APIs
+  static const String verifyDrivingLicence = 'api/User/VerifyDrivingLicenceKYC';
 }

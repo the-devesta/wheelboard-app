@@ -5,6 +5,7 @@ import '../../utils/constants.dart';
 import '../../services/auth_service.dart';
 import '../../models/Professional/open_job_model.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../utils/kyc_helper.dart';
 
 class OpenJobsController extends GetxController {
   var isLoading = false.obs;
@@ -30,7 +31,7 @@ class OpenJobsController extends GetxController {
       print("💼 User ID: $userId");
 
       // Build endpoint with userId query parameter
-      final endpoint = userId.isNotEmpty 
+      final endpoint = userId.isNotEmpty
           ? '${API.getOpenJobs}?userId=$userId'
           : API.getOpenJobs;
 
@@ -44,11 +45,16 @@ class OpenJobsController extends GetxController {
       );
 
       print("💼 Open jobs response status: ${response.statusCode}");
-      print("💼 Open jobs response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}");
+      print(
+        "💼 Open jobs response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
+      );
 
       // Check if response is HTML (error page)
-      if (response.body.trim().startsWith('<!DOCTYPE') || response.body.trim().startsWith('<html')) {
-        print("❌ Server returned HTML instead of JSON - API endpoint may be incorrect");
+      if (response.body.trim().startsWith('<!DOCTYPE') ||
+          response.body.trim().startsWith('<html')) {
+        print(
+          "❌ Server returned HTML instead of JSON - API endpoint may be incorrect",
+        );
         SnackBarHelper.error("Server error: Please try again later");
         openJobs.value = []; // Clear jobs list
         return;
@@ -69,7 +75,10 @@ class OpenJobsController extends GetxController {
         // Try to parse error message if it's JSON
         try {
           final errorData = json.decode(response.body);
-          final errorMessage = errorData['message'] ?? errorData['error'] ?? "Failed to load jobs";
+          final errorMessage =
+              errorData['message'] ??
+              errorData['error'] ??
+              "Failed to load jobs";
           SnackBarHelper.error(errorMessage);
         } catch (e) {
           SnackBarHelper.error("Failed to load jobs (${response.statusCode})");
@@ -99,15 +108,17 @@ class OpenJobsController extends GetxController {
         return false;
       }
 
+      // Check KYC status before applying
+      if (!KYCHelper.checkAndShowKYCDialog()) {
+        return false;
+      }
+
       print("📝 Applying for job: $jobId");
       print("📝 User ID: $userId");
 
       final response = await HttpHelper.postData(
         endpoint: API.applyJob,
-        data: {
-          "jobId": jobId,
-          "userId": userId,
-        },
+        data: {"jobId": jobId, "userId": userId},
         headers: {
           if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -126,9 +137,10 @@ class OpenJobsController extends GetxController {
         print("❌ Failed to apply for job: ${response.statusCode}");
         try {
           final errorData = json.decode(response.body);
-          final errorMessage = errorData['message'] ?? 
-                              errorData['error'] ?? 
-                              "Failed to apply for job";
+          final errorMessage =
+              errorData['message'] ??
+              errorData['error'] ??
+              "Failed to apply for job";
           SnackBarHelper.error(errorMessage);
         } catch (e) {
           SnackBarHelper.error("Failed to apply for job");
@@ -166,6 +178,11 @@ class OpenJobsController extends GetxController {
         return false;
       }
 
+      // Check KYC status before liking
+      if (!KYCHelper.checkAndShowKYCDialog()) {
+        return false;
+      }
+
       print("👍 Toggling like for job: $jobId");
       print("👍 User ID: $userId");
 
@@ -192,8 +209,10 @@ class OpenJobsController extends GetxController {
           final job = openJobs[jobIndex];
           // Toggle the like status and update count
           final newIsLiked = !job.isLiked;
-          final newLikeCount = newIsLiked ? job.likeCount + 1 : job.likeCount - 1;
-          
+          final newLikeCount = newIsLiked
+              ? job.likeCount + 1
+              : job.likeCount - 1;
+
           // Create updated job
           final updatedJob = OpenJob(
             jobId: job.jobId,
@@ -209,7 +228,7 @@ class OpenJobsController extends GetxController {
             likeCount: newLikeCount >= 0 ? newLikeCount : 0,
             isLiked: newIsLiked,
           );
-          
+
           // Update the job in the list
           openJobs[jobIndex] = updatedJob;
           print("✅ Successfully toggled like for job: $jobId");
@@ -219,9 +238,10 @@ class OpenJobsController extends GetxController {
         print("❌ Failed to toggle like: ${response.statusCode}");
         try {
           final errorData = json.decode(response.body);
-          final errorMessage = errorData['message'] ?? 
-                              errorData['error'] ?? 
-                              "Failed to toggle like";
+          final errorMessage =
+              errorData['message'] ??
+              errorData['error'] ??
+              "Failed to toggle like";
           SnackBarHelper.error(errorMessage);
         } catch (e) {
           SnackBarHelper.error("Failed to toggle like");
@@ -235,4 +255,3 @@ class OpenJobsController extends GetxController {
     }
   }
 }
-

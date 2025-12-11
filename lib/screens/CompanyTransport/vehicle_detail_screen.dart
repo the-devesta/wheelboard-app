@@ -6,6 +6,7 @@ import '../../controllers/main_wrapper_controller.dart';
 import '../../controllers/fleet_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
+import 'add_vehicle_lease_screen.dart';
 
 class VehicleDetailScreen extends StatefulWidget {
   final Vehicle vehicle;
@@ -26,22 +27,28 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     _loadVehicleDetails();
     // Set initial status based on vehicle status, default to Assigned if available
     final status = widget.vehicle.status.toLowerCase();
-    if (status == 'assigned' || status == 'in-transit' || status == 'available') {
+    if (status == 'assigned' ||
+        status == 'in-transit' ||
+        status == 'available') {
       _selectedStatus = widget.vehicle.status;
     } else {
-      _selectedStatus = 'Assigned'; // Default to Assigned as shown in screenshot
+      _selectedStatus =
+          'Assigned'; // Default to Assigned as shown in screenshot
     }
   }
 
   Future<void> _loadVehicleDetails() async {
     final sessionManager = SessionManager();
     final token = await sessionManager.getString("authToken");
-    
+
     if (token != null && token.isNotEmpty) {
-      await _fleetController.fetchVehicleDetails(widget.vehicle.vehicleId, token);
+      await _fleetController.fetchVehicleDetails(
+        widget.vehicle.vehicleId,
+        token,
+      );
     }
   }
-  
+
   @override
   void dispose() {
     // Clean up if needed
@@ -53,424 +60,426 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     return Obx(() {
       // Get vehicle info from API or fallback to widget.vehicle
       final vehicleDetails = _fleetController.vehicleDetails.value;
-      final vehicleInfo = vehicleDetails?.data.vehicleInfo ?? VehicleInfo(
-        vehicleId: widget.vehicle.vehicleId,
-        vehicleModel: widget.vehicle.vehicleModel,
-        vehicleNumber: widget.vehicle.vehicleNumber,
-        manufacturingYear: widget.vehicle.manufacturingYear,
-        status: widget.vehicle.status,
-      );
-      
+      final vehicleInfo =
+          vehicleDetails?.data.vehicleInfo ??
+          VehicleInfo(
+            vehicleId: widget.vehicle.vehicleId,
+            vehicleModel: widget.vehicle.vehicleModel,
+            vehicleNumber: widget.vehicle.vehicleNumber,
+            manufacturingYear: widget.vehicle.manufacturingYear,
+            status: widget.vehicle.status,
+          );
+
       // Get current status from API or use selected status
-      final currentStatus = vehicleInfo.status.isNotEmpty 
-          ? vehicleInfo.status 
+      final currentStatus = vehicleInfo.status.isNotEmpty
+          ? vehicleInfo.status
           : _selectedStatus;
-      
+
       // Get vehicle image
       final vehicleImage = widget.vehicle.imageUrls.isNotEmpty
           ? widget.vehicle.imageUrls.first
           : 'assets/truckImg.png';
-      
+
       // Get driver info
       final driverInfo = vehicleDetails?.data.driverInfo;
-      final hasDriver = driverInfo != null && 
-                        driverInfo.driverId != null && 
-                        driverInfo.driverName.isNotEmpty;
-      
+      final hasDriver =
+          driverInfo != null &&
+          driverInfo.driverId != null &&
+          driverInfo.driverName.isNotEmpty;
+
       // Get recent trips
       final recentTrips = vehicleDetails?.data.recentTrips ?? [];
 
       return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3),
-      body: Stack(
-        children: [
-          // Vehicle Image Header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 404,
-            child: Stack(
-              children: [
-                // Background Image
-                Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  color: const Color(0xFFDFE6E9),
-                  child: vehicleImage.startsWith('http')
-                      ? Image.network(
-                          vehicleImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Icon(
-                                Icons.local_shipping,
-                                size: 100,
-                                color: Colors.grey,
-                              ),
-                            );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const CustomLoader.small();
-                          },
-                        )
-                      : vehicleImage.isNotEmpty && vehicleImage != 'assets/truckImg.png'
-                          ? Image.asset(
-                              vehicleImage,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Center(
-                                  child: Icon(
-                                    Icons.local_shipping,
-                                    size: 100,
-                                    color: Colors.grey,
-                                  ),
-                                );
-                              },
-                            )
-                          : const Center(
-                              child: Icon(
-                                Icons.local_shipping,
-                                size: 100,
-                                color: Colors.grey,
-                              ),
-                            ),
-                ),
-                // Vehicle Info Badge (positioned at 91px AppBar + 133.5px = 224.5px from top)
-                Positioned(
-                  left: 16,
-                  top: 224.5,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.87),
-                      borderRadius: BorderRadius.circular(9999),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.5),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          vehicleInfo.vehicleModel,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: Color(0xFF2D3436),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          '|',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            color: Color(0xFF636E72),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          vehicleInfo.vehicleNumber,
-                          style: const TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: 13,
-                            color: Color(0xFF636E72),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10E445),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            size: 12,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Owned Badge
-                Positioned(
-                  top: 103,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF5E5E),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: const Text(
-                      'Owned',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 10,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Main Content
-          Positioned(
-            top: 278,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 38.952,
-                    offset: Offset(0, 24.484),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Year of Manufacture and Delete Vehicle in same row
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Year of Manufacture
-                          Padding(
-                            padding: const EdgeInsets.only(left: 19),
-                            child: RichText(
-                              text: TextSpan(
-                                style: const TextStyle(
-                                  fontFamily: 'Roboto',
-                                  fontSize: 14,
-                                  color: Color(0xFF636E72),
-                                ),
-                                children: [
-                                  const TextSpan(text: 'Year of Manufacture: '),
-                                  TextSpan(
-                                    text: vehicleInfo.manufacturingYear.toString(),
-                                    style: const TextStyle(
-                                      fontFamily: 'Roboto',
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF636E72),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Delete Vehicle Button
-                          GestureDetector(
-                            onTap: () {
-                              Get.dialog(
-                                AlertDialog(
-                                  title: const Text('Delete Vehicle'),
-                                  content: const Text('Are you sure you want to delete this vehicle?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Get.back(),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Get.back();
-                                        Get.back();
-                                      },
-                                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
+        backgroundColor: const Color(0xFFF4E3E3),
+        body: Stack(
+          children: [
+            // Vehicle Image Header
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 404,
+              child: Stack(
+                children: [
+                  // Background Image
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: const Color(0xFFDFE6E9),
+                    child: vehicleImage.startsWith('http')
+                        ? Image.network(
+                            vehicleImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.local_shipping,
+                                  size: 100,
+                                  color: Colors.grey,
                                 ),
                               );
                             },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'Delete Vehicle',
-                                  style: TextStyle(
-                                    fontFamily: 'Roboto',
-                                    fontSize: 14,
-                                    color: Color(0xFF636E72),
-                                  ),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const CustomLoader.small();
+                            },
+                          )
+                        : vehicleImage.isNotEmpty &&
+                              vehicleImage != 'assets/truckImg.png'
+                        ? Image.asset(
+                            vehicleImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.local_shipping,
+                                  size: 100,
+                                  color: Colors.grey,
                                 ),
-                                const SizedBox(width: 4),
-                                Image.asset(
-                                  'assets/icons/delete.png',
-                                  width: 14,
-                                  height: 14,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(
-                                        Icons.delete_outline,
-                                        size: 14,
-                                        color: Color(0xFF636E72),
-                                      ),
-                                ),
-                              ],
+                              );
+                            },
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.local_shipping,
+                              size: 100,
+                              color: Colors.grey,
+                            ),
+                          ),
+                  ),
+                  // Vehicle Info Badge (positioned at 91px AppBar + 133.5px = 224.5px from top)
+                  Positioned(
+                    left: 16,
+                    top: 224.5,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.87),
+                        borderRadius: BorderRadius.circular(9999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.5),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            vehicleInfo.vehicleModel,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: Color(0xFF2D3436),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '|',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: Color(0xFF636E72),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            vehicleInfo.vehicleNumber,
+                            style: const TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 13,
+                              color: Color(0xFF636E72),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10E445),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 12,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 12),
-
-                    // Driver Assigned Section (if driver is assigned) or Available/Off Lease Toggle
-                    if (hasDriver)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          constraints: const BoxConstraints(minHeight: 45),
-                          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFC7DCDA),
-                            borderRadius: BorderRadius.circular(72),
+                  ),
+                  // Owned Badge
+                  Positioned(
+                    top: 103,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5E5E),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
                           ),
-                          child: Row(
-                            children: [
-                              // Driver Info Section (Left side)
-                              Expanded(
-                                flex: 2,
-                                child: Row(
+                        ],
+                      ),
+                      child: const Text(
+                        'Owned',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w500,
+                          fontSize: 10,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Main Content
+            Positioned(
+              top: 278,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 38.952,
+                      offset: Offset(0, 24.484),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Year of Manufacture and Delete Vehicle in same row
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Year of Manufacture
+                            Padding(
+                              padding: const EdgeInsets.only(left: 19),
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                    fontFamily: 'Roboto',
+                                    fontSize: 14,
+                                    color: Color(0xFF636E72),
+                                  ),
                                   children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.grey[200]!,
-                                          width: 1,
+                                    const TextSpan(
+                                      text: 'Year of Manufacture: ',
+                                    ),
+                                    TextSpan(
+                                      text: vehicleInfo.manufacturingYear
+                                          .toString(),
+                                      style: const TextStyle(
+                                        fontFamily: 'Roboto',
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF636E72),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Delete Vehicle Button
+                            GestureDetector(
+                              onTap: () {
+                                Get.dialog(
+                                  AlertDialog(
+                                    title: const Text('Delete Vehicle'),
+                                    content: const Text(
+                                      'Are you sure you want to delete this vehicle?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Get.back(),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Get.back();
+                                          Get.back();
+                                        },
+                                        child: const Text(
+                                          'Delete',
+                                          style: TextStyle(color: Colors.red),
                                         ),
                                       ),
-                                      child: ClipOval(
-                                        child: driverInfo.driverImage != null && driverInfo.driverImage!.isNotEmpty
-                                            ? Image.network(
-                                                driverInfo.driverImage!,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) =>
-                                                    const Icon(Icons.person, size: 24),
-                                              )
-                                            : Image.asset(
-                                                'assets/google.png',
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) =>
-                                                    const Icon(Icons.person, size: 24),
-                                              ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text(
-                                            'Driver Assigned',
-                                            style: TextStyle(
-                                              fontFamily: 'Roboto',
-                                              fontSize: 13,
-                                              color: Color(0xFF636E72),
-                                              height: 1.2,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            driverInfo.driverName,
-                                            style: const TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 15,
-                                              color: Color(0xFF2D3436),
-                                              height: 1.2,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Change Driver Button
-                              Container(
-                                height: 28,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF00B894),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.white.withOpacity(0.5),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Change Driver',
+                                    ],
+                                  ),
+                                );
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'Delete Vehicle',
                                     style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                      color: Colors.white,
+                                      fontFamily: 'Roboto',
+                                      fontSize: 14,
+                                      color: Color(0xFF636E72),
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(width: 4),
+                                  Image.asset(
+                                    'assets/icons/delete.png',
+                                    width: 14,
+                                    height: 14,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              Icons.delete_outline,
+                                              size: 14,
+                                              color: Color(0xFF636E72),
+                                            ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          height: 45,
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFC7DCDA),
-                            borderRadius: BorderRadius.circular(72),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Container(
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Driver Assigned Section (if driver is assigned) or Available/Off Lease Toggle
+                      if (hasDriver)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 45),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 2,
+                              horizontal: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC7DCDA),
+                              borderRadius: BorderRadius.circular(72),
+                            ),
+                            child: Row(
+                              children: [
+                                // Driver Info Section (Left side)
+                                Expanded(
+                                  flex: 2,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.grey[200]!,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: ClipOval(
+                                          child:
+                                              driverInfo.driverImage != null &&
+                                                  driverInfo
+                                                      .driverImage!
+                                                      .isNotEmpty
+                                              ? Image.network(
+                                                  driverInfo.driverImage!,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) => const Icon(
+                                                        Icons.person,
+                                                        size: 24,
+                                                      ),
+                                                )
+                                              : Image.asset(
+                                                  'assets/google.png',
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) => const Icon(
+                                                        Icons.person,
+                                                        size: 24,
+                                                      ),
+                                                ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text(
+                                              'Driver Assigned',
+                                              style: TextStyle(
+                                                fontFamily: 'Roboto',
+                                                fontSize: 13,
+                                                color: Color(0xFF636E72),
+                                                height: 1.2,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Text(
+                                              driverInfo.driverName,
+                                              style: const TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 15,
+                                                color: Color(0xFF2D3436),
+                                                height: 1.2,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Change Driver Button
+                                Container(
                                   height: 28,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF00B894),
                                     borderRadius: BorderRadius.circular(12),
@@ -484,7 +493,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                   ),
                                   child: const Center(
                                     child: Text(
-                                      'Available',
+                                      'Change Driver',
                                       style: TextStyle(
                                         fontFamily: 'Poppins',
                                         fontWeight: FontWeight.w600,
@@ -494,319 +503,463 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                    const SizedBox(height: 8),
-
-                    // Status Toggle Section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 9),
-                            child: Text(
-                              'Status',
-                              style: TextStyle(
-                                fontFamily: 'Roboto',
-                                fontSize: 14,
-                                color: Color(0xFF535353),
-                              ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Container(
-                            height: 34,
+                        )
+                      else
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Container(
+                            height: 45,
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF5F6FA),
-                              borderRadius: BorderRadius.circular(9999),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                              color: const Color(0xFFC7DCDA),
+                              borderRadius: BorderRadius.circular(72),
                             ),
                             child: Row(
                               children: [
-                                _buildStatusButton('In-Transit', const Color(0xFF00B894), 0, currentStatus),
-                                _buildStatusButton('Assigned', const Color(0xFF0984E3), 1, currentStatus),
-                                _buildStatusButton('Available', const Color(0xFF10E445), 2, currentStatus),
+                                // Available Button (Left side)
+                                Expanded(
+                                  child: Container(
+                                    height: 37,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00B894),
+                                      borderRadius: BorderRadius.circular(24),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.white.withOpacity(0.5),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'Available',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // OFF Lease Toggle (Right side)
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      // Navigate to Add Vehicle Lease Screen
+                                      Get.to(
+                                        () => AddVehicleLeaseScreen(
+                                          preselectedVehicle: widget.vehicle,
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      height: 37,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            'OFF Lease',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 12,
+                                              color: Color(0xFFF26868),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          // Toggle Switch
+                                          Container(
+                                            width: 40,
+                                            height: 22,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFE0E0E0),
+                                              borderRadius:
+                                                  BorderRadius.circular(11),
+                                            ),
+                                            child: Stack(
+                                              children: [
+                                                Positioned(
+                                                  left: 2,
+                                                  top: 2,
+                                                  child: Container(
+                                                    width: 18,
+                                                    height: 18,
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                          color: Colors.white,
+                                                          shape:
+                                                              BoxShape.circle,
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: Color(
+                                                                0x29000000,
+                                                              ),
+                                                              blurRadius: 2,
+                                                              offset: Offset(
+                                                                0,
+                                                                1,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 8),
 
-                    // Stats Cards
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              'Avg. Run',
-                              '15,002 KM',
-                              const Color(0xFF00B894),
-                              Icons.speed,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildStatCard(
-                              'Trip Efficiency',
-                              'Rs. 3 / KM',
-                              const Color(0xFFFF6B6B),
-                              Icons.trending_up,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 39),
-                              child: const Text(
-                                'Monthly Usage',
+                      // Status Toggle Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(left: 9),
+                              child: Text(
+                                'Status',
                                 style: TextStyle(
                                   fontFamily: 'Roboto',
                                   fontSize: 14,
-                                  color: Color(0xFF2D3436),
+                                  color: Color(0xFF535353),
                                 ),
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 47),
-                              child: const Text(
-                                'Cost per KM',
-                                style: TextStyle(
-                                  fontFamily: 'Roboto',
-                                  fontSize: 14,
-                                  color: Color(0xFF2D3436),
-                                ),
+                            const SizedBox(height: 8),
+                            Container(
+                              height: 34,
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF5F6FA),
+                                borderRadius: BorderRadius.circular(9999),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  _buildStatusButton(
+                                    'In-Transit',
+                                    const Color(0xFF00B894),
+                                    0,
+                                    currentStatus,
+                                  ),
+                                  _buildStatusButton(
+                                    'Assigned',
+                                    const Color(0xFF0984E3),
+                                    1,
+                                    currentStatus,
+                                  ),
+                                  _buildStatusButton(
+                                    'Available',
+                                    const Color(0xFF10E445),
+                                    2,
+                                    currentStatus,
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                    // Recent Trips Section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Recent Trips:',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 18,
-                                  color: Color(0xFF2D3436),
-                                ),
+                      // Stats Cards
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Avg. Run',
+                                '15,002 KM',
+                                const Color(0xFF00B894),
+                                Icons.speed,
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  // Navigate to trips screen
-                                },
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Trip Efficiency',
+                                'Rs. 3 / KM',
+                                const Color(0xFFFF6B6B),
+                                Icons.trending_up,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 39),
                                 child: const Text(
-                                  'View More',
+                                  'Monthly Usage',
                                   style: TextStyle(
                                     fontFamily: 'Roboto',
                                     fontSize: 14,
-                                    color: Color(0xFF0984E3),
+                                    color: Color(0xFF2D3436),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _fleetController.isVehicleDetailsLoading.value
-                              ? const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(20.0),
-                                    child: const CustomLoader.small(),
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 47),
+                                child: const Text(
+                                  'Cost per KM',
+                                  style: TextStyle(
+                                    fontFamily: 'Roboto',
+                                    fontSize: 14,
+                                    color: Color(0xFF2D3436),
                                   ),
-                                )
-                              : recentTrips.isEmpty
-                                  ? const Padding(
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Recent Trips Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Recent Trips:',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 18,
+                                    color: Color(0xFF2D3436),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    // Navigate to trips screen
+                                  },
+                                  child: const Text(
+                                    'View More',
+                                    style: TextStyle(
+                                      fontFamily: 'Roboto',
+                                      fontSize: 14,
+                                      color: Color(0xFF0984E3),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _fleetController.isVehicleDetailsLoading.value
+                                ? const Center(
+                                    child: Padding(
                                       padding: EdgeInsets.all(20.0),
-                                      child: Center(
-                                        child: Text(
-                                          'No recent trips found',
-                                          style: TextStyle(
-                                            fontFamily: 'Roboto',
-                                            fontSize: 14,
-                                            color: Color(0xFF636E72),
-                                          ),
+                                      child: const CustomLoader.small(),
+                                    ),
+                                  )
+                                : recentTrips.isEmpty
+                                ? const Padding(
+                                    padding: EdgeInsets.all(20.0),
+                                    child: Center(
+                                      child: Text(
+                                        'No recent trips found',
+                                        style: TextStyle(
+                                          fontFamily: 'Roboto',
+                                          fontSize: 14,
+                                          color: Color(0xFF636E72),
                                         ),
                                       ),
-                                    )
-                                  : Column(
-                                      children: recentTrips.take(3).map((trip) {
-                                        return _buildRecentTripCard(
-                                          trip.tripCode,
-                                          trip.getRoute(),
-                                          driverInfo?.driverImage ?? 'assets/google.png',
-                                        );
-                                      }).toList(),
                                     ),
-                        ],
+                                  )
+                                : Column(
+                                    children: recentTrips.take(3).map((trip) {
+                                      return _buildRecentTripCard(
+                                        trip.tripCode,
+                                        trip.getRoute(),
+                                        driverInfo?.driverImage ??
+                                            'assets/google.png',
+                                      );
+                                    }).toList(),
+                                  ),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 100), // Space for bottom nav and schedule button
-                  ],
+                      const SizedBox(
+                        height: 100,
+                      ), // Space for bottom nav and schedule button
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // App Bar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 91,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(
-                    color: const Color(0xFFFCD2D2),
-                    width: 1,
+            // App Bar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 91,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: const Color(0xFFFCD2D2),
+                      width: 1,
+                    ),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.25),
+                      blurRadius: 4,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
-                    blurRadius: 4,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Vehicle Number - Centered
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 63),
-                      child: Text(
-                        vehicleInfo.vehicleNumber,
-                        style: const TextStyle(
-                          fontFamily: 'Roboto',
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                          color: Color(0xFF636E72),
+                child: Stack(
+                  children: [
+                    // Vehicle Number - Centered
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 63),
+                        child: Text(
+                          vehicleInfo.vehicleNumber,
+                          style: const TextStyle(
+                            fontFamily: 'Roboto',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                            color: Color(0xFF636E72),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  // Back Button
-                  Positioned(
-                    left: 27,
-                    top: 55,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.black,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  // Close Button
-                  Positioned(
-                    right: 16,
-                    top: 51,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 20,
-                        height: 20,
+                    // Back Button
+                    Positioned(
+                      left: 27,
+                      top: 55,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
                         child: const Icon(
-                          Icons.close,
+                          Icons.arrow_back,
                           color: Colors.black,
                           size: 18,
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Schedule Button
-          Positioned(
-            bottom: 100,
-            right: 16,
-            child: ElevatedButton(
-              onPressed: () {
-                // Navigate to schedule screen
-                // Get.to(() => ScheduleScreen());
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF26868),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 6,
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Schedule ',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w500,
-                      fontSize: 15,
-                      color: Colors.white,
+                    // Close Button
+                    Positioned(
+                      right: 16,
+                      top: 51,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.black,
+                            size: 18,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  Icon(
-                    Icons.calendar_today,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNavBar(),
-    );
+
+            // Schedule Button
+            Positioned(
+              bottom: 100,
+              right: 16,
+              child: ElevatedButton(
+                onPressed: () {
+                  // Navigate to schedule screen
+                  // Get.to(() => ScheduleScreen());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF26868),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 6,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Schedule ',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Icon(Icons.calendar_today, size: 20, color: Colors.white),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: _buildBottomNavBar(),
+      );
     });
   }
 
-  Widget _buildStatusButton(String label, Color color, int index, String currentStatus) {
+  Widget _buildStatusButton(
+    String label,
+    Color color,
+    int index,
+    String currentStatus,
+  ) {
     final isSelected = currentStatus.toLowerCase() == label.toLowerCase();
     return Expanded(
       child: GestureDetector(
@@ -823,10 +976,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           decoration: BoxDecoration(
             color: isSelected
                 ? (index == 1
-                    ? color.withOpacity(0.1)
-                    : index == 0
-                        ? Colors.transparent
-                        : color.withOpacity(0.1))
+                      ? color.withOpacity(0.1)
+                      : index == 0
+                      ? Colors.transparent
+                      : color.withOpacity(0.1))
                 : Colors.transparent,
             border: isSelected && index == 1
                 ? Border.all(color: color, width: 1)
@@ -889,7 +1042,12 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
+  Widget _buildStatCard(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -924,11 +1082,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: color,
-                ),
+                child: Icon(icon, size: 18, color: color),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -1015,11 +1169,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
               ],
             ),
           ),
-          const Icon(
-            Icons.chevron_right,
-            size: 18,
-            color: Color(0xFF636E72),
-          ),
+          const Icon(Icons.chevron_right, size: 18, color: Color(0xFF636E72)),
         ],
       ),
     );
@@ -1034,10 +1184,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           topLeft: Radius.circular(18),
           topRight: Radius.circular(18),
         ),
-        border: Border.all(
-          color: const Color(0xFFE4E8EB),
-          width: 0.5,
-        ),
+        border: Border.all(color: const Color(0xFFE4E8EB), width: 0.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.09),
@@ -1081,7 +1228,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
               fontFamily: 'Poppins',
               fontWeight: FontWeight.w500,
               fontSize: isActive ? 11 : 12,
-              color: isActive ? const Color(0xFFFF5E5E) : const Color(0xFF535353),
+              color: isActive
+                  ? const Color(0xFFFF5E5E)
+                  : const Color(0xFF535353),
             ),
           ),
           if (isActive)
@@ -1099,4 +1248,3 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     );
   }
 }
-

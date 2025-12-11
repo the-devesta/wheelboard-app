@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/profile_service.dart';
 import '../../../widgets/custom_snackbar.dart';
 import '../../../controllers/user_profile_controller.dart';
 import '../../../models/user_profile_model.dart';
@@ -16,7 +17,7 @@ class YourProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Initialize controller
     final controller = Get.put(UserProfileController());
-    
+
     // Fetch profile on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.fetchCurrentUserProfile();
@@ -51,7 +52,7 @@ class YourProfileScreen extends StatelessWidget {
           }
 
           final profile = controller.userProfile.value;
-          
+
           return Column(
             children: [
               _buildHeader(context),
@@ -170,8 +171,13 @@ class YourProfileScreen extends StatelessWidget {
                   height: 96,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFF36969), width: 4),
-                    image: profile?.profileImagePath != null && profile!.profileImagePath!.isNotEmpty
+                    border: Border.all(
+                      color: const Color(0xFFF36969),
+                      width: 4,
+                    ),
+                    image:
+                        profile?.profileImagePath != null &&
+                            profile!.profileImagePath!.isNotEmpty
                         ? DecorationImage(
                             image: NetworkImage(profile.profileImagePath!),
                             fit: BoxFit.cover,
@@ -180,11 +186,15 @@ class YourProfileScreen extends StatelessWidget {
                             },
                           )
                         : null,
-                    color: profile?.profileImagePath == null || profile!.profileImagePath!.isEmpty
+                    color:
+                        profile?.profileImagePath == null ||
+                            profile!.profileImagePath!.isEmpty
                         ? Colors.grey[300]
                         : null,
                   ),
-                  child: profile?.profileImagePath == null || profile!.profileImagePath!.isEmpty
+                  child:
+                      profile?.profileImagePath == null ||
+                          profile!.profileImagePath!.isEmpty
                       ? const Icon(Icons.person, size: 50, color: Colors.grey)
                       : null,
                 ),
@@ -204,7 +214,11 @@ class YourProfileScreen extends StatelessWidget {
                         BorderSide(color: Colors.white, width: 2),
                       ),
                     ),
-                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -220,7 +234,8 @@ class YourProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          if (profile?.professionalType != null && profile!.professionalType!.isNotEmpty)
+          if (profile?.professionalType != null &&
+              profile!.professionalType!.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -259,30 +274,66 @@ class YourProfileScreen extends StatelessWidget {
   }
 
   Widget _buildKycBanner() {
+    final controller = Get.find<UserProfileController>();
+    final profile = controller.userProfile.value;
+    // Check if KYC is completed from the profile
+    final isKycComplete = profile?.isKYCCompleted ?? false;
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        color: isKycComplete ? Colors.green.shade50 : Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isKycComplete ? Colors.green : Colors.red,
+          width: 2,
+        ),
       ),
       child: Row(
         children: [
-          const Text('🔒', style: TextStyle(fontSize: 18)),
+          Icon(
+            isKycComplete ? Icons.verified : Icons.warning_rounded,
+            color: isKycComplete ? Colors.green : Colors.red,
+            size: 32,
+          ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'Complete your KYC to unlock full access',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF424242),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isKycComplete ? 'KYC Verified' : '⚠️ Complete Your KYC',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isKycComplete
+                        ? Colors.green.shade800
+                        : Colors.red.shade800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isKycComplete
+                      ? 'You can now apply for jobs and submit bids'
+                      : 'Complete KYC to apply for jobs and submit bids',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: isKycComplete
+                        ? Colors.green.shade700
+                        : Colors.red.shade700,
+                  ),
+                ),
+              ],
             ),
           ),
-          const Icon(Icons.chevron_right, size: 16),
+          Icon(
+            Icons.chevron_right,
+            color: isKycComplete ? Colors.green : Colors.red,
+            size: 20,
+          ),
         ],
       ),
     );
@@ -315,10 +366,7 @@ class YourProfileScreen extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(28.5),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                ),
+                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
               ],
             ),
             child: const Center(
@@ -399,9 +447,17 @@ class YourProfileScreen extends StatelessWidget {
       children: [
         _buildInfoItem(Icons.person_outline, 'Name', profile?.name ?? 'N/A'),
         if (profile?.fatherName != null && profile!.fatherName!.isNotEmpty)
-          _buildInfoItem(Icons.person_outline, 'Father\'s Name', profile.fatherName!),
+          _buildInfoItem(
+            Icons.person_outline,
+            'Father\'s Name',
+            profile.fatherName!,
+          ),
         if (profile?.dateOfBirth != null)
-          _buildInfoItem(Icons.calendar_today, 'Date of Birth', formatDate(profile?.dateOfBirth)),
+          _buildInfoItem(
+            Icons.calendar_today,
+            'Date of Birth',
+            formatDate(profile?.dateOfBirth),
+          ),
         _buildInfoItem(Icons.location_on, 'Address/Location', location),
       ],
     );
@@ -409,8 +465,18 @@ class YourProfileScreen extends StatelessWidget {
 
   String _getMonthName(int month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return months[month - 1];
   }
@@ -424,7 +490,11 @@ class YourProfileScreen extends StatelessWidget {
         if (profile?.email != null && profile!.email!.isNotEmpty)
           _buildEditableItem(Icons.email, 'Email Address', profile.email!),
         if (profile?.mobileNo != null)
-          _buildEditableItem(Icons.message, 'WhatsApp Number', profile!.mobileNo!),
+          _buildEditableItem(
+            Icons.message,
+            'WhatsApp Number',
+            profile!.mobileNo!,
+          ),
       ],
     );
   }
@@ -436,7 +506,11 @@ class YourProfileScreen extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(Icons.check_circle, '128', 'Jobs Completed'),
+              child: _buildStatCard(
+                Icons.check_circle,
+                '128',
+                'Jobs Completed',
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -445,12 +519,22 @@ class YourProfileScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        _buildStatCard(Icons.event_available, 'Available Today', '', isWide: true),
+        _buildStatCard(
+          Icons.event_available,
+          'Available Today',
+          '',
+          isWide: true,
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(IconData icon, String value, String label, {bool isWide = false}) {
+  Widget _buildStatCard(
+    IconData icon,
+    String value,
+    String label, {
+    bool isWide = false,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -496,6 +580,11 @@ class YourProfileScreen extends StatelessWidget {
   }
 
   Widget _buildCompleteKyc() {
+    final controller = Get.find<UserProfileController>();
+    final profile = controller.userProfile.value;
+    final professionalType = profile?.professionalType?.toLowerCase() ?? '';
+    final isDriver = professionalType.contains('driver');
+
     return _buildCard(
       title: 'Complete KYC',
       titleTrailing: Text(
@@ -507,11 +596,34 @@ class YourProfileScreen extends StatelessWidget {
         ),
       ),
       children: [
-        _buildKycItem('Aadhar Card', 'Verified', Colors.green),
-        _buildKycItem('PAN Card', 'Pending', Colors.orange),
-        _buildKycItem('Driving License', 'Missing', Colors.red),
-        _buildKycItem('Bank Account', 'Pending', Colors.orange),
-        _buildKycItem('Profile Photo', 'Verified', Colors.green),
+        // Show Driving License for Drivers only
+        if (isDriver)
+          Builder(
+            builder: (context) {
+              return _buildKycItem(
+                'Driving License',
+                'Missing',
+                Colors.red,
+                onTap: () => _showDrivingLicenseDialog(context),
+              );
+            },
+          ),
+
+        // Show Aadhar for Technician/Helper
+        if (!isDriver)
+          Builder(
+            builder: (context) {
+              return _buildKycItem(
+                'Aadhar Card',
+                'Missing',
+                Colors.red,
+                onTap: () {
+                  SnackBarHelper.info('Aadhar verification coming soon');
+                },
+              );
+            },
+          ),
+
         const SizedBox(height: 16),
         Row(
           children: [
@@ -524,10 +636,10 @@ class YourProfileScreen extends StatelessWidget {
                 ),
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
-                  widthFactor: 0.6,
+                  widthFactor: 0.0,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50),
+                      color: Colors.red,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -536,11 +648,11 @@ class YourProfileScreen extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Text(
-              'KYC Progress: 60%',
+              'KYC Incomplete',
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF424242),
+                color: Colors.red,
               ),
             ),
           ],
@@ -549,64 +661,76 @@ class YourProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildKycItem(String title, String status, Color statusColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF424242),
+  Widget _buildKycItem(
+    String title,
+    String status,
+    Color statusColor, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF424242),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.info_outline, size: 12),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              status,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: status == 'Verified'
-                    ? Colors.green
-                    : status == 'Pending'
-                        ? Colors.orange
-                        : Colors.red,
+                  const SizedBox(width: 4),
+                  const Icon(Icons.info_outline, size: 12),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: status == 'Missing' ? Colors.red.withOpacity(0.1) : const Color(0xFFF5F5F5),
-              shape: BoxShape.circle,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                status,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: status == 'Verified'
+                      ? Colors.green
+                      : status == 'Pending'
+                      ? Colors.orange
+                      : Colors.red,
+                ),
+              ),
             ),
-            child: Icon(
-              status == 'Missing' ? Icons.add : Icons.visibility_outlined,
-              size: 16,
-              color: status == 'Missing' ? Colors.red : const Color(0xFF424242),
+            const SizedBox(width: 8),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: status == 'Missing'
+                    ? Colors.red.withOpacity(0.1)
+                    : const Color(0xFFF5F5F5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                status == 'Missing' ? Icons.add : Icons.visibility_outlined,
+                size: 16,
+                color: status == 'Missing'
+                    ? Colors.red
+                    : const Color(0xFF424242),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -643,7 +767,10 @@ class YourProfileScreen extends StatelessWidget {
                 children: [
                   Text(
                     'English',
-                    style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF424242)),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF424242),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   const Icon(Icons.keyboard_arrow_down, size: 20),
@@ -728,7 +855,6 @@ class YourProfileScreen extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w500,
               color: const Color(0xFFEF5350),
-
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -764,7 +890,11 @@ class YourProfileScreen extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.logout, size: 24, color: Color(0xFFEF5350)),
+                        const Icon(
+                          Icons.logout,
+                          size: 24,
+                          color: Color(0xFFEF5350),
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           'Logout',
@@ -789,9 +919,7 @@ class YourProfileScreen extends StatelessWidget {
   Widget _buildActionCard(dynamic icon, String title) {
     return SizedBox(
       height: 100,
-    
 
-    
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.max,
@@ -1067,13 +1195,13 @@ class YourProfileScreen extends StatelessWidget {
   Future<void> _performLogout() async {
     try {
       print("🚪 Starting logout process...");
-      
+
       // Show loading snackbar
       SnackBarHelper.info("Logging out...");
-      
+
       // Call AuthService logout
       final success = await AuthService.to.logout();
-      
+
       if (success) {
         print("✅ Logout successful, navigating to onboarding");
         // Navigate to onboarding screen after successful logout
@@ -1085,6 +1213,128 @@ class YourProfileScreen extends StatelessWidget {
     } catch (e) {
       print("❌ Error during logout: $e");
       SnackBarHelper.error("An error occurred during logout.");
+    }
+  }
+
+  /// Show Driving License Verification Dialog
+  void _showDrivingLicenseDialog(BuildContext context) {
+    final dlNumberController = TextEditingController();
+    final dobController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final controller = Get.find<UserProfileController>();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Verify Driving License',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: dlNumberController,
+                  decoration: InputDecoration(
+                    labelText: 'Driving License Number',
+                    hintText: 'Enter your DL number',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your DL number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: dobController,
+                  decoration: InputDecoration(
+                    labelText: 'Date of Birth',
+                    hintText: 'DD/MM/YYYY or YYYY-MM-DD',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your date of birth';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(dialogContext).pop();
+                  await _verifyDrivingLicense(
+                    controller.userProfile.value?.userId ?? '',
+                    dlNumberController.text.trim(),
+                    dobController.text.trim(),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF36969),
+              ),
+              child: Text(
+                'Verify',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Verify Driving License via API
+  Future<void> _verifyDrivingLicense(
+    String userId,
+    String dlNumber,
+    String dob,
+  ) async {
+    try {
+      SnackBarHelper.info('Verifying Driving License...');
+
+      final profileService = ProfileService();
+      final result = await profileService.verifyDrivingLicence(
+        userId: userId,
+        dlNumber: dlNumber,
+        dob: dob,
+      );
+
+      if (result['success'] == true) {
+        SnackBarHelper.success(result['message'] ?? 'Verification successful');
+        // Refresh profile to get updated KYC status
+        final controller = Get.find<UserProfileController>();
+        controller.fetchCurrentUserProfile();
+      } else {
+        SnackBarHelper.error('Verification failed');
+      }
+    } catch (e) {
+      print('Error verifying driving license: $e');
+      SnackBarHelper.error('Failed to verify: ${e.toString()}');
     }
   }
 }

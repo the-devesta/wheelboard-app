@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -11,10 +12,7 @@ class ProfileService {
 
   Map<String, String> _defaultHeaders(String userId) {
     // APIS are authenticated via UserId in header, not bearer token
-    return {
-      'Accept': '*/*',
-      if (userId.isNotEmpty) 'UserId': userId,
-    };
+    return {'Accept': '*/*', if (userId.isNotEmpty) 'UserId': userId};
   }
 
   Future<bool> updateTransportProfile({
@@ -92,5 +90,43 @@ class ProfileService {
 
     return true;
   }
-}
 
+  /// Verify Driving License KYC
+  /// This API is called when user wants to verify their driving license
+  /// Required for professional users with type Driver
+  Future<Map<String, dynamic>> verifyDrivingLicence({
+    required String userId,
+    required String dlNumber,
+    required String dob,
+  }) async {
+    final response = await HttpHelper.postData(
+      endpoint: API.verifyDrivingLicence,
+      headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
+      data: {'userId': userId, 'dlNumber': dlNumber, 'dob': dob},
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      // Parse the response
+      Map<String, dynamic> responseData = {};
+      if (response.body.isNotEmpty) {
+        try {
+          responseData = Map<String, dynamic>.from(
+            jsonDecode(response.body) as Map,
+          );
+        } catch (e) {
+          print('Error parsing response: $e');
+        }
+      }
+
+      return {
+        'success': true,
+        'message': 'Driving License verified successfully',
+        'data': responseData,
+      };
+    } else {
+      throw Exception(
+        'Failed to verify driving license (${response.statusCode}): ${response.body}',
+      );
+    }
+  }
+}

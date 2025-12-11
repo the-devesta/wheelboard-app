@@ -5,6 +5,7 @@ import '../../utils/constants.dart';
 import '../../models/unassigned_trip_model.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../utils/kyc_helper.dart';
 
 class UnassignedTripsController extends GetxController {
   var isLoading = false.obs;
@@ -49,9 +50,7 @@ class UnassignedTripsController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: API.getUnassignedTripList,
-        headers: {
-          'Accept': '*/*',
-        },
+        headers: {'Accept': '*/*'},
       );
 
       print("🚚 Unassigned trips response status: ${response.statusCode}");
@@ -59,7 +58,9 @@ class UnassignedTripsController extends GetxController {
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
-        unassignedTrips.value = data.map((e) => UnassignedTrip.fromJson(e)).toList();
+        unassignedTrips.value = data
+            .map((e) => UnassignedTrip.fromJson(e))
+            .toList();
         print("✅ Fetched ${unassignedTrips.length} unassigned trips");
       } else {
         print("❌ Failed to fetch unassigned trips: ${response.statusCode}");
@@ -82,9 +83,7 @@ class UnassignedTripsController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getUnassignedTripDetails}$tripId',
-        headers: {
-          'Accept': '*/*',
-        },
+        headers: {'Accept': '*/*'},
       );
 
       print("🚚 Trip details response status: ${response.statusCode}");
@@ -124,6 +123,11 @@ class UnassignedTripsController extends GetxController {
         return false;
       }
 
+      // Check KYC status before submitting bid
+      if (!KYCHelper.checkAndShowKYCDialog()) {
+        return false;
+      }
+
       print("💰 Submitting bid for trip: $tripId");
 
       final response = await HttpHelper.postData(
@@ -136,10 +140,7 @@ class UnassignedTripsController extends GetxController {
           'bidAmount': bidAmount,
           'bidDescription': bidDescription,
         },
-        headers: {
-          'Accept': '*/*',
-          'Content-Type': 'application/json',
-        },
+        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
       );
 
       print("💰 Submit bid response status: ${response.statusCode}");
@@ -168,4 +169,3 @@ class UnassignedTripsController extends GetxController {
     await fetchUnassignedTrips();
   }
 }
-
