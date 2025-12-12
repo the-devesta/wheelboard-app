@@ -1,5 +1,3 @@
-
-
 import 'dart:io';
 import 'dart:convert';
 import 'package:get/get.dart';
@@ -9,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/company_profilemodel.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
+import '../utils/error_handler.dart';
 import '../widgets/custom_snackbar.dart';
 import 'package:http/http.dart' as http;
 
@@ -32,12 +31,15 @@ class CompleteProfileController extends GetxController {
         // Copy image to permanent location to avoid cache deletion issues
         try {
           final Directory appDocDir = await getApplicationDocumentsDirectory();
-          final String fileName = 'company_logo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          final String fileName =
+              'company_logo_${DateTime.now().millisecondsSinceEpoch}.jpg';
           final String permanentPath = '${appDocDir.path}/$fileName';
-          
+
           // Copy the file to permanent location
-          final File permanentFile = await File(pickedFile.path).copy(permanentPath);
-          
+          final File permanentFile = await File(
+            pickedFile.path,
+          ).copy(permanentPath);
+
           profileImage.value = permanentFile;
           SnackBarHelper.success("Image selected successfully");
         } catch (e) {
@@ -62,21 +64,10 @@ class CompleteProfileController extends GetxController {
     isLoading.value = true;
     try {
       // ✅ Complete profile API works based on userId only - token not required
-      final Map<String, String> headers = {
-        "Accept": "*/*",
-      };
+      final Map<String, String> headers = {"Accept": "*/*"};
 
       // ✅ Prepare fields - ensure all required fields are present
       final fields = model.toJsonFields();
-      
-      // ✅ Debug log
-      print("==================================");
-      print("📡 Complete Transport Profile Request");
-      print("👉 Endpoint: ${API.completeTransport}");
-      print("👉 Fields: $fields");
-      print("👉 UserId: $userId");
-      print("👉 Has Logo: ${model.companyLogo != null}");
-      print("==================================");
 
       // ✅ Prepare files - validate file exists before sending
       final files = <File>[];
@@ -87,10 +78,21 @@ class CompleteProfileController extends GetxController {
           print("✅ Company Logo file exists: ${model.companyLogo!.path}");
         } else {
           print("❌ Company Logo file not found: ${model.companyLogo!.path}");
-          SnackBarHelper.error("Image file not found. Please select image again.");
+          SnackBarHelper.error(
+            "Image file not found. Please select image again.",
+          );
           return false;
         }
       }
+
+      // ✅ Debug log
+      print("==================================");
+      print("📡 Complete Transport Profile Request");
+      print("👉 URL: ${API.completeTransport}");
+      print("👉 Headers: $headers");
+      print("👉 Fields: $fields");
+      print("👉 Files attached: ${files.length}");
+      print("==================================");
 
       // ✅ Call multipart API
       final streamedResponse = await HttpHelper.uploadMultipart(
@@ -113,7 +115,8 @@ class CompleteProfileController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
           final responseData = json.decode(response.body);
-          if (responseData['message'] != null || responseData['success'] == true) {
+          if (responseData['message'] != null ||
+              responseData['success'] == true) {
             print("✅ Profile completed successfully");
             return true;
           }
@@ -127,12 +130,12 @@ class CompleteProfileController extends GetxController {
         String errorMessage = "Validation Error";
         try {
           final errorData = json.decode(response.body);
-          
+
           // Check for validation errors object
           if (errorData.containsKey('errors') && errorData['errors'] is Map) {
             final errors = errorData['errors'] as Map<String, dynamic>;
             final errorMessages = <String>[];
-            
+
             errors.forEach((field, messages) {
               if (messages is List) {
                 for (var msg in messages) {
@@ -142,12 +145,13 @@ class CompleteProfileController extends GetxController {
                 errorMessages.add("$field: $messages");
               }
             });
-            
+
             errorMessage = errorMessages.join('\n');
-            
+
             // Special handling for CompanyLogo
             if (errors.containsKey('CompanyLogo')) {
-              errorMessage = "Company Logo is required. Please select an image.";
+              errorMessage =
+                  "Company Logo is required. Please select an image.";
             }
           } else if (errorData.containsKey('message')) {
             errorMessage = errorData['message'].toString();
@@ -158,44 +162,39 @@ class CompleteProfileController extends GetxController {
           if (response.body.contains('CompanyLogo')) {
             errorMessage = "Company Logo is required. Please select an image.";
           } else {
-            errorMessage = response.body.isNotEmpty 
-                          ? response.body.length > 100 
-                            ? "${response.body.substring(0, 100)}..." 
-                            : response.body
-                          : "Validation failed";
+            errorMessage = response.body.isNotEmpty
+                ? response.body.length > 100
+                      ? "${response.body.substring(0, 100)}..."
+                      : response.body
+                : "Validation failed";
           }
         }
-        
+
         SnackBarHelper.error(errorMessage);
         return false;
       } else {
-        // 🔍 Parse error message for other errors
-        String errorMessage = "Failed to complete profile";
-        try {
-          final errorData = json.decode(response.body);
-          errorMessage = errorData['message'] ?? 
-                        errorData['error'] ?? 
-                        "Failed with status: ${response.statusCode}";
-        } catch (e) {
-          errorMessage = response.body.isNotEmpty 
-                        ? response.body.length > 100 
-                          ? "${response.body.substring(0, 100)}..." 
-                          : response.body
-                        : "Failed: ${response.statusCode}";
-        }
-        
+        // ✅ Use ErrorHandler for user-friendly messages
+        final errorMessage = ErrorHandler.parseError(
+          response.body,
+          statusCode: response.statusCode,
+        );
+
+        print("❌ Profile completion failed: $errorMessage");
         SnackBarHelper.error(errorMessage);
         return false;
       }
     } catch (e, stacktrace) {
       print("❌ Exception: $e");
       print("❌ StackTrace: $stacktrace");
-      SnackBarHelper.error("An error occurred: ${e.toString()}");
+
+      // ✅ Use ErrorHandler for network errors
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMessage);
       return false;
     } finally {
       isLoading.value = false;
     }
-    
+
     return false;
   }
 }

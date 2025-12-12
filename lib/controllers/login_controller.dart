@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import 'dart:convert';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
+import '../utils/error_handler.dart';
+import '../widgets/custom_snackbar.dart';
 
 class LoginController extends GetxController {
   var isLoading = false.obs;
@@ -25,7 +27,10 @@ class LoginController extends GetxController {
     isLoading.value = true;
 
     try {
-      final requestData = {"mobileNo": phone.trim(), "password": password.trim()};
+      final requestData = {
+        "mobileNo": phone.trim(),
+        "password": password.trim(),
+      };
 
       print("==================================");
       print("🔐 Login Request");
@@ -33,7 +38,7 @@ class LoginController extends GetxController {
       print("👉 Password: ${'*' * password.length}");
       print("👉 Endpoint: ${API.login}");
       print("==================================");
-      
+
       final response = await HttpHelper.postData(
         endpoint: API.login,
         data: requestData,
@@ -52,12 +57,12 @@ class LoginController extends GetxController {
 
           // ✅ Check for success field and data object
           final isSuccess = data['success'] == true;
-          
+
           if (isSuccess && data.containsKey('data') && data['data'] != null) {
             final responseData = data['data'] as Map<String, dynamic>;
-            
+
             // ✅ Validate required fields
-            if (responseData.containsKey('token') && 
+            if (responseData.containsKey('token') &&
                 responseData.containsKey('userId') &&
                 responseData['token'] != null &&
                 responseData['userId'] != null) {
@@ -81,6 +86,13 @@ class LoginController extends GetxController {
       } else {
         print("❌ Login failed with status: ${response.statusCode}");
         print("❌ Response body: ${response.body}");
+
+        // Use ErrorHandler to parse and display user-friendly error
+        final errorMessage = ErrorHandler.parseError(
+          response.body,
+          statusCode: response.statusCode,
+        );
+        SnackBarHelper.error(errorMessage);
         return null;
       }
     } catch (e, stackTrace) {
@@ -90,6 +102,10 @@ class LoginController extends GetxController {
       print("📋 Stack Trace:");
       print(stackTrace);
       print("==================================");
+
+      // Use ErrorHandler for network errors
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMessage);
       return null;
     } finally {
       isLoading.value = false;

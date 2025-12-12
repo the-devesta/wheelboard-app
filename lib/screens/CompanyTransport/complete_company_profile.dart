@@ -17,7 +17,9 @@ class CompanyCompleteProfile extends StatefulWidget {
 }
 
 class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
-  final CompleteProfileController profileController = Get.put(CompleteProfileController());
+  final CompleteProfileController profileController = Get.put(
+    CompleteProfileController(),
+  );
 
   final TextEditingController companyNameController = TextEditingController();
   final TextEditingController firstNameController = TextEditingController();
@@ -27,7 +29,7 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
   final TextEditingController addressController = TextEditingController();
   final TextEditingController fleetSizeController = TextEditingController();
   final TextEditingController gstController = TextEditingController();
-  
+
   final String userId = Get.arguments?["userId"] ?? "";
   final Rx<Country> selectedCountry = Country.parse('IN').obs;
 
@@ -39,15 +41,19 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
       final registrationData = Get.arguments;
       if (registrationData != null) {
         // Pre-fill company name
-        if (registrationData["companyName"] != null && registrationData["companyName"].toString().isNotEmpty) {
-          companyNameController.text = registrationData["companyName"].toString();
+        if (registrationData["companyName"] != null &&
+            registrationData["companyName"].toString().isNotEmpty) {
+          companyNameController.text = registrationData["companyName"]
+              .toString();
         }
         // Pre-fill email
-        if (registrationData["email"] != null && registrationData["email"].toString().isNotEmpty) {
+        if (registrationData["email"] != null &&
+            registrationData["email"].toString().isNotEmpty) {
           emailController.text = registrationData["email"].toString();
         }
         // Pre-fill phone number
-        if (registrationData["mobileNo"] != null && registrationData["mobileNo"].toString().isNotEmpty) {
+        if (registrationData["mobileNo"] != null &&
+            registrationData["mobileNo"].toString().isNotEmpty) {
           phoneController.text = registrationData["mobileNo"].toString();
         }
       }
@@ -98,19 +104,19 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-        child: Container(
+          child: Container(
             padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
+            decoration: BoxDecoration(
               color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: const [
-              BoxShadow(
+                BoxShadow(
                   color: Colors.black12,
                   blurRadius: 4,
                   offset: Offset(0, 2),
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -118,44 +124,50 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                 Center(
                   child: Obx(
                     () => GestureDetector(
-                        onTap: () => _showImagePickerOptions(context),
-                        child: Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 50,
+                      onTap: () => _showImagePickerOptions(context),
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
                             backgroundColor: const Color(0xFFF5F5F5),
-                            backgroundImage: profileController.profileImage.value != null
-                                  ? FileImage(profileController.profileImage.value!)
-                                  : null,
-                              child: profileController.profileImage.value == null
-                                  ? const Icon(
+                            backgroundImage:
+                                profileController.profileImage.value != null
+                                ? FileImage(
+                                    profileController.profileImage.value!,
+                                  )
+                                : null,
+                            child: profileController.profileImage.value == null
+                                ? const Icon(
                                     Icons.person,
                                     size: 50,
                                     color: Color(0xFF9E9E9E),
-                                    )
-                                  : null,
-                            ),
+                                  )
+                                : null,
+                          ),
                           // Edit icon
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF25C5C),
-                                    shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                                  ),
-                                  child: const Icon(
-                                Icons.edit,
-                                size: 12,
-                                    color: Colors.white,
-                                  ),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
                                 ),
                               ),
-                          ],
-                        ),
+                              child: const Icon(
+                                Icons.edit,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -176,7 +188,7 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                       child: _buildInputField(
                         label: "First Name",
                         hint: "Enter first name",
-                            controller: firstNameController,
+                        controller: firstNameController,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -184,7 +196,7 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                       child: _buildInputField(
                         label: "Last Name",
                         hint: "Enter last name",
-                            controller: lastNameController,
+                        controller: lastNameController,
                       ),
                     ),
                   ],
@@ -435,7 +447,10 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFFF25C5C)),
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFFF25C5C),
+              ),
               title: const Text("Choose from Gallery"),
               onTap: () {
                 profileController.pickImage(ImageSource.gallery);
@@ -468,53 +483,61 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
                   }
 
                   // ✅ Validate form
-          if (!_validateForm()) {
-            return;
-          }
+                  if (!_validateForm()) {
+                    return;
+                  }
 
-          final model = CompleteProfileModel(
-            userId: userId,
-            firstName: firstNameController.text.trim(),
-            lastName: lastNameController.text.trim(),
-            address: addressController.text.trim(),
-            fleetSize: fleetSizeController.text.trim(),
+                  final model = CompleteProfileModel(
+                    userId: userId,
+                    firstName: firstNameController.text.trim(),
+                    lastName: lastNameController.text.trim(),
+                    email: emailController.text.trim(), // ✅ Added Email field
+                    address: addressController.text.trim(),
+                    fleetSize: fleetSizeController.text.trim(),
                     gstNumber: gstController.text.trim().isEmpty
                         ? null
                         : gstController.text.trim(),
-            companyLogo: profileController.profileImage.value,
-          );
+                    companyLogo: profileController.profileImage.value,
+                  );
 
-          final success = await profileController.submitProfile(model, userId);
+                  final success = await profileController.submitProfile(
+                    model,
+                    userId,
+                  );
 
-          if (success) {
-            await SessionManager.setProfileCompleted(true);
-            
-            // ✅ Clear registration data from SessionManager after successful profile completion
-            final sessionManager = SessionManager();
-            await sessionManager.remove("registration_companyName");
-            await sessionManager.remove("registration_email");
-            await sessionManager.remove("registration_mobileNo");
-            await sessionManager.remove("registration_businessCategory");
-            
-            SnackBarHelper.success("Profile completed successfully! Please login to continue.");
-            
-            await Future.delayed(const Duration(milliseconds: 2000));
-            
-            // ✅ Redirect to login page after complete profile
-            // User will login and then be redirected to correct screen based on userType
-            Get.offAll(() => const LoginScreen());
-          }
-        },
-        style: ElevatedButton.styleFrom(
+                  if (success) {
+                    await SessionManager.setProfileCompleted(true);
+
+                    // ✅ Clear registration data from SessionManager after successful profile completion
+                    final sessionManager = SessionManager();
+                    await sessionManager.remove("registration_companyName");
+                    await sessionManager.remove("registration_email");
+                    await sessionManager.remove("registration_mobileNo");
+                    await sessionManager.remove(
+                      "registration_businessCategory",
+                    );
+
+                    SnackBarHelper.success(
+                      "Profile completed successfully! Please login to continue.",
+                    );
+
+                    await Future.delayed(const Duration(milliseconds: 2000));
+
+                    // ✅ Redirect to login page after complete profile
+                    // User will login and then be redirected to correct screen based on userType
+                    Get.offAll(() => const LoginScreen());
+                  }
+                },
+          style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFF25C5C),
             padding: const EdgeInsets.symmetric(vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             elevation: 0,
             disabledBackgroundColor: const Color(0xFFF25C5C).withOpacity(0.6),
-        ),
-        child: profileController.isLoading.value
+          ),
+          child: profileController.isLoading.value
               ? const SizedBox(
                   height: 20,
                   width: 20,
@@ -592,7 +615,9 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
       // Validate GST format only if user has entered something
       if (gstNumber.length != 15 ||
           !RegExp(r'^[0-9A-Z]{15}$').hasMatch(gstNumber.toUpperCase())) {
-        SnackBarHelper.error("GST Number must be 15 characters alphanumeric (or leave empty)");
+        SnackBarHelper.error(
+          "GST Number must be 15 characters alphanumeric (or leave empty)",
+        );
         return false;
       }
     }

@@ -8,6 +8,7 @@ import '../models/update_service_model.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../utils/navigation_helper.dart';
+import '../utils/error_handler.dart';
 import '../widgets/custom_snackbar.dart';
 
 class ServiceProviderController extends GetxController {
@@ -43,19 +44,15 @@ class ServiceProviderController extends GetxController {
         return;
       }
 
-      String errorMessage = "Profile completion failed";
-      try {
-        final body = json.decode(response.body);
-        errorMessage = body['message'] ?? body['error'] ?? errorMessage;
-      } catch (_) {
-        if (response.body.isNotEmpty) {
-          errorMessage = response.body;
-        }
-      }
+      final errorMessage = ErrorHandler.parseError(
+        response.body,
+        statusCode: response.statusCode,
+      );
 
       SnackBarHelper.error(errorMessage);
     } catch (e) {
-      SnackBarHelper.error("Something went wrong: ${e.toString()}");
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMessage);
     } finally {
       isLoading.value = false;
     }
@@ -85,40 +82,24 @@ class ServiceProviderController extends GetxController {
         try {
           final responseData = json.decode(response.body);
           SnackBarHelper.success("Service added successfully!");
-          return {
-            'success': true,
-            'data': responseData,
-          };
+          return {'success': true, 'data': responseData};
         } catch (e) {
           SnackBarHelper.success("Service added successfully!");
-          return {
-            'success': true,
-            'data': response.body,
-          };
+          return {'success': true, 'data': response.body};
         }
       }
 
-      String errorMessage = "Failed to add service";
-      try {
-        final body = json.decode(response.body);
-        errorMessage = body['message'] ?? body['error'] ?? errorMessage;
-      } catch (_) {
-        if (response.body.isNotEmpty) {
-          errorMessage = response.body;
-        }
-      }
+      final errorMessage = ErrorHandler.parseError(
+        response.body,
+        statusCode: response.statusCode,
+      );
 
       SnackBarHelper.error(errorMessage);
-      return {
-        'success': false,
-        'error': errorMessage,
-      };
+      return {'success': false, 'error': errorMessage};
     } catch (e) {
-      SnackBarHelper.error("Something went wrong: ${e.toString()}");
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMessage);
+      return {'success': false, 'error': e.toString()};
     } finally {
       isLoading.value = false;
     }
@@ -149,40 +130,24 @@ class ServiceProviderController extends GetxController {
         try {
           final responseData = json.decode(response.body);
           SnackBarHelper.success("Service updated successfully!");
-          return {
-            'success': true,
-            'data': responseData,
-          };
+          return {'success': true, 'data': responseData};
         } catch (e) {
           SnackBarHelper.success("Service updated successfully!");
-          return {
-            'success': true,
-            'data': response.body,
-          };
+          return {'success': true, 'data': response.body};
         }
       }
 
-      String errorMessage = "Failed to update service";
-      try {
-        final body = json.decode(response.body);
-        errorMessage = body['message'] ?? body['error'] ?? errorMessage;
-      } catch (_) {
-        if (response.body.isNotEmpty) {
-          errorMessage = response.body;
-        }
-      }
+      final errorMessage = ErrorHandler.parseError(
+        response.body,
+        statusCode: response.statusCode,
+      );
 
       SnackBarHelper.error(errorMessage);
-      return {
-        'success': false,
-        'error': errorMessage,
-      };
+      return {'success': false, 'error': errorMessage};
     } catch (e) {
-      SnackBarHelper.error("Something went wrong: ${e.toString()}");
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMessage);
+      return {'success': false, 'error': e.toString()};
     } finally {
       isLoading.value = false;
     }
@@ -213,26 +178,24 @@ class ServiceProviderController extends GetxController {
       print("🗑️ Delete response status: ${response.statusCode}");
       print("🗑️ Delete response body: ${response.body}");
 
-      if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204) {
         SnackBarHelper.success("Service deleted successfully!");
         return true;
       }
 
-      String errorMessage = "Failed to delete service";
-      try {
-        final body = json.decode(response.body);
-        errorMessage = body['message'] ?? body['error'] ?? errorMessage;
-      } catch (_) {
-        if (response.body.isNotEmpty) {
-          errorMessage = response.body;
-        }
-      }
+      final errorMessage = ErrorHandler.parseError(
+        response.body,
+        statusCode: response.statusCode,
+      );
 
       SnackBarHelper.error(errorMessage);
       return false;
     } catch (e) {
       print("❌ Error deleting service: $e");
-      SnackBarHelper.error("Something went wrong: ${e.toString()}");
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMessage);
       return false;
     } finally {
       isLoading.value = false;

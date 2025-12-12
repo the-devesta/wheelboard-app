@@ -7,3 +7,12 @@
 
 # Build outputs
 /build/
+.dart_tool/
+.build/
+build/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Pods/
+.android/
+.idea/
+.vscode/

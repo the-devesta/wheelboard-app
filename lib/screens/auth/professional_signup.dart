@@ -8,6 +8,7 @@ import 'dart:io' show File, Directory; // only available on mobile
 import '../../controllers/professional_signup_controller.dart';
 import '../../models/professional_signupmodel.dart';
 import '../../widgets/custom_snackbar.dart';
+import 'login.dart';
 
 class ProfessionalRegisterScreen extends StatefulWidget {
   const ProfessionalRegisterScreen({super.key});
@@ -305,7 +306,8 @@ class _ProfessionalRegisterScreenState
                           const SizedBox(width: 6),
                         GestureDetector(
                             onTap: () {
-                              // Navigate to login
+                          
+                          Get.to(() => LoginScreen());
                             },
                             child: Text(
                             "Login",
