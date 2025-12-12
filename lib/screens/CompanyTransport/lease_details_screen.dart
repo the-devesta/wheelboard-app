@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
-import '../../constants/apps_colors.dart';
 
-/// Lease Vehicle Form Screen (Transport side)
-/// Hook with: Get.to(() => const LeaseDetailsScreen());
+/// Lease Vehicle Form Screen (Transport side) - Figma Design
 class LeaseDetailsScreen extends StatefulWidget {
   const LeaseDetailsScreen({super.key});
 
@@ -13,6 +11,9 @@ class LeaseDetailsScreen extends StatefulWidget {
 }
 
 class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  // Controllers
   final TextEditingController _vehicleTitleController = TextEditingController();
   final TextEditingController _vehicleNumberController =
       TextEditingController();
@@ -25,18 +26,29 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
       TextEditingController();
   final TextEditingController _instructionsController = TextEditingController();
 
-  String? _pricingType; // 'flat' or 'onRequest'
-  final Set<String> _selectedDays = {'Mon'}; // Default Monday selected
+  // State variables
+  String? _pricingType = 'flat';
+  final Set<String> _selectedDays = {'Mon'};
   String _startDate = 'mm/dd/yyyy';
   String _endDate = 'mm/dd/yyyy';
   String _fromTime = '09:00';
   String _toTime = '18:00';
 
+  final List<Map<String, String>> _weekDays = [
+    {'short': 'M', 'full': 'Mon'},
+    {'short': 'T', 'full': 'Tue'},
+    {'short': 'W', 'full': 'Wed'},
+    {'short': 'T', 'full': 'Thu'},
+    {'short': 'F', 'full': 'Fri'},
+    {'short': 'S', 'full': 'Sat'},
+    {'short': 'S', 'full': 'Sun'},
+  ];
+
   @override
   void initState() {
     super.initState();
     _instructionsController.addListener(() {
-      setState(() {}); // Update character count
+      setState(() {});
     });
   }
 
@@ -55,271 +67,119 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        leading: const BackButton(color: Colors.black87),
-        title: Text(
-          'Lease Vehicle Details',
-          style: GoogleFonts.poppins(
-            color: Colors.black87,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: Colors.white,
+      body: Form(
+        key: _formKey,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Vehicle Summary Card
-            _buildVehicleSummaryCard(),
-            const SizedBox(height: 16),
-
-            // Vehicle Information Section
-            _buildSectionCard(
-              title: 'Vehicle Information',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Vehicle Title
-                  _buildInputField(
-                    label: 'Vehicle Title',
-                    controller: _vehicleTitleController,
-                    hint: 'Enter vehicle title (e.g., Tata Prima 4925)',
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Vehicle Number
-                  _buildInputField(
-                    label: 'Vehicle Number',
-                    controller: _vehicleNumberController,
-                    hint: 'Enter vehicle number (e.g., MH 12 AB 3456)',
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Odometer Reading
-                  _buildOdometerField(),
-                ],
+            // App Bar
+            _buildAppBar(),
+            // Scrollable Content
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Vehicle Summary Card
+                    _buildVehicleSummaryCard(),
+                    const SizedBox(height: 16),
+                    // Lease Details Section
+                    _buildLeaseDetailsSection(),
+                    const SizedBox(height: 16),
+                    // Pricing Section
+                    _buildPricingSection(),
+                    const SizedBox(height: 16),
+                    // Lease Period Section
+                    _buildLeasePeriodSection(),
+                    const SizedBox(height: 16),
+                    // Additional Instructions
+                    _buildAdditionalInstructionsSection(),
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-
-            // Pricing Section
-            _buildSectionCard(
-              title: 'Pricing Details',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Pricing Options
-                  _buildPricingSection(),
-                  const SizedBox(height: 16),
-
-                  // Avg Monthly Run
-                  _buildInputWithSuffix(
-                    label: 'Avg Monthly Run (KM)',
-                    controller: _monthlyRunController,
-                    hint: 'Enter average monthly run',
-                    suffix: 'KM',
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Trip Efficiency
-                  _buildInputWithSuffix(
-                    label: 'Trip Efficiency Rate (%)',
-                    controller: _tripEfficiencyController,
-                    hint: 'Enter trip efficiency rate',
-                    suffix: '%',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Lease Period Section
-            _buildSectionCard(
-              title: 'Lease Duration',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Start Date / End Date
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDateField(
-                          label: 'Start Date',
-                          value: _startDate,
-                          onTap: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(
-                                const Duration(days: 365 * 2),
-                              ),
-                            );
-                            if (date != null) {
-                              setState(() {
-                                _startDate =
-                                    '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildDateField(
-                          label: 'End Date',
-                          value: _endDate,
-                          onTap: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(
-                                const Duration(days: 365 * 2),
-                              ),
-                            );
-                            if (date != null) {
-                              setState(() {
-                                _endDate =
-                                    '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Business Days
-                  _buildBusinessDays(),
-                  const SizedBox(height: 16),
-
-                  // Business Hours
-                  _buildBusinessHours(),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Additional Instructions
-            _buildSectionCard(
-              title: 'Additional Information',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTextArea(),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade200, width: 1),
-          ),
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: () {
-              // Handle post lease
-              Get.snackbar('Success', 'Lease posted successfully');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.buttonBg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Post Vehicle Lease',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
-      ),
+      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
-  Widget _buildSectionCard({required String title, required Widget child}) {
+  Widget _buildAppBar() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      height: 77,
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border(bottom: BorderSide(width: 1, color: Color(0xFFE0E0E0))),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () => Get.back(),
+                child: Container(
+                  width: 32,
+                  height: 44,
+                  alignment: Alignment.centerLeft,
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Color(0xFF2A2A2A),
+                    size: 24,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Lease Vehicle',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF2A2A2A),
+                ),
+              ),
+              const Spacer(),
+              const SizedBox(width: 32),
+            ],
           ),
-          const SizedBox(height: 16),
-          child,
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildVehicleSummaryCard() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Color(0x0C000000),
+            blurRadius: 2,
+            offset: Offset(0, 1),
           ),
         ],
       ),
       child: Column(
         children: [
+          // Vehicle Header Row
           Row(
             children: [
-              // Vehicle Icon
+              // Gradient Icon
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFEF476F), Color(0xFFFFD166)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -330,7 +190,7 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Vehicle Info
+              // Vehicle Name & Number
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,15 +201,16 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF2B2D42),
+                        height: 1.50,
                       ),
                     ),
-                    const SizedBox(height: 4),
                     Text(
                       'MH-12-AB-3456',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: FontWeight.w400,
                         color: const Color(0xFF4B5563),
+                        height: 1.43,
                       ),
                     ),
                   ],
@@ -357,10 +218,7 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
               ),
               // Status Badge
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFF06D6A0),
                   borderRadius: BorderRadius.circular(9999),
@@ -377,7 +235,7 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Details Row
+          // Details Grid
           Row(
             children: [
               Expanded(
@@ -388,7 +246,9 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                       'Lease Duration',
                       style: GoogleFonts.inter(
                         fontSize: 14,
+                        fontWeight: FontWeight.w400,
                         color: const Color(0xFF6B7280),
+                        height: 1.43,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -398,6 +258,7 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF2A2A2A),
+                        height: 1.43,
                       ),
                     ),
                   ],
@@ -411,7 +272,9 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                       'Monthly Run',
                       style: GoogleFonts.inter(
                         fontSize: 14,
+                        fontWeight: FontWeight.w400,
                         color: const Color(0xFF6B7280),
+                        height: 1.43,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -421,6 +284,7 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF2A2A2A),
+                        height: 1.43,
                       ),
                     ),
                   ],
@@ -439,7 +303,9 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                       'Odometer Reading',
                       style: GoogleFonts.inter(
                         fontSize: 14,
+                        fontWeight: FontWeight.w400,
                         color: const Color(0xFF6B7280),
+                        height: 1.43,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -449,6 +315,7 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF2A2A2A),
+                        height: 1.43,
                       ),
                     ),
                   ],
@@ -462,7 +329,9 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                       'Status',
                       style: GoogleFonts.inter(
                         fontSize: 14,
+                        fontWeight: FontWeight.w400,
                         color: const Color(0xFF6B7280),
+                        height: 1.43,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -472,6 +341,7 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF28C76F),
+                        height: 1.43,
                       ),
                     ),
                   ],
@@ -484,56 +354,86 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
     );
   }
 
+  Widget _buildLeaseDetailsSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lease Details',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF2A2A2A),
+              height: 1.56,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Vehicle Title
+          _buildInputField(
+            label: 'Vehicle Title',
+            controller: _vehicleTitleController,
+            hint: 'Enter vehicle title',
+          ),
+          const SizedBox(height: 16),
+          // Vehicle Number
+          _buildInputField(
+            label: 'Vehicle Number',
+            controller: _vehicleNumberController,
+            hint: 'Enter vehicle number',
+          ),
+          const SizedBox(height: 16),
+          // Odometer Reading
+          _buildOdometerField(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInputField({
     required String label,
     required TextEditingController controller,
     required String hint,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
+          style: GoogleFonts.inter(
+            fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
+            color: const Color(0xFF2A2A2A),
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          validator: validator,
-          maxLines: maxLines,
-          style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
-            filled: true,
-            fillColor: const Color(0xFFF5F7FA),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
+        Container(
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
+          ),
+          child: TextField(
+            controller: controller,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF2A2A2A),
+              height: 1.50,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: AppColors.buttonBg),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFFADAEBC),
+                height: 1.50,
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
             ),
           ),
         ),
@@ -545,64 +445,73 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Odometer Start Reading (KM)',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
+        Row(
+          children: [
+            Text(
+              'Odometer Reading (on lease start date)',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF2A2A2A),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.info_outline, size: 14, color: Color(0xFF6B7280)),
+          ],
         ),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
               flex: 3,
-              child: TextFormField(
-                controller: _odometerController,
-                keyboardType: TextInputType.number,
-                style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
-                decoration: InputDecoration(
-                  hintText: 'Enter current odometer reading',
-                  hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
-                  filled: true,
-                  fillColor: const Color(0xFFF5F7FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
+              child: Container(
+                height: 58,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
+                ),
+                child: TextField(
+                  controller: _odometerController,
+                  keyboardType: TextInputType.number,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFFADAEBC),
+                    height: 1.50,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade200),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: AppColors.buttonBg),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
+                  decoration: InputDecoration(
+                    hintText: '63000',
+                    hintStyle: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFFADAEBC),
+                      height: 1.50,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Text(
-                    'KM',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[700],
-                    ),
-                  ),
+            Container(
+              width: 90,
+              height: 58,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'KM',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF535353),
+                  height: 1.11,
                 ),
               ),
             ),
@@ -611,9 +520,11 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
         const SizedBox(height: 4),
         Text(
           'Transport vehicles → KM, Mining/Construction → Hours',
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: Colors.grey[600],
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: const Color(0xFF6B7280),
+            height: 1.33,
           ),
         ),
       ],
@@ -621,125 +532,146 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
   }
 
   Widget _buildPricingSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Flat Price per Day
-        Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _pricingType = 'flat';
-                });
-              },
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Flat Price Option
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _pricingType = 'flat';
+                  });
+                },
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(width: 0.5, color: Colors.black),
                     color: _pricingType == 'flat'
                         ? const Color(0xFFFF5E7A)
-                        : Colors.black,
-                    width: 0.5,
+                        : Colors.transparent,
                   ),
-                  color: _pricingType == 'flat'
-                      ? const Color(0xFFFF5E7A)
-                      : Colors.transparent,
+                  child: _pricingType == 'flat'
+                      ? const Center(
+                          child: CircleAvatar(
+                            radius: 3,
+                            backgroundColor: Colors.white,
+                          ),
+                        )
+                      : null,
                 ),
-                child: _pricingType == 'flat'
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
-                    : null,
               ),
+              const SizedBox(width: 12),
+              Text(
+                'Flat Price per Day',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF2A2A2A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 58,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
             ),
-            const SizedBox(width: 12),
-            Text(
-              'Flat Price per Day',
+            child: TextField(
+              controller: _priceController,
+              enabled: _pricingType == 'flat',
+              keyboardType: TextInputType.number,
               style: GoogleFonts.inter(
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w400,
                 color: const Color(0xFF2A2A2A),
+                height: 1.50,
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _priceController,
-          enabled: _pricingType == 'flat',
-          decoration: InputDecoration(
-            hintText: '₹ Enter amount',
-            hintStyle: GoogleFonts.inter(
-              fontSize: 16,
-              color: const Color(0xFFADAEBC),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 15,
-              vertical: 19,
+              decoration: InputDecoration(
+                hintText: '₹ Enter amount',
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFFADAEBC),
+                  height: 1.50,
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        // On Request
-        Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _pricingType = 'onRequest';
-                });
-              },
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
+          const SizedBox(height: 16),
+          // On Request Option
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _pricingType = 'onRequest';
+                  });
+                },
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(width: 0.5, color: Colors.black),
                     color: _pricingType == 'onRequest'
                         ? const Color(0xFFFF5E7A)
-                        : Colors.black,
-                    width: 0.5,
+                        : Colors.transparent,
                   ),
-                  color: _pricingType == 'onRequest'
-                      ? const Color(0xFFFF5E7A)
-                      : Colors.transparent,
+                  child: _pricingType == 'onRequest'
+                      ? const Center(
+                          child: CircleAvatar(
+                            radius: 3,
+                            backgroundColor: Colors.white,
+                          ),
+                        )
+                      : null,
                 ),
-                child: _pricingType == 'onRequest'
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
-                    : null,
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'On Request',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF2A2A2A),
+              const SizedBox(width: 12),
+              Text(
+                'On Request',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF2A2A2A),
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Avg Monthly Run
+          _buildInputFieldWithSuffix(
+            label: 'Avg. Monthly Run',
+            controller: _monthlyRunController,
+            hint: 'Enter distance',
+            suffix: 'KM',
+          ),
+          const SizedBox(height: 16),
+          // Trip Efficiency
+          _buildInputFieldWithSuffix(
+            label: 'Trip Efficiency',
+            controller: _tripEfficiencyController,
+            hint: 'Enter rate',
+            suffix: '₹/KM',
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildInputWithSuffix({
+  Widget _buildInputFieldWithSuffix({
     required String label,
     required TextEditingController controller,
     required String hint,
@@ -750,46 +682,142 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
+          style: GoogleFonts.inter(
+            fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
+            color: const Color(0xFF2A2A2A),
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
-            suffixText: suffix,
-            suffixStyle: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-            filled: true,
-            fillColor: const Color(0xFFF5F7FA),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: AppColors.buttonBg),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
+        Container(
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF2A2A2A),
+                    height: 1.50,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFFADAEBC),
+                      height: 1.50,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              Text(
+                suffix,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF6B7280),
+                  height: 1.50,
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLeasePeriodSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lease Period',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF2A2A2A),
+              height: 1.56,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Start & End Date
+          Row(
+            children: [
+              Expanded(
+                child: _buildDateField(
+                  label: 'Start Date',
+                  value: _startDate,
+                  onTap: () => _selectDate(true),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildDateField(
+                  label: 'End Date',
+                  value: _endDate,
+                  onTap: () => _selectDate(false),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Business Days
+          Text(
+            'Business Days',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF2A2A2A),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildBusinessDays(),
+          const SizedBox(height: 16),
+          // Business Hours
+          Text(
+            'Business Hours',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF2A2A2A),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTimeField(
+                  label: 'From',
+                  value: _fromTime,
+                  onTap: () => _selectTime(true),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTimeField(
+                  label: 'To',
+                  value: _toTime,
+                  onTap: () => _selectTime(false),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -803,41 +831,32 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
+          style: GoogleFonts.inter(
+            fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
+            color: const Color(0xFF2A2A2A),
           ),
         ),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 26),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade200),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    value,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: value == 'mm/dd/yyyy'
-                          ? Colors.grey[400]
-                          : Colors.black87,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 18,
-                  color: Colors.grey[600],
-                ),
-              ],
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+                color: Colors.black,
+                height: 1.33,
+              ),
             ),
           ),
         ),
@@ -846,114 +865,46 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
   }
 
   Widget _buildBusinessDays() {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Business Days',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: days.map((day) {
-            final isSelected = _selectedDays.contains(day);
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedDays.remove(day);
-                  } else {
-                    _selectedDays.add(day);
-                  }
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.buttonBg : const Color(0xFFF5F7FA),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected ? AppColors.buttonBg : Colors.grey.shade200,
-                  ),
-                ),
-                child: Text(
-                  day.substring(0, 3),
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected ? Colors.white : Colors.grey[700],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBusinessHours() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Business Hours',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF2A2A2A),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildTimeField(
-                label: 'From',
-                value: _fromTime,
-                onTap: () async {
-                  final time = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay.now(),
-                  );
-                  if (time != null) {
-                    setState(() {
-                      _fromTime =
-                          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-                    });
-                  }
-                },
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _weekDays.map((day) {
+        final isSelected = _selectedDays.contains(day['full']);
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              if (isSelected) {
+                _selectedDays.remove(day['full']);
+              } else {
+                _selectedDays.add(day['full']!);
+              }
+            });
+          },
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFFFF5E7A) : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                width: 2,
+                color: isSelected
+                    ? const Color(0xFFFF5E7A)
+                    : const Color(0xFFE0E0E0),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildTimeField(
-                label: 'To',
-                value: _toTime,
-                onTap: () async {
-                  final time = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay.now(),
-                  );
-                  if (time != null) {
-                    setState(() {
-                      _toTime =
-                          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-                    });
-                  }
-                },
+            alignment: Alignment.center,
+            child: Text(
+              day['short']!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: isSelected ? Colors.white : const Color(0xFF4B5563),
               ),
             ),
-          ],
-        ),
-      ],
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -967,38 +918,32 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
             fontSize: 12,
-            color: Colors.grey[600],
+            fontWeight: FontWeight.w400,
+            color: const Color(0xFF6B7280),
           ),
         ),
         const SizedBox(height: 4),
         GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade200),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    value,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.access_time_outlined,
-                  size: 18,
-                  color: Colors.grey[600],
-                ),
-              ],
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF2A2A2A),
+                height: 1.50,
+              ),
             ),
           ),
         ),
@@ -1006,57 +951,149 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
     );
   }
 
-  Widget _buildTextArea() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Special Instructions',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _instructionsController,
-          maxLines: 4,
-          maxLength: 500,
-          style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
-          decoration: InputDecoration(
-            hintText: 'Enter any special instructions or terms...',
-            hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
-            filled: true,
-            fillColor: const Color(0xFFF5F7FA),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: AppColors.buttonBg),
-            ),
-            contentPadding: const EdgeInsets.all(14),
-            counterText: '',
-          ),
-        ),
-        const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            '${_instructionsController.text.length}/500',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              color: Colors.grey[600],
+  Widget _buildAdditionalInstructionsSection() {
+    final charCount = _instructionsController.text.length;
+    const maxChars = 500;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Additional Instructions (Optional)',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF2A2A2A),
+              height: 1.56,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Container(
+            height: 96,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
+            ),
+            child: TextField(
+              controller: _instructionsController,
+              maxLines: 3,
+              maxLength: maxChars,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF2A2A2A),
+                height: 1.50,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Special notes or instructions...',
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFFADAEBC),
+                  height: 1.50,
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                counterText: '',
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$charCount/$maxChars characters',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF6B7280),
+              height: 1.33,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildBottomBar() {
+    return Container(
+      height: 89,
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(width: 1, color: Color(0xFFE0E0E0))),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: _handleSubmit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFFF5E7A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 0,
+          ),
+          child: Text(
+            'Post Lease',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleSubmit() {
+    if (_formKey.currentState?.validate() ?? false) {
+      Get.snackbar('Success', 'Lease posted successfully');
+    }
+  }
+
+  Future<void> _selectDate(bool isStartDate) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+
+    if (date != null) {
+      setState(() {
+        final formattedDate =
+            '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
+        if (isStartDate) {
+          _startDate = formattedDate;
+        } else {
+          _endDate = formattedDate;
+        }
+      });
+    }
+  }
+
+  Future<void> _selectTime(bool isFromTime) async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (time != null) {
+      setState(() {
+        final formattedTime =
+            '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+        if (isFromTime) {
+          _fromTime = formattedTime;
+        } else {
+          _toTime = formattedTime;
+        }
+      });
+    }
   }
 }

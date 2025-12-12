@@ -28,7 +28,7 @@ class _AlliedBusinessRegistrationScreenState
   final TextEditingController emailController = TextEditingController();
   final TextEditingController whatsappController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final String userId = Get.arguments["userId"];
+  late final String userId;
 
   String? selectedBusinessType;
   List<String> selectedServices = [];
@@ -49,6 +49,54 @@ class _AlliedBusinessRegistrationScreenState
     "Tyre Retreader",
     "Other",
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Get userId from arguments - more robust extraction
+    final arguments = Get.arguments;
+    if (arguments != null && arguments is Map) {
+      userId = arguments["userId"]?.toString() ?? "";
+    } else {
+      userId = "";
+    }
+
+    // ✅ Pre-fill data from registration if available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final registrationData = Get.arguments;
+      if (registrationData != null && registrationData is Map) {
+        // Pre-fill business name from company name
+        if (registrationData["companyName"] != null &&
+            registrationData["companyName"].toString().isNotEmpty) {
+          businessNameController.text = registrationData["companyName"]
+              .toString();
+        }
+        // Pre-fill email
+        if (registrationData["email"] != null &&
+            registrationData["email"].toString().isNotEmpty) {
+          emailController.text = registrationData["email"].toString();
+        }
+        // Pre-fill phone number
+        if (registrationData["mobileNo"] != null &&
+            registrationData["mobileNo"].toString().isNotEmpty) {
+          phoneController.text = registrationData["mobileNo"].toString();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    businessNameController.dispose();
+    gstController.dispose();
+    addressController.dispose();
+    cityController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    whatsappController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImages() async {
     final result = await FilePicker.platform.pickFiles(
@@ -137,7 +185,9 @@ class _AlliedBusinessRegistrationScreenState
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 6),
-                      _buildHelperText("We'll send notifications to this number."),
+                      _buildHelperText(
+                        "We'll send notifications to this number.",
+                      ),
                       const SizedBox(height: 16),
                       // Email Address
                       _buildFieldLabel("Email Address", required: true),
@@ -159,7 +209,9 @@ class _AlliedBusinessRegistrationScreenState
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 6),
-                      _buildHelperText("We'll send updates to this number if provided."),
+                      _buildHelperText(
+                        "We'll send updates to this number if provided.",
+                      ),
                       const SizedBox(height: 16),
                       // Upload Business Logo
                       _buildFieldLabel("Upload Business Logo"),
@@ -189,9 +241,7 @@ class _AlliedBusinessRegistrationScreenState
       height: 52,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
       ),
       child: Row(
         children: [
@@ -262,7 +312,11 @@ class _AlliedBusinessRegistrationScreenState
     );
   }
 
-  Widget _buildFieldLabel(String text, {bool required = false, bool optional = false}) {
+  Widget _buildFieldLabel(
+    String text, {
+    bool required = false,
+    bool optional = false,
+  }) {
     return RichText(
       text: TextSpan(
         text: text,
@@ -319,7 +373,10 @@ class _AlliedBusinessRegistrationScreenState
             color: const Color(0xFFADAEBC),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -374,11 +431,10 @@ class _AlliedBusinessRegistrationScreenState
             height: 40.5,
             padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 7.65),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF00B894) : const Color(0xFFF1F3F6),
-              border: Border.all(
-                color: const Color(0xFFE0E0E0),
-                width: 1,
-              ),
+              color: isSelected
+                  ? const Color(0xFF00B894)
+                  : const Color(0xFFF1F3F6),
+              border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
               borderRadius: BorderRadius.circular(9999),
             ),
             child: Center(
@@ -417,11 +473,10 @@ class _AlliedBusinessRegistrationScreenState
             height: 40.5,
             padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 7.65),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF00B894) : const Color(0xFFF1F3F6),
-              border: Border.all(
-                color: const Color(0xFFE0E0E0),
-                width: 1,
-              ),
+              color: isSelected
+                  ? const Color(0xFF00B894)
+                  : const Color(0xFFF1F3F6),
+              border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
               borderRadius: BorderRadius.circular(9999),
             ),
             child: Center(
@@ -486,7 +541,10 @@ class _AlliedBusinessRegistrationScreenState
               onTap: _pickImages,
               child: Container(
                 height: 38.5,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6.65),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6.65,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF36969),
                   borderRadius: BorderRadius.circular(8),
@@ -494,11 +552,7 @@ class _AlliedBusinessRegistrationScreenState
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.upload,
-                      color: Colors.white,
-                      size: 15,
-                    ),
+                    const Icon(Icons.upload, color: Colors.white, size: 15),
                     const SizedBox(width: 8),
                     Text(
                       "Upload",
@@ -584,9 +638,7 @@ class _AlliedBusinessRegistrationScreenState
         padding: const EdgeInsets.all(16),
         decoration: const BoxDecoration(
           color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Color(0xFFE0E0E0), width: 1),
-          ),
+          border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
         ),
         child: SizedBox(
           width: double.infinity,
@@ -599,7 +651,7 @@ class _AlliedBusinessRegistrationScreenState
                     if (controller.isLoading.value) {
                       return;
                     }
-                    
+
                     if (_formKey.currentState!.validate()) {
                       File? businessLogo;
                       if (_pickedImages.isNotEmpty &&
@@ -622,9 +674,7 @@ class _AlliedBusinessRegistrationScreenState
                         description: descriptionController.text.trim(),
                       );
 
-                      await controller.completeServiceProvider(
-                        serviceProvider,
-                      );
+                      await controller.completeServiceProvider(serviceProvider);
                     }
                   },
             style: ElevatedButton.styleFrom(

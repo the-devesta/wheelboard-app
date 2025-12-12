@@ -7,18 +7,22 @@ import '../models/add_service_model.dart';
 import '../models/update_service_model.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
-import '../utils/navigation_helper.dart';
 import '../utils/error_handler.dart';
 import '../widgets/custom_snackbar.dart';
+import '../screens/auth/login.dart';
 
 class ServiceProviderController extends GetxController {
   var isLoading = false.obs;
 
   Future<void> completeServiceProvider(ServiceProviderModel model) async {
-    if (isLoading.value) return;
+    if (isLoading.value) {
+      print("⚠️ API call already in progress, skipping...");
+      return;
+    }
 
     try {
       isLoading.value = true;
+      print("🚀 Starting Service Provider Registration...");
 
       final fields = model.toJsonFields();
       final files = <File>[];
@@ -27,33 +31,71 @@ class ServiceProviderController extends GetxController {
         files.add(model.getBusinessLogo()!);
       }
 
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.completeServiceProvider,
-        fields: fields,
-        files: files,
-        fieldKey: "BusinessLogo",
-        headers: {'Accept': 'application/json'},
+      print("📤 Sending request to API...");
+
+      // Add timeout of 30 seconds
+      final streamedResponse =
+          await HttpHelper.uploadMultipart(
+            endpoint: API.completeServiceProvider,
+            fields: fields,
+            files: files,
+            fieldKey: "BusinessLogo",
+            headers: {'Accept': 'application/json'},
+          ).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              print("⏱️ Request timed out after 30 seconds");
+              throw Exception(
+                'Request timeout. Please check your internet connection and try again.',
+              );
+            },
+          );
+
+      print("✅ Request sent, waiting for response...");
+      print("📊 Response Status Code: ${streamedResponse.statusCode}");
+
+      final response = await http.Response.fromStream(streamedResponse).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print("⏱️ Response reading timed out");
+          throw Exception('Response timeout. Please try again.');
+        },
       );
 
-      final response = await http.Response.fromStream(streamedResponse);
+      print("📥 Response received!");
+      print("📊 Status Code: ${response.statusCode}");
+      print(
+        "📄 Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        SnackBarHelper.success("Profile completed successfully!");
-        await Future.delayed(const Duration(milliseconds: 1500));
-        NavigationHelper.navigateToMainWrapper();
+        print("✅ Profile completed successfully!");
+        SnackBarHelper.success(
+          "Profile completed successfully! Please login to continue.",
+        );
+        await Future.delayed(const Duration(milliseconds: 2000));
+        // Navigate to login page - clear all previous routes
+        Get.offAll(() => ProfessionLogin());
         return;
       }
 
+      print("❌ API Error - Status: ${response.statusCode}");
       final errorMessage = ErrorHandler.parseError(
         response.body,
         statusCode: response.statusCode,
       );
 
+      print("❌ Error Message: $errorMessage");
       SnackBarHelper.error(errorMessage);
     } catch (e) {
+      print("❌ Exception caught: $e");
+      print("❌ Exception type: ${e.runtimeType}");
+
       final errorMessage = ErrorHandler.handleNetworkError(e);
+      print("❌ Final Error Message: $errorMessage");
       SnackBarHelper.error(errorMessage);
     } finally {
+      print("🏁 Request completed, resetting loading state");
       isLoading.value = false;
     }
   }
