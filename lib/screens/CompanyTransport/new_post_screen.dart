@@ -36,14 +36,6 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.black),
-            onPressed: () {
-              // Handle close button press
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -192,53 +184,33 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
             ),
             const SizedBox(height: 16.0),
 
-            // Action Buttons
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _pickImages();
-                    },
-                    icon: const Icon(Icons.photo_library, size: 18),
-                    label: Text(
-                      _selectedImages.isEmpty
-                          ? 'Upload Pictures'
-                          : '${_selectedImages.length} Selected',
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontWeight: FontWeight.normal,
-                        fontSize: 14,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[200],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
+            // Single Add Photo Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _showImagePickerOptions();
+                },
+                icon: const Icon(Icons.add_a_photo, size: 18),
+                label: Text(
+                  _selectedImages.isEmpty
+                      ? 'Add Photo'
+                      : '${_selectedImages.length} Photo(s) Selected',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(width: 12.0),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showImagePickerOptions();
-                    },
-                    icon: const Icon(Icons.camera_alt, size: 18),
-                    label: const Text('Take Photo'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[400],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                    ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[400],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-              ],
+              ),
             ),
             const SizedBox(height: 16.0),
             Row(
@@ -307,8 +279,9 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Icon(Icons.send, size: 18),
@@ -377,14 +350,13 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
 
   Future<void> _pickImages() async {
     try {
-      final List<XFile> images = await _picker.pickMultiImage(
-        imageQuality: 80,
-      );
+      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 80);
 
       if (images.isNotEmpty) {
         setState(() {
-          _selectedImages
-              .addAll(images.map((xFile) => File(xFile.path)).toList());
+          _selectedImages.addAll(
+            images.map((xFile) => File(xFile.path)).toList(),
+          );
         });
       }
     } catch (e) {
@@ -408,8 +380,9 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
               onTap: () async {
                 Get.back();
                 try {
-                  final XFile? photo =
-                      await _picker.pickImage(source: ImageSource.camera);
+                  final XFile? photo = await _picker.pickImage(
+                    source: ImageSource.camera,
+                  );
                   if (photo != null) {
                     setState(() {
                       _selectedImages.add(File(photo.path));

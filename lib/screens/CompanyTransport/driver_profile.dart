@@ -37,9 +37,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           backgroundColor: Colors.transparent,
           body: Obx(() {
             if (controller.isLoading.value) {
-              return const Center(
-                child: CustomLoader.small(),
-              );
+              return const Center(child: CustomLoader.small());
             }
 
             final driver = controller.driverDetails.value;
@@ -54,9 +52,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
             // Get driver image URL - only if available
             String? driverImageUrl;
-            if (driver.driverImagePath != null && driver.driverImagePath!.isNotEmpty) {
+            if (driver.driverImagePath != null &&
+                driver.driverImagePath!.isNotEmpty) {
               final imagePath = driver.driverImagePath!.trim();
-              if (imagePath.isNotEmpty && imagePath != 'https://wheelboardapi.addonshareware.com/') {
+              if (imagePath.isNotEmpty &&
+                  imagePath != 'https://wheelboardapi.addonshareware.com/') {
                 driverImageUrl = imagePath.startsWith('http')
                     ? imagePath
                     : ApiConstants.baseUrl + imagePath;
@@ -96,20 +96,24 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                   Container(
                                     width: 37,
                                     height: 37,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
-                                  ),
-                                  padding: const EdgeInsets.all(6),
-                                  child: Image.asset(
-                                    'assets/logobg.png',
-                                    fit: BoxFit.contain,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          color: Colors.grey[200],
-                                          child: const Icon(Icons.image, size: 20),
-                                        );
-                                      },
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                    padding: const EdgeInsets.all(6),
+                                    child: Image.asset(
+                                      'assets/logobg.png',
+                                      fit: BoxFit.contain,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey[200],
+                                              child: const Icon(
+                                                Icons.image,
+                                                size: 20,
+                                              ),
+                                            );
+                                          },
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -129,8 +133,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                         Icons.arrow_back,
                                         color: Colors.black87,
                                         size: 24,
-                                  ),
-                                ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -139,7 +143,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: IconButton(
-                                onPressed: () {},
+                                onPressed: () =>
+                                    _showTripCalendar(driver.fullName),
                                 icon: const Icon(
                                   Icons.calendar_month,
                                   color: Colors.white,
@@ -157,10 +162,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     // Main Section
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.only(
-                        top: 24,
-                        bottom: 24,
-                      ),
+                      padding: const EdgeInsets.only(top: 24, bottom: 24),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.only(
@@ -171,7 +173,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       child: Column(
                         children: [
                           const SizedBox(height: 20),
-                          
+
                           // Top row with avatar + buttons
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -183,16 +185,19 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                   await _makePhoneCall(driver.contactNumber);
                                 },
                               ),
-                              
+
                               // Profile Avatar - always show, with or without image
                               driverImageUrl != null
                                   ? CircleAvatar(
                                       radius: 50,
                                       backgroundColor: Colors.grey[300],
-                                      backgroundImage: NetworkImage(driverImageUrl),
-                                      onBackgroundImageError: (exception, stackTrace) {
-                                        // Image failed to load - will show empty circle
-                                      },
+                                      backgroundImage: NetworkImage(
+                                        driverImageUrl,
+                                      ),
+                                      onBackgroundImageError:
+                                          (exception, stackTrace) {
+                                            // Image failed to load - will show empty circle
+                                          },
                                     )
                                   : CircleAvatar(
                                       radius: 50,
@@ -203,12 +208,15 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                         color: Colors.grey,
                                       ),
                                     ),
-                              
+
                               _actionButton(
                                 Icons.email,
                                 "Email",
                                 onTap: () async {
-                                  await _sendEmail(driver.fullName, driver.contactNumber);
+                                  await _sendEmail(
+                                    driver.fullName,
+                                    driver.contactNumber,
+                                  );
                                 },
                               ),
                             ],
@@ -252,12 +260,18 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                           ),
                           Text(
                             "Plate: ${driver.vehicleNumber}",
-                            style: const TextStyle(color: Colors.grey, fontSize: 14),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             "Contact: ${driver.contactNumber}",
-                            style: const TextStyle(color: Colors.grey, fontSize: 14),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
                           ),
 
                           const SizedBox(height: 16),
@@ -292,16 +306,27 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                 _infoRow("Full Name", driver.fullName),
                                 _infoRow("Contact", driver.contactNumber),
                                 _infoRow("Vehicle Type", driver.vehicleType),
-                                _infoRow("Vehicle Number", driver.vehicleNumber),
-                                _infoRow("Description", 
-                                  driver.description.isNotEmpty 
-                                    ? driver.description 
-                                    : "No description available"
+                                _infoRow(
+                                  "Vehicle Number",
+                                  driver.vehicleNumber,
                                 ),
-                                _infoRow("Status", 
-                                  driver.isDeclarationAccepted 
-                                    ? "Verified ✓" 
-                                    : "Pending"
+                                _infoRow(
+                                  "DL No.",
+                                  driver.dlNumber?.isNotEmpty == true
+                                      ? driver.dlNumber!
+                                      : "Not provided",
+                                ),
+                                _infoRow(
+                                  "Description",
+                                  driver.description.isNotEmpty
+                                      ? driver.description
+                                      : "No description available",
+                                ),
+                                _infoRow(
+                                  "Status",
+                                  driver.isDeclarationAccepted
+                                      ? "Verified ✓"
+                                      : "Pending",
                                 ),
 
                                 const SizedBox(height: 16),
@@ -440,12 +465,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.black54,
-              ),
-            ),
+            child: Text(value, style: const TextStyle(color: Colors.black54)),
           ),
         ],
       ),
@@ -530,22 +550,16 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     try {
       // Remove any spaces, dashes, or special characters
       final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-      
+
       // Ensure the number starts with tel: protocol
       final Uri phoneUri = Uri.parse('tel:$cleanNumber');
-      
+
       // Use launchUrl with mode: LaunchMode.externalApplication for better compatibility
       if (await canLaunchUrl(phoneUri)) {
-        await launchUrl(
-          phoneUri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
       } else {
         // Fallback: try to launch directly without checking
-        await launchUrl(
-          phoneUri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
       Get.snackbar(
@@ -568,22 +582,17 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         scheme: 'mailto',
         queryParameters: {
           'subject': 'Contact regarding driver: $driverName',
-          'body': 'Hello,\n\nI would like to get in touch regarding driver $driverName.\nContact Number: $contactNumber\n\nThank you.',
+          'body':
+              'Hello,\n\nI would like to get in touch regarding driver $driverName.\nContact Number: $contactNumber\n\nThank you.',
         },
       );
 
       // Use launchUrl with mode: LaunchMode.externalApplication for better compatibility
       if (await canLaunchUrl(emailUri)) {
-        await launchUrl(
-          emailUri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(emailUri, mode: LaunchMode.externalApplication);
       } else {
         // Fallback: try to launch directly without checking
-        await launchUrl(
-          emailUri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(emailUri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
       Get.snackbar(
@@ -596,5 +605,40 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       );
       print('Email error: $e');
     }
+  }
+
+  /// Show trip calendar for scheduling
+  void _showTripCalendar(String driverName) {
+    showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'Schedule trip for $driverName',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFF36969),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    ).then((selectedDate) {
+      if (selectedDate != null) {
+        Get.snackbar(
+          'Date Selected',
+          'Trip scheduled for ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFF00B894),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+      }
+    });
   }
 }

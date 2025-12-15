@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/service_controller.dart';
+import '../../controllers/fleet_controller.dart';
 import '../../models/service_assignment_summary.dart';
 import '../../models/service_model.dart';
+import '../../models/get_vehicle_model.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'service_confirmation.dart';
@@ -28,6 +30,12 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+
+  // Vehicle dropdown state
+  String? _selectedVehicleId;
+  bool _isManualEntry = false;
+  late final DriverController _fleetController;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +50,20 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
     _descriptionController = TextEditingController(
       text: widget.service.description ?? '',
     );
+
+    // Initialize fleet controller and fetch vehicles
+    _fleetController = Get.put(DriverController());
+    _loadVehicles();
+  }
+
+  Future<void> _loadVehicles() async {
+    final authService = AuthService.to;
+    final userId = authService.currentUserId;
+    final token = authService.currentToken;
+
+    if (userId.isNotEmpty && token.isNotEmpty) {
+      await _fleetController.fetchVehicles(userId, token);
+    }
   }
 
   @override
@@ -192,7 +214,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.event_note, color: Colors.blue),
+                      Icon(Icons.event_note, color: Color(0xFFF36969)),
                       SizedBox(width: 8),
                       Text(
                         "Service Details",
@@ -261,22 +283,185 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                 const SizedBox(height: 16),
                 const Text("Vehicle Number"),
                 const SizedBox(height: 8),
-                TextFormField(
-                  controller: _vehicleController,
-                  decoration: InputDecoration(
-                    hintText: "Enter Vehicle Number",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  textCapitalization: TextCapitalization.characters,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Vehicle number is required';
-                    }
-                    return null;
-                  },
-                ),
+
+                // Vehicle Dropdown or Manual Entry Toggle
+                Obx(() {
+                  final vehicles = _fleetController.vehicles;
+                  final isLoading = _fleetController.isVehicleLoading.value;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Toggle between dropdown and manual entry
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => _isManualEntry = false),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: !_isManualEntry
+                                      ? const Color(0xFFF36969).withOpacity(0.1)
+                                      : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: !_isManualEntry
+                                        ? const Color(0xFFF36969)
+                                        : Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Select Vehicle',
+                                    style: TextStyle(
+                                      color: !_isManualEntry
+                                          ? const Color(0xFFF36969)
+                                          : Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                _isManualEntry = true;
+                                _selectedVehicleId = null;
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _isManualEntry
+                                      ? const Color(0xFFF36969).withOpacity(0.1)
+                                      : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: _isManualEntry
+                                        ? const Color(0xFFF36969)
+                                        : Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Manual Entry',
+                                    style: TextStyle(
+                                      color: _isManualEntry
+                                          ? const Color(0xFFF36969)
+                                          : Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Show dropdown or text field based on toggle
+                      if (!_isManualEntry) ...[
+                        if (isLoading)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        else if (vehicles.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'No vehicles found. Use manual entry.',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        else
+                          DropdownButtonFormField<String>(
+                            value: _selectedVehicleId,
+                            decoration: InputDecoration(
+                              hintText: 'Select a vehicle',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            items: vehicles.map((Vehicle vehicle) {
+                              final displayText =
+                                  vehicle.vehicleNumber.isNotEmpty
+                                  ? '${vehicle.vehicleNumber} - ${vehicle.vehicleType}'
+                                  : vehicle.vehicleType;
+                              return DropdownMenuItem<String>(
+                                value: vehicle.vehicleId,
+                                child: Text(
+                                  displayText,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (String? value) {
+                              setState(() {
+                                _selectedVehicleId = value;
+                                // Update text controller with selected vehicle number
+                                final selectedVehicle = vehicles
+                                    .firstWhereOrNull(
+                                      (v) => v.vehicleId == value,
+                                    );
+                                if (selectedVehicle != null) {
+                                  _vehicleController.text =
+                                      selectedVehicle.vehicleNumber;
+                                }
+                              });
+                            },
+                            validator: (value) {
+                              if (!_isManualEntry &&
+                                  (value == null || value.isEmpty)) {
+                                return 'Please select a vehicle';
+                              }
+                              return null;
+                            },
+                          ),
+                      ] else ...[
+                        // Manual entry text field
+                        TextFormField(
+                          controller: _vehicleController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter Vehicle Number (e.g., MH12AB1234)',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          textCapitalization: TextCapitalization.characters,
+                          validator: (value) {
+                            if (_isManualEntry &&
+                                (value == null || value.trim().isEmpty)) {
+                              return 'Vehicle number is required';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ],
+                  );
+                }),
                 const SizedBox(height: 16),
                 const Text(
                   "Service Description",
@@ -302,7 +487,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                     child: ElevatedButton(
                       onPressed: isAssigning ? null : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
+                        backgroundColor: const Color(0xFFF36969),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -313,14 +498,17 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Text(
                               "Assign Service",
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
                             ),
                     ),
                   );

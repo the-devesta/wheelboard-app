@@ -8,6 +8,7 @@ class DriverDetailsModel {
   final String description;
   final bool isDeclarationAccepted;
   final String? driverImagePath;
+  final String? dlNumber;
 
   DriverDetailsModel({
     required this.driverId,
@@ -19,6 +20,7 @@ class DriverDetailsModel {
     required this.description,
     required this.isDeclarationAccepted,
     this.driverImagePath,
+    this.dlNumber,
   });
 
   factory DriverDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,10 @@ class DriverDetailsModel {
       description: json['description'] ?? '',
       isDeclarationAccepted: json['isDeclarationAccepted'] ?? false,
       driverImagePath: json['driverImagePath'],
+      dlNumber:
+          json['dlNumber'] ??
+          json['drivingLicenseNumber'] ??
+          json['licenseNumber'],
     );
   }
 
@@ -46,7 +52,7 @@ class DriverDetailsModel {
       'description': description,
       'isDeclarationAccepted': isDeclarationAccepted,
       'driverImagePath': driverImagePath,
+      'dlNumber': dlNumber,
     };
   }
 }
-

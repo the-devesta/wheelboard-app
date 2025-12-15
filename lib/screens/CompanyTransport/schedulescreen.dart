@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import '../../controllers/add_trip_controller.dart';
 import '../../utils/session_manager.dart';
+import '../../utils/distance_service.dart';
 import '../../models/add_new_trip_model.dart';
 import 'dart:math';
 
@@ -32,6 +33,10 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
 
   List<Suggestion> pickupSuggestions = [];
   List<Suggestion> deliverySuggestions = [];
+
+  // Distance calculation state
+  DistanceResult? _distanceResult;
+  bool _isCalculatingDistance = false;
 
   @override
   void initState() {
@@ -80,122 +85,125 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
           ),
         ),
         leading: const BackButton(color: Colors.black),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Icon(Icons.close, color: Colors.black, size: 20),
-          ),
-        ],
         shape: const Border(
-          bottom: BorderSide(
-            color: Color(0xFFFCD2D2),
-            width: 1,
-          ),
+          bottom: BorderSide(color: Color(0xFFFCD2D2), width: 1),
         ),
       ),
       body: SingleChildScrollView(
         child: Center(
-        child: Container(
+          child: Container(
             margin: const EdgeInsets.only(top: 24),
             width: 343,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 20),
-                child: Text(
-                  "Trip Details",
-                  style: TextStyle(
+                    child: Text(
+                      "Trip Details",
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Poppins',
                         color: const Color(0xFF6C7278),
                         letterSpacing: -0.32,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-                ),
 
-              _buildVehicleDropdown(),
+                _buildVehicleDropdown(),
                 const SizedBox(height: 17),
 
-              _buildDriverDropdown(),
+                _buildDriverDropdown(),
                 const SizedBox(height: 17),
 
-              _buildPickupField(),
+                _buildPickupField(),
                 const SizedBox(height: 17),
 
-              _buildDeliveryField(),
+                _buildDeliveryField(),
                 const SizedBox(height: 17),
 
-              _buildDatePicker(context),
+                // Estimated Distance Widget
+                _buildEstimatedDistanceWidget(),
                 const SizedBox(height: 17),
 
-              _buildTimePicker(context),
-              const SizedBox(height: 24),
+                _buildDatePicker(context),
+                const SizedBox(height: 17),
+
+                _buildTimePicker(context),
+                const SizedBox(height: 24),
 
                 Center(
                   child: SizedBox(
                     width: 295,
                     height: 48,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final userId = await SessionManager().getString("userId");
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final userId = await SessionManager().getString(
+                          "userId",
+                        );
 
-                    if (userId == null || userId.isEmpty) {
-                      Get.snackbar("Error", "User not logged in");
-                      return;
-                    }
+                        if (userId == null || userId.isEmpty) {
+                          Get.snackbar("Error", "User not logged in");
+                          return;
+                        }
 
-                    // ✅ Build Trip object (TripId not needed - backend will generate)
-                    final trip = Trip(
-                      tripId: "", // Empty - backend will generate TripId
-                      userId: userId,
-                      vehicleId: tripController.selectedVehicle.value ?? "",
-                      driverId: tripController.selectedDriver.value ?? "",
-                      pickupLocation: pickupController.text,
-                      deliveryLocation: deliveryController.text,
-                      pickupDate: selectedDate,
-                      pickupTime: selectedTime != null
-                          ? _formatTimeOfDay(selectedTime!)
-                          : "00:00:00",
-                      specialInstructions: specialInstructionsController.text.trim(),
-                      payRange: payRangeController.text.trim(),
-                      tripCode: "TRIP-${DateTime.now().millisecondsSinceEpoch}",
-                      tripStatus: "Pending",
-                    );
+                        // ✅ Build Trip object (TripId not needed - backend will generate)
+                        final trip = Trip(
+                          tripId: "", // Empty - backend will generate TripId
+                          userId: userId,
+                          vehicleId: tripController.selectedVehicle.value ?? "",
+                          driverId: tripController.selectedDriver.value ?? "",
+                          pickupLocation: pickupController.text,
+                          deliveryLocation: deliveryController.text,
+                          pickupDate: selectedDate,
+                          pickupTime: selectedTime != null
+                              ? _formatTimeOfDay(selectedTime!)
+                              : "00:00:00",
+                          specialInstructions: specialInstructionsController
+                              .text
+                              .trim(),
+                          payRange: payRangeController.text.trim(),
+                          tripCode:
+                              "TRIP-${DateTime.now().millisecondsSinceEpoch}",
+                          tripStatus: "Pending",
+                        );
 
-                    // ✅ Send API call (userId-based auth, no token needed)
-                    await tripController.addTrip(trip);
-                  },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF25C5C),
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    "Schedule Now",
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontFamily: 'Poppins',
-                        letterSpacing: -0.14,
+                        // ✅ Send API call (userId-based auth, no token needed)
+                        await tripController.addTrip(trip);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF25C5C),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 24,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        "Schedule Now",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                          letterSpacing: -0.14,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
             ),
           ),
         ),
@@ -394,6 +402,9 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                       s.placeId,
                     );
                     debugPrint("Pickup LatLng: $loc");
+
+                    // Auto-calculate distance if both locations are set
+                    _autoCalculateDistance();
                   },
                 );
               },
@@ -468,6 +479,9 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                       s.placeId,
                     );
                     debugPrint("Delivery LatLng: $loc");
+
+                    // Auto-calculate distance if both locations are set
+                    _autoCalculateDistance();
                   },
                 );
               },
@@ -615,6 +629,162 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
       constraints: height != null ? BoxConstraints(minHeight: height) : null,
     );
   }
+
+  // Estimated Distance Widget
+  Widget _buildEstimatedDistanceWidget() {
+    final hasLocations =
+        pickupController.text.isNotEmpty && deliveryController.text.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFE082)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.route, color: Color(0xFFF57C00), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "Distance between Origin and Destination:",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF6C7278),
+                  ),
+                ),
+              ),
+              if (_isCalculatingDistance)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 28),
+            child: Text(
+              _isCalculatingDistance
+                  ? "Calculating..."
+                  : _distanceResult != null && _distanceResult!.distanceKm > 0
+                  ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
+                  : hasLocations
+                  ? "Tap to calculate distance"
+                  : "Enter both locations to calculate",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color:
+                    _distanceResult != null && _distanceResult!.distanceKm > 0
+                    ? const Color(0xFFF57C00)
+                    : Colors.grey,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.local_shipping,
+                color: Color(0xFF0288D1),
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _distanceResult != null &&
+                          _distanceResult!.durationMinutes > 0
+                      ? "Estimated truck travel time: ${_distanceResult!.truckDurationText}"
+                      : "Estimated travel time will appear here",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color:
+                        _distanceResult != null &&
+                            _distanceResult!.durationMinutes > 0
+                        ? const Color(0xFF0288D1)
+                        : Colors.grey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (hasLocations &&
+              (_distanceResult == null || _distanceResult!.distanceKm == 0))
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: GestureDetector(
+                onTap: _calculateDistance,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF57C00),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    "Calculate Distance",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _calculateDistance() async {
+    if (pickupController.text.isEmpty || deliveryController.text.isEmpty) {
+      return;
+    }
+
+    setState(() => _isCalculatingDistance = true);
+
+    try {
+      final result = await distanceService.calculateDistance(
+        origin: pickupController.text,
+        destination: deliveryController.text,
+      );
+
+      setState(() {
+        _distanceResult = result;
+        _isCalculatingDistance = false;
+      });
+    } catch (e) {
+      setState(() => _isCalculatingDistance = false);
+      Get.snackbar(
+        'Error',
+        'Failed to calculate distance',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// Auto-calculate distance when both locations are selected
+  void _autoCalculateDistance() {
+    // Add small delay to ensure state is updated
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (pickupController.text.isNotEmpty &&
+          deliveryController.text.isNotEmpty) {
+        _calculateDistance();
+      }
+    });
+  }
 }
 
 // Suggestion class for Google Places
@@ -679,7 +849,7 @@ class PlacesService {
   final http.Client client;
 
   PlacesService({required this.apiKey, http.Client? client})
-      : client = client ?? http.Client();
+    : client = client ?? http.Client();
 
   Future<List<Suggestion>> fetchSuggestions(String input) async {
     final encoded = Uri.encodeQueryComponent(input);
@@ -740,7 +910,7 @@ class PlacesService {
 String generateTripId() {
   final random = Random();
   final timestamp = DateTime.now().microsecondsSinceEpoch;
-  
+
   // Generate UUID v4 format: 8-4-4-4-12 (hexadecimal)
   String generateHexSegment(int length, Random rng, int seed) {
     final hex = '0123456789abcdef';
@@ -750,22 +920,22 @@ String generateTripId() {
     }
     return buffer.toString();
   }
-  
+
   // Part 1: 8 hex digits
   final part1 = generateHexSegment(8, random, timestamp);
-  
+
   // Part 2: 4 hex digits
   final part2 = generateHexSegment(4, random, timestamp);
-  
+
   // Part 3: 4 hex digits starting with '4' (version 4)
   final part3 = '4${generateHexSegment(3, random, timestamp)}';
-  
+
   // Part 4: 4 hex digits with variant bits (8, 9, a, or b)
   final variant = ['8', '9', 'a', 'b'][random.nextInt(4)];
   final part4 = '$variant${generateHexSegment(3, random, timestamp)}';
-  
+
   // Part 5: 12 hex digits
   final part5 = generateHexSegment(12, random, timestamp);
-  
+
   return '$part1-$part2-$part3-$part4-$part5';
 }

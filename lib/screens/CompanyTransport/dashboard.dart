@@ -5,6 +5,11 @@ import 'package:get/get.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../models/dashboard_model.dart';
 import '../../widgets/custom_loader.dart';
+import 'job_screen.dart';
+import 'job_form_screen.dart';
+import 'job_application_screen.dart';
+import 'add_expense_screen.dart';
+import 'trips_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -14,7 +19,9 @@ class DashboardScreen extends StatelessWidget {
     final controller = Get.put(DashboardController());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Light grey background for better contrast
+      backgroundColor: const Color(
+        0xFFF5F7FA,
+      ), // Light grey background for better contrast
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -31,12 +38,11 @@ class DashboardScreen extends StatelessWidget {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const CustomLoader(
-            message: "Loading dashboard...",
-          );
+          return const CustomLoader(message: "Loading dashboard...");
         }
 
-        if (controller.errorMessage.value.isNotEmpty && controller.dashboardData.value == null) {
+        if (controller.errorMessage.value.isNotEmpty &&
+            controller.dashboardData.value == null) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
@@ -80,7 +86,9 @@ class DashboardScreen extends StatelessWidget {
                     final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
                     // Provide more height for cards to prevent overflow
                     final double itemHeight = 130;
-                    final double itemWidth = (constraints.maxWidth - (crossAxisCount - 1) * 12) / crossAxisCount;
+                    final double itemWidth =
+                        (constraints.maxWidth - (crossAxisCount - 1) * 12) /
+                        crossAxisCount;
                     final double childAspectRatio = itemWidth / itemHeight;
 
                     return GridView.count(
@@ -138,7 +146,8 @@ class DashboardScreen extends StatelessWidget {
                           data.vehiclesOnLease != null
                               ? "${data.vehiclesOnLease!.total}"
                               : "0",
-                          data.vehiclesOnLease != null && data.vehiclesOnLease!.leasedThisWeek > 0
+                          data.vehiclesOnLease != null &&
+                                  data.vehiclesOnLease!.leasedThisWeek > 0
                               ? "+${data.vehiclesOnLease!.leasedThisWeek} this week"
                               : "No new leases",
                           Colors.orange,
@@ -156,7 +165,10 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     _sectionTitle("Trip Completion Trend"),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(12),
@@ -215,7 +227,11 @@ class DashboardScreen extends StatelessWidget {
                                 color: Colors.black87,
                               ),
                             ),
-                            Icon(Icons.access_time, size: 16, color: Colors.grey),
+                            Icon(
+                              Icons.access_time,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 24),
@@ -228,14 +244,22 @@ class DashboardScreen extends StatelessWidget {
                               Colors.green,
                               Icons.check_circle_outline,
                             ),
-                            Container(width: 1, height: 40, color: Colors.grey[200]),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey[200],
+                            ),
                             _availabilityItem(
                               "${data.vehicleAvailability.onTrip}",
                               "On Trip",
                               Colors.blue,
                               Icons.directions_car,
                             ),
-                            Container(width: 1, height: 40, color: Colors.grey[200]),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey[200],
+                            ),
                             _availabilityItem(
                               "${data.vehicleAvailability.onRent}",
                               "On Rent",
@@ -264,18 +288,22 @@ class DashboardScreen extends StatelessWidget {
                       professionalTypes.add('Other');
                     }
                   }
-                  
-                  final List<String> filterOptions = professionalTypes.toList()..sort();
-                  
+
+                  final List<String> filterOptions = professionalTypes.toList()
+                    ..sort();
+
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: filterOptions.map((filter) {
-                        final isSelected = controller.selectedProfessionalFilter.value == filter;
+                        final isSelected =
+                            controller.selectedProfessionalFilter.value ==
+                            filter;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: GestureDetector(
-                            onTap: () => controller.setProfessionalFilter(filter),
+                            onTap: () =>
+                                controller.setProfessionalFilter(filter),
                             child: _chip(filter, isSelected),
                           ),
                         );
@@ -286,25 +314,34 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Obx(() {
                   // Filter professionals based on selected filter
-                  List<TopProfessional> filteredProfessionals = data.topProfessionals;
-                  
+                  List<TopProfessional> filteredProfessionals =
+                      data.topProfessionals;
+
                   if (controller.selectedProfessionalFilter.value != 'All') {
-                    filteredProfessionals = data.topProfessionals.where((professional) {
-                      if (controller.selectedProfessionalFilter.value == 'Other') {
+                    filteredProfessionals = data.topProfessionals.where((
+                      professional,
+                    ) {
+                      if (controller.selectedProfessionalFilter.value ==
+                          'Other') {
                         return professional.professionalType.isEmpty;
                       }
-                      return professional.professionalType == controller.selectedProfessionalFilter.value;
+                      return professional.professionalType ==
+                          controller.selectedProfessionalFilter.value;
                     }).toList();
                   }
-                  
+
                   return filteredProfessionals.isNotEmpty
                       ? Column(
-                          children: filteredProfessionals.take(3).map((professional) {
-                            final role = professional.professionalType.isNotEmpty
+                          children: filteredProfessionals.take(3).map((
+                            professional,
+                          ) {
+                            final role =
+                                professional.professionalType.isNotEmpty
                                 ? "${professional.professionalType} • ${professional.city}"
                                 : professional.city;
                             // Fix image URL - replace backslashes with forward slashes
-                            String imageUrl = professional.driverImagePath.replaceAll('\\', '/');
+                            String imageUrl = professional.driverImagePath
+                                .replaceAll('\\', '/');
                             return _professionalTile(
                               professional.fullName,
                               role,
@@ -313,7 +350,9 @@ class DashboardScreen extends StatelessWidget {
                             );
                           }).toList(),
                         )
-                      : _emptyState("No professionals available for this filter");
+                      : _emptyState(
+                          "No professionals available for this filter",
+                        );
                 }),
 
                 const SizedBox(height: 24),
@@ -323,25 +362,35 @@ class DashboardScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _sectionTitle("Jobs You Posted"),
-                    TextButton(onPressed: () {}, child: const Text("View All")),
+                    TextButton(
+                      onPressed: () => Get.to(() => const JobsScreen()),
+                      child: const Text("View All"),
+                    ),
                   ],
                 ),
                 ...(data.jobList.isNotEmpty
                     ? data.jobList.take(3).map((job) {
-                        final jobTitle = job.role ?? job.jobType ?? "Untitled Job";
+                        final jobTitle =
+                            job.role ?? job.jobType ?? "Untitled Job";
                         return _jobCard(
                           jobTitle,
                           "${job.applicants ?? 0} Applicants",
                           "${job.likeCount ?? 0} Likes",
                           job.city ?? "",
                           job.salary ?? 0,
+                          onView: () => Get.to(
+                            () => JobApplicationsScreen(jobId: job.jobId),
+                          ),
+                          onEdit: () => Get.to(() => const JobsScreen()),
                         );
                       }).toList()
-                    : [
-                        _emptyState("No jobs posted"),
-                      ]),
+                    : [_emptyState("No jobs posted")]),
                 const SizedBox(height: 12),
-                _addButton("+ Post New Job", const Color(0xFFF44336)),
+                _addButtonWithAction(
+                  "+ Post New Job",
+                  const Color(0xFFF44336),
+                  () => Get.to(() => const PostJobScreen()),
+                ),
 
                 const SizedBox(height: 24),
 
@@ -372,14 +421,18 @@ class DashboardScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _sectionTitle("Recent Transactions"),
-                    TextButton(onPressed: () {}, child: const Text("View All")),
+                    TextButton(
+                      onPressed: () => Get.to(() => const AddExpenseScreen()),
+                      child: const Text("View All"),
+                    ),
                   ],
                 ),
                 ...(data.recentTransactions.isNotEmpty
                     ? data.recentTransactions.take(5).map((transaction) {
                         IconData icon;
                         Color iconColor;
-                        final expenseType = transaction.expenseType?.toLowerCase() ?? '';
+                        final expenseType =
+                            transaction.expenseType?.toLowerCase() ?? '';
                         switch (expenseType) {
                           case 'fuel':
                             icon = Icons.local_gas_station;
@@ -409,18 +462,21 @@ class DashboardScreen extends StatelessWidget {
                             icon = Icons.receipt_long;
                             iconColor = Colors.grey;
                         }
-                        
+
                         // Format date
                         String formattedDate = "Unknown date";
                         if (transaction.dateEntered != null) {
                           try {
-                            final date = DateTime.parse(transaction.dateEntered!);
-                            formattedDate = "${date.day} ${_getMonthName(date.month)} • ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+                            final date = DateTime.parse(
+                              transaction.dateEntered!,
+                            );
+                            formattedDate =
+                                "${date.day} ${_getMonthName(date.month)} • ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
                           } catch (e) {
                             formattedDate = transaction.dateEntered!;
                           }
                         }
-                        
+
                         return _transactionTile(
                           icon: icon,
                           iconColor: iconColor,
@@ -431,11 +487,13 @@ class DashboardScreen extends StatelessWidget {
                               : "₹0",
                         );
                       }).toList()
-                    : [
-                        _emptyState("No recent transactions"),
-                      ]),
+                    : [_emptyState("No recent transactions")]),
                 const SizedBox(height: 12),
-                _addButton("+ Add Expense", const Color(0xFF1A73E8)),
+                _addButtonWithAction(
+                  "+ Add Expense",
+                  const Color(0xFF1A73E8),
+                  () => Get.to(() => const AddExpenseScreen()),
+                ),
 
                 const SizedBox(height: 24),
 
@@ -451,7 +509,7 @@ class DashboardScreen extends StatelessWidget {
                             final date = DateTime.parse(service.dateModified!);
                             final now = DateTime.now();
                             final difference = now.difference(date);
-                            
+
                             if (difference.inDays == 0) {
                               formattedDate = "Today";
                             } else if (difference.inDays == 1) {
@@ -459,28 +517,32 @@ class DashboardScreen extends StatelessWidget {
                             } else if (difference.inDays < 7) {
                               formattedDate = "${difference.inDays} days ago";
                             } else if (difference.inDays < 30) {
-                              formattedDate = "${(difference.inDays / 7).floor()} weeks ago";
+                              formattedDate =
+                                  "${(difference.inDays / 7).floor()} weeks ago";
                             } else {
-                              formattedDate = "${(difference.inDays / 30).floor()} months ago";
+                              formattedDate =
+                                  "${(difference.inDays / 30).floor()} months ago";
                             }
                           } catch (e) {
                             formattedDate = service.dateModified!;
                           }
                         }
-                        
+
                         return _serviceTile(
                           title: service.serviceTitle ?? "Service",
-                          desc: service.category?.isNotEmpty == true ? service.category! : "No category",
-                          tag: service.category?.isNotEmpty == true ? service.category! : "General",
+                          desc: service.category?.isNotEmpty == true
+                              ? service.category!
+                              : "No category",
+                          tag: service.category?.isNotEmpty == true
+                              ? service.category!
+                              : "General",
                           updatedAt: formattedDate,
                           onDelete: () {
                             print("Delete tapped");
                           },
                         );
                       }).toList()
-                    : [
-                        _emptyState("No assigned services"),
-                      ]),
+                    : [_emptyState("No assigned services")]),
 
                 const SizedBox(height: 24),
 
@@ -495,19 +557,20 @@ class DashboardScreen extends StatelessWidget {
                           time: trip.time ?? "Time not specified",
                           driver: trip.driver ?? "Driver not assigned",
                           onManage: () {
-                            print("Manage Trip tapped");
+                            Get.to(() => const TripPage());
                           },
                         );
                       }).toList()
-                    : [
-                        _emptyState("No upcoming trips"),
-                      ]),
+                    : [_emptyState("No upcoming trips")]),
 
                 const SizedBox(height: 40),
                 Center(
                   child: Column(
                     children: [
-                      Text("App v1.3.2", style: TextStyle(color: Colors.grey[400])),
+                      Text(
+                        "App v1.3.2",
+                        style: TextStyle(color: Colors.grey[400]),
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         "Terms & Conditions  •  Privacy Policy",
@@ -546,8 +609,18 @@ class DashboardScreen extends StatelessWidget {
 
   static String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
   }
@@ -655,7 +728,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  static Widget _availabilityItem(String value, String label, Color color, IconData icon) {
+  static Widget _availabilityItem(
+    String value,
+    String label,
+    Color color,
+    IconData icon,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color.withOpacity(0.8), size: 28),
@@ -671,7 +749,11 @@ class DashboardScreen extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -742,7 +824,9 @@ class DashboardScreen extends StatelessWidget {
                 backgroundColor: Colors.grey[100],
                 backgroundImage: NetworkImage(imageUrl),
                 onBackgroundImageError: (_, __) {},
-                child: imageUrl.isEmpty ? const Icon(Icons.person, color: Colors.grey) : null,
+                child: imageUrl.isEmpty
+                    ? const Icon(Icons.person, color: Colors.grey)
+                    : null,
               ),
             ),
             const SizedBox(width: 12),
@@ -797,7 +881,15 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  static Widget _jobCard(String title, String applicants, String likes, String city, double salary) {
+  static Widget _jobCard(
+    String title,
+    String applicants,
+    String likes,
+    String city,
+    double salary, {
+    VoidCallback? onView,
+    VoidCallback? onEdit,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -837,11 +929,18 @@ class DashboardScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                            Icon(
+                              Icons.location_on,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               city,
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
                           ],
                         ),
@@ -874,9 +973,13 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _outlinedButton("View", Colors.blue)),
+                Expanded(
+                  child: _outlinedButtonWithAction("View", Colors.blue, onView),
+                ),
                 const SizedBox(width: 8),
-                Expanded(child: _outlinedButton("Edit", Colors.grey)),
+                Expanded(
+                  child: _outlinedButtonWithAction("Edit", Colors.grey, onEdit),
+                ),
               ],
             ),
           ],
@@ -903,15 +1006,17 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  static Widget _outlinedButton(String text, Color color) {
+  static Widget _outlinedButtonWithAction(
+    String text,
+    Color color,
+    VoidCallback? onPressed,
+  ) {
     return OutlinedButton(
-      onPressed: () {},
+      onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         foregroundColor: color,
         side: BorderSide(color: color.withOpacity(0.5)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
         visualDensity: VisualDensity.compact,
       ),
@@ -977,12 +1082,16 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  static Widget _addButton(String text, Color color) {
+  static Widget _addButtonWithAction(
+    String text,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
@@ -1038,7 +1147,10 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(8),
@@ -1080,7 +1192,11 @@ class DashboardScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: const Padding(
                     padding: EdgeInsets.all(4.0),
-                    child: Icon(Icons.delete_outline, color: Colors.red, size: 22),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: Colors.red,
+                      size: 22,
+                    ),
                   ),
                 ),
               ],
@@ -1125,7 +1241,11 @@ class DashboardScreen extends StatelessWidget {
                     color: Colors.teal.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.local_shipping, color: Colors.teal, size: 20),
+                  child: const Icon(
+                    Icons.local_shipping,
+                    color: Colors.teal,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1249,14 +1369,21 @@ class DashboardScreen extends StatelessWidget {
       );
     }
 
-    final tripData = trendData.map((item) => item.completedTrips?.toDouble() ?? 0.0).toList();
-    
+    final tripData = trendData
+        .map((item) => item.completedTrips?.toDouble() ?? 0.0)
+        .toList();
+
     while (tripData.length < 7) {
       tripData.add(0.0);
     }
-    
+
     final chartData = tripData.take(7).toList();
-    final maxY = chartData.isEmpty ? 30.0 : (chartData.reduce((a, b) => a > b ? a : b) * 1.2).clamp(10.0, double.infinity);
+    final maxY = chartData.isEmpty
+        ? 30.0
+        : (chartData.reduce((a, b) => a > b ? a : b) * 1.2).clamp(
+            10.0,
+            double.infinity,
+          );
 
     return LineChart(
       LineChartData(
@@ -1265,16 +1392,17 @@ class DashboardScreen extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: maxY > 0 ? maxY / 5 : 5,
           getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: Colors.grey.shade100,
-              strokeWidth: 1,
-            );
+            return FlLine(color: Colors.grey.shade100, strokeWidth: 1);
           },
         ),
         titlesData: FlTitlesData(
           show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -1305,13 +1433,11 @@ class DashboardScreen extends StatelessWidget {
               interval: maxY > 0 ? maxY / 5 : 5,
               reservedSize: 30,
               getTitlesWidget: (value, meta) {
-                if (value == meta.min || value == meta.max) return const Text('');
+                if (value == meta.min || value == meta.max)
+                  return const Text('');
                 return Text(
                   value.toInt().toString(),
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
                 );
               },
             ),
@@ -1360,7 +1486,9 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // Expense Overview Chart (Donut Chart)
-  static Widget _buildExpenseOverviewChart(List<RecentTransaction> transactions) {
+  static Widget _buildExpenseOverviewChart(
+    List<RecentTransaction> transactions,
+  ) {
     if (transactions.isEmpty) {
       return Center(
         child: Text(
@@ -1406,7 +1534,9 @@ class DashboardScreen extends StatelessWidget {
     }).toList();
 
     // Sort by amount descending
-    expenses.sort((a, b) => (b['amount'] as double).compareTo(a['amount'] as double));
+    expenses.sort(
+      (a, b) => (b['amount'] as double).compareTo(a['amount'] as double),
+    );
 
     final totalAmount = expenses.fold<double>(
       0,
@@ -1428,7 +1558,9 @@ class DashboardScreen extends StatelessWidget {
                     final isLarge = amount / totalAmount > 0.15;
                     return PieChartSectionData(
                       value: amount,
-                      title: isLarge ? "${(amount / totalAmount * 100).toStringAsFixed(0)}%" : "",
+                      title: isLarge
+                          ? "${(amount / totalAmount * 100).toStringAsFixed(0)}%"
+                          : "",
                       titleStyle: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -1497,4 +1629,3 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 }
-

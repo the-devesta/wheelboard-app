@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/service_controller.dart';
 import '../../models/service_model.dart';
 import 'service_detail_popup.dart';
 import '../../widgets/custom_loader.dart';
+import '../../utils/share_service.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class ServiceDetailScreen extends StatefulWidget {
   const ServiceDetailScreen({super.key, required this.serviceId});
@@ -53,7 +56,17 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.share, color: Colors.black),
-            onPressed: () {},
+            onPressed: () {
+              final service = serviceController.selectedService.value;
+              if (service != null) {
+                ShareService.shareGeneric(
+                  title: service.serviceTitle,
+                  content:
+                      '${service.description ?? "Check out this service"}\n\nBusiness: ${service.businessName}\nLocation: ${service.city}',
+                  url: ShareService.wheelboardWebsiteUrl,
+                );
+              }
+            },
           ),
         ],
       ),
@@ -70,7 +83,11 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
+                const Icon(
+                  Icons.error_outline,
+                  size: 56,
+                  color: Colors.redAccent,
+                ),
                 const SizedBox(height: 12),
                 const Text(
                   'Service detail not found',
@@ -90,7 +107,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
         return Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -129,11 +146,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     );
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF27AE60),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 50,
-                vertical: 12,
-              ),
+              backgroundColor: const Color(0xFFF36969),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -188,21 +202,14 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 ),
               ),
               if (service.isAvailable)
-                const Icon(
-                  Icons.verified,
-                  color: Color(0xFF00B894),
-                  size: 18,
-                ),
+                const Icon(Icons.verified, color: Color(0xFF00B894), size: 18),
             ],
           ),
           const SizedBox(height: 4),
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0xFF00B894).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(4),
@@ -222,10 +229,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               Expanded(
                 child: Text(
                   _buildAddressLabel(service),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ),
             ],
@@ -238,24 +242,68 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
   Widget _buildAboutSection(ServiceModel service) {
     final description = service.description?.trim();
     return Container(
-      padding: const EdgeInsets.all(12),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "About this Service",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF36969).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.info_outline,
+                  color: Color(0xFFF36969),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                "About this Service",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF333333),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            (description != null && description.isNotEmpty)
-                ? description
-                : "Description not provided.",
-            style: const TextStyle(fontSize: 13, height: 1.4),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF5F5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xFFF36969).withOpacity(0.2),
+              ),
+            ),
+            child: Text(
+              (description != null && description.isNotEmpty)
+                  ? description
+                  : "Description not provided.",
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: Color(0xFF555555),
+              ),
+            ),
           ),
         ],
       ),
@@ -320,11 +368,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               const SizedBox(width: 4),
               Text(daysOpen.isNotEmpty ? daysOpen : 'Days not specified'),
               const Spacer(),
-              const Icon(
-                Icons.access_time,
-                size: 18,
-                color: Color(0xFF00B894),
-              ),
+              const Icon(Icons.access_time, size: 18, color: Color(0xFF00B894)),
               const SizedBox(width: 4),
               Text(_formatHours(hoursFrom, hoursTo)),
             ],
@@ -354,17 +398,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(
-                Icons.location_on,
-                size: 18,
-                color: Color(0xFF00B894),
-              ),
+              const Icon(Icons.location_on, size: 18, color: Color(0xFF00B894)),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   service.fullAddress.isNotEmpty
                       ? service.fullAddress
-                      : (service.city.isNotEmpty ? service.city : 'Address N/A'),
+                      : (service.city.isNotEmpty
+                            ? service.city
+                            : 'Address N/A'),
                 ),
               ),
             ],
@@ -383,42 +425,92 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: contact.isNotEmpty ? () {} : null,
+                  onPressed: contact.isNotEmpty
+                      ? () async {
+                          final phoneNumber = contact.replaceAll(
+                            RegExp(r'[^0-9+]'),
+                            '',
+                          );
+                          final Uri callUri = Uri(
+                            scheme: 'tel',
+                            path: phoneNumber,
+                          );
+                          try {
+                            if (await canLaunchUrl(callUri)) {
+                              await launchUrl(callUri);
+                            } else {
+                              SnackBarHelper.error(
+                                'Could not launch phone dialer',
+                              );
+                            }
+                          } catch (e) {
+                            SnackBarHelper.error('Error: ${e.toString()}');
+                          }
+                        }
+                      : null,
                   icon: const Icon(Icons.call, color: Colors.white),
                   label: Text(
                     contact.isNotEmpty ? "Call Now" : "No contact",
                     style: const TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00B894),
+                    backgroundColor: const Color(0xFFF36969),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: whatsapp.isNotEmpty ? () {} : null,
-                  icon: Image.asset(
-                    "assets/whatsappIcon.png",
-                    height: 24,
-                    width: 24,
-                    color: whatsapp.isNotEmpty
-                        ? const Color(0xFF00B894)
-                        : Colors.grey,
+                  onPressed: whatsapp.isNotEmpty
+                      ? () async {
+                          final phoneNumber = whatsapp.replaceAll(
+                            RegExp(r'[^0-9]'),
+                            '',
+                          );
+                          final whatsappUrl = 'https://wa.me/$phoneNumber';
+                          final Uri uri = Uri.parse(whatsappUrl);
+                          try {
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(
+                                uri,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            } else {
+                              SnackBarHelper.error(
+                                'WhatsApp not installed or could not open',
+                              );
+                            }
+                          } catch (e) {
+                            SnackBarHelper.error('Error: ${e.toString()}');
+                          }
+                        }
+                      : null,
+                  icon: const Icon(
+                    Icons.chat,
+                    color: Color(0xFF25D366),
+                    size: 22,
                   ),
                   label: Text(
                     whatsapp.isNotEmpty ? "WhatsApp" : "No WhatsApp",
                     style: TextStyle(
                       color: whatsapp.isNotEmpty
-                          ? const Color(0xFF00B894)
+                          ? const Color(0xFF25D366)
                           : Colors.grey,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     side: BorderSide(
                       color: whatsapp.isNotEmpty
-                          ? const Color(0xFF00B894)
+                          ? const Color(0xFF25D366)
                           : Colors.grey,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),

@@ -28,6 +28,18 @@ class SessionManager {
     return prefs.getInt(key);
   }
 
+  /// Save boolean
+  Future<void> saveBool(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  /// Get boolean
+  Future<bool?> getBool(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(key);
+  }
+
   /// Remove specific key
   Future<void> remove(String key) async {
     final prefs = await SharedPreferences.getInstance();

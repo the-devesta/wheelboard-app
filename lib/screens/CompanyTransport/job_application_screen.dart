@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/job_controller.dart';
 import '../../models/job_application_model.dart';
 import '../../widgets/custom_loader.dart';
@@ -20,7 +21,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   void initState() {
     super.initState();
     jobController = Get.put(JobController(), permanent: false);
-    
+
     // Fetch applications - if jobId is provided, fetch only for that job, otherwise fetch all
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (widget.jobId != null && widget.jobId!.isNotEmpty) {
@@ -43,8 +44,18 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
     try {
       final date = DateTime.parse(dateString);
       final months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
@@ -136,7 +147,11 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.person_outline, size: 64, color: Colors.grey),
+                        const Icon(
+                          Icons.person_outline,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           "No applications found",
@@ -159,15 +174,15 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                     itemCount: jobController.applications.length,
                     itemBuilder: (context, index) {
                       final application = jobController.applications[index];
-                      
+
                       return Padding(
                         padding: EdgeInsets.only(
                           top: index == 0 ? 0 : 0,
-                          bottom: index < jobController.applications.length - 1 ? 16 : 100,
+                          bottom: index < jobController.applications.length - 1
+                              ? 16
+                              : 100,
                         ),
-                        child: _buildApplicationCard(
-                          application: application,
-                        ),
+                        child: _buildApplicationCard(application: application),
                       );
                     },
                   ),
@@ -180,9 +195,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
     );
   }
 
-  Widget _buildApplicationCard({
-    required JobApplicationModel application,
-  }) {
+  Widget _buildApplicationCard({required JobApplicationModel application}) {
     final isAccepted = application.status.toLowerCase() == 'accepted';
     final isRejected = application.status.toLowerCase() == 'rejected';
     final statusColor = _getStatusColor(application.status);
@@ -387,10 +400,11 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      final success = await jobController.updateApplicationStatus(
-                        applicationId: application.applicationId,
-                        status: 'Accepted',
-                      );
+                      final success = await jobController
+                          .updateApplicationStatus(
+                            applicationId: application.applicationId,
+                            status: 'Accepted',
+                          );
                       if (success) {
                         await _fetchApplications();
                       }
@@ -411,10 +425,11 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      final success = await jobController.updateApplicationStatus(
-                        applicationId: application.applicationId,
-                        status: 'Rejected',
-                      );
+                      final success = await jobController
+                          .updateApplicationStatus(
+                            applicationId: application.applicationId,
+                            status: 'Rejected',
+                          );
                       if (success) {
                         await _fetchApplications();
                       }
@@ -434,34 +449,112 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
               ],
             )
           else if (isAccepted)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF86EFAC), width: 1),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Color(0xFF10B981),
-                    size: 16,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Application Accepted',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Inter',
-                      color: Color(0xFF10B981),
+            Column(
+              children: [
+                // Application Accepted Banner
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF86EFAC),
+                      width: 1,
                     ),
                   ),
-                ],
-              ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF10B981),
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Application Accepted',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Inter',
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // View Profile & Contact Driver buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          // Navigate to profile view
+                          Get.snackbar(
+                            'Profile',
+                            'Viewing ${application.fullName}\'s profile',
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                        },
+                        icon: const Icon(Icons.person, size: 18),
+                        label: const Text('View Profile'),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFF36969)),
+                          foregroundColor: const Color(0xFFF36969),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          // Contact driver via phone
+                          final phone = application.contactNumber;
+                          if (phone.isNotEmpty) {
+                            final Uri phoneUri = Uri(
+                              scheme: 'tel',
+                              path: phone,
+                            );
+                            if (await canLaunchUrl(phoneUri)) {
+                              await launchUrl(phoneUri);
+                            } else {
+                              Get.snackbar(
+                                'Error',
+                                'Cannot make phone call',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                              );
+                            }
+                          } else {
+                            Get.snackbar(
+                              'Error',
+                              'No contact number available',
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.phone, size: 18),
+                        label: const Text('Contact'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             )
           else if (isRejected)
             Container(
@@ -475,11 +568,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.cancel,
-                    color: Color(0xFFEF4444),
-                    size: 16,
-                  ),
+                  Icon(Icons.cancel, color: Color(0xFFEF4444), size: 16),
                   SizedBox(width: 8),
                   Text(
                     'Application Rejected',

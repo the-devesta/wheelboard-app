@@ -16,7 +16,7 @@ class RegisterScreen extends StatelessWidget {
     final RegisterController controller = Get.put(RegisterController());
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFFCFDFC),
       body: Stack(
@@ -36,13 +36,16 @@ class RegisterScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Main Content with ScrollView
           SafeArea(
             child: SingleChildScrollView(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: screenHeight - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+                  minHeight:
+                      screenHeight -
+                      MediaQuery.of(context).padding.top -
+                      MediaQuery.of(context).padding.bottom,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -50,7 +53,7 @@ class RegisterScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       const SizedBox(height: 20),
-                      
+
                       // Logo - Responsive size
                       SizedBox(
                         height: screenHeight * 0.25,
@@ -60,12 +63,10 @@ class RegisterScreen extends StatelessWidget {
                           fit: BoxFit.contain,
                         ),
                       ),
-                      
                       const SizedBox(height: 12),
-                      
-                      
+
                       SizedBox(height: screenHeight * 0.02),
-                      
+
                       // Illustration - Responsive size
                       SizedBox(
                         height: screenHeight * 0.25,
@@ -75,9 +76,9 @@ class RegisterScreen extends StatelessWidget {
                           fit: BoxFit.cover,
                         ),
                       ),
-                      
+
                       SizedBox(height: screenHeight * 0.03),
-                      
+
                       // "Register as" Text
                       const Text(
                         'Register as',
@@ -89,9 +90,9 @@ class RegisterScreen extends StatelessWidget {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Toggle Buttons - Responsive width
                       Obx(
                         () => Row(
@@ -100,24 +101,28 @@ class RegisterScreen extends StatelessWidget {
                             Expanded(
                               child: _buildToggleButton(
                                 label: 'Professional',
-                                isSelected: controller.selectedType.value == 'Professional',
-                                onTap: () => controller.selectType('Professional'),
+                                isSelected:
+                                    controller.selectedType.value ==
+                                    'Professional',
+                                onTap: () =>
+                                    controller.selectType('Professional'),
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildToggleButton(
                                 label: 'Company',
-                                isSelected: controller.selectedType.value == 'Company',
+                                isSelected:
+                                    controller.selectedType.value == 'Company',
                                 onTap: () => controller.selectType('Company'),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Sign Up Button - Responsive width
                       SizedBox(
                         width: double.infinity,
@@ -182,9 +187,9 @@ class RegisterScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Login Link
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -212,7 +217,7 @@ class RegisterScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 40), // Bottom padding
                     ],
                   ),

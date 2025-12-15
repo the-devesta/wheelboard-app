@@ -8,6 +8,7 @@ class JobApplicationModel {
   final String status;
   final String appliedDate;
   final String remarks;
+  final String contactNumber;
 
   JobApplicationModel({
     required this.applicationId,
@@ -19,6 +20,7 @@ class JobApplicationModel {
     required this.status,
     required this.appliedDate,
     required this.remarks,
+    this.contactNumber = '',
   });
 
   factory JobApplicationModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,10 @@ class JobApplicationModel {
       status: json['status'] as String? ?? 'Pending',
       appliedDate: json['appliedDate'] as String? ?? '',
       remarks: json['remarks'] as String? ?? '',
+      contactNumber:
+          json['contactNumber'] as String? ??
+          json['phoneNumber'] as String? ??
+          '',
     );
   }
 
@@ -46,6 +52,7 @@ class JobApplicationModel {
       'status': status,
       'appliedDate': appliedDate,
       'remarks': remarks,
+      'contactNumber': contactNumber,
     };
   }
 
@@ -59,6 +66,7 @@ class JobApplicationModel {
     String? status,
     String? appliedDate,
     String? remarks,
+    String? contactNumber,
   }) {
     return JobApplicationModel(
       applicationId: applicationId ?? this.applicationId,
@@ -70,7 +78,7 @@ class JobApplicationModel {
       status: status ?? this.status,
       appliedDate: appliedDate ?? this.appliedDate,
       remarks: remarks ?? this.remarks,
+      contactNumber: contactNumber ?? this.contactNumber,
     );
   }
 }
-

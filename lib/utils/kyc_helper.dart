@@ -3,6 +3,7 @@
 
 import 'package:get/get.dart';
 import '../controllers/user_profile_controller.dart';
+import '../services/auth_service.dart';
 import '../widgets/custom_snackbar.dart';
 
 class KYCHelper {
@@ -10,13 +11,31 @@ class KYCHelper {
   /// Returns true if KYC is complete, false otherwise
   static bool isKYCCompleted() {
     try {
+      // ✅ First check AuthService (saved from login)
+      try {
+        final authService = AuthService.to;
+        final kycFromAuth = authService.isUserKYCCompleted;
+        print("🔐 KYC Status from AuthService: $kycFromAuth");
+
+        // If AuthService has KYC status, use it
+        if (kycFromAuth) {
+          return true;
+        }
+      } catch (e) {
+        print("⚠️ AuthService not found, checking UserProfile: $e");
+      }
+
+      // ✅ Fallback to UserProfileController
       final controller = Get.find<UserProfileController>();
       final profile = controller.userProfile.value;
 
       // Check if KYC is completed from profile
-      return profile?.isKYCCompleted ?? false;
+      final kycFromProfile = profile?.isKYCCompleted ?? false;
+      print("👤 KYC Status from Profile: $kycFromProfile");
+      return kycFromProfile;
     } catch (e) {
       // If controller not found, assume KYC is incomplete
+      print("❌ Error checking KYC: $e");
       return false;
     }
   }

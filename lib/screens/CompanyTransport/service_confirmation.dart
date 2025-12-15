@@ -6,15 +6,15 @@ import '../../models/service_assignment_summary.dart';
 import 'service_dashboard.dart';
 
 class ServiceConfirmationPage extends StatelessWidget {
-  const ServiceConfirmationPage({
-    super.key,
-    required this.summary,
-  });
+  const ServiceConfirmationPage({super.key, required this.summary});
 
   final ServiceAssignmentSummary summary;
 
   @override
   Widget build(BuildContext context) {
+    // Generate readable service code
+    final readableServiceCode = _generateReadableServiceCode();
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SingleChildScrollView(
@@ -78,7 +78,10 @@ class ServiceConfirmationPage extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.assignment, color: Color(0xFF3867d6)),
+                          const Icon(
+                            Icons.assignment,
+                            color: Color(0xFF3867d6),
+                          ),
                           const SizedBox(width: 8),
                           const Text(
                             "Service Details",
@@ -94,7 +97,9 @@ class ServiceConfirmationPage extends StatelessWidget {
                       // Service Title
                       _detailRow(
                         "Service Title",
-                        summary.serviceTitle.isNotEmpty ? summary.serviceTitle : 'Service',
+                        summary.serviceTitle.isNotEmpty
+                            ? summary.serviceTitle
+                            : 'Service',
                       ),
                       const SizedBox(height: 12),
 
@@ -136,7 +141,9 @@ class ServiceConfirmationPage extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 summary.formattedDate,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -160,7 +167,9 @@ class ServiceConfirmationPage extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 summary.formattedTime,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -180,7 +189,10 @@ class ServiceConfirmationPage extends StatelessWidget {
                         summary.description.isNotEmpty
                             ? summary.description
                             : "No additional description provided.",
-                        style: const TextStyle(color: Colors.black87, fontSize: 14),
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -224,19 +236,20 @@ class ServiceConfirmationPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              summary.serviceId,
+                              readableServiceCode,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                                fontSize: 14,
+                                fontFamily: 'monospace',
                               ),
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           IconButton(
                             onPressed: () async {
                               await Clipboard.setData(
-                                ClipboardData(text: summary.serviceId),
+                                ClipboardData(text: readableServiceCode),
                               );
                               Get.snackbar(
                                 'Copied',
@@ -245,7 +258,10 @@ class ServiceConfirmationPage extends StatelessWidget {
                                 margin: const EdgeInsets.all(16),
                               );
                             },
-                            icon: const Icon(Icons.copy, color: Color(0xFF00B894)),
+                            icon: const Icon(
+                              Icons.copy,
+                              color: Color(0xFF00B894),
+                            ),
                           ),
                         ],
                       ),
@@ -270,7 +286,7 @@ class ServiceConfirmationPage extends StatelessWidget {
                 children: [
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF22C55E),
+                      backgroundColor: const Color(0xFFF36969),
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -329,5 +345,35 @@ class ServiceConfirmationPage extends StatelessWidget {
         Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
       ],
     );
+  }
+
+  /// Generate a readable service code format:
+  /// WSPL-{VehicleNo}-{DDMMYY}-{LastDigits}
+  String _generateReadableServiceCode() {
+    final vehicleNo = summary.vehicleNumber.isNotEmpty
+        ? summary.vehicleNumber
+              .replaceAll(RegExp(r'[^A-Z0-9]'), '')
+              .toUpperCase()
+        : 'NOVEH';
+
+    final date = summary.scheduledDateTime;
+    final dateStr =
+        '${date.day.toString().padLeft(2, '0')}${date.month.toString().padLeft(2, '0')}${date.year.toString().substring(2)}';
+
+    // Get last 5 chars of service ID or generate from hash
+    String suffix;
+    if (summary.serviceId.length >= 5) {
+      suffix = summary.serviceId
+          .substring(summary.serviceId.length - 5)
+          .toUpperCase();
+    } else {
+      suffix = summary.serviceId.hashCode
+          .abs()
+          .toString()
+          .padLeft(5, '0')
+          .substring(0, 5);
+    }
+
+    return 'WSPL-$vehicleNo-$dateStr-$suffix';
   }
 }

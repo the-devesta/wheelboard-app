@@ -6,7 +6,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import 'new_post_screen.dart';
 import '../../controllers/post_controller.dart';
+import '../../controllers/Professional/feeds_controller.dart';
 import '../../widgets/custom_loader.dart';
+import '../../utils/share_service.dart';
 
 class FeedScreen extends StatelessWidget {
   final String profileImage = 'https://i.pravatar.cc/100';
@@ -44,10 +46,7 @@ class FeedScreen extends StatelessWidget {
                       ),
                       Text(
                         post.category,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -61,10 +60,7 @@ class FeedScreen extends StatelessWidget {
           if (post.content.isNotEmpty)
             Text(
               post.content,
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.black87, fontSize: 14),
             ),
 
           // Post Images
@@ -88,9 +84,10 @@ class FeedScreen extends StatelessWidget {
                             color: Colors.grey[200],
                             child: Center(
                               child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
                                     ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
+                                          loadingProgress.expectedTotalBytes!
                                     : null,
                               ),
                             ),
@@ -114,7 +111,8 @@ class FeedScreen extends StatelessWidget {
                                   color: Colors.grey[200],
                                   child: Center(
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.image_not_supported,
@@ -148,7 +146,9 @@ class FeedScreen extends StatelessWidget {
                         mainAxisSpacing: 8,
                         childAspectRatio: 1,
                       ),
-                      itemCount: post.imageUrls.length > 4 ? 4 : post.imageUrls.length,
+                      itemCount: post.imageUrls.length > 4
+                          ? 4
+                          : post.imageUrls.length,
                       itemBuilder: (context, index) {
                         return ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -157,20 +157,26 @@ class FeedScreen extends StatelessWidget {
                               _formatImageUrl(post.imageUrls[index]),
                               fit: BoxFit.cover,
                               headers: _imageHeaders(),
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  color: Colors.grey[200],
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded /
-                                              loadingProgress.expectedTotalBytes!
-                                          : null,
-                                    ),
-                                  ),
-                                );
-                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      color: Colors.grey[200],
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          value:
+                                              loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
                               errorBuilder: (context, error, stackTrace) {
                                 // Show default placeholder for grid images
                                 return Container(
@@ -213,51 +219,126 @@ class FeedScreen extends StatelessWidget {
 
           SizedBox(height: 10),
 
-          // Reactions
-          Row(
-            children: [
-              SvgPicture.asset(
-                'assets/heart.svg',
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-              ),
-              SizedBox(width: 10),
-              SvgPicture.asset(
-                'assets/share.svg',
-                width: 26,
-                height: 26,
-                fit: BoxFit.contain,
-              ),
-              SizedBox(width: 10),
-              SvgPicture.asset(
-                'assets/eye.svg',
-                width: 26,
-                height: 26,
-                fit: BoxFit.contain,
-              ),
-              Spacer(),
-              // Status badge
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: post.status == 'Pending'
-                      ? Colors.orange[100]
-                      : Colors.green[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  post.status,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: post.status == 'Pending'
-                        ? Colors.orange[800]
-                        : Colors.green[800],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+          // Reactions - Now Functional!
+          Builder(
+            builder: (context) {
+              // Get or put the FeedsController
+              final FeedsController feedsController;
+              try {
+                feedsController = Get.find<FeedsController>();
+              } catch (e) {
+                Get.put(FeedsController());
+                return const SizedBox.shrink(); // Will rebuild after controller is ready
+              }
+
+              return Obx(() {
+                final isLiked = feedsController.isLiked(post.postId);
+
+                return Row(
+                  children: [
+                    // Like Button - Functional
+                    GestureDetector(
+                      onTap: () {
+                        feedsController.toggleLike(post.postId);
+                      },
+                      child: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        size: 28,
+                        color: isLiked
+                            ? const Color(0xFFF36969)
+                            : const Color(0xFFFCACAC),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    // Share Button - Functional
+                    GestureDetector(
+                      onTap: () {
+                        ShareService.sharePost(
+                          postId: post.postId,
+                          content: post.content,
+                          userName: post.userName,
+                          category: post.category,
+                        );
+                      },
+                      child: SvgPicture.asset(
+                        'assets/share.svg',
+                        width: 26,
+                        height: 26,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    // View Post Details Button
+                    GestureDetector(
+                      onTap: () {
+                        // Show post details in a dialog
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text('Post Details'),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Posted by: ${post.userName}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text('Category: ${post.category}'),
+                                  SizedBox(height: 8),
+                                  Text('Status: ${post.status}'),
+                                  SizedBox(height: 8),
+                                  Text('Posted: ${post.timeAgo}'),
+                                  SizedBox(height: 16),
+                                  Text(post.content),
+                                ],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text('Close'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: SvgPicture.asset(
+                        'assets/eye.svg',
+                        width: 26,
+                        height: 26,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    Spacer(),
+                    // Status badge
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: post.status == 'Pending'
+                            ? Colors.orange[100]
+                            : Colors.green[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        post.status,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: post.status == 'Pending'
+                              ? Colors.orange[800]
+                              : Colors.green[800],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              });
+            },
           ),
           SizedBox(height: 10),
 
@@ -265,15 +346,9 @@ class FeedScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                post.timeAgo,
-                style: TextStyle(color: Colors.grey),
-              ),
+              Text(post.timeAgo, style: TextStyle(color: Colors.grey)),
               if (post.content.length > 100)
-                Text(
-                  "Read More",
-                  style: TextStyle(color: Colors.blueAccent),
-                ),
+                Text("Read More", style: TextStyle(color: Colors.blueAccent)),
             ],
           ),
         ],
@@ -307,53 +382,45 @@ class FeedScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Obx(
-        () {
-          if (postController.isLoading.value) {
-            return const CustomLoader(message: "Loading posts...");
-          }
+      body: Obx(() {
+        if (postController.isLoading.value) {
+          return const CustomLoader(message: "Loading posts...");
+        }
 
-          if (postController.posts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.feed, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    "No posts yet",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Create your first post!",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              await postController.refreshPosts();
-            },
-            child: ListView.builder(
-              padding: EdgeInsets.only(bottom: 100),
-              itemCount: postController.posts.length,
-              itemBuilder: (context, index) {
-                return buildPostCard(postController.posts[index]);
-              },
+        if (postController.posts.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.feed, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  "No posts yet",
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "Create your first post!",
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                ),
+              ],
             ),
           );
-        },
-      ),
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            await postController.refreshPosts();
+          },
+          child: ListView.builder(
+            padding: EdgeInsets.only(bottom: 100),
+            itemCount: postController.posts.length,
+            itemBuilder: (context, index) {
+              return buildPostCard(postController.posts[index]);
+            },
+          ),
+        );
+      }),
       floatingActionButton: ElevatedButton(
         onPressed: () {
           Get.to(const NetworkPostScreen())?.then((result) {
@@ -386,8 +453,5 @@ String _formatImageUrl(String url) {
 Map<String, String>? _imageHeaders() {
   final token = AuthService.to.currentToken;
   if (token.isEmpty) return null;
-  return {
-    'Authorization': 'Bearer $token',
-    'Accept': '*/*',
-  };
+  return {'Authorization': 'Bearer $token', 'Accept': '*/*'};
 }

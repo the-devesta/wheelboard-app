@@ -39,26 +39,42 @@ class FeedCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = ResponsiveUtils.isMobile(context)
-        ? screenWidth * 0.95 // 373px out of 393px base
+        ? screenWidth *
+              0.95 // 373px out of 393px base
         : 373.0;
     final cardHeight = ResponsiveUtils.isMobile(context)
-        ? screenWidth * 0.85 // Responsive height
+        ? screenWidth *
+              0.85 // Responsive height
         : 334.0;
 
     return Container(
       width: cardWidth,
       height: cardHeight,
       margin: EdgeInsets.symmetric(
-        horizontal: ResponsiveUtils.getResponsiveSpacing(context, small: 10, medium: 12, large: 14),
-        vertical: ResponsiveUtils.getResponsiveSpacing(context, small: 12, medium: 14, large: 16),
+        horizontal: ResponsiveUtils.getResponsiveSpacing(
+          context,
+          small: 10,
+          medium: 12,
+          large: 14,
+        ),
+        vertical: ResponsiveUtils.getResponsiveSpacing(
+          context,
+          small: 12,
+          medium: 14,
+          large: 16,
+        ),
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFFBFBFB),
-        borderRadius: BorderRadius.circular(ResponsiveUtils.getResponsiveBorderRadius(context, small: 16, medium: 18, large: 20)),
-        border: Border.all(
-          color: const Color(0xFFFCD2D2),
-          width: 1,
+        borderRadius: BorderRadius.circular(
+          ResponsiveUtils.getResponsiveBorderRadius(
+            context,
+            small: 16,
+            medium: 18,
+            large: 20,
+          ),
         ),
+        border: Border.all(color: const Color(0xFFFCD2D2), width: 1),
       ),
       child: Stack(
         children: [
@@ -87,7 +103,11 @@ class FeedCardWidget extends StatelessWidget {
                               shape: BoxShape.circle,
                               color: Color(0xFFE0E0E0),
                             ),
-                            child: const Icon(Icons.person, size: 20, color: Color(0xFF535353)),
+                            child: const Icon(
+                              Icons.person,
+                              size: 20,
+                              color: Color(0xFF535353),
+                            ),
                           )
                         : null,
                   ),
@@ -95,7 +115,12 @@ class FeedCardWidget extends StatelessWidget {
                   Text(
                     profileName,
                     style: GoogleFonts.poppins(
-                      fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+                      fontSize: ResponsiveUtils.getResponsiveFontSize(
+                        context,
+                        small: 14,
+                        medium: 15,
+                        large: 16,
+                      ),
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF535353),
                       letterSpacing: -0.28,
@@ -109,7 +134,10 @@ class FeedCardWidget extends StatelessWidget {
           // Main Image - Centered horizontally, positioned at middle-34px vertically
           Positioned(
             left: 18, // (cardWidth - (cardWidth - 36)) / 2 = 18
-            top: cardHeight / 2 - 34 - 76, // Center vertically minus 34px minus half image height
+            top:
+                cardHeight / 2 -
+                34 -
+                76, // Center vertically minus 34px minus half image height
             child: Container(
               width: cardWidth - 36, // 373 - 36 = 337px (matching Figma)
               height: 152,
@@ -128,7 +156,11 @@ class FeedCardWidget extends StatelessWidget {
                         color: const Color(0xFFE0E0E0),
                       ),
                       child: const Center(
-                        child: Icon(Icons.image, size: 48, color: Color(0xFF999999)),
+                        child: Icon(
+                          Icons.image,
+                          size: 48,
+                          color: Color(0xFF999999),
+                        ),
                       ),
                     )
                   : null,
@@ -148,17 +180,17 @@ class FeedCardWidget extends StatelessWidget {
                     width: 25,
                     height: 25,
                     decoration: BoxDecoration(
-                      color: isLiked ? const Color(0xFFFF5E5E).withOpacity(0.1) : Colors.transparent,
+                      color: isLiked
+                          ? const Color(0xFFFF5E5E).withOpacity(0.1)
+                          : Colors.transparent,
                       shape: BoxShape.circle,
                     ),
-                    child: SvgPicture.asset(
-                      'assets/heart.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: ColorFilter.mode(
-                        isLiked ? const Color(0xFFF36969) : const Color(0xFF535353),
-                        BlendMode.srcIn,
-                      ),
+                    child: Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      size: 22,
+                      color: isLiked
+                          ? const Color(0xFFF36969)
+                          : const Color(0xFFFCACAC),
                     ),
                   ),
                 ),
@@ -211,7 +243,12 @@ class FeedCardWidget extends StatelessWidget {
               child: Text(
                 title,
                 style: GoogleFonts.poppins(
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context,
+                    small: 14,
+                    medium: 15,
+                    large: 16,
+                  ),
                   fontWeight: FontWeight.w500,
                   color: Colors.black,
                   letterSpacing: -0.28,
@@ -231,7 +268,12 @@ class FeedCardWidget extends StatelessWidget {
               child: Text(
                 description,
                 style: GoogleFonts.poppins(
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 12, medium: 13, large: 14),
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context,
+                    small: 12,
+                    medium: 13,
+                    large: 14,
+                  ),
                   fontWeight: FontWeight.w400,
                   color: Colors.black,
                   letterSpacing: -0.24,
@@ -254,7 +296,12 @@ class FeedCardWidget extends StatelessWidget {
                 Text(
                   'Posted $postedTime',
                   style: GoogleFonts.poppins(
-                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 13, medium: 13, large: 14),
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(
+                      context,
+                      small: 13,
+                      medium: 13,
+                      large: 14,
+                    ),
                     fontWeight: FontWeight.w400,
                     color: const Color(0xFF666666),
                     letterSpacing: -0.26,
@@ -266,7 +313,12 @@ class FeedCardWidget extends StatelessWidget {
                   child: Text(
                     'Read more',
                     style: GoogleFonts.poppins(
-                      fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 15, medium: 15, large: 16),
+                      fontSize: ResponsiveUtils.getResponsiveFontSize(
+                        context,
+                        small: 15,
+                        medium: 15,
+                        large: 16,
+                      ),
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF375DFB),
                       letterSpacing: -0.3,
@@ -281,4 +333,3 @@ class FeedCardWidget extends StatelessWidget {
     );
   }
 }
-

@@ -396,6 +396,18 @@ class Signup extends StatelessWidget {
   }
 
   Widget _buildBusinessCategoryDropdown() {
+    // Helper function to get icon for each category
+    IconData getCategoryIcon(String category) {
+      switch (category) {
+        case 'Transport':
+          return Icons.local_shipping; // Truck icon for Transport
+        case 'Service Provider':
+          return Icons.warehouse; // Warehouse icon for Service Provider
+        default:
+          return Icons.business;
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -451,20 +463,68 @@ class Signup extends StatelessWidget {
                     value: category,
                     child: Padding(
                       padding: const EdgeInsets.only(left: 14),
-                      child: Text(
-                        category,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF1A1C1E),
-                          fontFamily: 'Roboto',
-                        ),
+                      child: Row(
+                        children: [
+                          // Category Icon
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF25C5C).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              getCategoryIcon(category),
+                              size: 18,
+                              color: const Color(0xFFF25C5C),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Category Name
+                          Text(
+                            category,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF1A1C1E),
+                              fontFamily: 'Roboto',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
                 }).toList(),
                 onChanged: (String? value) {
                   selectedCompanyType.value = value;
+                },
+                selectedItemBuilder: (BuildContext context) {
+                  return businessCategories.map((String category) {
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 14),
+                      child: Row(
+                        children: [
+                          // Category Icon (smaller for selected state)
+                          Icon(
+                            getCategoryIcon(category),
+                            size: 18,
+                            color: const Color(0xFFF25C5C),
+                          ),
+                          const SizedBox(width: 8),
+                          // Category Name
+                          Text(
+                            category,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF1A1C1E),
+                              fontFamily: 'Roboto',
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList();
                 },
               ),
             ),

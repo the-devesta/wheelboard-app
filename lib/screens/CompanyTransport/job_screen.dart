@@ -65,9 +65,9 @@ class _JobsScreenState extends State<JobsScreen> {
                 const Text(
                   "Tap the button below to post your first job",
                   style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ],
-      ),
+                ),
+              ],
+            ),
           );
         }
 
@@ -135,219 +135,226 @@ class JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Main Card
-        GestureDetector(
-          onTap: onCardTap,
-          child: Container(
-            margin: const EdgeInsets.only(
-              bottom: 30,
-            ), // leave space for overlay button
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: onCardTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            // Image with Edit Icon overlay
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  child: job.imagePaths.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: job.imagePaths.first,
+                          width: double.infinity,
+                          height: 140,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            height: 140,
+                            color: Colors.grey[200],
+                            child: const Center(child: CustomLoader.small()),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            height: 140,
+                            color: Colors.grey[200],
+                            child: Image.asset(
+                              "assets/jobdescription.png",
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        )
+                      : Image.asset(
+                          "assets/jobdescription.png",
+                          width: double.infinity,
+                          height: 140,
+                          fit: BoxFit.cover,
+                        ),
+                ),
+                // Edit Icon on top right corner of image
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: onEdit,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 18,
+                        color: Color(0xFFF36969),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: Column(
-            children: [
-              // Image
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                child: job.imagePaths.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: job.imagePaths.first,
-                        width: double.infinity,
-                        height: 140,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 140,
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: const CustomLoader.small(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 140,
-                          color: Colors.grey[200],
-                child: Image.asset(
-                            "assets/jobdescription.png",
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      )
-                    : Image.asset(
-                        "assets/jobdescription.png",
-                  width: double.infinity,
-                  height: 140,
-                        fit: BoxFit.cover,
-                ),
-              ),
 
-              // Info
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Role & Icons
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                offset: const Offset(0, 4),
-                                blurRadius: 6,
+            // Info
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Role & Icons
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              offset: const Offset(0, 4),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              job.role,
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w400,
+                                fontSize: 16,
                               ),
-                            ],
-                          ),
+                            ),
+                            Obx(() {
+                              final applicationCount = jobController
+                                  .getApplicationCount(job.jobId);
+                              if (applicationCount > 0) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF317873),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '$applicationCount',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            }),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      // Like Button
+                      Obx(() {
+                        final currentJob = jobController.jobs.firstWhere(
+                          (j) => j.jobId == job.jobId,
+                          orElse: () => job,
+                        );
+                        return GestureDetector(
+                          onTap: () {
+                            jobController.toggleJobLike(job.jobId);
+                          },
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              Icon(
+                                currentJob.isLiked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 22,
+                                color: currentJob.isLiked
+                                    ? AppColors.buttonBg
+                                    : Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
                               Text(
-                                job.role,
-                                style: const TextStyle(
-                                  color: Colors.redAccent,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 16,
+                                "${currentJob.likeCount}",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: currentJob.isLiked
+                                      ? AppColors.buttonBg
+                                      : Colors.grey,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              Obx(() {
-                                final applicationCount = jobController.getApplicationCount(job.jobId);
-                                if (applicationCount > 0) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(left: 8),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF317873),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        '$applicationCount',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              }),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Obx(() {
-                          final currentJob = jobController.jobs.firstWhere(
-                            (j) => j.jobId == job.jobId,
-                            orElse: () => job,
+                        );
+                      }),
+                      const SizedBox(width: 12),
+                      // Share Button
+                      GestureDetector(
+                        onTap: () {
+                          Share.share(
+                            "Job: ${job.role}\n"
+                            "Duration: ${job.jobDuration}\n"
+                            "Openings: ${job.openings}\n"
+                            "Salary: ₹${job.salary}\n"
+                            "City: ${job.city}\n"
+                            "Description: ${job.description}",
                           );
-                          return GestureDetector(
-                            onTap: () {
-                              jobController.toggleJobLike(job.jobId);
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  currentJob.isLiked 
-                                      ? Icons.favorite 
-                                      : Icons.favorite_border,
-                                  size: 24,
-                                  color: currentJob.isLiked 
-                                      ? AppColors.buttonBg 
-                                      : Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "${currentJob.likeCount}",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: currentJob.isLiked 
-                                        ? AppColors.buttonBg 
-                                        : Colors.grey,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () {
-                            // Share job details
-                            Share.share(
-                              "Job: ${job.role}\n"
-                              "Duration: ${job.jobDuration}\n"
-                              "Openings: ${job.openings}\n"
-                              "Salary: ₹${job.salary}\n"
-                              "City: ${job.city}\n"
-                              "Description: ${job.description}",
-                            );
-                          },
-                          child: SvgPicture.asset(
-                            'assets/shareBtnWBg.svg',
-                            width: 32,
-                            height: 32,
-                            fit: BoxFit.contain,
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.share,
+                            size: 18,
+                            color: Color(0xFF6C7278),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    _infoRow("Duration", job.jobDuration),
-                    _infoRow("Openings", job.openings.toString()),
-                    _infoRow("Salary", "₹${job.salary}"),
-                    _infoRow("City", job.city),
-                    _infoRow("Job Type", job.jobType),
-                    _infoRow("Description", job.description),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _infoRow("Duration", job.jobDuration),
+                  _infoRow("Openings", job.openings.toString()),
+                  _infoRow("Salary", "₹${job.salary}"),
+                  _infoRow("City", job.city),
+                  _infoRow("Job Type", job.jobType),
+                  _infoRow("Description", job.description),
+                ],
               ),
-            ],
-          ),
-        ),
-          ),
-
-        // Floating Edit Button (Overlayed)
-        Positioned(
-          right: 16,
-          bottom: 40,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF5C5C),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(
-                  color: Colors.white,
-                  width: 2,
-                ),
-              ),
-              elevation: 4,
             ),
-            onPressed: onEdit,
-            icon: const Icon(Icons.edit, size: 16, color: Colors.white),
-            label: const Text("Edit", style: TextStyle(color: Colors.white)),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

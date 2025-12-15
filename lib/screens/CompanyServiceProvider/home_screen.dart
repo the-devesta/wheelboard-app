@@ -23,16 +23,18 @@ class ServiceProviderHomeScreen extends StatefulWidget {
   const ServiceProviderHomeScreen({super.key});
 
   @override
-  State<ServiceProviderHomeScreen> createState() => _ServiceProviderHomeScreenState();
+  State<ServiceProviderHomeScreen> createState() =>
+      _ServiceProviderHomeScreenState();
 }
 
 class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
-    final notificationController = Get.put(NotificationController());
+  final notificationController = Get.put(NotificationController());
   final userProfileController = Get.put(UserProfileController());
   List<ServiceModel> _services = [];
   bool _isLoadingServices = false;
-  final Map<String, String> _serviceImages = {}; // Store service images by serviceId
-    
+  final Map<String, String> _serviceImages =
+      {}; // Store service images by serviceId
+
   @override
   void initState() {
     super.initState();
@@ -61,14 +63,16 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
       final response = await HttpHelper.getData(
         endpoint: '${API.serviceListByUser}$userId',
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
           'Accept': '*/*',
         },
       );
 
       if (response.statusCode == 200) {
         // API returns array directly, not wrapped in data object
-        final List<dynamic> data = jsonDecode(response.body) as List<dynamic>? ?? [];
+        final List<dynamic> data =
+            jsonDecode(response.body) as List<dynamic>? ?? [];
 
         // Map API response to ServiceModel
         setState(() {
@@ -81,19 +85,21 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               fullAddress: json['fullAddress'] ?? '',
               isAvailable: json['isVisible'] ?? false,
               businessName: json['businessName'] ?? '',
-            businessType: json['businessType'] ?? '',
-            serviceCategory: json['serviceCategory'],
-            contactNumber: json['contactNumber'],
+              businessType: json['businessType'] ?? '',
+              serviceCategory: json['serviceCategory'],
+              contactNumber: json['contactNumber'],
               whatsappNumber: json['whatsappNumber'],
               description: json['description'],
-              pricingOption: json['isFlatPrice'] == true ? 'Flat Price' : 'Per Hour',
+              pricingOption: json['isFlatPrice'] == true
+                  ? 'Flat Price'
+                  : 'Per Hour',
               amount: json['price'],
               businessHoursFrom: json['businessFrom'],
               businessHoursTo: json['businessTo'],
               daysOpen: json['daysOpen'],
             );
           }).toList();
-          
+
           // Store images separately for each service
           for (int i = 0; i < data.length && i < _services.length; i++) {
             final json = data[i] as Map<String, dynamic>;
@@ -127,32 +133,44 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
             children: [
               // Header Section
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     // Profile Picture
                     Obx(() {
                       final profile = userProfileController.userProfile.value;
                       final profileImage = profile?.profileImage;
-                      
+
                       return GestureDetector(
-                      onTap: () {
-                        Get.to(() => const ServiceProviderProfileScreen());
-                      },
+                        onTap: () {
+                          Get.to(() => const ServiceProviderProfileScreen());
+                        },
                         child: profileImage != null && profileImage.isNotEmpty
                             ? CircleAvatar(
                                 radius: 33,
                                 backgroundImage: NetworkImage(profileImage),
-                                onBackgroundImageError: (exception, stackTrace) {
-                                  // Handle image error
-                                },
-                                child: const Icon(Icons.person, size: 33, color: Color(0xFF333333)),
+                                onBackgroundImageError:
+                                    (exception, stackTrace) {
+                                      // Handle image error
+                                    },
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 33,
+                                  color: Color(0xFF333333),
+                                ),
                               )
                             : const CircleAvatar(
-                        radius: 33,
+                                radius: 33,
                                 backgroundColor: Color(0xFFE0E0E0),
-                                child: Icon(Icons.person, size: 33, color: Color(0xFF333333)),
-                        ),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 33,
+                                  color: Color(0xFF333333),
+                                ),
+                              ),
                       );
                     }),
                     const SizedBox(width: 12),
@@ -160,37 +178,42 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                     Expanded(
                       child: Obx(() {
                         final profile = userProfileController.userProfile.value;
-                        final businessName = profile?.businessName ?? profile?.displayName ?? 'Welcome';
-                        
+                        final businessName =
+                            profile?.businessName ??
+                            profile?.displayName ??
+                            'Welcome';
+
                         return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome!',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF333333),
-                              fontSize: 16,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome!',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF333333),
+                                    fontSize: 16,
+                                  ),
                             ),
-                          ),
-                          Text(
+                            Text(
                               businessName,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF333333),
-                              fontSize: 20,
-                            ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF333333),
+                                    fontSize: 20,
+                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                            ),
+                          ],
                         );
                       }),
                     ),
                     // Notification Bell
                     Obx(() {
                       final unreadCount = notificationController.unreadCount;
-                      
+
                       return GestureDetector(
                         onTap: () {
                           Get.to(const NotificationScreen());
@@ -346,14 +369,15 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'My Services',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: const Color(0xFF2D3436),
-                      ),
+                      children: [
+                        Text(
+                          'My Services',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: const Color(0xFF2D3436),
+                              ),
                         ),
                         if (_services.isNotEmpty)
                           TextButton(
@@ -362,10 +386,11 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                             },
                             child: Text(
                               'View All',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF00AAFF),
-                                fontSize: 14,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: const Color(0xFF00AAFF),
+                                    fontSize: 14,
+                                  ),
                             ),
                           ),
                       ],
@@ -391,8 +416,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                               Icons.inbox_outlined,
                               size: 48,
                               color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 12),
+                            ),
+                            const SizedBox(height: 12),
                             Text(
                               'No services yet',
                               style: TextStyle(
@@ -418,26 +443,34 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                         (index) {
                           final service = _services[index];
                           // Get first image from stored images map
-                          final serviceImage = _serviceImages[service.serviceId] ?? '';
-                          
+                          final serviceImage =
+                              _serviceImages[service.serviceId] ?? '';
+
                           return Column(
                             children: [
-                    GestureDetector(
+                              GestureDetector(
                                 onTap: () {
-                                  Get.to(() => ServiceDetailsScreen(serviceId: service.serviceId));
+                                  Get.to(
+                                    () => ServiceDetailsScreen(
+                                      serviceId: service.serviceId,
+                                    ),
+                                  );
                                 },
                                 child: _buildServiceCardFromModel(
-                        context,
+                                  context,
                                   service: service,
                                   imageUrl: serviceImage,
                                 ),
                               ),
-                              if (index < (_services.length > 2 ? 1 : _services.length - 1))
+                              if (index <
+                                  (_services.length > 2
+                                      ? 1
+                                      : _services.length - 1))
                                 const SizedBox(height: 12),
                             ],
                           );
                         },
-                    ),
+                      ),
                   ],
                 ),
               ),
@@ -612,15 +645,18 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     required ServiceModel service,
     String imageUrl = '',
   }) {
-    final title = service.serviceTitle.isNotEmpty ? service.serviceTitle : 'Untitled Service';
+    final title = service.serviceTitle.isNotEmpty
+        ? service.serviceTitle
+        : 'Untitled Service';
     // Use serviceCategory if available, otherwise fallback to businessType or city
-    final tag = (service.serviceCategory != null && service.serviceCategory!.isNotEmpty)
+    final tag =
+        (service.serviceCategory != null && service.serviceCategory!.isNotEmpty)
         ? service.serviceCategory!
-        : (service.businessType.isNotEmpty 
-            ? service.businessType 
-            : (service.city.isNotEmpty ? service.city : 'Service'));
+        : (service.businessType.isNotEmpty
+              ? service.businessType
+              : (service.city.isNotEmpty ? service.city : 'Service'));
     final description = service.description ?? 'No description available';
-    
+
     // Try to get image from API response if available
     String serviceImage = imageUrl;
 
@@ -629,8 +665,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
       imageUrl: serviceImage,
       title: title,
       tag: tag,
-      description: description.length > 100 
-          ? '${description.substring(0, 100)}...' 
+      description: description.length > 100
+          ? '${description.substring(0, 100)}...'
           : description,
       onEdit: () {
         Get.to(() => AddServiceScreen(service: service));
@@ -667,7 +703,10 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               borderRadius: BorderRadius.circular(8),
               color: imageUrl.isEmpty ? const Color(0xFFF0F0F0) : null,
               border: imageUrl.isEmpty
-                  ? Border.all(color: const Color(0xFFE0E0E0), style: BorderStyle.solid)
+                  ? Border.all(
+                      color: const Color(0xFFE0E0E0),
+                      style: BorderStyle.solid,
+                    )
                   : null,
             ),
             child: imageUrl.isEmpty
@@ -700,7 +739,10 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           color: const Color(0xFFF0F0F0),
-                          child: const Icon(Icons.image, color: Color(0xFF999999)),
+                          child: const Icon(
+                            Icons.image,
+                            color: Color(0xFF999999),
+                          ),
                         );
                       },
                     ),
@@ -726,7 +768,10 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFD0FAE6),
                         borderRadius: BorderRadius.circular(9999),
@@ -766,7 +811,11 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 8),
                         ),
-                        icon: const Icon(Icons.edit, size: 13, color: Color(0xFF00B894)),
+                        icon: const Icon(
+                          Icons.edit,
+                          size: 13,
+                          color: Color(0xFF00B894),
+                        ),
                         label: Text(
                           'Edit',
                           style: TextStyle(
@@ -788,7 +837,11 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 8),
                         ),
-                        icon: const Icon(Icons.visibility_off, size: 13, color: Color(0xFFFF4D4F)),
+                        icon: const Icon(
+                          Icons.visibility_off,
+                          size: 13,
+                          color: Color(0xFFFF4D4F),
+                        ),
                         label: Text(
                           'Unpublish',
                           style: TextStyle(
@@ -850,7 +903,11 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                 return Container(
                   height: 152,
                   color: const Color(0xFFE0E0E0),
-                  child: const Icon(Icons.image, size: 48, color: Color(0xFF999999)),
+                  child: const Icon(
+                    Icons.image,
+                    size: 48,
+                    color: Color(0xFF999999),
+                  ),
                 );
               },
             ),
@@ -861,14 +918,10 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
             children: [
               IconButton(
                 onPressed: () {},
-                icon: SvgPicture.asset(
-                  'assets/heart.svg',
-                  width: 25,
-                  height: 25,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFFF36969),
-                    BlendMode.srcIn,
-                  ),
+                icon: Icon(
+                  Icons.favorite,
+                  size: 25,
+                  color: const Color(0xFFF36969),
                 ),
               ),
               const SizedBox(width: 8),
@@ -883,11 +936,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               const SizedBox(width: 8),
               IconButton(
                 onPressed: () {},
-                icon: SvgPicture.asset(
-                  'assets/eye.svg',
-                  width: 20,
-                  height: 20,
-                ),
+                icon: SvgPicture.asset('assets/eye.svg', width: 20, height: 20),
               ),
             ],
           ),
@@ -939,4 +988,3 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     );
   }
 }
-

@@ -1,36 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/add_new_trip_model.dart';
 import 'schedulescreen.dart';
 
 class TripDetailsScreen extends StatelessWidget {
   final Trip trip;
 
-  const TripDetailsScreen({
-    super.key,
-    required this.trip,
-  });
+  const TripDetailsScreen({super.key, required this.trip});
 
   String _formatDate(DateTime? date, String time) {
     if (date == null) return time.isNotEmpty ? time : 'Not specified';
-    
+
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
-    
+
     final dateStr = '${months[date.month - 1]} ${date.day}, ${date.year}';
-    
+
     if (time.isNotEmpty) {
       // Parse time string (format: HH:mm:ss or HH:mm)
       final timeParts = time.split(':');
       if (timeParts.isNotEmpty) {
         final hour = int.tryParse(timeParts[0]) ?? 0;
-        final minute = timeParts.length > 1 ? int.tryParse(timeParts[1]) ?? 0 : 0;
-        
+        final minute = timeParts.length > 1
+            ? int.tryParse(timeParts[1]) ?? 0
+            : 0;
+
         String period = 'A.M';
         int displayHour = hour;
-        
+
         if (hour == 0) {
           displayHour = 12;
         } else if (hour == 12) {
@@ -39,12 +49,12 @@ class TripDetailsScreen extends StatelessWidget {
           displayHour = hour - 12;
           period = 'P.M';
         }
-        
+
         final minuteStr = minute.toString().padLeft(2, '0');
         return '$dateStr, $displayHour:$minuteStr $period';
       }
     }
-    
+
     return dateStr;
   }
 
@@ -93,16 +103,20 @@ class TripDetailsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Trip Details
                 _buildDetailRow(
                   "Pickup Address",
-                  trip.pickupLocation.isNotEmpty ? trip.pickupLocation : "Not specified",
+                  trip.pickupLocation.isNotEmpty
+                      ? trip.pickupLocation
+                      : "Not specified",
                 ),
                 const SizedBox(height: 16),
                 _buildDetailRow(
                   "Destination Address",
-                  trip.deliveryLocation.isNotEmpty ? trip.deliveryLocation : "Not specified",
+                  trip.deliveryLocation.isNotEmpty
+                      ? trip.deliveryLocation
+                      : "Not specified",
                 ),
                 const SizedBox(height: 16),
                 _buildDetailRow(
@@ -112,15 +126,51 @@ class TripDetailsScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 _buildDetailRow(
                   "Special Requirements",
-                  trip.specialInstructions.isNotEmpty 
-                      ? trip.specialInstructions 
+                  trip.specialInstructions.isNotEmpty
+                      ? trip.specialInstructions
                       : "No special requirements",
                 ),
+                const SizedBox(height: 16),
+
+                // Driver Name
+                _buildDetailRow(
+                  "Driver Name",
+                  trip.driverName?.isNotEmpty == true
+                      ? trip.driverName!
+                      : "Not assigned",
+                ),
                 const SizedBox(height: 24),
-                
+
                 // Action Buttons - Stacked vertically
                 Column(
                   children: [
+                    // Share Trip Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _shareTrip();
+                        },
+                        icon: const Icon(Icons.share, size: 20),
+                        label: const Text(
+                          "Share Trip",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF36969),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     // Edit Button
                     SizedBox(
                       width: double.infinity,
@@ -129,7 +179,7 @@ class TripDetailsScreen extends StatelessWidget {
                           Get.to(() => const ScheduleTripScreen());
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
+                          backgroundColor: const Color(0xFFF36969),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -138,7 +188,7 @@ class TripDetailsScreen extends StatelessWidget {
                           elevation: 0,
                         ),
                         child: const Text(
-                          "Edit",
+                          "Edit Trip",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -150,20 +200,19 @@ class TripDetailsScreen extends StatelessWidget {
                     // Trip ID Button
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
+                      child: OutlinedButton(
                         onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          foregroundColor: Colors.white,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFF36969)),
+                          foregroundColor: const Color(0xFFF36969),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          elevation: 0,
                         ),
                         child: Text(
-                          trip.tripCode.isNotEmpty 
-                              ? "Trip ID: ${trip.tripCode}" 
+                          trip.tripCode.isNotEmpty
+                              ? "Trip ID: ${trip.tripCode}"
                               : "Trip ID: N/A",
                           style: const TextStyle(
                             fontSize: 16,
@@ -197,13 +246,34 @@ class TripDetailsScreen extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.black87,
-          ),
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
         ),
       ],
     );
   }
-}
 
+  void _shareTrip() {
+    final pickupShort = trip.pickupLocation.split(',').first.trim();
+    final deliveryShort = trip.deliveryLocation.split(',').first.trim();
+
+    final dateStr = trip.pickupDate != null
+        ? '${trip.pickupDate!.day}/${trip.pickupDate!.month}/${trip.pickupDate!.year}'
+        : 'Not scheduled';
+
+    final shareText =
+        '''
+🚚 Trip Details from Wheelboard
+
+📍 From: $pickupShort
+📍 To: $deliveryShort
+📅 Date: $dateStr
+⏰ Time: ${trip.pickupTime.isNotEmpty ? trip.pickupTime : 'Not specified'}
+💰 Pay Range: ${trip.payRange.isNotEmpty ? trip.payRange : 'Negotiable'}
+🚗 Driver: ${trip.driverName ?? 'Not assigned'}
+
+🔗 View on Wheelboard: https://wheelboard.in/trips/${trip.tripId}
+''';
+
+    Share.share(shareText.trim());
+  }
+}

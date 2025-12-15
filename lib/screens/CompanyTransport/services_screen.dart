@@ -5,8 +5,6 @@ import '../../controllers/service_controller.dart';
 import '../../models/service_model.dart';
 import 'service_details.dart';
 import '../../widgets/custom_loader.dart';
-import 'success_popup.dart';
-
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
@@ -130,10 +128,7 @@ class ServicesScreen extends StatelessWidget {
               aspectRatio: 2.5,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  "assets/service.png",
-                  fit: BoxFit.cover,
-                ),
+                child: Image.asset("assets/service.png", fit: BoxFit.cover),
               ),
             ),
           ),
@@ -145,14 +140,30 @@ class ServicesScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ElevatedButton(
               onPressed: () {
-                Get.dialog(
-                  SuccessPopup(),
-                  barrierDismissible:
-                      false, // prevent dismiss by tapping outside
-                );
+                // Scroll to service list or show message
+                if (_serviceController.services.isEmpty) {
+                  Get.snackbar(
+                    'Services',
+                    'Loading services near you...',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: const Color(0xFFF36969),
+                    colorText: Colors.white,
+                    duration: const Duration(seconds: 2),
+                  );
+                  _serviceController.fetchServices();
+                } else {
+                  Get.snackbar(
+                    'Services Found!',
+                    '${_serviceController.services.length} services available near you',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: const Color(0xFF00B894),
+                    colorText: Colors.white,
+                    duration: const Duration(seconds: 2),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00B894),
+                backgroundColor: const Color(0xFFF36969),
                 elevation: 6, // adds the shadow
                 shadowColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -187,8 +198,11 @@ class ServicesScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.miscellaneous_services,
-                            size: 48, color: Colors.grey),
+                        const Icon(
+                          Icons.miscellaneous_services,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(height: 12),
                         const Text(
                           'No services available',
@@ -228,7 +242,8 @@ class ServicesScreen extends StatelessWidget {
                       service: service,
                       onTapDetails: () {
                         Get.to(
-                          () => ServiceDetailScreen(serviceId: service.serviceId),
+                          () =>
+                              ServiceDetailScreen(serviceId: service.serviceId),
                         );
                       },
                     );
@@ -281,13 +296,17 @@ class ServiceCard extends StatelessWidget {
                 ),
                 if (service.isAvailable) ...[
                   const SizedBox(width: 4),
-                  const Icon(Icons.verified, color: Color(0xFF00B894), size: 18),
+                  const Icon(
+                    Icons.verified,
+                    color: Color(0xFF00B894),
+                    size: 18,
+                  ),
                   const SizedBox(width: 4),
                   const Text(
                     "Available",
                     style: TextStyle(color: Color(0xFF00B894)),
                   ),
-                ]
+                ],
               ],
             ),
 
@@ -308,7 +327,10 @@ class ServiceCard extends StatelessWidget {
                     ),
                   ),
                   backgroundColor: const Color(0xFFE6F9F2),
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 0,
+                  ),
                   visualDensity: const VisualDensity(
                     horizontal: 0,
                     vertical: -4,
@@ -340,8 +362,9 @@ class ServiceCard extends StatelessWidget {
                   children: [
                     Icon(
                       service.isAvailable ? Icons.check_circle : Icons.cancel,
-                      color:
-                          service.isAvailable ? const Color(0xFF00B894) : Colors.redAccent,
+                      color: service.isAvailable
+                          ? const Color(0xFF00B894)
+                          : Colors.redAccent,
                       size: 18,
                     ),
                     const SizedBox(width: 6),
@@ -359,7 +382,7 @@ class ServiceCard extends StatelessWidget {
                 ElevatedButton(
                   onPressed: onTapDetails,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00B894),
+                    backgroundColor: const Color(0xFFF36969),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),

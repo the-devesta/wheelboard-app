@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../services/auth_service.dart';
 import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
 import 'FindJobs/FindJobsScreen.dart';
 import 'FeedsProfessional/FeedsProfessionalScreen.dart';
@@ -24,6 +26,17 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+
+    // ✅ Refresh login status to load KYC and other data from session
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final authService = AuthService.to;
+        await authService.refreshLoginStatus();
+        print("✅ AuthService refreshed in Professional wrapper");
+      } catch (e) {
+        print("⚠️ Could not refresh AuthService: $e");
+      }
+    });
   }
 
   // Professional screens with bottom navigation (5 items matching Figma)

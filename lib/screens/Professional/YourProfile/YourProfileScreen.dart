@@ -274,10 +274,19 @@ class YourProfileScreen extends StatelessWidget {
   }
 
   Widget _buildKycBanner() {
-    final controller = Get.find<UserProfileController>();
-    final profile = controller.userProfile.value;
-    // Check if KYC is completed from the profile
-    final isKycComplete = profile?.isKYCCompleted ?? false;
+    // ✅ Check AuthService first (has login data)
+    bool isKycComplete = false;
+    try {
+      final authService = AuthService.to;
+      isKycComplete = authService.isUserKYCCompleted;
+      print("🔐 KYC Status from AuthService in Profile: $isKycComplete");
+    } catch (e) {
+      // ✅ Fallback to profile controller
+      final controller = Get.find<UserProfileController>();
+      final profile = controller.userProfile.value;
+      isKycComplete = profile?.isKYCCompleted ?? false;
+      print("👤 KYC Status from Profile Controller: $isKycComplete");
+    }
 
     return Container(
       width: double.infinity,
@@ -580,6 +589,22 @@ class YourProfileScreen extends StatelessWidget {
   }
 
   Widget _buildCompleteKyc() {
+    // ✅ Check if KYC is already completed
+    bool isKycComplete = false;
+    try {
+      final authService = AuthService.to;
+      isKycComplete = authService.isUserKYCCompleted;
+    } catch (e) {
+      final controller = Get.find<UserProfileController>();
+      final profile = controller.userProfile.value;
+      isKycComplete = profile?.isKYCCompleted ?? false;
+    }
+
+    // ✅ If KYC is complete, don't show this section
+    if (isKycComplete) {
+      return const SizedBox.shrink();
+    }
+
     final controller = Get.find<UserProfileController>();
     final profile = controller.userProfile.value;
     final professionalType = profile?.professionalType?.toLowerCase() ?? '';
@@ -1222,87 +1247,126 @@ class YourProfileScreen extends StatelessWidget {
     final dobController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     final controller = Get.find<UserProfileController>();
+    DateTime? selectedDob;
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(
-            'Verify Driving License',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: dlNumberController,
-                  decoration: InputDecoration(
-                    labelText: 'Driving License Number',
-                    hintText: 'Enter your DL number',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your DL number';
-                    }
-                    return null;
-                  },
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(
+                'Verify Driving License',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: dobController,
-                  decoration: InputDecoration(
-                    labelText: 'Date of Birth',
-                    hintText: 'DD/MM/YYYY or YYYY-MM-DD',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+              ),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: dlNumberController,
+                      decoration: InputDecoration(
+                        labelText: 'Driving License Number',
+                        hintText: 'Enter your DL number',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your DL number';
+                        }
+                        return null;
+                      },
                     ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: dobController,
+                      readOnly:
+                          true, // ✅ Make it readonly to only allow calendar selection
+                      onTap: () async {
+                        // ✅ Open calendar picker
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDob ?? DateTime(2000),
+                          firstDate: DateTime(1950),
+                          lastDate: DateTime.now(),
+                          helpText: 'Select Date of Birth',
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: const ColorScheme.light(
+                                  primary: Color(0xFFF36969),
+                                  onPrimary: Colors.white,
+                                  onSurface: Color(0xFF1E1E1E),
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+
+                        if (picked != null) {
+                          setState(() {
+                            selectedDob = picked;
+                            // Format as DD/MM/YYYY for API (15/05/2000)
+                            dobController.text =
+                                '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+                          });
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Date of Birth',
+                        hintText: 'DD/MM/YYYY',
+                        suffixIcon: const Icon(Icons.calendar_today, size: 20),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please select your date of birth';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.poppins(color: Colors.grey),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your date of birth';
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      Navigator.of(dialogContext).pop();
+                      await _verifyDrivingLicense(
+                        controller.userProfile.value?.userId ?? '',
+                        dlNumberController.text.trim(),
+                        dobController.text.trim(),
+                      );
                     }
-                    return null;
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF36969),
+                  ),
+                  child: Text(
+                    'Verify',
+                    style: GoogleFonts.poppins(color: Colors.white),
+                  ),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(color: Colors.grey),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  Navigator.of(dialogContext).pop();
-                  await _verifyDrivingLicense(
-                    controller.userProfile.value?.userId ?? '',
-                    dlNumberController.text.trim(),
-                    dobController.text.trim(),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF36969),
-              ),
-              child: Text(
-                'Verify',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-            ),
-          ],
+            );
+          },
         );
       },
     );

@@ -10,7 +10,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'companyuser_profile_screen.dart';
 import 'service_dashboard.dart';
 import 'services_screen.dart';
-import 'package:share_plus/share_plus.dart';
+import '../../utils/share_service.dart';
 import 'job_form_screen.dart';
 import 'add_expense_screen.dart';
 import 'professional_list.dart';
@@ -61,7 +61,7 @@ class HomeScreen extends StatelessWidget {
     final jobController = Get.put(JobController());
     final feedsController = Get.put(FeedsController());
     final notificationController = Get.put(NotificationController());
-    
+
     // Fetch profile and notifications on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       profileController.fetchCurrentUserProfile();
@@ -69,7 +69,9 @@ class HomeScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3), // Light pink background from Figma
+      backgroundColor: const Color(
+        0xFFF4E3E3,
+      ), // Light pink background from Figma
       appBar: null,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -81,115 +83,130 @@ class HomeScreen extends StatelessWidget {
                 /// Header
                 Obx(() {
                   final profile = profileController.userProfile.value;
-                  final companyName = profile?.displayName ?? 'Delhi Transport.';
-                  
+                  final companyName =
+                      profile?.displayName ?? 'Delhi Transport.';
+
                   // Use random profile image - fallback to random avatar service
-                  String profileImageUrl = 'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
-                  
+                  String profileImageUrl =
+                      'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
+
                   // Get profile image URL - handle both full URLs and relative paths
-                  if (profile != null && profile.profileImage != null && profile.profileImage!.isNotEmpty) {
+                  if (profile != null &&
+                      profile.profileImage != null &&
+                      profile.profileImage!.isNotEmpty) {
                     final imagePath = profile.profileImage!;
                     // If it's already a full URL, use it as is; otherwise prepend base URL
-                    profileImageUrl = imagePath.startsWith('http://') || imagePath.startsWith('https://')
+                    profileImageUrl =
+                        imagePath.startsWith('http://') ||
+                            imagePath.startsWith('https://')
                         ? imagePath
                         : ApiConstants.baseUrl + imagePath;
                   }
-                  
-                  return Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Get.to(CompanyProfileScreen());
-                      },
-                      child: CircleAvatar(
-                        radius: 25,
-                        backgroundColor: const Color(0xFFF25C5C),
-                        backgroundImage: NetworkImage(profileImageUrl),
-                        onBackgroundImageError: (exception, stackTrace) {
-                          // Fallback to another random image if first fails
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome!',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                              companyName,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.teal,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Obx(() {
-                      final notificationController = Get.find<NotificationController>();
-                      final unreadCount = notificationController.unreadCount;
-                      
-                      return GestureDetector(
-                        onTap: () {
-                          Get.to(const NotificationScreen());
-                        },
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            // Red square with rounded corners and white bell
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors
-                                    .buttonBg, // AppColors.buttonBg (red)
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.notifications,
-                                color: Colors.white,
-                                size: 26,
-                              ),
-                            ),
 
-                            // Unread count badge
-                            if (unreadCount > 0)
-                              Positioned(
-                                top: -2,
-                                right: -2,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF317873), // AppColors.badge
-                                    shape: BoxShape.circle,
+                  return Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          Get.to(CompanyProfileScreen());
+                        },
+                        child: CircleAvatar(
+                          radius: 25,
+                          backgroundColor: const Color(0xFFF25C5C),
+                          backgroundImage: NetworkImage(profileImageUrl),
+                          onBackgroundImageError: (exception, stackTrace) {
+                            // Fallback to another random image if first fails
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome!',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w500),
+                            ),
+                            Text(
+                              companyName,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal,
                                   ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 18,
-                                    minHeight: 18,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      unreadCount > 99 ? '99+' : '$unreadCount',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Obx(() {
+                        final notificationController =
+                            Get.find<NotificationController>();
+                        final unreadCount = notificationController.unreadCount;
+
+                        return GestureDetector(
+                          onTap: () {
+                            Get.to(const NotificationScreen());
+                          },
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              // Red square with rounded corners and white bell
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors
+                                      .buttonBg, // AppColors.buttonBg (red)
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.notifications,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
+                              ),
+
+                              // Unread count badge
+                              if (unreadCount > 0)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: const BoxDecoration(
+                                      color: Color(
+                                        0xFF317873,
+                                      ), // AppColors.badge
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 18,
+                                      minHeight: 18,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        unreadCount > 99
+                                            ? '99+'
+                                            : '$unreadCount',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      );
-                    }),
-                    ]);
-                  }),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  );
+                }),
                 const SizedBox(height: 20),
 
                 /// Banner Image
@@ -200,7 +217,7 @@ class HomeScreen extends StatelessWidget {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final crossAxisCount = 3;
-                    
+
                     return GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
@@ -253,7 +270,10 @@ class HomeScreen extends StatelessWidget {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
@@ -277,11 +297,12 @@ class HomeScreen extends StatelessWidget {
                                 Flexible(
                                   child: Text(
                                     item['label'],
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                      color: const Color(0xFF535353),
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12,
+                                          color: const Color(0xFF535353),
+                                        ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
@@ -373,14 +394,14 @@ class HomeScreen extends StatelessWidget {
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFD1E5E2), // Light green from Figma
+                                    color: const Color(
+                                      0xFFD1E5E2,
+                                    ), // Light green from Figma
                                     borderRadius: BorderRadius.circular(9999),
                                   ),
                                   child: Text(
                                     "Call Now",
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: const Color(0xFFFF5E5E),
                                           fontWeight: FontWeight.bold,
@@ -403,12 +424,12 @@ class HomeScreen extends StatelessWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        job.isLiked 
-                                            ? Icons.thumb_up 
+                                        job.isLiked
+                                            ? Icons.thumb_up
                                             : Icons.thumb_up_alt_outlined,
                                         size: 16,
-                                        color: job.isLiked 
-                                            ? AppColors.buttonBg 
+                                        color: job.isLiked
+                                            ? AppColors.buttonBg
                                             : Colors.grey,
                                       ),
                                       const SizedBox(width: 4),
@@ -418,8 +439,8 @@ class HomeScreen extends StatelessWidget {
                                             .textTheme
                                             .bodySmall
                                             ?.copyWith(
-                                              color: job.isLiked 
-                                                  ? AppColors.buttonBg 
+                                              color: job.isLiked
+                                                  ? AppColors.buttonBg
                                                   : null,
                                             ),
                                       ),
@@ -429,9 +450,10 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(width: 12),
                                 const Icon(Icons.person_outline, size: 16),
                                 const SizedBox(width: 4),
-                                Text("${job.openings} Applicants",
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall),
+                                Text(
+                                  "${job.openings} Applicants",
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -442,34 +464,39 @@ class HomeScreen extends StatelessWidget {
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: () {
-                                      final shareText = "Job Opportunity: ${job.role}\n"
-                                          "Location: ${job.city}\n"
-                                          "Type: ${job.jobType}\n"
-                                          "Duration: ${job.jobDuration}\n"
-                                          "Openings: ${job.openings}\n"
-                                          "Salary: ₹${job.salary}\n"
-                                          "Description: ${job.description}\n\n"
-                                          "Check out this job on WheelBoard!";
-                                      Share.share(shareText);
+                                      // Use ShareService for proper Wheelboard URL
+                                      ShareService.shareJob(
+                                        jobId: job.jobId,
+                                        jobTitle: job.role,
+                                        city: job.city,
+                                        jobType: job.jobType,
+                                        jobDuration: job.jobDuration,
+                                        openings: job.openings,
+                                        salary: job.salary,
+                                        description: job.description,
+                                      );
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          const Color(0xFF00AEEF),
+                                      backgroundColor: const Color(0xFF00AEEF),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(9999),
+                                        borderRadius: BorderRadius.circular(
+                                          9999,
+                                        ),
                                       ),
-                                      padding: const EdgeInsets.symmetric(vertical: 11),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 11,
+                                      ),
                                     ),
-                                    icon: const Icon(Icons.share,
-                                        color: Colors.white),
+                                    icon: const Icon(
+                                      Icons.share,
+                                      color: Colors.white,
+                                    ),
                                     label: Text(
                                       "Share",
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.white,
-                                          ),
+                                          ?.copyWith(color: AppColors.white),
                                     ),
                                   ),
                                 ),
@@ -477,17 +504,27 @@ class HomeScreen extends StatelessWidget {
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: () {
-                                      Get.to(() => PostJobScreen(jobToEdit: job));
+                                      Get.to(
+                                        () => PostJobScreen(jobToEdit: job),
+                                      );
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFD1E5E2), // Light green from Figma
+                                      backgroundColor: const Color(
+                                        0xFFD1E5E2,
+                                      ), // Light green from Figma
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(9999),
+                                        borderRadius: BorderRadius.circular(
+                                          9999,
+                                        ),
                                       ),
-                                      padding: const EdgeInsets.symmetric(vertical: 11),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 11,
+                                      ),
                                     ),
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.white),
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                    ),
                                     label: Text(
                                       "Edit",
                                       style: Theme.of(context)
@@ -517,8 +554,8 @@ class HomeScreen extends StatelessWidget {
                     Text(
                       "Popular Feeds",
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     TextButton(
                       onPressed: () {
@@ -527,9 +564,9 @@ class HomeScreen extends StatelessWidget {
                       child: Text(
                         "view more",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -589,7 +626,10 @@ class HomeScreen extends StatelessWidget {
                   'assets/servicelogo.svg',
                   width: 20,
                   height: 20,
-                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 const Text(
@@ -645,10 +685,12 @@ class HomeScreen extends StatelessWidget {
   Widget _buildFeedPostCard(BuildContext context, Post post) {
     final profileController = Get.find<UserProfileController>();
     final profile = profileController.userProfile.value;
-    final profileImageUrl = profile?.profileImage != null && profile!.profileImage!.isNotEmpty
-        ? (profile.profileImage!.startsWith('http://') || profile.profileImage!.startsWith('https://')
-            ? profile.profileImage!
-            : ApiConstants.baseUrl + profile.profileImage!)
+    final profileImageUrl =
+        profile?.profileImage != null && profile!.profileImage!.isNotEmpty
+        ? (profile.profileImage!.startsWith('http://') ||
+                  profile.profileImage!.startsWith('https://')
+              ? profile.profileImage!
+              : ApiConstants.baseUrl + profile.profileImage!)
         : 'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
 
     return Container(
@@ -683,17 +725,14 @@ class HomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        post.userName.isNotEmpty 
-                            ? post.userName 
+                        post.userName.isNotEmpty
+                            ? post.userName
                             : (profile?.displayName ?? "User"),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         post.category,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -707,10 +746,7 @@ class HomeScreen extends StatelessWidget {
           if (post.content.isNotEmpty)
             Text(
               post.content,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: Colors.black87, fontSize: 14),
             ),
 
           // Post Images
@@ -734,9 +770,10 @@ class HomeScreen extends StatelessWidget {
                             color: Colors.grey[200],
                             child: Center(
                               child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
                                     ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
+                                          loadingProgress.expectedTotalBytes!
                                     : null,
                               ),
                             ),
@@ -758,7 +795,8 @@ class HomeScreen extends StatelessWidget {
                                   color: Colors.grey[200],
                                   child: const Center(
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.image_not_supported,
@@ -786,13 +824,16 @@ class HomeScreen extends StatelessWidget {
                   : GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 1,
-                      ),
-                      itemCount: post.imageUrls.length > 4 ? 4 : post.imageUrls.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 1,
+                          ),
+                      itemCount: post.imageUrls.length > 4
+                          ? 4
+                          : post.imageUrls.length,
                       itemBuilder: (context, index) {
                         return ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -801,20 +842,26 @@ class HomeScreen extends StatelessWidget {
                               _formatImageUrl(post.imageUrls[index]),
                               fit: BoxFit.cover,
                               headers: _imageHeaders(),
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  color: Colors.grey[200],
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded /
-                                              loadingProgress.expectedTotalBytes!
-                                          : null,
-                                    ),
-                                  ),
-                                );
-                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      color: Colors.grey[200],
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          value:
+                                              loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
                                   color: Colors.grey[200],
@@ -840,62 +887,91 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Reactions
-          Row(
-            children: [
-              SvgPicture.asset(
-                'assets/heart.svg',
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(width: 10),
-              SvgPicture.asset(
-                'assets/share.svg',
-                width: 26,
-                height: 26,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(width: 10),
-              SvgPicture.asset(
-                'assets/eye.svg',
-                width: 26,
-                height: 26,
-                fit: BoxFit.contain,
-              ),
-              const Spacer(),
-              // Status badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: post.status == 'Pending'
-                      ? Colors.orange[100]
-                      : Colors.green[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  post.status,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: post.status == 'Pending'
-                        ? Colors.orange[800]
-                        : Colors.green[800],
-                    fontWeight: FontWeight.w600,
+          // Reactions - Now Functional!
+          Obx(() {
+            final feedsController = Get.find<FeedsController>();
+            final isLiked = feedsController.isLiked(post.postId);
+
+            return Row(
+              children: [
+                // Like Button - Functional
+                GestureDetector(
+                  onTap: () {
+                    feedsController.toggleLike(post.postId);
+                  },
+                  child: Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    size: 28,
+                    color: isLiked
+                        ? const Color(0xFFF36969)
+                        : const Color(0xFFFCACAC),
                   ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 10),
+                // Share Button - Functional
+                GestureDetector(
+                  onTap: () {
+                    ShareService.sharePost(
+                      postId: post.postId,
+                      content: post.content,
+                      userName: post.userName,
+                      category: post.category,
+                    );
+                  },
+                  child: SvgPicture.asset(
+                    'assets/share.svg',
+                    width: 26,
+                    height: 26,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // View Button - Navigate to Feed Screen
+                GestureDetector(
+                  onTap: () {
+                    Get.to(() => const FeedScreen());
+                  },
+                  child: SvgPicture.asset(
+                    'assets/eye.svg',
+                    width: 26,
+                    height: 26,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const Spacer(),
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: post.status == 'Pending'
+                        ? Colors.orange[100]
+                        : Colors.green[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    post.status,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: post.status == 'Pending'
+                          ? Colors.orange[800]
+                          : Colors.green[800],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
           const SizedBox(height: 10),
 
           // Footer
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                post.timeAgo,
-                style: const TextStyle(color: Colors.grey),
-              ),
+              Text(post.timeAgo, style: const TextStyle(color: Colors.grey)),
               if (post.content.length > 100)
                 const Text(
                   "Read More",
@@ -939,10 +1015,6 @@ class HomeScreen extends StatelessWidget {
   Map<String, String>? _imageHeaders() {
     final token = AuthService.to.currentToken;
     if (token.isEmpty) return null;
-    return {
-      'Authorization': 'Bearer $token',
-      'Accept': '*/*',
-    };
+    return {'Authorization': 'Bearer $token', 'Accept': '*/*'};
   }
 }
-
