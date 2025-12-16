@@ -9,7 +9,7 @@ import '../../widgets/custom_loader.dart';
 
 class BookingDetailsScreen extends StatefulWidget {
   final String serviceId;
-  
+
   const BookingDetailsScreen({super.key, required this.serviceId});
 
   @override
@@ -51,10 +51,10 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       print("🔍 Service ID: ${widget.serviceId}");
       print("🔍 Service ID Type: ${widget.serviceId.runtimeType}");
       print("🔍 Service ID Length: ${widget.serviceId.length}");
-      
+
       final endpoint = '${API.serviceAssignList}?serviceId=${widget.serviceId}';
       print("🔍 Endpoint: $endpoint");
-      
+
       final baseUrl = HttpHelper.baseUrl;
       final fullUrl = '$baseUrl$endpoint';
       print("🔍 Base URL: $baseUrl");
@@ -65,7 +65,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       final response = await HttpHelper.getData(
         endpoint: endpoint,
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
           'Accept': '*/*',
         },
       );
@@ -74,11 +75,12 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       print("🔍 Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body) as List<dynamic>? ?? [];
-        
+        final List<dynamic> data =
+            jsonDecode(response.body) as List<dynamic>? ?? [];
+
         print("🔍 Parsed Data Count: ${data.length}");
         print("🔍 Parsed Data: $data");
-        
+
         if (data.isNotEmpty) {
           // Use the first assignment (or you can show a list if multiple)
           final bookingData = data[0] as Map<String, dynamic>;
@@ -94,7 +96,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           print("   - Pricing Option: ${bookingData['pricingOption']}");
           print("   - Description: ${bookingData['description']}");
           print("   - Full Data: $bookingData");
-          
+
           setState(() {
             _bookingData = bookingData;
           });
@@ -106,7 +108,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           });
         }
       } else {
-        print("❌ Failed to fetch booking details. Status: ${response.statusCode}");
+        print(
+          "❌ Failed to fetch booking details. Status: ${response.statusCode}",
+        );
         print("❌ Response: ${response.body}");
         SnackBarHelper.error("Failed to load booking details");
         setState(() {
@@ -161,72 +165,72 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       body: _isLoading
           ? const CustomLoader(message: "Loading booking details...")
           : _bookingData == null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Booking details not found',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Service ID: ${widget.serviceId}',
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          _fetchBookingDetails();
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Booking details not found',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
                   ),
-                )
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight - 32,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Booking Summary Card
-                            _buildBookingSummaryCard(),
-                            const SizedBox(height: 16),
-                            // Customer Details Card
-                            _buildCustomerDetailsCard(),
-                            const SizedBox(height: 16),
-                            // Service Details Card
-                            _buildServiceDetailsCard(),
-                            const SizedBox(height: 16),
-                            // Scheduling Details Card
-                            _buildSchedulingCard(),
-                            const SizedBox(height: 16),
-                            // Internal Notes Card
-                            _buildInternalNotesCard(),
-                            const SizedBox(height: 100), // Space for bottom buttons
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Service ID: ${widget.serviceId}',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      _fetchBookingDetails();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - 32,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Booking Summary Card
+                        _buildBookingSummaryCard(),
+                        const SizedBox(height: 16),
+                        // Customer Details Card
+                        _buildCustomerDetailsCard(),
+                        const SizedBox(height: 16),
+                        // Service Details Card
+                        _buildServiceDetailsCard(),
+                        const SizedBox(height: 16),
+                        // Scheduling Details Card
+                        _buildSchedulingCard(),
+                        const SizedBox(height: 16),
+                        // Internal Notes Card
+                        _buildInternalNotesCard(),
+                        const SizedBox(height: 100), // Space for bottom buttons
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
       bottomNavigationBar: _buildBottomButtons(),
     );
   }
@@ -238,18 +242,19 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     final scheduledDate = assignment['scheduledDate'] ?? '';
     final scheduledTime = assignment['scheduledTime'] ?? '';
     final assignmentId = assignment['assignmentId'] ?? '';
-    
+
     // Format date
     String formattedDate = 'Date not available';
     if (scheduledDate.isNotEmpty) {
       try {
         final dateTime = DateTime.parse(scheduledDate);
-        formattedDate = '${_getMonthName(dateTime.month)} ${dateTime.day}, ${dateTime.year}';
+        formattedDate =
+            '${_getMonthName(dateTime.month)} ${dateTime.day}, ${dateTime.year}';
       } catch (e) {
         formattedDate = scheduledDate;
       }
     }
-    
+
     // Format time
     String formattedTime = '';
     if (scheduledTime.isNotEmpty) {
@@ -297,7 +302,10 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE9FDF4),
                   borderRadius: BorderRadius.circular(9999),
@@ -317,14 +325,21 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 16, color: Color(0xFF828282)),
+              const Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: Color(0xFF828282),
+              ),
               const SizedBox(width: 8),
-              Text(
-                '$formattedDate$formattedTime',
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  color: Color(0xFF828282),
+              Expanded(
+                child: Text(
+                  '$formattedDate$formattedTime',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Color(0xFF828282),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -332,26 +347,34 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.help_outline, size: 16, color: Color(0xFF828282)),
+              const Icon(
+                Icons.help_outline,
+                size: 16,
+                color: Color(0xFF828282),
+              ),
               const SizedBox(width: 8),
-              Text.rich(
-                TextSpan(
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    color: Color(0xFF828282),
-                  ),
-                  children: [
-                    const TextSpan(text: 'Assignment ID: '),
-                    TextSpan(
-                      text: '#${assignmentId.substring(0, 8)}...',
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF2D3436),
-                      ),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      color: Color(0xFF828282),
                     ),
-                  ],
+                    children: [
+                      const TextSpan(text: 'Assignment ID: '),
+                      TextSpan(
+                        text:
+                            '#${assignmentId.length > 8 ? assignmentId.substring(0, 8) : assignmentId}...',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF2D3436),
+                        ),
+                      ),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -411,7 +434,11 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                         if (vehicleNumber.isNotEmpty)
                           Row(
                             children: [
-                              const Icon(Icons.directions_car, size: 14, color: Color(0xFF828282)),
+                              const Icon(
+                                Icons.directions_car,
+                                size: 14,
+                                color: Color(0xFF828282),
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -434,35 +461,49 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
               ),
               const SizedBox(height: 12),
               // Start Service Button - Full width below customer info
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isUpdating ? null : () {
-                    final assignmentId = assignment['assignmentId'] ?? '';
-                    if (assignmentId.isNotEmpty) {
-                      _startService(assignmentId);
-                    }
-                  },
-                  icon: const Icon(Icons.play_arrow, size: 18, color: Colors.white),
-                  label: const Text(
-                    'Start Service',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
+              if (assignment['status']?.toString().toLowerCase() != 'started' &&
+                  assignment['status']?.toString().toLowerCase() !=
+                      'completed' &&
+                  assignment['status']?.toString().toLowerCase() != 'cancelled')
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isUpdating
+                        ? null
+                        : () {
+                            final assignmentId =
+                                assignment['assignmentId'] ?? '';
+                            if (assignmentId.isNotEmpty) {
+                              _startService(assignmentId);
+                            }
+                          },
+                    icon: const Icon(
+                      Icons.play_arrow,
+                      size: 18,
                       color: Colors.white,
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF27AE60),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    label: const Text(
+                      'Start Service',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Colors.white,
+                      ),
                     ),
-                    disabledBackgroundColor: Colors.grey[300],
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF27AE60),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      disabledBackgroundColor: Colors.grey[300],
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           if (description.isNotEmpty) ...[
@@ -493,7 +534,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   Widget _buildServiceDetailsCard() {
     final assignment = _bookingData!;
     final serviceTitle = assignment['serviceTitle'] ?? 'Service';
-    
+
     // Handle pricing option - convert boolean/string to readable text
     String pricingType = 'Per Hour'; // Default
     if (assignment['pricingOption'] != null) {
@@ -502,22 +543,28 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         pricingType = option ? 'Flat Rate' : 'Per Hour';
       } else if (option is String) {
         final optionLower = option.toLowerCase();
-        if (optionLower == 'true' || optionLower == 'flat rate' || optionLower == 'flat') {
+        if (optionLower == 'true' ||
+            optionLower == 'flat rate' ||
+            optionLower == 'flat') {
           pricingType = 'Flat Rate';
-        } else if (optionLower == 'false' || optionLower == 'per hour' || optionLower == 'hourly') {
+        } else if (optionLower == 'false' ||
+            optionLower == 'per hour' ||
+            optionLower == 'hourly') {
           pricingType = 'Per Hour';
         } else {
           pricingType = option; // Use as is if it's already readable
         }
       }
     }
-    
+
     // Handle price - ensure it's a number
     dynamic priceValue = assignment['amount'] ?? 0;
     if (priceValue is bool) {
       priceValue = 0;
     }
-    final price = (priceValue is num) ? priceValue : (double.tryParse(priceValue.toString()) ?? 0);
+    final price = (priceValue is num)
+        ? priceValue
+        : (double.tryParse(priceValue.toString()) ?? 0);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -579,13 +626,17 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
             color: Color(0xFF828282),
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-            color: Color(0xFF2D3436),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              color: Color(0xFF2D3436),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -597,7 +648,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     final scheduledDate = assignment['scheduledDate'] ?? '';
     final scheduledTime = assignment['scheduledTime'] ?? '';
     final status = assignment['status'] ?? 'Pending';
-    
+
     // Format scheduled date and time
     String formattedDateTime = 'Not scheduled';
     if (scheduledDate.isNotEmpty) {
@@ -605,7 +656,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         final dateTime = DateTime.parse(scheduledDate);
         final monthName = _getMonthName(dateTime.month);
         formattedDateTime = '$monthName ${dateTime.day}, ${dateTime.year}';
-        
+
         if (scheduledTime.isNotEmpty) {
           try {
             final parts = scheduledTime.split(':');
@@ -613,7 +664,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
               final hour = int.parse(parts[0]);
               final minute = parts[1];
               final period = hour >= 12 ? 'PM' : 'AM';
-              final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+              final displayHour = hour > 12
+                  ? hour - 12
+                  : (hour == 0 ? 12 : hour);
               formattedDateTime += ' – $displayHour:$minute $period';
             }
           } catch (e) {
@@ -624,7 +677,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         formattedDateTime = scheduledDate;
       }
     }
-    
+
     // Calculate duration estimate (you can adjust this logic)
     final duration = '1 Hour'; // Default or calculate from scheduled time
 
@@ -659,13 +712,18 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: status.toLowerCase() == 'confirmed' || status.toLowerCase() == 'completed'
+                  color:
+                      status.toLowerCase() == 'confirmed' ||
+                          status.toLowerCase() == 'completed'
                       ? const Color(0xFFE9FDF4)
                       : status.toLowerCase() == 'pending'
-                          ? const Color(0xFFFFF4E6)
-                          : Colors.grey[200],
+                      ? const Color(0xFFFFF4E6)
+                      : Colors.grey[200],
                   borderRadius: BorderRadius.circular(9999),
                 ),
                 child: Text(
@@ -674,11 +732,13 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w500,
                     fontSize: 12,
-                    color: status.toLowerCase() == 'confirmed' || status.toLowerCase() == 'completed'
+                    color:
+                        status.toLowerCase() == 'confirmed' ||
+                            status.toLowerCase() == 'completed'
                         ? const Color(0xFF00B894)
                         : status.toLowerCase() == 'pending'
-                            ? const Color(0xFFFF9800)
-                            : Colors.grey[700],
+                        ? const Color(0xFFFF9800)
+                        : Colors.grey[700],
                   ),
                 ),
               ),
@@ -730,10 +790,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           ),
           const SizedBox(height: 12),
           Container(
-            constraints: const BoxConstraints(
-              minHeight: 120,
-              maxHeight: 200,
-            ),
+            constraints: const BoxConstraints(minHeight: 120, maxHeight: 200),
             padding: const EdgeInsets.all(11),
             decoration: BoxDecoration(
               color: const Color(0xFFF2F4F7),
@@ -768,14 +825,13 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
   Widget _buildBottomButtons() {
     final assignmentId = _bookingData?['assignmentId'] ?? '';
-    
+    final status = _bookingData?['status']?.toString().toLowerCase() ?? '';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey[200]!),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey[200]!)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -783,9 +839,14 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _isUpdating ? null : () {
-                _completeService(assignmentId);
-              },
+              onPressed:
+                  (_isUpdating ||
+                      status == 'completed' ||
+                      status == 'cancelled')
+                  ? null
+                  : () {
+                      _completeService(assignmentId);
+                    },
               icon: const Icon(Icons.check, size: 16, color: Colors.white),
               label: const Text(
                 'Complete Service',
@@ -810,9 +871,14 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _isUpdating ? null : () {
-                _showCancelDialog();
-              },
+              onPressed:
+                  (_isUpdating ||
+                      status == 'completed' ||
+                      status == 'cancelled')
+                  ? null
+                  : () {
+                      _showCancelDialog();
+                    },
               icon: const Icon(Icons.close, size: 16, color: Color(0xFFFF4D4F)),
               label: const Text(
                 'Cancel Appointment',
@@ -853,10 +919,12 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
       // Call update-service-status API with status=start
       final response = await HttpHelper.postData(
-        endpoint: '${API.updateServiceStatus}?assignmentId=$assignmentId&status=start',
+        endpoint:
+            '${API.updateServiceStatus}?assignmentId=$assignmentId&status=start',
         data: {},
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
           'Accept': '*/*',
           'Content-Type': 'application/json',
         },
@@ -908,7 +976,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         endpoint: '${API.completeService}?assignmentId=$assignmentId',
         data: {},
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
           'Accept': '*/*',
           'Content-Type': 'application/json',
         },
@@ -943,7 +1012,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
   void _showCancelDialog() {
     final assignmentId = _bookingData?['assignmentId'] ?? '';
-    
+
     if (assignmentId.isEmpty) {
       SnackBarHelper.error("Assignment ID not found");
       return;
@@ -953,7 +1022,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Appointment'),
-        content: const Text('Are you sure you want to cancel this appointment?'),
+        content: const Text(
+          'Are you sure you want to cancel this appointment?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -988,7 +1059,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         endpoint: '${API.cancelService}?assignmentId=$assignmentId',
         data: {},
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
           'Accept': '*/*',
           'Content-Type': 'application/json',
         },
@@ -1038,9 +1110,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       'September',
       'October',
       'November',
-      'December'
+      'December',
     ];
     return months[month - 1];
   }
 }
-

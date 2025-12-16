@@ -20,7 +20,7 @@ class Signup extends StatelessWidget {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final Rx<String?> selectedCompanyType = Rx<String?>(null);
+  final Rx<String?> selectedCompanyType = Rx<String?>('Transport');
   final Rx<Country> selectedCountry = Country.parse('IN').obs;
 
   final List<String> businessCategories = ['Transport', 'Service Provider'];
@@ -396,18 +396,6 @@ class Signup extends StatelessWidget {
   }
 
   Widget _buildBusinessCategoryDropdown() {
-    // Helper function to get icon for each category
-    IconData getCategoryIcon(String category) {
-      switch (category) {
-        case 'Transport':
-          return Icons.local_shipping; // Truck icon for Transport
-        case 'Service Provider':
-          return Icons.warehouse; // Warehouse icon for Service Provider
-        default:
-          return Icons.business;
-      }
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,114 +411,126 @@ class Signup extends StatelessWidget {
             fontFamily: 'Plus Jakarta Sans',
           ),
         ),
-        const SizedBox(height: 2),
-        // Dropdown
-        Container(
-          height: 46,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFEDF1F3)),
+        const SizedBox(height: 12),
+        // Selectable Cards
+        Obx(() {
+          return Row(
+            children: [
+              Expanded(
+                child: _buildCategoryCard(
+                  title: 'Transport',
+                  icon: Icons.local_shipping,
+                  isSelected: selectedCompanyType.value == 'Transport',
+                  onTap: () {
+                    selectedCompanyType.value = 'Transport';
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCategoryCard(
+                  title: 'Service Provider',
+                  icon: Icons.warehouse,
+                  isSelected: selectedCompanyType.value == 'Service Provider',
+                  onTap: () {
+                    selectedCompanyType.value = 'Service Provider';
+                  },
+                ),
+              ),
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildCategoryCard({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFFF4F4) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFF25C5C)
+                : const Color(0xFFEDF1F3),
+            width: isSelected ? 2 : 1,
           ),
-          child: Obx(
-            () => DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: selectedCompanyType.value,
-                hint: Padding(
-                  padding: const EdgeInsets.only(left: 14),
-                  child: Text(
-                    'Select category',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFFB3B3B3),
-                      letterSpacing: 0.1,
-                      fontFamily: 'Roboto',
-                    ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFF25C5C).withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                icon: const Padding(
-                  padding: EdgeInsets.only(right: 14),
-                  child: Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 16,
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-                isExpanded: true,
-                items: businessCategories.map((String category) {
-                  return DropdownMenuItem<String>(
-                    value: category,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 14),
-                      child: Row(
-                        children: [
-                          // Category Icon
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF25C5C).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              getCategoryIcon(category),
-                              size: 18,
-                              color: const Color(0xFFF25C5C),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          // Category Name
-                          Text(
-                            category,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF1A1C1E),
-                              fontFamily: 'Roboto',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? value) {
-                  selectedCompanyType.value = value;
-                },
-                selectedItemBuilder: (BuildContext context) {
-                  return businessCategories.map((String category) {
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 14),
-                      child: Row(
-                        children: [
-                          // Category Icon (smaller for selected state)
-                          Icon(
-                            getCategoryIcon(category),
-                            size: 18,
-                            color: const Color(0xFFF25C5C),
-                          ),
-                          const SizedBox(width: 8),
-                          // Category Name
-                          Text(
-                            category,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF1A1C1E),
-                              fontFamily: 'Roboto',
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList();
-                },
+                ]
+              : [],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFFF25C5C)
+                    : const Color(0xFFF5F5F5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isSelected ? Colors.white : const Color(0xFF6C7278),
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected
+                    ? const Color(0xFFF25C5C)
+                    : const Color(0xFF6C7278),
+                fontFamily: 'Poppins',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFFF25C5C)
+                      : const Color(0xFFD1D5DB),
+                  width: 1.5,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF25C5C),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

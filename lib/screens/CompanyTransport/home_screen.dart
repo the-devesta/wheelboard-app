@@ -377,15 +377,35 @@ class HomeScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    job.role,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.buttonBg,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (job.companyName != null &&
+                                          job.companyName!.isNotEmpty) ...[
+                                        Text(
+                                          job.companyName!,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.buttonBg,
+                                              ),
                                         ),
+                                        const SizedBox(height: 4),
+                                      ],
+                                      Text(
+                                        job.role,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 Container(
@@ -706,7 +726,8 @@ class HomeScreen extends StatelessWidget {
           // Header
           InkWell(
             onTap: () {
-              Get.to(FleetUserprofile());
+              // Navigate to dynamic profile screen
+              Get.to(FleetUserprofile(companyId: post.companyId));
             },
             borderRadius: BorderRadius.circular(50),
             child: Row(

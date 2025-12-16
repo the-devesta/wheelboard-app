@@ -12,10 +12,12 @@ class ServiceProviderProfileScreen extends StatefulWidget {
   const ServiceProviderProfileScreen({super.key});
 
   @override
-  State<ServiceProviderProfileScreen> createState() => _ServiceProviderProfileScreenState();
+  State<ServiceProviderProfileScreen> createState() =>
+      _ServiceProviderProfileScreenState();
 }
 
-class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScreen> {
+class _ServiceProviderProfileScreenState
+    extends State<ServiceProviderProfileScreen> {
   String selectedService = 'Tyre Services';
   bool isDescriptionExpanded = false;
 
@@ -23,7 +25,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
   Widget build(BuildContext context) {
     // Initialize controller
     final controller = Get.put(UserProfileController());
-    
+
     // Fetch profile on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.fetchCurrentUserProfile();
@@ -111,9 +113,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
       height: 69,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFF5F5F5), width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5), width: 1)),
       ),
       child: Row(
         children: [
@@ -167,7 +167,9 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
                   color: Colors.grey[200],
                 ),
                 child: ClipOval(
-                  child: profile?.businessLogoPath != null && profile!.businessLogoPath!.isNotEmpty
+                  child:
+                      profile?.businessLogoPath != null &&
+                          profile!.businessLogoPath!.isNotEmpty
                       ? Image.network(
                           profile.businessLogoPath!,
                           fit: BoxFit.cover,
@@ -222,7 +224,8 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
                     color: Colors.black,
                   ),
                 ),
-                if (profile?.businessType != null && profile!.businessType!.isNotEmpty) ...[
+                if (profile?.businessType != null &&
+                    profile!.businessType!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     'Type: ${profile.businessType}',
@@ -233,14 +236,11 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
                     ),
                   ),
                 ],
-                if (profile?.businessCategory != null && profile!.businessCategory!.isNotEmpty) ...[
+                if (profile?.businessCategory != null &&
+                    profile!.businessCategory!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   // Tags
-                  Row(
-                    children: [
-                      _buildTag(profile.businessCategory!),
-                    ],
-                  ),
+                  Row(children: [_buildTag(profile.businessCategory!)]),
                 ],
               ],
             ),
@@ -282,26 +282,38 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
         ),
         const SizedBox(height: 12),
         // Service Filter Buttons
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildServiceButton('Tyre Services', isSelected: selectedService == 'Tyre Services'),
-              const SizedBox(width: 12),
-              _buildServiceButton('Vehicle Services', isSelected: selectedService == 'Vehicle Services'),
-              const SizedBox(width: 12),
-              _buildServiceButton('Other', isSelected: selectedService == 'Other'),
-            ],
-          ),
+        // Service Filter Buttons
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _buildServiceButton(
+              'Tyre Services',
+              isSelected: selectedService == 'Tyre Services',
+            ),
+            _buildServiceButton(
+              'Vehicle Services',
+              isSelected: selectedService == 'Vehicle Services',
+            ),
+            _buildServiceButton(
+              'Tyre Retreader',
+              isSelected: selectedService == 'Tyre Retreader',
+            ),
+            _buildServiceButton(
+              'Other',
+              isSelected: selectedService == 'Other',
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        // Additional Service Tag
-        _buildServiceButton('Tyre Retreader', isSelected: false, isOutlined: true),
       ],
     );
   }
 
-  Widget _buildServiceButton(String text, {bool isSelected = false, bool isOutlined = false}) {
+  Widget _buildServiceButton(
+    String text, {
+    bool isSelected = false,
+    bool isOutlined = false,
+  }) {
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -311,11 +323,10 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected && !isOutlined ? const Color(0xFFF36969) : Colors.transparent,
-          border: Border.all(
-            color: const Color(0xFFF36969),
-            width: 2,
-          ),
+          color: isSelected && !isOutlined
+              ? const Color(0xFFF36969)
+              : Colors.transparent,
+          border: Border.all(color: const Color(0xFFF36969), width: 2),
           borderRadius: BorderRadius.circular(9999),
         ),
         child: Text(
@@ -323,7 +334,9 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: isSelected && !isOutlined ? Colors.white : const Color(0xFFF36969),
+            color: isSelected && !isOutlined
+                ? Colors.white
+                : const Color(0xFFF36969),
           ),
         ),
       ),
@@ -372,9 +385,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
           _buildLabel('City'),
           const SizedBox(height: 8),
           _buildInputField(
-            profileCity != null && profileCity.isNotEmpty
-                ? profileCity
-                : 'N/A',
+            profileCity != null && profileCity.isNotEmpty ? profileCity : 'N/A',
           ),
           const SizedBox(height: 20),
           // Phone and WhatsApp
@@ -466,10 +477,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
         alignment: Alignment.centerLeft,
         child: Text(
           text,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: Colors.grey[800],
-          ),
+          style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[800]),
         ),
       ),
     );
@@ -554,9 +562,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green[600],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
           'View Subscription Plans',
@@ -615,11 +621,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
         ),
         icon: Transform.rotate(
           angle: 3.14159, // 180 degrees
-          child: const Icon(
-            Icons.logout,
-            color: Color(0xFFF36969),
-            size: 20,
-          ),
+          child: const Icon(Icons.logout, color: Color(0xFFF36969), size: 20),
         ),
         label: Text(
           'Log Out',
@@ -648,11 +650,7 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        icon: const Icon(
-          Icons.edit,
-          color: Color(0xFFF36969),
-          size: 18,
-        ),
+        icon: const Icon(Icons.edit, color: Color(0xFFF36969), size: 18),
         label: Text(
           'Edit Profile',
           style: GoogleFonts.poppins(
@@ -691,4 +689,3 @@ class _ServiceProviderProfileScreenState extends State<ServiceProviderProfileScr
     );
   }
 }
-

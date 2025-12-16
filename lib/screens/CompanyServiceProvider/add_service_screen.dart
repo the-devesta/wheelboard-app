@@ -13,7 +13,7 @@ import '../../widgets/custom_loader.dart';
 
 class AddServiceScreen extends StatefulWidget {
   final ServiceModel? service; // Optional service for edit mode
-  
+
   const AddServiceScreen({super.key, this.service});
 
   @override
@@ -23,35 +23,35 @@ class AddServiceScreen extends StatefulWidget {
 class _AddServiceScreenState extends State<AddServiceScreen> {
   final _formKey = GlobalKey<FormState>();
   late final ServiceProviderController _controller;
-  
+
   // Form Controllers
   final TextEditingController _serviceTitleController = TextEditingController();
-  final TextEditingController _contactNumberController = TextEditingController();
-  final TextEditingController _whatsappNumberController = TextEditingController();
+  final TextEditingController _contactNumberController =
+      TextEditingController();
+  final TextEditingController _whatsappNumberController =
+      TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _fullAddressController = TextEditingController();
-  
+
   int _descriptionLength = 0;
-  
+
   String _pricingOption = 'Flat Price';
-  String _selectedCategory = 'Tyre Repair';
+  String _selectedCategory = 'Tyre Services';
   final Set<String> _selectedDays = {'Mon'};
   String _businessFrom = '09:00';
   String _businessTo = '18:00';
   bool _isVisible = true;
   List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
-  
+
   // Category options
   final List<String> _categoryOptions = [
-    'Tyre Repair',
-    'Engine',
-    'Oil Change',
-    'Brake Service',
-    'Battery',
-    'AC Service',
+    'Tyre Services',
+    'Vehicle Services',
+    'Tyre Retreader',
+    'Other',
   ];
 
   @override
@@ -63,13 +63,13 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         _descriptionLength = _descriptionController.text.length;
       });
     });
-    
+
     // Populate form if editing
     if (widget.service != null) {
       _populateFormForEdit();
     }
   }
-  
+
   void _populateFormForEdit() {
     final service = widget.service!;
     _serviceTitleController.text = service.serviceTitle;
@@ -80,26 +80,28 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     _cityController.text = service.city;
     _fullAddressController.text = service.fullAddress;
     _pricingOption = service.pricingOption ?? 'Flat Price';
-    
+
     // Set category from serviceCategory first, then fallback to businessType
-    String categoryToSet = 'Tyre Repair'; // Default
-    if (service.serviceCategory != null && service.serviceCategory!.isNotEmpty) {
+    String categoryToSet = 'Tyre Services'; // Default
+    if (service.serviceCategory != null &&
+        service.serviceCategory!.isNotEmpty) {
       categoryToSet = service.serviceCategory!;
     } else if (service.businessType.isNotEmpty) {
       categoryToSet = service.businessType;
     }
-    
+
+    // Handle legacy 'Tyre Repair' mapping
+    if (categoryToSet == 'Tyre Repair') {
+      categoryToSet = 'Tyre Services';
+    }
+
     // Validate that the category exists in _categoryOptions
-    // If not, use default to avoid dropdown error
     if (_categoryOptions.contains(categoryToSet)) {
       _selectedCategory = categoryToSet;
     } else {
-      // If category doesn't exist in options, use default
-      // You could also add it to the list if needed
-      print("⚠️ Category '$categoryToSet' not found in options, using default: 'Tyre Repair'");
-      _selectedCategory = 'Tyre Repair';
+      _selectedCategory = 'Tyre Services';
     }
-    
+
     _isVisible = service.isAvailable;
     if (service.daysOpen != null && service.daysOpen!.isNotEmpty) {
       _selectedDays.clear();
@@ -142,28 +144,26 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildServiceDetailsSection(),
-              const SizedBox(height: 24),
-              _buildPricingSection(),
-              const SizedBox(height: 24),
-              _buildBusinessHoursSection(),
-              const SizedBox(height: 24),
-              _buildLocationSection(),
-              const SizedBox(height: 24),
-              _buildImageGallerySection(),
-              const SizedBox(height: 24),
-              _buildVisibilitySection(),
+                    children: [
+                      _buildServiceDetailsSection(),
+                      const SizedBox(height: 24),
+                      _buildPricingSection(),
+                      const SizedBox(height: 24),
+                      _buildBusinessHoursSection(),
+                      const SizedBox(height: 24),
+                      _buildLocationSection(),
+                      const SizedBox(height: 24),
+                      _buildImageGallerySection(),
+                      const SizedBox(height: 24),
+                      _buildVisibilitySection(),
                       const SizedBox(height: 100), // Space for bottom buttons
-            ],
-          ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -196,172 +196,164 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                 ),
               ),
             ),
-          ...children
+          ...children,
         ],
       ),
     );
   }
 
   Widget _buildServiceDetailsSection() {
-    return _buildSection(
-      '',
-      [
-        _CustomTextField(
-          labelText: 'Service Title *',
-          controller: _serviceTitleController,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Service title is required';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        // Category Dropdown
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Category *',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<String>(
-              value: _selectedCategory,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF0075FF)),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              items: _categoryOptions.map((category) {
-                return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(
-                    category,
-                    style: const TextStyle(fontSize: 15),
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                }
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Category is required';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _CustomTextField(
-          labelText: 'Contact number *',
-          controller: _contactNumberController,
-          keyboardType: TextInputType.phone,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Contact number is required';
-            }
-            if (value.length < 10) {
-              return 'Please enter a valid contact number';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        _CustomTextField(
-          labelText: 'Whatsapp number (optional)',
-          controller: _whatsappNumberController,
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: 16),
-        _CustomTextField(
-          labelText: 'Description *',
-          maxLines: 4,
-          minLines: 1,
-          controller: _descriptionController,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Description is required';
-            }
-            if (value.length > 500) {
-              return 'Description cannot exceed 500 characters';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            '$_descriptionLength/500',
+    return _buildSection('', [
+      _CustomTextField(
+        labelText: 'Service Title *',
+        controller: _serviceTitleController,
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Service title is required';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+      // Category Dropdown
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Category *',
             style: TextStyle(
-              color: _descriptionLength > 500 
-                  ? Colors.red 
-                  : Colors.grey,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
             ),
           ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            value: _selectedCategory,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF0075FF)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            items: _categoryOptions.map((category) {
+              return DropdownMenuItem<String>(
+                value: category,
+                child: Text(category, style: const TextStyle(fontSize: 15)),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _selectedCategory = value;
+                });
+              }
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Category is required';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      _CustomTextField(
+        labelText: 'Contact number *',
+        controller: _contactNumberController,
+        keyboardType: TextInputType.phone,
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Contact number is required';
+          }
+          if (value.length < 10) {
+            return 'Please enter a valid contact number';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+      _CustomTextField(
+        labelText: 'Whatsapp number (optional)',
+        controller: _whatsappNumberController,
+        keyboardType: TextInputType.phone,
+      ),
+      const SizedBox(height: 16),
+      _CustomTextField(
+        labelText: 'Description *',
+        maxLines: 4,
+        minLines: 1,
+        controller: _descriptionController,
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Description is required';
+          }
+          if (value.length > 500) {
+            return 'Description cannot exceed 500 characters';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 8),
+      Align(
+        alignment: Alignment.centerRight,
+        child: Text(
+          '$_descriptionLength/500',
+          style: TextStyle(
+            color: _descriptionLength > 500 ? Colors.red : Colors.grey,
+          ),
         ),
-      ],
-    );
+      ),
+    ]);
   }
 
   Widget _buildPricingSection() {
-    return _buildSection(
-      'Pricing Option *',
-      [
-        Row(
-          children: [
-            _buildRadio('Flat Price'),
-            const SizedBox(width: 24),
-            _buildRadio('On Request'),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _CustomTextField(
-          labelText: _pricingOption == 'Flat Price' ? 'Amount *' : 'Amount (optional)',
-          prefixIcon: const Icon(Icons.currency_rupee, color: Colors.grey),
-          controller: _priceController,
-          keyboardType: TextInputType.number,
-          enabled: _pricingOption == 'Flat Price',
-          validator: _pricingOption == 'Flat Price' 
-              ? (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Amount is required for flat price';
-                  }
-                  if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                    return 'Please enter a valid amount';
-                  }
-                  return null;
+    return _buildSection('Pricing Option *', [
+      Row(
+        children: [
+          _buildRadio('Flat Price'),
+          const SizedBox(width: 24),
+          _buildRadio('On Request'),
+        ],
+      ),
+      const SizedBox(height: 16),
+      _CustomTextField(
+        labelText: _pricingOption == 'Flat Price'
+            ? 'Amount *'
+            : 'Amount (optional)',
+        prefixIcon: const Icon(Icons.currency_rupee, color: Colors.grey),
+        controller: _priceController,
+        keyboardType: TextInputType.number,
+        enabled: _pricingOption == 'Flat Price',
+        validator: _pricingOption == 'Flat Price'
+            ? (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Amount is required for flat price';
                 }
-              : null,
-        ),
-      ],
-    );
+                if (double.tryParse(value) == null ||
+                    double.parse(value) <= 0) {
+                  return 'Please enter a valid amount';
+                }
+                return null;
+              }
+            : null,
+      ),
+    ]);
   }
 
   Widget _buildRadio(String value) {
@@ -390,32 +382,29 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   }
 
   Widget _buildBusinessHoursSection() {
-    return _buildSection(
-      'Business Hours',
-      [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildDayChip('Mon'),
-            _buildDayChip('Tue'),
-            _buildDayChip('Wed'),
-            _buildDayChip('Thu'),
-            _buildDayChip('Fri'),
-            _buildDayChip('Sat'),
-            _buildDayChip('Sun'),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(child: _buildTimePicker('From', '09:00')),
-            const SizedBox(width: 16),
-            Expanded(child: _buildTimePicker('To', '18:00')),
-          ],
-        )
-      ],
-    );
+    return _buildSection('Business Hours', [
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _buildDayChip('Mon'),
+          _buildDayChip('Tue'),
+          _buildDayChip('Wed'),
+          _buildDayChip('Thu'),
+          _buildDayChip('Fri'),
+          _buildDayChip('Sat'),
+          _buildDayChip('Sun'),
+        ],
+      ),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(child: _buildTimePicker('From', '09:00')),
+          const SizedBox(width: 16),
+          Expanded(child: _buildTimePicker('To', '18:00')),
+        ],
+      ),
+    ]);
   }
 
   Widget _buildDayChip(String day) {
@@ -432,11 +421,10 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       },
       child: Chip(
         label: Text(day),
-        backgroundColor:
-            isSelected ? const Color(0xFFE83B4F) : Colors.grey.shade200,
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : Colors.black,
-        ),
+        backgroundColor: isSelected
+            ? const Color(0xFFE83B4F)
+            : Colors.grey.shade200,
+        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
       ),
     );
   }
@@ -444,7 +432,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   Widget _buildTimePicker(String label, String time) {
     final isFrom = label == 'From';
     final currentTime = isFrom ? _businessFrom : _businessTo;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -453,17 +441,17 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         GestureDetector(
           onTap: () => _selectTime(context, isFrom),
           child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Text(currentTime),
-              const Icon(Icons.access_time, color: Colors.grey),
-            ],
+                const Icon(Icons.access_time, color: Colors.grey),
+              ],
             ),
           ),
         ),
@@ -478,7 +466,8 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     );
     if (picked != null) {
       setState(() {
-        final timeString = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+        final timeString =
+            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
         if (isFrom) {
           _businessFrom = timeString;
         } else {
@@ -489,85 +478,76 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   }
 
   Widget _buildLocationSection() {
-    return _buildSection(
-      '',
-      [
-        _CustomTextField(
-          labelText: 'City *',
-          controller: _cityController,
-          suffixIcon: const Icon(Icons.arrow_drop_down),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'City is required';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        _CustomTextField(
-          labelText: 'Full Address (optional)',
-          maxLines: 4,
-          minLines: 1,
-          controller: _fullAddressController,
-        ),
-      ],
-    );
+    return _buildSection('', [
+      _CustomTextField(
+        labelText: 'City *',
+        controller: _cityController,
+        suffixIcon: const Icon(Icons.arrow_drop_down),
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'City is required';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+      _CustomTextField(
+        labelText: 'Full Address (optional)',
+        maxLines: 4,
+        minLines: 1,
+        controller: _fullAddressController,
+      ),
+    ]);
   }
 
   Widget _buildImageGallerySection() {
-    return _buildSection(
-      'Image Gallery',
-      [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1,
-          ),
-          itemCount: 4,
-          itemBuilder: (context, index) {
-            if (index < _selectedImages.length) {
-              return _buildImageItem(_selectedImages[index], index);
-            }
-            return _buildImagePlaceholder(index);
-          },
+    return _buildSection('Image Gallery', [
+      GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 1,
         ),
-        const SizedBox(height: 8),
-        const Text(
-          'Max 4 images, .jpg/.png, 2MB each',
-          style: TextStyle(color: Colors.grey, fontSize: 12),
-        ),
-      ],
-    );
+        itemCount: 4,
+        itemBuilder: (context, index) {
+          if (index < _selectedImages.length) {
+            return _buildImageItem(_selectedImages[index], index);
+          }
+          return _buildImagePlaceholder(index);
+        },
+      ),
+      const SizedBox(height: 8),
+      const Text(
+        'Max 4 images, .jpg/.png, 2MB each',
+        style: TextStyle(color: Colors.grey, fontSize: 12),
+      ),
+    ]);
   }
 
   Widget _buildImagePlaceholder(int index) {
     return GestureDetector(
       onTap: () => _pickImage(index),
       child: Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-          style: BorderStyle.solid,
-        ),
-      ),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_a_photo, color: Color(0xFF00B894)),
-          SizedBox(height: 8),
-          Text(
-            'Add Image',
-            style: TextStyle(color: Color(0xFF00B894)),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.grey.shade300,
+            width: 1,
+            style: BorderStyle.solid,
           ),
-        ],
-      ),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_a_photo, color: Color(0xFF00B894)),
+            SizedBox(height: 8),
+            Text('Add Image', style: TextStyle(color: Color(0xFF00B894))),
+          ],
+        ),
       ),
     );
   }
@@ -599,11 +579,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                 color: Colors.red,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 16,
-              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 16),
             ),
           ),
         ),
@@ -628,12 +604,18 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
             child: Wrap(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.camera_alt, color: Color(0xFF00B894)),
+                  leading: const Icon(
+                    Icons.camera_alt,
+                    color: Color(0xFF00B894),
+                  ),
                   title: const Text('Take Photo'),
                   onTap: () => Navigator.pop(context, ImageSource.camera),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.photo_library, color: Color(0xFF00B894)),
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: Color(0xFF00B894),
+                  ),
                   title: const Text('Choose from Gallery'),
                   onTap: () => Navigator.pop(context, ImageSource.gallery),
                 ),
@@ -659,7 +641,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
         if (pickedFile != null) {
           final file = File(pickedFile.path);
           final fileSizeInMB = await file.length() / (1024 * 1024);
-          
+
           if (fileSizeInMB > 2) {
             SnackBarHelper.error("Image size should be less than 2MB");
             return;
@@ -680,102 +662,97 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   }
 
   Widget _buildVisibilitySection() {
-    return _buildSection(
-      '',
-      [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Service Visibility',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Mark as Available',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-            Switch(
-              value: _isVisible,
-              onChanged: (value) {
-                setState(() {
-                  _isVisible = value;
-                });
-              },
-              activeColor: const Color(0xFF00B894),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomButtons() {
-    return Obx(() => Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return _buildSection('', [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: _controller.isLoading.value ? null : () {
-                // Save as draft - same as publish but with isVisible = false
-                _saveService(isVisible: false);
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                side: BorderSide(color: Colors.grey.shade300),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Service Visibility',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              child: const Text(
-                'Save as Draft',
-                style: TextStyle(color: Colors.grey, fontSize: 16),
-              ),
-            ),
+              SizedBox(height: 4),
+              Text('Mark as Available', style: TextStyle(color: Colors.grey)),
+            ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _controller.isLoading.value ? null : () {
-                _saveService(isVisible: true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF36969),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: _controller.isLoading.value
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CustomLoader.small(
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                'Save & Publish',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            ),
+          Switch(
+            value: _isVisible,
+            onChanged: (value) {
+              setState(() {
+                _isVisible = value;
+              });
+            },
+            activeColor: const Color(0xFF00B894),
           ),
         ],
       ),
-    ));
+    ]);
+  }
+
+  Widget _buildBottomButtons() {
+    return Obx(
+      () => Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _controller.isLoading.value
+                    ? null
+                    : () {
+                        // Save as draft - same as publish but with isVisible = false
+                        _saveService(isVisible: false);
+                      },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(color: Colors.grey.shade300),
+                ),
+                child: const Text(
+                  'Save as Draft',
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _controller.isLoading.value
+                    ? null
+                    : () {
+                        _saveService(isVisible: true);
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF36969),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _controller.isLoading.value
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CustomLoader.small(color: Colors.white),
+                      )
+                    : const Text(
+                        'Save & Publish',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _saveService({required bool isVisible}) async {
@@ -788,7 +765,8 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       return;
     }
 
-    if (_pricingOption == 'Flat Price' && _priceController.text.trim().isEmpty) {
+    if (_pricingOption == 'Flat Price' &&
+        _priceController.text.trim().isEmpty) {
       SnackBarHelper.error("Please enter amount for flat price");
       return;
     }
@@ -796,7 +774,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     try {
       final sessionManager = SessionManager();
       final userId = await sessionManager.getString("userId");
-      
+
       if (userId == null || userId.isEmpty) {
         SnackBarHelper.error("User ID not found. Please login again.");
         return;
@@ -804,7 +782,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
       final daysOpen = _selectedDays.join(',');
       final isFlatPrice = _pricingOption == 'Flat Price';
-      final price = isFlatPrice 
+      final price = isFlatPrice
           ? double.tryParse(_priceController.text.trim()) ?? 0.0
           : 0.0;
 
@@ -820,8 +798,8 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           fullAddress: _fullAddressController.text.trim(),
           city: _cityController.text.trim(),
           contactNumber: _contactNumberController.text.trim(),
-          whatsappNumber: _whatsappNumberController.text.trim().isEmpty 
-              ? null 
+          whatsappNumber: _whatsappNumberController.text.trim().isEmpty
+              ? null
               : _whatsappNumberController.text.trim(),
           description: _descriptionController.text.trim(),
           isFlatPrice: isFlatPrice,
@@ -844,8 +822,8 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           fullAddress: _fullAddressController.text.trim(),
           city: _cityController.text.trim(),
           contactNumber: _contactNumberController.text.trim(),
-          whatsappNumber: _whatsappNumberController.text.trim().isEmpty 
-              ? null 
+          whatsappNumber: _whatsappNumberController.text.trim().isEmpty
+              ? null
               : _whatsappNumberController.text.trim(),
           description: _descriptionController.text.trim(),
           isFlatPrice: isFlatPrice,
@@ -861,7 +839,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
         result = await _controller.addService(serviceModel);
       }
-      
+
       if (result != null && result['success'] == true) {
         // Clear form and go back
         if (widget.service == null) {
@@ -938,7 +916,9 @@ class _CustomTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       enabled: enabled,
-      textInputAction: maxLines != null && maxLines! > 1 ? TextInputAction.newline : TextInputAction.next,
+      textInputAction: maxLines != null && maxLines! > 1
+          ? TextInputAction.newline
+          : TextInputAction.next,
       decoration: InputDecoration(
         labelText: labelText,
         labelStyle: const TextStyle(color: Colors.grey),

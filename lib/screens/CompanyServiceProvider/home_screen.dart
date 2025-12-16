@@ -8,6 +8,7 @@ import 'earnings_screen.dart';
 import 'add_service_screen.dart';
 import 'my_listings_screen.dart';
 import 'service_details_screen.dart';
+import 'booking_details_screen.dart';
 import '../CompanyTransport/job_screen.dart';
 import '../CompanyTransport/notification_screen.dart';
 import '../../controllers/notification_controller.dart';
@@ -296,13 +297,24 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard(
-                        context,
-                        icon: Icons.show_chart,
-                        iconBgColor: const Color(0xFFD0FAE6),
-                        iconColor: const Color(0xFF00B894),
-                        label: 'Leads',
-                        value: '12',
+                      child: GestureDetector(
+                        onTap: () {
+                          Get.to(
+                            () => BookingDetailsScreen(
+                              serviceId: _services.isNotEmpty
+                                  ? _services.first.serviceId
+                                  : '',
+                            ),
+                          ); // Navigate to booking details
+                        },
+                        child: _buildStatCard(
+                          context,
+                          icon: Icons.show_chart,
+                          iconBgColor: const Color(0xFFD0FAE6),
+                          iconColor: const Color(0xFF00B894),
+                          label: 'Leads',
+                          value: '12',
+                        ),
                       ),
                     ),
                   ],
@@ -609,21 +621,24 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     required String label,
   }) {
     return Container(
+      height: 110, // Fixed height for uniformity
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
+        mainAxisAlignment:
+            MainAxisAlignment.center, // Center content vertically
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 40, // Slightly smaller icon container
+            height: 40,
             decoration: BoxDecoration(
               color: iconBgColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: const Color(0xFF535353), size: 24),
+            child: Icon(icon, color: const Color(0xFF535353), size: 20),
           ),
           const SizedBox(height: 8),
           Text(
@@ -631,9 +646,11 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w500,
-              fontSize: 15,
+              fontSize: 13, // Slightly smaller font
               color: const Color(0xFF535353),
             ),
+            maxLines: 2, // Allow 2 lines
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -692,170 +709,177 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          // Service Image
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: imageUrl.isEmpty ? const Color(0xFFF0F0F0) : null,
-              border: imageUrl.isEmpty
-                  ? Border.all(
-                      color: const Color(0xFFE0E0E0),
-                      style: BorderStyle.solid,
-                    )
-                  : null,
-            ),
-            child: imageUrl.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Service Image
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: imageUrl.isEmpty ? const Color(0xFFF0F0F0) : null,
+                  border: imageUrl.isEmpty
+                      ? Border.all(
+                          color: const Color(0xFFE0E0E0),
+                          style: BorderStyle.solid,
+                        )
+                      : null,
+                ),
+                child: imageUrl.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'IMG',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: const Color(0xFF999999),
+                              ),
+                            ),
+                            Text(
+                              '60×60',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: const Color(0xFF999999),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: const Color(0xFFF0F0F0),
+                              child: const Icon(
+                                Icons.image,
+                                color: Color(0xFF999999),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              // Service Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title and Tag
+                    Row(
                       children: [
-                        Text(
-                          'IMG',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: const Color(0xFF999999),
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: const Color(0xFF2D3436),
+                                ),
                           ),
                         ),
-                        Text(
-                          '60×60',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: const Color(0xFF999999),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD0FAE6),
+                            borderRadius: BorderRadius.circular(9999),
+                          ),
+                          child: Text(
+                            tag,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontSize: 11,
+                                  color: const Color(0xFF00B894),
+                                  fontWeight: FontWeight.w500,
+                                ),
                           ),
                         ),
                       ],
                     ),
-                  )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: const Color(0xFFF0F0F0),
-                          child: const Icon(
-                            Icons.image,
-                            color: Color(0xFF999999),
-                          ),
-                        );
-                      },
+                    const SizedBox(height: 4),
+                    // Description
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 13,
+                        color: const Color(0xFF828282),
+                        height: 1.4,
+                      ),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          // Service Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title and Tag
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: const Color(0xFF2D3436),
-                        ),
-                      ),
+          const SizedBox(height: 12),
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onEdit,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    side: const BorderSide(color: Color(0xFF00B894)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD0FAE6),
-                        borderRadius: BorderRadius.circular(9999),
-                      ),
-                      child: Text(
-                        tag,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
-                          color: const Color(0xFF00B894),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                  ),
+                  icon: const Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: Color(0xFF00B894),
+                  ),
+                  label: const Text(
+                    'Edit',
+                    style: TextStyle(
+                      color: Color(0xFF00B894),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // Description
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 13,
-                    color: const Color(0xFF828282),
-                    height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 8),
-                // Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: onEdit,
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF00B894)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(9999),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                        ),
-                        icon: const Icon(
-                          Icons.edit,
-                          size: 13,
-                          color: Color(0xFF00B894),
-                        ),
-                        label: Text(
-                          'Edit',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: const Color(0xFF00B894),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Get.to(() => const AddServiceScreen());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5252),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: onUnpublish,
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFFF4D4F)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(9999),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                        ),
-                        icon: const Icon(
-                          Icons.visibility_off,
-                          size: 13,
-                          color: Color(0xFFFF4D4F),
-                        ),
-                        label: Text(
-                          'Unpublish',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: const Color(0xFFFF4D4F),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
+                  ),
+                  icon: const Icon(Icons.add, size: 16, color: Colors.white),
+                  label: const Text(
+                    'Add Service',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

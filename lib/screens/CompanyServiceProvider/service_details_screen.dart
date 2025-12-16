@@ -12,7 +12,7 @@ import '../../widgets/custom_loader.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final String serviceId;
-  
+
   const ServiceDetailsScreen({super.key, required this.serviceId});
 
   @override
@@ -41,7 +41,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       final response = await HttpHelper.getData(
         endpoint: '${API.serviceDetail}${widget.serviceId}',
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
           'Accept': '*/*',
         },
       );
@@ -86,9 +87,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             onPressed: () => Get.back(),
           ),
         ),
-        body: const Center(
-          child: Text('Service details not found'),
-        ),
+        body: const Center(child: Text('Service details not found')),
       );
     }
 
@@ -99,29 +98,27 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
         slivers: [
           _buildSliverAppBar(context, service),
           SliverList(
-            delegate: SliverChildListDelegate(
-              [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildServiceInfoCard(service),
-                      const SizedBox(height: 24),
-                      _buildPricingAndHoursCard(service),
-                      const SizedBox(height: 24),
-                      _buildAboutServiceCard(service),
-                      const SizedBox(height: 24),
-                      _buildGalleryCard(service),
-                      const SizedBox(height: 24),
-                      _buildStatsCard(),
-                      const SizedBox(height: 24),
-                      _buildActionButtons(service),
-                    ],
-                  ),
+            delegate: SliverChildListDelegate([
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildServiceInfoCard(service),
+                    const SizedBox(height: 24),
+                    _buildPricingAndHoursCard(service),
+                    const SizedBox(height: 24),
+                    _buildAboutServiceCard(service),
+                    const SizedBox(height: 24),
+                    _buildGalleryCard(service),
+                    const SizedBox(height: 24),
+                    _buildStatsCard(),
+                    const SizedBox(height: 24),
+                    _buildActionButtons(service),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ]),
           ),
         ],
       ),
@@ -129,8 +126,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     );
   }
 
-  SliverAppBar _buildSliverAppBar(BuildContext context, Map<String, dynamic> service) {
-    final serviceTitle = service['serviceTitle'] ?? service['title'] ?? 'Service';
+  SliverAppBar _buildSliverAppBar(
+    BuildContext context,
+    Map<String, dynamic> service,
+  ) {
+    final serviceTitle =
+        service['serviceTitle'] ?? service['title'] ?? 'Service';
     final businessName = service['businessName'] ?? '';
     final images = service['images'] as List<dynamic>? ?? [];
     final firstImage = images.isNotEmpty ? images[0] as String : null;
@@ -167,25 +168,30 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             firstImage != null
                 ? Image.network(
                     firstImage,
-              fit: BoxFit.cover,
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: const Color(0xFFF36969),
-                      child: const Icon(Icons.image, size: 64, color: Colors.white70),
+                      child: const Icon(
+                        Icons.image,
+                        size: 64,
+                        color: Colors.white70,
+                      ),
                     ),
                   )
                 : Container(
                     color: const Color(0xFFF36969),
-                    child: const Icon(Icons.image, size: 64, color: Colors.white70),
-            ),
+                    child: const Icon(
+                      Icons.image,
+                      size: 64,
+                      color: Colors.white70,
+                    ),
+                  ),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.7),
-                  ],
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
                 ),
               ),
             ),
@@ -215,8 +221,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   ],
                   const SizedBox(height: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF36969),
                       borderRadius: BorderRadius.circular(20),
@@ -236,7 +244,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   }
 
   Widget _buildServiceInfoCard(Map<String, dynamic> service) {
-    final serviceTitle = service['serviceTitle'] ?? service['title'] ?? 'Service';
+    final serviceTitle =
+        service['serviceTitle'] ?? service['title'] ?? 'Service';
     final businessType = service['businessType'] ?? '';
     final fullAddress = service['fullAddress'] ?? '';
     final city = service['city'] ?? '';
@@ -249,15 +258,15 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         if (businessType.isNotEmpty) ...[
-        const SizedBox(height: 8),
-        Chip(
+          const SizedBox(height: 8),
+          Chip(
             label: Text(businessType),
-          backgroundColor: const Color(0xFFF36969).withOpacity(0.1),
-          labelStyle: const TextStyle(color: Color(0xFFF36969)),
-        ),
+            backgroundColor: const Color(0xFFF36969).withOpacity(0.1),
+            labelStyle: const TextStyle(color: Color(0xFFF36969)),
+          ),
         ],
         if (address.isNotEmpty) ...[
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
           _buildInfoRow(Icons.location_on, address),
         ],
       ],
@@ -270,8 +279,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     if (priceValue is bool) {
       priceValue = 0;
     }
-    final price = (priceValue is num) ? priceValue : (double.tryParse(priceValue.toString()) ?? 0);
-    
+    final price = (priceValue is num)
+        ? priceValue
+        : (double.tryParse(priceValue.toString()) ?? 0);
+
     // Handle pricing option - convert boolean/string to readable text
     String pricingOption = 'Per Hour'; // Default
     if (service['pricingOption'] != null) {
@@ -281,9 +292,13 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       } else if (option is String) {
         // Handle string values like "True", "true", "Flat Price", etc.
         final optionLower = option.toLowerCase();
-        if (optionLower == 'true' || optionLower == 'flat price' || optionLower == 'flat') {
+        if (optionLower == 'true' ||
+            optionLower == 'flat price' ||
+            optionLower == 'flat') {
           pricingOption = 'Flat Price';
-        } else if (optionLower == 'false' || optionLower == 'per hour' || optionLower == 'hourly') {
+        } else if (optionLower == 'false' ||
+            optionLower == 'per hour' ||
+            optionLower == 'hourly') {
           pricingOption = 'Per Hour';
         } else {
           pricingOption = option; // Use as is if it's already readable
@@ -295,14 +310,18 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       if (isFlat is bool) {
         pricingOption = isFlat ? 'Flat Price' : 'Per Hour';
       } else if (isFlat is String) {
-        pricingOption = (isFlat.toLowerCase() == 'true') ? 'Flat Price' : 'Per Hour';
+        pricingOption = (isFlat.toLowerCase() == 'true')
+            ? 'Flat Price'
+            : 'Per Hour';
       }
     }
-    
+
     final daysOpen = service['daysOpen'] ?? '';
-    final businessFrom = service['businessHoursFrom'] ?? service['businessFrom'] ?? '';
-    final businessTo = service['businessHoursTo'] ?? service['businessTo'] ?? '';
-    
+    final businessFrom =
+        service['businessHoursFrom'] ?? service['businessFrom'] ?? '';
+    final businessTo =
+        service['businessHoursTo'] ?? service['businessTo'] ?? '';
+
     String formatTime(String? time) {
       if (time == null || time.isEmpty) return '';
       try {
@@ -325,21 +344,49 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildDetailItem(Icons.currency_rupee, '₹${price.toStringAsFixed(0)}', pricingOption),
-            _buildDetailItem(Icons.build, 'On-premise', 'Service Location'),
+            Expanded(
+              child: _buildDetailItem(
+                Icons.currency_rupee,
+                '₹${price.toStringAsFixed(0)}',
+                pricingOption,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildDetailItem(
+                Icons.build,
+                'On-premise',
+                'Service Location',
+              ),
+            ),
           ],
         ),
         if (daysOpen.isNotEmpty || businessFrom.isNotEmpty) ...[
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               if (daysOpen.isNotEmpty)
-                _buildDetailItem(Icons.date_range, daysOpen, 'Available Days'),
+                Expanded(
+                  child: _buildDetailItem(
+                    Icons.date_range,
+                    daysOpen,
+                    'Available Days',
+                  ),
+                ),
+              if (daysOpen.isNotEmpty && businessFrom.isNotEmpty)
+                const SizedBox(width: 8),
               if (businessFrom.isNotEmpty && businessTo.isNotEmpty)
-                _buildDetailItem(Icons.access_time, '${formatTime(businessFrom)} – ${formatTime(businessTo)}', 'Working Hours'),
-          ],
-        ),
+                Expanded(
+                  child: _buildDetailItem(
+                    Icons.access_time,
+                    '${formatTime(businessFrom)} – ${formatTime(businessTo)}',
+                    'Working Hours',
+                  ),
+                ),
+            ],
+          ),
         ],
       ],
     );
@@ -365,7 +412,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             description,
             style: const TextStyle(color: Colors.black54, height: 1.5),
           ),
-        )
+        ),
       ],
     );
   }
@@ -422,7 +469,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             _buildStatItem(Icons.visibility, '120', 'Views'),
             _buildStatItem(Icons.assignment, '5', 'Assigns'),
           ],
-        )
+        ),
       ],
     );
   }
@@ -442,7 +489,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       description: service['description'],
       pricingOption: service['pricingOption'],
       amount: service['amount'],
-      businessHoursFrom: service['businessHoursFrom'] ?? service['businessFrom'],
+      businessHoursFrom:
+          service['businessHoursFrom'] ?? service['businessFrom'],
       businessHoursTo: service['businessHoursTo'] ?? service['businessTo'],
       daysOpen: service['daysOpen'],
     );
@@ -462,8 +510,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child:
-                const Text('Edit Service', style: TextStyle(color: Color(0xFFF36969))),
+            child: const Text(
+              'Edit Service',
+              style: TextStyle(color: Color(0xFFF36969)),
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -480,7 +530,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Delete', style: TextStyle(color: Color(0xFFF36969))),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Color(0xFFF36969)),
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -493,7 +546,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             icon: const Icon(Icons.share, color: Color(0xFFF36969)),
             onPressed: () {},
           ),
-        )
+        ),
       ],
     );
   }
@@ -503,12 +556,11 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Service'),
-        content: Text('Are you sure you want to delete "${service.serviceTitle}"?'),
+        content: Text(
+          'Are you sure you want to delete "${service.serviceTitle}"?',
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
               // Implement delete functionality
@@ -516,10 +568,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
               SnackBarHelper.success('Service deleted');
               Get.back(); // Go back to listings
             },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -575,10 +624,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
         Icon(icon, color: Colors.grey, size: 16),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(color: Colors.black54),
-          ),
+          child: Text(text, style: const TextStyle(color: Colors.black54)),
         ),
       ],
     );
@@ -586,15 +632,21 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
 
   Widget _buildDetailItem(IconData icon, String title, String subtitle) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, color: Colors.grey, size: 18),
         const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                subtitle,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -609,8 +661,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           child: Icon(icon, color: const Color(0xFFF36969)),
         ),
         const SizedBox(height: 8),
-        Text(value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 4),
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ],

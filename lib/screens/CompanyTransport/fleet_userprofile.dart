@@ -1,15 +1,97 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:get/get.dart';
-import 'package:wheelboard/screens/CompanyTransport/connection_screen.dart';
+import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/widgets/custom_loader.dart';
 
-class FleetUserprofile extends StatelessWidget {
-  final String profileImage = 'https://i.pravatar.cc/150?img=12';
+class FleetUserprofile extends StatefulWidget {
+  final String? companyId;
+  const FleetUserprofile({super.key, this.companyId});
 
-  const FleetUserprofile({super.key});
+  @override
+  State<FleetUserprofile> createState() => _FleetUserprofileState();
+}
+
+class _FleetUserprofileState extends State<FleetUserprofile> {
+  bool _isLoading = true;
+  Map<String, dynamic>? _profileData;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCompanyProfile();
+  }
+
+  Future<void> _fetchCompanyProfile() async {
+    if (widget.companyId == null || widget.companyId!.isEmpty) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final endpoint = 'api/Post/CompProfile/${widget.companyId}';
+      final response = await HttpHelper.getData(
+        endpoint: endpoint,
+        headers: {'Accept': '*/*'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _profileData = data;
+            _isLoading = false;
+          });
+        }
+      } else {
+        print('Failed to fetch profile: ${response.statusCode}');
+        if (mounted) setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      print('Error fetching profile: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CustomLoader(message: "Loading Profile...")),
+      );
+    }
+
+    if (_profileData == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Profile Not Found")),
+        body: const Center(child: Text("Could not load company profile.")),
+      );
+    }
+
+    // Extract data
+    final profileName = _profileData!['profileName'] ?? 'Unknown';
+    final email = _profileData!['email'] ?? '';
+    final phone = _profileData!['phone'] ?? '';
+    final address = _profileData!['address'] ?? '';
+    final rawImage = _profileData!['profileImage'] ?? '';
+    final profileType = _profileData!['profileType'] ?? 'Company';
+
+    // Process Image URL
+    String profileImageUrl = 'https://i.pravatar.cc/150?img=12';
+    if (rawImage.isNotEmpty) {
+      if (rawImage.startsWith('http')) {
+        profileImageUrl = rawImage;
+      } else {
+        profileImageUrl = ApiConstants.baseUrl + rawImage;
+      }
+    }
+    // Fix double slashes and backslashes
+    profileImageUrl = profileImageUrl
+        .replaceAll(r'\', '/') // Start with backslash replacement
+        .replaceAll(r'//', '/')
+        .replaceAll('https:/', 'https://');
+
     return Stack(
       children: [
         // Background SVG
@@ -23,284 +105,136 @@ class FleetUserprofile extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // const SizedBox(height: 60),
                   Container(
-                    margin: EdgeInsets.all(10),
+                    margin: const EdgeInsets.all(10),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white, // Background color
-                      borderRadius: BorderRadius.circular(12), // Corner radius
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
+                          onTap: () => Navigator.pop(context),
                           child: const Icon(
                             Icons.arrow_back,
-                            color: Colors.black, // optional
+                            color: Colors.black,
                           ),
                         ),
-                        Spacer(),
-                        Text(
-                          "User Profile",
+                        const Spacer(),
+                        const Text(
+                          "Company Profile",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
                         ),
-                        Spacer(flex: 2),
+                        const Spacer(flex: 2),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // Profile Image with Badge
+                  // Profile Image
                   Container(
-                    padding: const EdgeInsets.all(
-                      4,
-                    ), // Thickness of the white border
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Border color
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 48,
-                      backgroundImage: NetworkImage(
-                        "https://randomuser.me/api/portraits/men/32.jpg",
-                      ),
+                      backgroundImage: NetworkImage(profileImageUrl),
+                      onBackgroundImageError: (_, __) {},
                     ),
                   ),
 
                   // Role Tag
+                  const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Color(0xFF13C77B),
+                      color: const Color(0xFF13C77B),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      "Fleet Manager",
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    child: Text(
+                      profileType,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ),
 
                   const SizedBox(height: 8),
 
-                  // Name & Title
-                  const Text(
-                    "Alex Johnson",
-                    style: TextStyle(
+                  // Name & Contact
+                  Text(
+                    profileName,
+                    style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors
+                          .black, // Dark text on light bg or handle contrast
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  const Text(
-                    "Fleet Manager",
-                    style: TextStyle(fontSize: 14, color: Colors.white),
-                  ),
+                  if (email.isNotEmpty)
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  if (phone.isNotEmpty)
+                    Text(
+                      phone,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
 
                   const SizedBox(height: 8),
 
-                  // Location and message icon
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                      Text(
-                        "Pune, MH, INDIA",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      SizedBox(width: 12),
-                      Icon(
-                        Icons.chat_bubble_outline,
-                        size: 20,
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: const BoxDecoration(
-                      color: Color(
-                        0xFFF4E3E3,
-                      ), // Replace with your desired background
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        // Stats: Fleet Size & Exp
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: const [
-                            Column(
-                              children: [
-                                Text(
-                                  "50+",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text("Fleet Size"),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                Text(
-                                  "10+",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text("Years Exp."),
-                              ],
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Skills Chips
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            _chip("Fleet Optimization"),
-                            _chip("Driver Management"),
-                            _chip("Route Planning"),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // About Section
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "About",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  "Passionate about scaling logistics and delivering excellence. I optimize fleets, empower drivers, and ensure routes are always efficient. Let’s connect and drive results together.",
-                                ),
-                              ],
+                  // Location
+                  if (address.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 18,
+                            color: Colors.redAccent,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              address,
+                              style: const TextStyle(color: Colors.black87),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // +Connect Button
-                        gradientButton(),
-
-                        const SizedBox(height: 200),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _chip(String label) {
-    return Chip(
-      label: Text(label, style: const TextStyle(color: Colors.deepOrange)),
-      backgroundColor: const Color(0xFFFFF3E0),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
-    );
-  }
-
-  Widget gradientButton() {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF5F6D), Color(0xFFFFC371)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(40),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(40),
-        onTap: () {
-          // Handle tap here
-          Get.to(ConnectionScreen());
-        },
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.person_add_alt_1, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              "+ Connect",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildTag(String label) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: Color(0xFFFFF1DC),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(label, style: TextStyle(color: Colors.orangeAccent)),
     );
   }
 }

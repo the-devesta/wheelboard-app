@@ -1,88 +1,105 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../models/add_drivermodel.dart';
+import '../widgets/custom_snackbar.dart';
 
 class AddDriverController extends GetxController {
   var isLoading = false.obs;
+
+  /// Parse error message from backend response
+  String _parseErrorMessage(String responseBody, String defaultMessage) {
+    try {
+      final data = json.decode(responseBody);
+      // Try common error message fields
+      if (data is Map) {
+        if (data.containsKey('message') && data['message'] != null) {
+          return data['message'].toString();
+        }
+        if (data.containsKey('Message') && data['Message'] != null) {
+          return data['Message'].toString();
+        }
+        if (data.containsKey('error') && data['error'] != null) {
+          return data['error'].toString();
+        }
+        if (data.containsKey('Error') && data['Error'] != null) {
+          return data['Error'].toString();
+        }
+        if (data.containsKey('title') && data['title'] != null) {
+          return data['title'].toString();
+        }
+        if (data.containsKey('errors') && data['errors'] != null) {
+          // Handle validation errors
+          final errors = data['errors'];
+          if (errors is Map && errors.isNotEmpty) {
+            final firstError = errors.values.first;
+            if (firstError is List && firstError.isNotEmpty) {
+              return firstError.first.toString();
+            }
+          }
+        }
+      }
+      // If response is plain string
+      if (responseBody.isNotEmpty && !responseBody.startsWith('{')) {
+        return responseBody;
+      }
+    } catch (e) {
+      print("Error parsing response: $e");
+    }
+    return defaultMessage;
+  }
 
   Future<bool> addDriver(DriverModel driverModel, String token) async {
     try {
       isLoading.value = true;
 
-      print("👤 ==================================");
-      print("👤 STARTING DRIVER ADDITION");
-      print("👤 ==================================");
-
       final fields = driverModel.toJsonFields();
-      final File? imageFile = driverModel.image; // ✅ single image
+      final File? imageFile = driverModel.image;
 
-      print("👤 Driver Model Data:");
-      print("👤 - Driver ID: ${driverModel.driverId}");
-      print("👤 - User ID: ${driverModel.userId}");
-      print("👤 - Full Name: ${driverModel.fullName}");
-      print("👤 - Contact Number: ${driverModel.contactNumber}");
-      print("👤 - Vehicle Type: ${driverModel.vehicleType}");
-      print("👤 - Vehicle Number: ${driverModel.vehicleNumber}");
-      print("👤 - Description: ${driverModel.description}");
-      print("👤 - Partner ID: ${driverModel.partnerId}");
-      print("👤 - Modified User ID: ${driverModel.modifiedUserId}");
-      print("👤 - Is Declaration Accepted: ${driverModel.isDeclarationAccepted}");
-      print("👤 - Image File: ${imageFile?.path ?? 'No image'}");
-
-      print("👤 ==================================");
-      print("👤 SENDING MULTIPART REQUEST");
-      print("👤 ==================================");
-      print("👤 Full URL: ${ApiConstants.baseUrl}${API.addDriver}");
-      print("👤 Token: ${token.isNotEmpty ? 'Present (${token.length} chars)' : 'EMPTY OR NULL'}");
-      print("👤 Headers: {Authorization: Bearer $token}");
-      print("👤 Fields: $fields");
-      print("👤 Image File: ${imageFile?.path ?? 'No image'}");
-      print("👤 ==================================");
-
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.addDriver,
-        fields: fields,
-        files: imageFile != null ? [imageFile] : [], // ✅ only 1 file allowed
-        fieldKey: "Image", // ✅ must match backend
-        headers: {"Authorization": "Bearer $token"},
-      );
+      final streamedResponse =
+          await HttpHelper.uploadMultipart(
+            endpoint: API.addDriver,
+            fields: fields,
+            files: imageFile != null ? [imageFile] : [],
+            fieldKey: "Image",
+            headers: {"Authorization": "Bearer $token"},
+          ).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception("Request timeout. Please try again.");
+            },
+          );
 
       final response = await http.Response.fromStream(streamedResponse);
 
-      print("👤 ==================================");
-      print("👤 RESPONSE FROM API");
-      print("👤 ==================================");
-      print("👤 Status Code: ${response.statusCode}");
-      print("👤 Response Body: ${response.body}");
-      print("👤 Response Headers: ${response.headers}");
-      print("👤 ==================================");
+      print(
+        "👤 Add Driver Response: ${response.statusCode} - ${response.body}",
+      );
 
       if (response.statusCode == 200) {
-        print("👤 ✅ DRIVER ADDED SUCCESSFULLY!");
-        Get.snackbar("Success", "Driver added successfully ✅");
+        SnackBarHelper.success("Driver added successfully");
         return true;
       } else {
-        print("👤 ❌ DRIVER ADDITION FAILED!");
-        print("👤 Error Status: ${response.statusCode}");
-        print("👤 Error Body: ${response.body}");
-        Get.snackbar("Error", "Failed with status: ${response.statusCode}");
+        // Show actual error message from backend
+        final errorMessage = _parseErrorMessage(
+          response.body,
+          "Unable to add driver. Please try again.",
+        );
+
+        SnackBarHelper.error(errorMessage);
         return false;
       }
-    } catch (e, stack) {
-      print("👤 ==================================");
-      print("👤 EXCEPTION OCCURRED");
-      print("👤 ==================================");
-      print("👤 Exception: $e");
-      print("👤 Stacktrace: $stack");
-      print("👤 ==================================");
-      Get.snackbar("Error", "Something went wrong: $e");
+    } catch (e) {
+      print("👤 Add Driver Exception: $e");
+      SnackBarHelper.error(
+        "Unable to connect to server. Please check your internet connection.",
+      );
       return false;
     } finally {
       isLoading.value = false;
-      print("👤 Loading state set to false");
     }
   }
 
@@ -90,91 +107,50 @@ class AddDriverController extends GetxController {
     try {
       isLoading.value = true;
 
-      print("👤 ==================================");
-      print("👤 STARTING DRIVER UPDATE");
-      print("👤 ==================================");
-
       final fields = driverModel.toJsonFields();
-      final File? imageFile = driverModel.image; // ✅ single image
+      final File? imageFile = driverModel.image;
 
-      print("👤 Driver Update Data:");
-      print("👤 - Driver ID: ${driverModel.driverId}");
-      print("👤 - User ID: ${driverModel.userId}");
-      print("👤 - Full Name: ${driverModel.fullName}");
-      print("👤 - Contact Number: ${driverModel.contactNumber}");
-      print("👤 - Vehicle Type: ${driverModel.vehicleType}");
-      print("👤 - Vehicle Number: ${driverModel.vehicleNumber}");
-      print("👤 - Description: ${driverModel.description}");
-      print("👤 - Partner ID: ${driverModel.partnerId}");
-      print("👤 - Modified User ID: ${driverModel.modifiedUserId}");
-      print("👤 - Is Declaration Accepted: ${driverModel.isDeclarationAccepted}");
-      print("👤 - Image File: ${imageFile?.path ?? 'No image'}");
-      
-      // Check if DriverId is valid
-      if (driverModel.driverId == null || driverModel.driverId!.isEmpty) {
-        print("👤 ⚠️ WARNING: DriverId is NULL or EMPTY!");
-        print("👤 This might cause 403 error - driver ownership cannot be verified");
-      } else {
-        print("👤 ✅ DriverId is present: ${driverModel.driverId}");
-      }
-      
-      // Check if UserId matches
-      if (driverModel.userId == null || driverModel.userId!.isEmpty) {
-        print("👤 ⚠️ WARNING: UserId is NULL or EMPTY!");
-      } else {
-        print("👤 ✅ UserId is present: ${driverModel.userId}");
-      }
-
-      print("👤 ==================================");
-      print("👤 SENDING UPDATE REQUEST");
-      print("👤 ==================================");
-      print("👤 URL: ${API.updateDriver}");
-      print("👤 Headers: {Authorization: Bearer $token}");
-      print("👤 Fields: $fields");
-      print("👤 Image File: ${imageFile?.path ?? 'No image'}");
-      print("👤 ==================================");
-
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.updateDriver,
-        fields: fields,
-        files: imageFile != null ? [imageFile] : [], // ✅ only 1 file allowed
-        fieldKey: "Image", // ✅ must match backend
-        headers: {"Authorization": "Bearer $token"},
-      );
+      final streamedResponse =
+          await HttpHelper.uploadMultipart(
+            endpoint: API.updateDriver,
+            fields: fields,
+            files: imageFile != null ? [imageFile] : [],
+            fieldKey: "Image",
+            headers: {"Authorization": "Bearer $token"},
+          ).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception("Request timeout. Please try again.");
+            },
+          );
 
       final response = await http.Response.fromStream(streamedResponse);
 
-      print("👤 ==================================");
-      print("👤 UPDATE RESPONSE FROM API");
-      print("👤 ==================================");
-      print("👤 Status Code: ${response.statusCode}");
-      print("👤 Response Body: ${response.body}");
-      print("👤 Response Headers: ${response.headers}");
-      print("👤 ==================================");
+      print(
+        "👤 Update Driver Response: ${response.statusCode} - ${response.body}",
+      );
 
       if (response.statusCode == 200) {
-        print("👤 ✅ DRIVER UPDATED SUCCESSFULLY!");
-        Get.snackbar("Success", "Driver updated successfully ✅");
+        SnackBarHelper.success("Driver updated successfully");
         return true;
       } else {
-        print("👤 ❌ DRIVER UPDATE FAILED!");
-        print("👤 Error Status: ${response.statusCode}");
-        print("👤 Error Body: ${response.body}");
-        Get.snackbar("Error", "Failed with status: ${response.statusCode}");
+        // Show actual error message from backend
+        final errorMessage = _parseErrorMessage(
+          response.body,
+          "Unable to update driver. Please try again.",
+        );
+
+        SnackBarHelper.error(errorMessage);
         return false;
       }
-    } catch (e, stack) {
-      print("👤 ==================================");
-      print("👤 UPDATE EXCEPTION OCCURRED");
-      print("👤 ==================================");
-      print("👤 Exception: $e");
-      print("👤 Stacktrace: $stack");
-      print("👤 ==================================");
-      Get.snackbar("Error", "Something went wrong: $e");
+    } catch (e) {
+      print("👤 Update Driver Exception: $e");
+      SnackBarHelper.error(
+        "Unable to connect to server. Please check your internet connection.",
+      );
       return false;
     } finally {
       isLoading.value = false;
-      print("👤 Update loading state set to false");
     }
   }
 }

@@ -58,15 +58,13 @@ class PostController extends GetxController {
             'CreatedBy': userId,
             'PartnerId': partnerId ?? '0',
           },
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': '*/*',
-          },
+          headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
         );
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          if (data['message'] != null && data['message'].contains('successfully')) {
+          if (data['message'] != null &&
+              data['message'].contains('successfully')) {
             Get.snackbar("Success", "Post created successfully!");
             await fetchUserPosts(); // Refresh posts
             return true;
@@ -81,10 +79,7 @@ class PostController extends GetxController {
           fields: fields,
           files: images,
           fieldKey: 'Images', // Field name for images
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': '*/*',
-          },
+          headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
         );
 
         final response = await http.Response.fromStream(streamedResponse);
@@ -94,7 +89,8 @@ class PostController extends GetxController {
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          if (data['message'] != null && data['message'].contains('successfully')) {
+          if (data['message'] != null &&
+              data['message'].contains('successfully')) {
             Get.snackbar("Success", "Post created successfully!");
             await fetchUserPosts(); // Refresh posts
             return true;
@@ -128,10 +124,7 @@ class PostController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: API.getAllPost,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
+        headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
       );
 
       print("📝 Fetch posts response status: ${response.statusCode}");
@@ -168,6 +161,7 @@ class Post {
   final List<String> imageUrls;
   final DateTime dateEntered;
   final String userName;
+  final String? companyId;
 
   Post({
     required this.postId,
@@ -177,6 +171,7 @@ class Post {
     required this.imageUrls,
     required this.dateEntered,
     required this.userName,
+    required this.companyId,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -192,6 +187,7 @@ class Post {
           ? DateTime.parse(json['dateEntered'])
           : DateTime.now(),
       userName: json['userName'] ?? '',
+      companyId: json['companyId'] as String?,
     );
   }
 
@@ -210,5 +206,3 @@ class Post {
     }
   }
 }
-
-

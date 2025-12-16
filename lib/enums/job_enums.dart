@@ -57,6 +57,7 @@ enum JobDuration {
 
 /// Enum for Job Type
 enum JobType {
+  driver('Driver'),
   technician('Technician'),
   helper('Helper');
 
@@ -75,7 +76,9 @@ enum JobType {
     }
 
     // Try partial match
-    if (lowerValue.contains('technician')) {
+    if (lowerValue.contains('driver')) {
+      return JobType.driver;
+    } else if (lowerValue.contains('technician')) {
       return JobType.technician;
     } else if (lowerValue.contains('helper')) {
       return JobType.helper;

@@ -16,7 +16,7 @@ import '../../widgets/custom_snackbar.dart';
 class AddNewDriverScreen extends StatefulWidget {
   final DriverModel? driverData; // ✅ For edit mode
   final bool isEditMode; // ✅ To determine if it's add or edit
-  
+
   const AddNewDriverScreen({
     super.key,
     this.driverData,
@@ -35,7 +35,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
   final TextEditingController driverNameController = TextEditingController();
   final TextEditingController contactNumberController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  
+
   // ✅ Driver License Search Fields
   final TextEditingController licenseNumberController = TextEditingController();
   final TextEditingController dobController = TextEditingController();
@@ -89,9 +89,15 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
   Future<void> _selectDateOfBirth() async {
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: _selectedDob ?? DateTime.now().subtract(const Duration(days: 365 * 18)), // Default to 18 years ago
+      initialDate:
+          _selectedDob ??
+          DateTime.now().subtract(
+            const Duration(days: 365 * 18),
+          ), // Default to 18 years ago
       firstDate: DateTime(1950),
-      lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)), // Must be at least 18 years old
+      lastDate: DateTime.now().subtract(
+        const Duration(days: 365 * 18),
+      ), // Must be at least 18 years old
       helpText: 'Select Date of Birth',
       cancelText: 'Cancel',
       confirmText: 'Select',
@@ -131,9 +137,11 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
   Future<void> _searchDriverLicense() async {
     final licenseNumber = licenseNumberController.text.trim();
     final dob = dobController.text.trim();
-    
+
     if (licenseNumber.isEmpty || dob.isEmpty) {
-      SnackBarHelper.warning("Please enter both license number and date of birth");
+      SnackBarHelper.warning(
+        "Please enter both license number and date of birth",
+      );
       return;
     }
 
@@ -143,12 +151,10 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
 
     try {
       SnackBarHelper.info("Searching driver license details...");
-      
+
       // Use selected DOB if available, otherwise use text from controller
-      final dobToUse = _selectedDob != null 
-          ? _formatDate(_selectedDob!) 
-          : dob;
-      
+      final dobToUse = _selectedDob != null ? _formatDate(_selectedDob!) : dob;
+
       final response = await HttpHelper.getLicenseDetails(
         number: licenseNumber,
         dob: dobToUse,
@@ -156,16 +162,18 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         if (data['code'] == 200 && data['result'] != null) {
           final licenseDetails = DriverLicenseModel.fromJson(data);
-          
+
           // ✅ Auto-fill the form with fetched data
-          driverNameController.text = licenseDetails.detailsOfDrivingLicence.name;
-          
+          driverNameController.text =
+              licenseDetails.detailsOfDrivingLicence.name;
+
           // Extract vehicle types from badge details
           if (licenseDetails.badgeDetails.isNotEmpty) {
-            final vehicleClasses = licenseDetails.badgeDetails.first.classOfVehicle;
+            final vehicleClasses =
+                licenseDetails.badgeDetails.first.classOfVehicle;
             if (vehicleClasses.isNotEmpty) {
               final licenseVehicleType = vehicleClasses.first;
               // ✅ Only set if it's in the valid vehicle types list
@@ -177,19 +185,29 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                 // License vehicle type doesn't match our dropdown options
                 // Set to null so user can select from dropdown
                 selectedVehicleType = null;
-                print("⚠️ License vehicle type '$licenseVehicleType' not in valid list. User needs to select manually.");
+                print(
+                  "⚠️ License vehicle type '$licenseVehicleType' not in valid list. User needs to select manually.",
+                );
               }
             }
           }
-          
+
           setState(() {}); // Refresh UI
-          
-          SnackBarHelper.success("Driver license details fetched successfully!");
+
+          SnackBarHelper.success(
+            "Driver license details fetched successfully!",
+          );
           print("👤 Driver License Details Fetched:");
           print("👤 Name: ${licenseDetails.detailsOfDrivingLicence.name}");
-          print("👤 Father Name: ${licenseDetails.detailsOfDrivingLicence.fatherOrHusbandName}");
-          print("👤 Vehicle Classes: ${licenseDetails.badgeDetails.isNotEmpty ? licenseDetails.badgeDetails.first.classOfVehicle : 'None'}");
-          print("👤 Address: ${licenseDetails.detailsOfDrivingLicence.address}");
+          print(
+            "👤 Father Name: ${licenseDetails.detailsOfDrivingLicence.fatherOrHusbandName}",
+          );
+          print(
+            "👤 Vehicle Classes: ${licenseDetails.badgeDetails.isNotEmpty ? licenseDetails.badgeDetails.first.classOfVehicle : 'None'}",
+          );
+          print(
+            "👤 Address: ${licenseDetails.detailsOfDrivingLicence.address}",
+          );
         } else {
           SnackBarHelper.error("Driver license details not found");
         }
@@ -242,6 +260,8 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
       image: imageFile, // ✅ single file
       partnerId: null, // ✅ Removed partner ID field
       modifiedUserId: userId, // ✅ For update operations
+      dlNo: licenseNumberController.text.trim(), // ✅ Driver License Number
+      dateOfBirth: _selectedDob, // ✅ Date of Birth
     );
 
     // 🔹 Add small delay (ensures async values + file stream ready)
@@ -261,14 +281,14 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
         final sessionManager = SessionManager();
         final refreshToken = await sessionManager.getString("authToken");
         final refreshUserId = await sessionManager.getString("userId");
-        
+
         if (refreshToken != null && refreshUserId != null) {
           await fleetController.fetchDrivers(refreshUserId, refreshToken);
         }
       } catch (e) {
         print("⚠️ Could not refresh fleet data: $e");
       }
-      
+
       Navigator.of(context).pop();
     }
   }
@@ -326,17 +346,9 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
           ),
         ),
         leading: const BackButton(color: Colors.black),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Icon(Icons.close, color: Colors.black, size: 20),
-          ),
-        ],
+
         shape: const Border(
-          bottom: BorderSide(
-            color: Color(0xFFFCD2D2),
-            width: 1,
-          ),
+          bottom: BorderSide(color: Color(0xFFFCD2D2), width: 1),
         ),
       ),
       body: Obx(() {
@@ -382,14 +394,21 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFE3F2FD),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF90CAF9), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFF90CAF9),
+                        width: 1,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.search, color: Color(0xFF1976D2), size: 18),
+                            const Icon(
+                              Icons.search,
+                              color: Color(0xFF1976D2),
+                              size: 18,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               "Quick License Search",
@@ -412,7 +431,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        
+
                         // License Number Field
                         Container(
                           width: double.infinity,
@@ -420,7 +439,10 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
+                            border: Border.all(
+                              color: const Color(0xFFEDF1F3),
+                              width: 1,
+                            ),
                           ),
                           child: TextField(
                             controller: licenseNumberController,
@@ -431,7 +453,8 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                               color: const Color(0xFF6C7278),
                             ),
                             decoration: InputDecoration(
-                              hintText: "License Number (e.g., HR-2620140187259)",
+                              hintText:
+                                  "License Number (e.g., HR-2620140187259)",
                               hintStyle: TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Poppins',
@@ -446,7 +469,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        
+
                         // Date of Birth Field with Calendar
                         GestureDetector(
                           onTap: _selectDateOfBirth,
@@ -456,7 +479,10 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
+                              border: Border.all(
+                                color: const Color(0xFFEDF1F3),
+                                width: 1,
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -488,25 +514,31 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        
+
                         // Search Button
                         SizedBox(
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton.icon(
-                            onPressed: _isSearchingDriver ? null : _searchDriverLicense,
-                            icon: _isSearchingDriver 
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : const Icon(Icons.search, size: 20),
+                            onPressed: _isSearchingDriver
+                                ? null
+                                : _searchDriverLicense,
+                            icon: _isSearchingDriver
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Icon(Icons.search, size: 20),
                             label: Text(
-                              _isSearchingDriver ? "Searching..." : "Search License Details",
+                              _isSearchingDriver
+                                  ? "Searching..."
+                                  : "Search License Details",
                               style: TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Poppins',
@@ -525,7 +557,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 17),
 
                   _buildTextField(
@@ -534,7 +566,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                     controller: driverNameController,
                   ),
                   const SizedBox(height: 17),
-                  
+
                   _buildTextField(
                     "Contact Number",
                     "Enter Number",
@@ -557,15 +589,30 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFEDF1F3),
+                        width: 1,
+                      ),
                     ),
                     child: DropdownButtonFormField<String>(
                       value: selectedVehicleType,
                       items: const [
-                        DropdownMenuItem(value: "Shipment", child: Text("Shipment")),
-                        DropdownMenuItem(value: "Construction", child: Text("Construction")),
-                        DropdownMenuItem(value: "Mining", child: Text("Mining")),
-                        DropdownMenuItem(value: "Others", child: Text("Others (specify)")),
+                        DropdownMenuItem(
+                          value: "Shipment",
+                          child: Text("Shipment"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Construction",
+                          child: Text("Construction"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Mining",
+                          child: Text("Mining"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Others",
+                          child: Text("Others (specify)"),
+                        ),
                       ],
                       onChanged: (value) =>
                           setState(() => selectedVehicleType = value),
@@ -599,7 +646,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                     ),
                   ),
                   const SizedBox(height: 17),
-                  
+
                   _buildTextField(
                     "Description",
                     "Enter Description",
@@ -654,7 +701,11 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                         ),
                       ),
                       onPressed: _pickImage,
-                      icon: const Icon(Icons.upload, color: Colors.white, size: 20),
+                      icon: const Icon(
+                        Icons.upload,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       label: Text(
                         "Upload",
                         style: TextStyle(
@@ -672,7 +723,8 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                     FutureBuilder<Uint8List>(
                       future: _pickedImage!.readAsBytes(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const SizedBox(
                             width: 100,
                             height: 100,
@@ -730,7 +782,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                   ],
 
                   const SizedBox(height: 24),
-                  
+
                   // Submit Button
                   Center(
                     child: SizedBox(
@@ -739,7 +791,10 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF25C5C),
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 24,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),

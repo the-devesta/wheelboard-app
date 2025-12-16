@@ -1126,25 +1126,28 @@ class _UpcomingTripCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "$bidsAvailable ${bidsAvailable == 1 ? 'Bid' : 'Bids'} Available",
-                    style: TextStyle(
-                      color: Colors.blue[700],
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                if (trip.driverId.isEmpty &&
+                    (trip.driverName == null || trip.driverName!.isEmpty)) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "$bidsAvailable ${bidsAvailable == 1 ? 'Bid' : 'Bids'} Available",
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                ],
                 // Share Trip + View Bids row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1156,16 +1159,20 @@ class _UpcomingTripCard extends StatelessWidget {
                       color: const Color(0xFFF36969),
                       onTap: () => _shareTrip(trip),
                     ),
-                    const SizedBox(width: 6),
-                    // View Bids Button
-                    _actionButton(
-                      icon: Icons.description,
-                      label: 'View Bids',
-                      color: bidsAvailable > 0 ? Colors.blue : Colors.grey,
-                      onTap: bidsAvailable > 0
-                          ? () => Get.to(() => BidsScreen(tripId: tripId))
-                          : null,
-                    ),
+                    if (trip.driverId.isEmpty &&
+                        (trip.driverName == null ||
+                            trip.driverName!.isEmpty)) ...[
+                      const SizedBox(width: 6),
+                      // View Bids Button
+                      _actionButton(
+                        icon: Icons.description,
+                        label: 'View Bids',
+                        color: bidsAvailable > 0 ? Colors.blue : Colors.grey,
+                        onTap: bidsAvailable > 0
+                            ? () => Get.to(() => BidsScreen(tripId: tripId))
+                            : null,
+                      ),
+                    ],
                     const SizedBox(width: 6),
                     // Details Button
                     _actionButton(

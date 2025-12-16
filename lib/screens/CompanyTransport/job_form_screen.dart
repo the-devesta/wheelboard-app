@@ -8,6 +8,7 @@ import '../../controllers/job_controller.dart';
 import '../../models/job_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../enums/job_enums.dart';
+import '../../services/auth_service.dart';
 
 class PostJobScreen extends StatefulWidget {
   final JobModel? jobToEdit; // For editing existing job
@@ -34,11 +35,16 @@ class _PostJobScreenState extends State<PostJobScreen> {
   JobRole selectedRole = JobRole.technician;
   bool isEditMode = false;
   bool isSubmitting = false;
+  bool isServiceProvider = false;
 
   @override
   void initState() {
     super.initState();
     isEditMode = widget.jobToEdit != null;
+
+    // Check user type
+    final userType = AuthService.to.currentUserType;
+    isServiceProvider = userType == 'Service Provider';
 
     if (isEditMode && widget.jobToEdit != null) {
       final job = widget.jobToEdit!;
@@ -56,6 +62,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
       descriptionController.text = job.description;
     } else {
       // For new job, prefill Type of Job with selected role
+      // If Service Provider, default to Technician if Driver was default
+      if (isServiceProvider && selectedRole == JobRole.driver) {
+        selectedRole = JobRole.technician;
+      }
       selectedJobType = JobType.fromString(selectedRole.value);
     }
   }
@@ -138,6 +148,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        if (!isServiceProvider) ...[
+                          _buildJobTypeButton(
+                            JobRole.driver,
+                            Icons.directions_car,
+                          ),
+                          const SizedBox(width: 12),
+                        ],
                         _buildJobTypeButton(JobRole.technician, Icons.build),
                         const SizedBox(width: 12),
                         _buildJobTypeButton(
@@ -204,21 +221,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     _buildTextField("Enter city", controller: cityController),
                     const SizedBox(height: 31),
 
-                    // Type of Job (only Technician and Helper - no Driver)
-                    _buildLabel("Type of Job"),
-                    const SizedBox(height: 8),
-                    _buildDropdownField(
-                      "Select job type",
-                      selectedJobType?.value,
-                      (value) {
-                        setState(() {
-                          selectedJobType = value != null
-                              ? JobType.fromString(value)
-                              : null;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 31),
+                    // Type of Job (Removed as it is auto-selected based on Role)
+                    // _buildLabel("Type of Job"),
+                    // const SizedBox(height: 8),
+                    // _buildDropdownField(...)
 
                     // Description
                     _buildDescriptionField(descriptionController),

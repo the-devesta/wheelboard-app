@@ -59,10 +59,35 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     // print(token);
 
     if (token != null && userId != null) {
-      driverController.fetchVehicles(userId, token);
+      await driverController.fetchVehicles(userId, token);
     } else {
       debugPrint("Token or UserId is null");
     }
+  }
+
+  // Filter lists based on search query
+  List<Vehicle> get _filteredVehicles {
+    if (_searchQuery.isEmpty) return driverController.vehicles;
+    return driverController.vehicles.where((vehicle) {
+      return vehicle.vehicleNumber.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          vehicle.vehicleModel.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
+    }).toList();
+  }
+
+  List<Driver> get _filteredDrivers {
+    if (_searchQuery.isEmpty) return driverController.drivers;
+    return driverController.drivers.where((driver) {
+      return driver.fullName.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          driver.vehicleNumber.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
+    }).toList();
   }
 
   @override
@@ -150,16 +175,21 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                               message: "Loading vehicles...",
                             );
                           }
-                          if (driverController.vehicles.isEmpty) {
-                            return const Center(
-                              child: Text("No vehicles found"),
+                          final vehicles = _filteredVehicles;
+                          if (vehicles.isEmpty) {
+                            return Center(
+                              child: Text(
+                                _searchQuery.isEmpty
+                                    ? "No vehicles found"
+                                    : "No vehicles match your search",
+                              ),
                             );
                           }
                           return ListView.builder(
                             padding: const EdgeInsets.all(12),
-                            itemCount: driverController.vehicles.length,
+                            itemCount: vehicles.length,
                             itemBuilder: (context, index) {
-                              final vehicle = driverController.vehicles[index];
+                              final vehicle = vehicles[index];
                               final imageUrl = vehicle.imageUrls.isNotEmpty
                                   ? vehicle.imageUrls.first
                                   : '';
@@ -200,7 +230,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                                     ? imageUrl
                                     : 'assets/truckImg.png',
                                 title: vehicle.vehicleModel,
-                                type: vehicle.ownershipType,
+                                type: vehicle.vehicleType,
                                 driver: '',
                                 plate: vehicle.vehicleNumber,
                                 showRating: false,
@@ -235,50 +265,39 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                               message: "Loading drivers...",
                             );
                           }
-                          if (driverController.drivers.isEmpty) {
-                            return const Center(
-                              child: Text("No drivers found"),
+                          final drivers = _filteredDrivers;
+                          if (drivers.isEmpty) {
+                            return Center(
+                              child: Text(
+                                _searchQuery.isEmpty
+                                    ? "No drivers found"
+                                    : "No drivers match your search",
+                              ),
                             );
                           }
 
                           return ListView.builder(
                             padding: const EdgeInsets.all(12),
-                            itemCount: driverController.drivers.length,
+                            itemCount: drivers.length,
                             itemBuilder: (context, index) {
-                              final driver = driverController.drivers[index];
+                              final driver = drivers[index];
                               final imageUrl = driver.driverImagePath;
 
-                              // Randomly assign status for demo (you can implement actual logic)
-                              final statuses = [
-                                {
-                                  'name': 'Hired',
-                                  'color': const Color(0xFF00B894),
-                                  'border': const Color(0xFF00B894),
-                                },
-                                {
-                                  'name': 'Wheelboard',
-                                  'color': const Color(0xFF0984E3),
-                                  'border': const Color(0xFF0984E3),
-                                },
-                              ];
-                              final statusInfo =
-                                  statuses[index % statuses.length];
-
                               return _vehicleCard(
-                                status: statusInfo['name'] as String,
-                                statusColor: statusInfo['color'] as Color,
+                                status: 'Hired',
+                                statusColor: const Color(0xFF00B894),
                                 image: imageUrl.isNotEmpty
                                     ? imageUrl
                                     : "assets/google.png",
                                 title: driver.fullName,
-                                type: '',
+                                type: driver.vehicleType,
                                 driver: driver.description.isNotEmpty
                                     ? driver.description
                                     : "Vehicle no.",
                                 plate: driver.vehicleNumber,
                                 showRating: true, // Show rating for drivers
                                 rating: 4.7,
-                                borderColor: statusInfo['border'] as Color,
+                                borderColor: const Color(0xFF00B894),
                                 driverData: driver,
                                 isLiked: _likedDrivers.contains(
                                   driver.driverId,
@@ -572,7 +591,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                           child: Text(
                             title,
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF2D3436),
                             ),
@@ -580,17 +599,6 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (type.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            type,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF535353),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -615,7 +623,11 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        _shipmentBadge(),
+                        _shipmentBadge(
+                          driverData?.vehicleType ??
+                              vehicleData?.vehicleType ??
+                              type,
+                        ),
                         if (showRating) ...[
                           const SizedBox(width: 8),
                           const Icon(
@@ -639,108 +651,76 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                 ),
               ),
 
-              // Right: Heart + Edit + Arrow
+              // Right: Edit Icon at Top
               Column(
                 mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const SizedBox(
-                    height: 28,
-                  ), // Align with content after status badge
                   GestureDetector(
-                    onTap: onLikeTap,
+                    onTap: () async {
+                      // Handle edit based on data type
+                      if (driverData != null) {
+                        // Edit Driver
+                        final sessionManager = SessionManager();
+                        final userId = await sessionManager.getString("userId");
+
+                        final editDriverModel = DriverModel(
+                          userId: userId,
+                          driverId: driverData.driverId,
+                          fullName: driverData.fullName,
+                          contactNumber: driverData.contactNumber,
+                          vehicleType: driverData.vehicleType,
+                          vehicleNumber: driverData.vehicleNumber,
+                          description: driverData.description,
+                          isDeclarationAccepted:
+                              driverData.isDeclarationAccepted,
+                          modifiedUserId: userId,
+                        );
+
+                        Get.to(
+                          AddNewDriverScreen(
+                            isEditMode: true,
+                            driverData: editDriverModel,
+                          ),
+                        );
+                      } else if (vehicleData != null) {
+                        // Edit Vehicle
+                        final sessionManager = SessionManager();
+                        final userId = await sessionManager.getString("userId");
+
+                        List<File> imageFiles = [];
+
+                        final editVehicleModel = VehicleModel(
+                          userId: userId,
+                          vehicleId: vehicleData.vehicleId,
+                          vehicleModel: vehicleData.vehicleModel,
+                          vehicleNumber: vehicleData.vehicleNumber,
+                          manufacturingYear: vehicleData.manufacturingYear,
+                          ownershipType: vehicleData.ownershipType,
+                          vehicleType: vehicleData.vehicleType,
+                          description: vehicleData.description,
+                          isDeclarationAccepted:
+                              vehicleData.isDeclarationAccepted,
+                          images: imageFiles,
+                        );
+
+                        Get.to(
+                          AddVehicleScreen(
+                            isEditMode: true,
+                            vehicleData: editVehicleModel,
+                          ),
+                        );
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
-                      child: Icon(
-                        isLiked ? Icons.favorite : Icons.favorite_border,
-                        color: const Color(0xFFF36969),
-                        size: 24,
+                      padding: const EdgeInsets.all(8),
+                      child: const Icon(
+                        Icons.edit,
+                        color: Color(0xFFF36969),
+                        size: 20,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          // Handle edit based on data type
-                          if (driverData != null) {
-                            // Edit Driver
-                            final sessionManager = SessionManager();
-                            final userId = await sessionManager.getString(
-                              "userId",
-                            );
-
-                            final editDriverModel = DriverModel(
-                              userId: userId,
-                              driverId: driverData.driverId,
-                              fullName: driverData.fullName,
-                              contactNumber: driverData.contactNumber,
-                              vehicleType: driverData.vehicleType,
-                              vehicleNumber: driverData.vehicleNumber,
-                              description: driverData.description,
-                              isDeclarationAccepted:
-                                  driverData.isDeclarationAccepted,
-                              modifiedUserId: userId,
-                            );
-
-                            Get.to(
-                              AddNewDriverScreen(
-                                isEditMode: true,
-                                driverData: editDriverModel,
-                              ),
-                            );
-                          } else if (vehicleData != null) {
-                            // Edit Vehicle
-                            final sessionManager = SessionManager();
-                            final userId = await sessionManager.getString(
-                              "userId",
-                            );
-
-                            List<File> imageFiles = [];
-
-                            final editVehicleModel = VehicleModel(
-                              userId: userId,
-                              vehicleId: vehicleData.vehicleId,
-                              vehicleModel: vehicleData.vehicleModel,
-                              vehicleNumber: vehicleData.vehicleNumber,
-                              manufacturingYear: vehicleData.manufacturingYear,
-                              ownershipType: vehicleData.ownershipType,
-                              vehicleType: vehicleData.vehicleType,
-                              description: vehicleData.description,
-                              isDeclarationAccepted:
-                                  vehicleData.isDeclarationAccepted,
-                              images: imageFiles,
-                            );
-
-                            Get.to(
-                              AddVehicleScreen(
-                                isEditMode: true,
-                                vehicleData: editVehicleModel,
-                              ),
-                            );
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          child: const Icon(
-                            Icons.edit,
-                            color: Color(0xFFF36969),
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      GestureDetector(
-                        onTap: onTap,
-                        child: const Icon(
-                          Icons.chevron_right,
-                          color: Color(0xFF535353),
-                          size: 20,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -751,17 +731,18 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     );
   }
 
-  // Shipment badge widget
-  Widget _shipmentBadge() {
+  // Vehicle Type badge widget
+  Widget _shipmentBadge(String vehicleType) {
+    final displayType = vehicleType.isNotEmpty ? vehicleType : 'N/A';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFF00B894).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Text(
-        "Shipment",
-        style: TextStyle(
+      child: Text(
+        displayType,
+        style: const TextStyle(
           color: Color(0xFF00B894),
           fontSize: 12,
           fontWeight: FontWeight.w500,
