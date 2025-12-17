@@ -8,8 +8,8 @@ import '../../widgets/custom_loader.dart';
 import 'job_screen.dart';
 import 'job_form_screen.dart';
 import 'job_application_screen.dart';
-import 'add_expense_screen.dart';
 import 'trips_screen.dart';
+import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -422,7 +422,8 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     _sectionTitle("Recent Transactions"),
                     TextButton(
-                      onPressed: () => Get.to(() => const AddExpenseScreen()),
+                      onPressed: () =>
+                          Get.to(() => const TransactionSummaryScreen()),
                       child: const Text("View All"),
                     ),
                   ],
@@ -492,7 +493,7 @@ class DashboardScreen extends StatelessWidget {
                 _addButtonWithAction(
                   "+ Add Expense",
                   const Color(0xFF1A73E8),
-                  () => Get.to(() => const AddExpenseScreen()),
+                  () => Get.to(() => const TransactionSummaryScreen()),
                 ),
 
                 const SizedBox(height: 24),

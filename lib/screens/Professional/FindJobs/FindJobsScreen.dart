@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
@@ -50,7 +51,9 @@ class JobBoardScreen extends StatefulWidget {
 }
 
 class _JobBoardScreenState extends State<JobBoardScreen> {
-  final UnassignedTripsController tripsController = Get.put(UnassignedTripsController());
+  final UnassignedTripsController tripsController = Get.put(
+    UnassignedTripsController(),
+  );
   final OpenJobsController jobsController = Get.put(OpenJobsController());
   final TextEditingController _searchController = TextEditingController();
 
@@ -75,7 +78,7 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
     tripsController.searchQuery.value = query;
     // Jobs filtering will be done in the UI using Obx
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -88,181 +91,190 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-        title: const Text(
-          "Job Board",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-            color: Colors.black87,
+          title: const Text(
+            "Job Board",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: Colors.black87,
+            ),
           ),
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          leading: const SizedBox.shrink(),
+          actions: const [
+            Icon(Icons.notifications_none_rounded, color: Colors.black87),
+            SizedBox(width: 16),
+          ],
+          elevation: 0,
+          backgroundColor: Colors.white,
         ),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        leading: const SizedBox.shrink(),
-        actions: const [
-          Icon(Icons.notifications_none_rounded, color: Colors.black87),
-          SizedBox(width: 16),
-        ],
-        elevation: 0,
-        backgroundColor: Colors.white,
-      ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Search bar
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: "Search Jobs or Trips...",
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: const Icon(Icons.tune),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 0,
-                  horizontal: 20,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Search bar
+              TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {}); // Trigger rebuild to filter jobs
+                },
+                decoration: InputDecoration(
+                  hintText: "Location",
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: 20,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // Jobs Section - Dynamic from API
-            Obx(() {
-              if (jobsController.isLoading.value) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: const CustomLoader(message: "Loading jobs..."),
-                  ),
-                );
-              }
-
-              if (jobsController.openJobs.isEmpty) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      "No jobs available",
-                      style: TextStyle(color: Colors.grey),
+              // Jobs Section - Dynamic from API
+              Obx(() {
+                if (jobsController.isLoading.value) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: const CustomLoader(message: "Loading jobs..."),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              // Filter jobs based on search query
-              final searchQuery = _searchController.text.toLowerCase();
-              final filteredJobs = searchQuery.isEmpty
-                  ? jobsController.openJobs
-                  : jobsController.openJobs.where((job) {
-                      return job.role.toLowerCase().contains(searchQuery) ||
-                          job.city.toLowerCase().contains(searchQuery) ||
-                          job.jobType.toLowerCase().contains(searchQuery) ||
-                          job.description.toLowerCase().contains(searchQuery);
-                    }).toList();
-
-              if (filteredJobs.isEmpty) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      "No matching jobs found.",
-                      style: TextStyle(color: Colors.grey),
+                if (jobsController.openJobs.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Text(
+                        "No jobs available",
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              return Column(
-                children: filteredJobs.map((job) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: JobCard(
-                      job: job,
-                      onApply: () async {
-                        if (!job.isApplied) {
-                          final success = await jobsController.applyForJob(job.jobId);
-                          if (success) {
-                            await jobsController.refreshOpenJobs();
+                // Filter jobs based on search query (Location/City)
+                final searchQuery = _searchController.text.toLowerCase().trim();
+                final filteredJobs = searchQuery.isEmpty
+                    ? jobsController.openJobs
+                    : jobsController.openJobs.where((job) {
+                        return job.role.toLowerCase().contains(searchQuery) ||
+                            job.city.toLowerCase().contains(searchQuery) ||
+                            job.jobType.toLowerCase().contains(searchQuery) ||
+                            job.description.toLowerCase().contains(
+                              searchQuery,
+                            ) ||
+                            (job.companyName ?? '').toLowerCase().contains(
+                              searchQuery,
+                            );
+                      }).toList();
+
+                if (filteredJobs.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Text(
+                        "No matching jobs found.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: filteredJobs.map((job) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: JobCard(
+                        job: job,
+                        onApply: () async {
+                          if (!job.isApplied) {
+                            final success = await jobsController.applyForJob(
+                              job.jobId,
+                            );
+                            if (success) {
+                              await jobsController.refreshOpenJobs();
+                            }
                           }
+                        },
+                        onLikeToggle: () async {
+                          await jobsController.toggleJobLike(job.jobId);
+                        },
+                        isApplying: jobsController.isApplying(job.jobId),
+                      ),
+                    );
+                  }).toList(),
+                );
+              }),
+
+              const SizedBox(height: 12),
+              const Divider(height: 30),
+              const Center(
+                child: Text(
+                  "Trips",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.redAccent,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Obx(() {
+                if (tripsController.isLoading.value) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: const CustomLoader(message: "Loading jobs..."),
+                    ),
+                  );
+                }
+
+                final displayedTrips = tripsController.filteredTrips;
+
+                if (displayedTrips.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text(
+                        "No trips available",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: displayedTrips.map((trip) {
+                    return TripCard(
+                      trip: trip,
+                      onTap: () async {
+                        await tripsController.fetchTripDetails(trip.tripId);
+                        if (tripsController.tripDetails.value != null) {
+                          TripOverviewPopup.show(
+                            context,
+                            tripId: trip.tripId,
+                            tripDetails: tripsController.tripDetails.value!,
+                          );
                         }
                       },
-                      onLikeToggle: () async {
-                        await jobsController.toggleJobLike(job.jobId);
-                      },
-                      isApplying: jobsController.isApplying(job.jobId),
-                    ),
-                  );
-                }).toList(),
-              );
-            }),
-
-            const SizedBox(height: 12),
-            const Divider(height: 30),
-            const Center(
-              child: Text(
-                "Trips",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.redAccent,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Obx(() {
-              if (tripsController.isLoading.value) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: const CustomLoader(message: "Loading jobs..."),
-                  ),
+                    );
+                  }).toList(),
                 );
-              }
-
-              final displayedTrips = tripsController.filteredTrips;
-
-              if (displayedTrips.isEmpty) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: Text(
-                      "No trips available",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                );
-              }
-
-              return Column(
-                children: displayedTrips.map((trip) {
-                  return TripCard(
-                    trip: trip,
-                    onTap: () async {
-                      await tripsController.fetchTripDetails(trip.tripId);
-                      if (tripsController.tripDetails.value != null) {
-                        TripOverviewPopup.show(
-                          context,
-                          tripId: trip.tripId,
-                          tripDetails: tripsController.tripDetails.value!,
-                        );
-                      }
-                    },
-                  );
-                }).toList(),
-              );
-            }),
-          ],
+              }),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -296,22 +308,16 @@ class JobCard extends StatelessWidget {
     try {
       // Remove any spaces, dashes, or special characters
       final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-      
+
       // Ensure the number starts with tel: protocol
       final Uri phoneUri = Uri.parse('tel:$cleanNumber');
-      
+
       // Use launchUrl with mode: LaunchMode.externalApplication for better compatibility
       if (await canLaunchUrl(phoneUri)) {
-        await launchUrl(
-          phoneUri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
       } else {
         // Fallback: try to launch directly without checking
-        await launchUrl(
-          phoneUri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
       Get.snackbar(
@@ -331,7 +337,7 @@ class JobCard extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         final TextEditingController phoneController = TextEditingController();
-        
+
         return AlertDialog(
           title: const Text('Call Employer'),
           content: Column(
@@ -418,12 +424,14 @@ class JobCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                job.role.isNotEmpty ? job.role : "Job Opening",
-                style: const TextStyle(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+              Expanded(
+                child: Text(
+                  job.companyName ?? "Company",
+                  style: const TextStyle(
+                    color: Color(0xFF003366),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
                 ),
               ),
               ElevatedButton.icon(
@@ -431,10 +439,12 @@ class JobCard extends StatelessWidget {
                   _showCallDialog(context, job);
                 },
                 icon: const Icon(Icons.call, size: 16),
-                label: const Text("Call"),
+                label: const Text("Call Now"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
+                  backgroundColor: const Color(
+                    0xFFFFD500,
+                  ), // Yellow like Transport
+                  foregroundColor: const Color(0xFF003366),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
@@ -442,30 +452,35 @@ class JobCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  textStyle: const TextStyle(fontSize: 12),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          
-          // Job Title
+
+          // Job Role (like Driver, Helper)
           Text(
-            job.description.isNotEmpty ? job.description : job.role,
+            job.role.isNotEmpty ? job.role : "Job Opening",
             style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
               color: Colors.black87,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
-          
+
           // Location, Type, Salary row
           Row(
             children: [
-              const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+              const Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: Colors.grey,
+              ),
               const SizedBox(width: 4),
               Text(
                 job.city.isNotEmpty ? job.city : "Location not specified",
@@ -488,7 +503,7 @@ class JobCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          
+
           // Contact/Additional info (optional - can show openings or duration)
           Row(
             children: [
@@ -510,55 +525,123 @@ class JobCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          
-          // Likes row
-          if (onLikeToggle != null)
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: onLikeToggle,
-                  child: Row(
-                    children: [
-                      Icon(
-                        job.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
-                        size: 16,
-                        color: job.isLiked ? Colors.blue : Colors.grey,
+
+          // Likes and Openings row (like Transport screen)
+          Row(
+            children: [
+              // Like button (clickable)
+              GestureDetector(
+                onTap: onLikeToggle,
+                child: Row(
+                  children: [
+                    Icon(
+                      job.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                      size: 14,
+                      color: job.isLiked
+                          ? const Color(0xFF00AEEF)
+                          : Colors.black,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${job.likeCount} Likes",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: job.isLiked
+                            ? const Color(0xFF00AEEF)
+                            : const Color(0xFF1F1F1F),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${job.likeCount} Likes",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: job.isLiked ? Colors.blue : Colors.grey,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Openings count
+              Row(
+                children: [
+                  const Icon(
+                    Icons.people_outline,
+                    size: 14,
+                    color: Colors.black,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "${job.openings} Openings",
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1F1F1F),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Share and Apply Buttons Row (like Transport screen)
+          Row(
+            children: [
+              // Share Button (Blue)
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Share.share(
+                      "Check out this job on WheelBoard!\n\n"
+                      "${job.companyName ?? 'Company'} - ${job.role}\n"
+                      "Location: ${job.city}\n"
+                      "Salary: ₹${job.salary.toStringAsFixed(0)}\n\n"
+                      "Download WheelBoard to apply!",
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00AEEF), // Blue
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  icon: const Icon(Icons.share, size: 14, color: Colors.white),
+                  label: const Text(
+                    "Share",
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                   ),
                 ),
-              ],
-            ),
-          const SizedBox(height: 10),
-          
-          // Apply now button
-          ElevatedButton(
-            onPressed: (isApplying || job.isApplied) ? null : onApply,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: job.isApplied 
-                  ? Colors.grey.shade300 
-                  : Colors.lightBlueAccent,
-              foregroundColor: job.isApplied ? Colors.grey.shade600 : Colors.white,
-              minimumSize: const Size(double.infinity, 35),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
               ),
-            ),
-            child: isApplying
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: const CustomLoader.small(color: Colors.white),
-                  )
-                : Text(job.isApplied ? "Applied" : "Apply now"),
+              const SizedBox(width: 12),
+              // Apply Button (Yellow/Grey if applied)
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: (isApplying || job.isApplied) ? null : onApply,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: job.isApplied
+                        ? Colors.grey.shade300
+                        : const Color(0xFFFFD500), // Yellow
+                    foregroundColor: job.isApplied
+                        ? Colors.grey.shade600
+                        : const Color(0xFF003366),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: isApplying
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CustomLoader.small(),
+                        )
+                      : Text(
+                          job.isApplied ? "Applied" : "Apply now",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -569,12 +652,8 @@ class JobCard extends StatelessWidget {
 class TripCard extends StatelessWidget {
   final UnassignedTrip? trip;
   final VoidCallback? onTap;
-  
-  const TripCard({
-    super.key,
-    this.trip,
-    this.onTap,
-  });
+
+  const TripCard({super.key, this.trip, this.onTap});
 
   String _getLocationName(String location) {
     if (location.isEmpty) return 'Unknown';
@@ -584,8 +663,22 @@ class TripCard extends StatelessWidget {
 
   String _formatDate(DateTime? date, String time) {
     if (date == null) return time;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final dateStr =
+        '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
     final timeStr = time.isNotEmpty
         ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
         : '';
@@ -676,11 +769,13 @@ class TripCard extends StatelessWidget {
               const Icon(Icons.currency_rupee, size: 16),
               const SizedBox(width: 4),
               Text(
-                trip!.payRange.isNotEmpty 
-                    ? "Pay Range: ${trip!.payRange}" 
+                trip!.payRange.isNotEmpty
+                    ? "Pay Range: ${trip!.payRange}"
                     : "Pay Range: Not specified",
                 style: TextStyle(
-                  color: trip!.payRange.isNotEmpty ? Colors.black87 : Colors.grey,
+                  color: trip!.payRange.isNotEmpty
+                      ? Colors.black87
+                      : Colors.grey,
                 ),
               ),
             ],
@@ -703,4 +798,3 @@ class TripCard extends StatelessWidget {
     );
   }
 }
-

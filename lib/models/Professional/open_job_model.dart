@@ -3,7 +3,8 @@ class OpenJob {
   final String role;
   final String jobDuration;
   final int openings;
-  final double salary; // Changed to double to handle both int and double from API
+  final double
+  salary; // Changed to double to handle both int and double from API
   final String city;
   final String jobType;
   final String description;
@@ -11,6 +12,7 @@ class OpenJob {
   final bool isApplied;
   final int likeCount;
   final bool isLiked;
+  final String? companyName; // Added: Company name from API
 
   OpenJob({
     required this.jobId,
@@ -25,6 +27,7 @@ class OpenJob {
     required this.isApplied,
     required this.likeCount,
     required this.isLiked,
+    this.companyName,
   });
 
   factory OpenJob.fromJson(Map<String, dynamic> json) {
@@ -53,6 +56,8 @@ class OpenJob {
       isApplied: json['isApplied'] ?? false,
       likeCount: json['likeCount'] ?? 0,
       isLiked: json['isLiked'] ?? false,
+      companyName:
+          json['companyName'] ?? json['company'] ?? json['businessName'],
     );
   }
 
@@ -70,7 +75,7 @@ class OpenJob {
       'isApplied': isApplied,
       'likeCount': likeCount,
       'isLiked': isLiked,
+      'companyName': companyName,
     };
   }
 }
-

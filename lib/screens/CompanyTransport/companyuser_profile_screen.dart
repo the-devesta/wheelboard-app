@@ -29,7 +29,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   Widget build(BuildContext context) {
     // Initialize controller
     final controller = Get.put(UserProfileController());
-    
+
     // Fetch profile on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.fetchCurrentUserProfile();
@@ -41,9 +41,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         child: Obx(() {
           if (controller.isLoading.value) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.buttonBg,
-              ),
+              child: CircularProgressIndicator(color: AppColors.buttonBg),
             );
           }
 
@@ -72,7 +70,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
               _buildHeader(),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Column(
                     children: [
                       _buildProfileHeader(profile),
@@ -112,7 +113,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text('•', style: TextStyle(color: Color(0xFFBDBDBD))),
+                          const Text(
+                            '•',
+                            style: TextStyle(color: Color(0xFFBDBDBD)),
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             "Privacy Policy",
@@ -207,8 +211,13 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                   height: 96,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFF36969), width: 4),
-                    image: profile?.companyLogoPath != null && profile!.companyLogoPath!.isNotEmpty
+                    border: Border.all(
+                      color: const Color(0xFFF36969),
+                      width: 4,
+                    ),
+                    image:
+                        profile?.companyLogoPath != null &&
+                            profile!.companyLogoPath!.isNotEmpty
                         ? DecorationImage(
                             image: NetworkImage(profile.companyLogoPath!),
                             fit: BoxFit.cover,
@@ -217,11 +226,15 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                             },
                           )
                         : null,
-                    color: profile?.companyLogoPath == null || profile!.companyLogoPath!.isEmpty
+                    color:
+                        profile?.companyLogoPath == null ||
+                            profile!.companyLogoPath!.isEmpty
                         ? Colors.grey[300]
                         : null,
                   ),
-                  child: profile?.companyLogoPath == null || profile!.companyLogoPath!.isEmpty
+                  child:
+                      profile?.companyLogoPath == null ||
+                          profile!.companyLogoPath!.isEmpty
                       ? const Icon(Icons.business, size: 50, color: Colors.grey)
                       : null,
                 ),
@@ -241,7 +254,11 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                         BorderSide(color: Colors.white, width: 2),
                       ),
                     ),
-                    child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -297,7 +314,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       ),
       child: Row(
         children: [
-          const Text('🔒', style: TextStyle(fontSize: 18)),
+          const Icon(Icons.lock_outline, size: 18, color: Color(0xFF424242)),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -344,13 +361,37 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         ),
       ),
       children: [
-        _buildInfoItem(Icons.person_outline, 'Name', profile?.fullName ?? profile?.name ?? 'N/A'),
+        _buildInfoItem(
+          Icons.person_outline,
+          'Name',
+          profile?.fullName ?? profile?.name ?? 'N/A',
+        ),
         _buildInfoItem(Icons.lock_outline, 'Change Password', '************'),
-        _buildInfoItem(Icons.location_on, 'Location', profile?.address ?? profile?.city ?? profile?.state ?? 'N/A'),
-        _buildInfoItem(Icons.business, 'Company Name', profile?.companyName ?? 'N/A'),
-        _buildInfoItem(Icons.category, 'Business Category', profile?.businessCategory ?? 'N/A'),
-        _buildInfoItem(Icons.local_shipping, 'Fleet Size', profile?.fleetSize ?? 'N/A'),
-        _buildInfoItem(Icons.account_balance, 'GST number', profile?.gstNumber ?? 'N/A'),
+        _buildInfoItem(
+          Icons.location_on,
+          'Location',
+          profile?.address ?? profile?.city ?? profile?.state ?? 'N/A',
+        ),
+        _buildInfoItem(
+          Icons.business,
+          'Company Name',
+          profile?.companyName ?? 'N/A',
+        ),
+        _buildInfoItem(
+          Icons.category,
+          'Business Category',
+          profile?.businessCategory ?? 'N/A',
+        ),
+        _buildInfoItem(
+          Icons.local_shipping,
+          'Fleet Size',
+          profile?.fleetSize ?? 'N/A',
+        ),
+        _buildInfoItem(
+          Icons.account_balance,
+          'GST number',
+          profile?.gstNumber ?? 'N/A',
+        ),
       ],
     );
   }
@@ -359,9 +400,21 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     return _buildCard(
       title: 'Contact Information',
       children: [
-        _buildEditableItem(Icons.phone, 'Mobile Number', profile?.mobileNo ?? 'N/A'),
-        _buildEditableItem(Icons.email, 'Email Address', profile?.email ?? 'N/A'),
-        _buildEditableItem(Icons.message, 'WhatsApp Number', profile?.mobileNo ?? 'N/A'),
+        _buildEditableItem(
+          Icons.phone,
+          'Mobile Number',
+          profile?.mobileNo ?? 'N/A',
+        ),
+        _buildEditableItem(
+          Icons.email,
+          'Email Address',
+          profile?.email ?? 'N/A',
+        ),
+        _buildEditableItem(
+          Icons.message,
+          'WhatsApp Number',
+          profile?.mobileNo ?? 'N/A',
+        ),
       ],
     );
   }
@@ -398,7 +451,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                 children: [
                   Text(
                     'English',
-                    style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF424242)),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF424242),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   const Icon(Icons.keyboard_arrow_down, size: 20),
@@ -411,28 +467,43 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         _buildToggleRow(Icons.dark_mode, 'Dark Theme', isDarkTheme, (val) {
           setState(() {
             isDarkTheme = val;
-            Get.changeThemeMode(
-              isDarkTheme ? ThemeMode.dark : ThemeMode.light,
-            );
+            Get.changeThemeMode(isDarkTheme ? ThemeMode.dark : ThemeMode.light);
           });
         }),
         const SizedBox(height: 24),
-        _buildToggleRow(Icons.sms, 'SMS Notifications', smsNotifications, (val) {
+        _buildToggleRow(Icons.sms, 'SMS Notifications', smsNotifications, (
+          val,
+        ) {
           setState(() => smsNotifications = val);
         }),
         const SizedBox(height: 24),
-        _buildToggleRow(Icons.email, 'Email Notifications', emailNotifications, (val) {
-          setState(() => emailNotifications = val);
-        }),
+        _buildToggleRow(
+          Icons.email,
+          'Email Notifications',
+          emailNotifications,
+          (val) {
+            setState(() => emailNotifications = val);
+          },
+        ),
         const SizedBox(height: 24),
-        _buildToggleRow(Icons.message, 'WhatsApp Notifications', whatsappNotifications, (val) {
-          setState(() => whatsappNotifications = val);
-        }),
+        _buildToggleRow(
+          Icons.message,
+          'WhatsApp Notifications',
+          whatsappNotifications,
+          (val) {
+            setState(() => whatsappNotifications = val);
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildToggleRow(IconData icon, String title, bool value, Function(bool) onChanged) {
+  Widget _buildToggleRow(
+    IconData icon,
+    String title,
+    bool value,
+    Function(bool) onChanged,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -515,7 +586,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       children: [
         Row(
           children: [
-            Expanded(child: _buildActionCard('📞', 'Contact Us')),
+            Expanded(child: _buildActionCard(Icons.phone, 'Contact Us')),
             const SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
@@ -551,7 +622,11 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.logout, size: 24, color: Color(0xFFEF5350)),
+                        const Icon(
+                          Icons.logout,
+                          size: 24,
+                          color: Color(0xFFEF5350),
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           'Logout',
@@ -809,13 +884,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   Future<void> _performLogout() async {
     try {
       print("🚪 Starting logout process...");
-      
-      // Show loading snackbar
-      SnackBarHelper.info("Logging out...");
-      
+
       // Call AuthService logout
       final success = await AuthService.to.logout();
-      
+
       if (success) {
         print("✅ Logout successful, navigating to onboarding");
         // Navigate to onboarding screen after successful logout

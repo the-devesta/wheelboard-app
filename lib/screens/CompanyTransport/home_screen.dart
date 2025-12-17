@@ -12,7 +12,7 @@ import 'service_dashboard.dart';
 import 'services_screen.dart';
 import '../../utils/share_service.dart';
 import 'job_form_screen.dart';
-import 'add_expense_screen.dart';
+import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
 import 'professional_list.dart';
 import 'fleet_screen.dart';
 import '../../controllers/user_profile_controller.dart';
@@ -248,8 +248,8 @@ class HomeScreen extends StatelessWidget {
                               Get.to(const ProfessionalListScreen());
                             }
                             if (index == 2) {
-                              // Expenses - Navigate to Add Expense Screen
-                              Get.to(const AddExpenseScreen());
+                              // Expenses - Navigate to Transaction Summary Screen
+                              Get.to(const TransactionSummaryScreen());
                             }
                             if (index == 3) {
                               // Hire - Navigate to Post Job Screen
@@ -646,10 +646,6 @@ class HomeScreen extends StatelessWidget {
                   'assets/servicelogo.svg',
                   width: 20,
                   height: 20,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
                 ),
                 const SizedBox(width: 8),
                 const Text(

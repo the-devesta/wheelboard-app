@@ -20,7 +20,10 @@ class MyListingsScreen extends StatefulWidget {
 
 class _MyListingsScreenState extends State<MyListingsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final ServiceProviderController _serviceProviderController = Get.put(ServiceProviderController(), permanent: false);
+  final ServiceProviderController _serviceProviderController = Get.put(
+    ServiceProviderController(),
+    permanent: false,
+  );
   String _selectedFilter = 'All';
   bool _isLoading = false;
   List<ServiceModel> _services = [];
@@ -62,14 +65,16 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       final response = await HttpHelper.getData(
         endpoint: '${API.serviceListByUser}$userId',
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
           'Accept': '*/*',
         },
       );
 
       if (response.statusCode == 200) {
         // API returns array directly, not wrapped in data object
-        final List<dynamic> data = jsonDecode(response.body) as List<dynamic>? ?? [];
+        final List<dynamic> data =
+            jsonDecode(response.body) as List<dynamic>? ?? [];
 
         // Map API response to ServiceModel
         _services = data.map((e) {
@@ -86,7 +91,9 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             contactNumber: json['contactNumber'],
             whatsappNumber: json['whatsappNumber'],
             description: json['description'],
-            pricingOption: json['isFlatPrice'] == true ? 'Flat Price' : 'Per Hour',
+            pricingOption: json['isFlatPrice'] == true
+                ? 'Flat Price'
+                : 'Per Hour',
             amount: json['price'],
             businessHoursFrom: json['businessFrom'],
             businessHoursTo: json['businessTo'],
@@ -116,20 +123,25 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       if (_searchController.text.isEmpty) {
         _filteredServices = List.from(_services);
       } else {
-        _filteredServices = _services
-            .where((service) {
-              final titleMatch = service.serviceTitle.toLowerCase().contains(_searchController.text.toLowerCase());
-              final descMatch = service.description != null && 
-                  service.description!.toLowerCase().contains(_searchController.text.toLowerCase());
-              return titleMatch || descMatch;
-            })
-            .toList();
+        _filteredServices = _services.where((service) {
+          final titleMatch = service.serviceTitle.toLowerCase().contains(
+            _searchController.text.toLowerCase(),
+          );
+          final descMatch =
+              service.description != null &&
+              service.description!.toLowerCase().contains(
+                _searchController.text.toLowerCase(),
+              );
+          return titleMatch || descMatch;
+        }).toList();
       }
 
       // Apply status filter
       if (_selectedFilter != 'All') {
         final isVisible = _selectedFilter == 'Visible';
-        _filteredServices = _filteredServices.where((service) => service.isAvailable == isVisible).toList();
+        _filteredServices = _filteredServices
+            .where((service) => service.isAvailable == isVisible)
+            .toList();
       }
     });
   }
@@ -195,13 +207,13 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
               child: _isLoading
                   ? const CustomLoader(message: "Loading services...")
                   : _filteredServices.isEmpty
-                      ? _buildEmptyState()
-                      : _buildServicesList(),
+                  ? _buildEmptyState()
+                  : _buildServicesList(),
             ),
           ],
         ),
       ),
-      floatingActionButton: _buildFloatingActionButton(),
+      // FAB is now handled by main_wrapper.dart
     );
   }
 
@@ -260,7 +272,11 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
               ],
             ),
             child: IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 18),
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+                size: 18,
+              ),
               onPressed: () {
                 // Navigate to notifications
               },
@@ -327,10 +343,17 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                       ),
                       prefixIcon: const Padding(
                         padding: EdgeInsets.all(8.0),
-                        child: Icon(Icons.search, size: 14, color: Color(0xFFADAEBC)),
+                        child: Icon(
+                          Icons.search,
+                          size: 14,
+                          color: Color(0xFFADAEBC),
+                        ),
                       ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7.5),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 7.5,
+                      ),
                       isDense: true,
                     ),
                     style: const TextStyle(fontSize: 12),
@@ -364,18 +387,27 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                     color: Color(0xFF1F2937),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'All', child: Padding(
-                      padding: EdgeInsets.only(left: 12),
-                      child: Text('All'),
-                    )),
-                    DropdownMenuItem(value: 'Published', child: Padding(
-                      padding: EdgeInsets.only(left: 12),
-                      child: Text('Published'),
-                    )),
-                    DropdownMenuItem(value: 'Draft', child: Padding(
-                      padding: EdgeInsets.only(left: 12),
-                      child: Text('Draft'),
-                    )),
+                    DropdownMenuItem(
+                      value: 'All',
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 12),
+                        child: Text('All'),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Published',
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 12),
+                        child: Text('Published'),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Draft',
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 12),
+                        child: Text('Draft'),
+                      ),
+                    ),
                   ],
                   onChanged: _onFilterChanged,
                 ),
@@ -403,179 +435,196 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
 
   Widget _buildServiceCard(ServiceModel service) {
     // Use serviceCategory if available, otherwise fallback to businessType or city
-    final category = (service.serviceCategory != null && service.serviceCategory!.isNotEmpty)
+    final category =
+        (service.serviceCategory != null && service.serviceCategory!.isNotEmpty)
         ? service.serviceCategory!
-        : (service.businessType.isNotEmpty 
-            ? service.businessType 
-            : (service.city.isNotEmpty ? service.city : 'Service'));
+        : (service.businessType.isNotEmpty
+              ? service.businessType
+              : (service.city.isNotEmpty ? service.city : 'Service'));
     final categoryColor = _getCategoryColor(category);
     final categoryTextColor = _getCategoryTextColor(category);
-    final isPublished = service.isAvailable; // Assuming isAvailable means published
+    final isPublished =
+        service.isAvailable; // Assuming isAvailable means published
 
     return InkWell(
       onTap: () {
         Get.to(() => ServiceDetailsScreen(serviceId: service.serviceId));
       },
       child: Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title and Category Tag
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  service.serviceTitle.isNotEmpty ? service.serviceTitle : 'Untitled Service',
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-              ),
-              if (category.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: categoryColor,
-                    borderRadius: BorderRadius.circular(9999),
-                  ),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title and Category Tag
+            Row(
+              children: [
+                Expanded(
                   child: Text(
-                    category,
-                    style: TextStyle(
+                    service.serviceTitle.isNotEmpty
+                        ? service.serviceTitle
+                        : 'Untitled Service',
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                      color: categoryTextColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Color(0xFF111827),
                     ),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Description and Status
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  service.description ?? 'No description available',
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.normal,
-                    fontSize: 14,
-                    color: Color(0xFF4B5563),
-                    height: 1.43,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Status Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isPublished ? const Color(0xFFD1FAE5) : const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isPublished)
-                      const Icon(
-                        Icons.check_circle,
-                        size: 12,
-                        color: Color(0xFF065F46),
-                      )
-                    else
-                      const Icon(
-                        Icons.access_time,
-                        size: 12,
-                        color: Color(0xFF374151),
-                      ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isPublished ? 'Published' : 'Draft',
+                if (category.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: categoryColor,
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    child: Text(
+                      category,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w500,
                         fontSize: 12,
-                        color: isPublished ? const Color(0xFF065F46) : const Color(0xFF374151),
+                        color: categoryTextColor,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Updated Date and Actions
-          Row(
-            children: [
-              Text(
-                'Updated ${_getTimeAgo(service)}',
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.normal,
-                  fontSize: 12,
-                  color: Color(0xFF6B7280),
-                ),
-              ),
-              const Spacer(),
-              // Edit Button
-              InkWell(
-                onTap: () {
-                  Get.to(() => AddServiceScreen(service: service));
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFD1D5DB)),
-                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'Edit',
-                    style: TextStyle(
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Description and Status
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    service.description ?? 'No description available',
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.normal,
-                      fontSize: 12,
-                      color: Color(0xFF374151),
+                      fontSize: 14,
+                      color: Color(0xFF4B5563),
+                      height: 1.43,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isPublished
+                        ? const Color(0xFFD1FAE5)
+                        : const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isPublished)
+                        const Icon(
+                          Icons.check_circle,
+                          size: 12,
+                          color: Color(0xFF065F46),
+                        )
+                      else
+                        const Icon(
+                          Icons.access_time,
+                          size: 12,
+                          color: Color(0xFF374151),
+                        ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isPublished ? 'Published' : 'Draft',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          color: isPublished
+                              ? const Color(0xFF065F46)
+                              : const Color(0xFF374151),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Updated Date and Actions
+            Row(
+              children: [
+                Text(
+                  'Updated ${_getTimeAgo(service)}',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.normal,
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+                const Spacer(),
+                // Edit Button
+                InkWell(
+                  onTap: () {
+                    Get.to(() => AddServiceScreen(service: service));
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFD1D5DB)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Edit',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.normal,
+                        fontSize: 12,
+                        color: Color(0xFF374151),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Delete Button
-              InkWell(
-                onTap: () => _showDeleteDialog(service),
-                child: const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(
-                    Icons.delete_outline,
-                    size: 14,
-                    color: Color(0xFFEF4444),
+                const SizedBox(width: 8),
+                // Delete Button
+                InkWell(
+                  onTap: () => _showDeleteDialog(service),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.delete_outline,
+                      size: 14,
+                      color: Color(0xFFEF4444),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -585,11 +634,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.inbox_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No services found',
@@ -613,25 +658,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
     );
   }
 
-  Widget _buildFloatingActionButton() {
-    return FloatingActionButton.extended(
-      onPressed: () {
-        Get.to(() => const AddServiceScreen());
-      },
-      backgroundColor: const Color(0xFFFF5252),
-      elevation: 8,
-      icon: const Icon(Icons.add, color: Colors.white, size: 16),
-      label: const Text(
-        'Add Service',
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
+  // FAB is now handled by main_wrapper.dart
 
   String _getTimeAgo(ServiceModel service) {
     // This is a placeholder - implement actual time calculation based on your data
@@ -644,7 +671,9 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Service'),
-        content: Text('Are you sure you want to delete "${service.serviceTitle}"?'),
+        content: Text(
+          'Are you sure you want to delete "${service.serviceTitle}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
@@ -654,23 +683,24 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             onPressed: () async {
               // Close confirmation dialog first
               Navigator.of(dialogContext).pop();
-              
+
               if (_userId == null || _userId!.isEmpty) {
                 if (mounted) {
-                  SnackBarHelper.error("User ID not found. Please login again.");
+                  SnackBarHelper.error(
+                    "User ID not found. Please login again.",
+                  );
                 }
                 return;
               }
 
               // Show loading indicator
               if (!mounted) return;
-              
+
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder: (loadingContext) => const Center(
-                  child: CustomLoader.small(),
-                ),
+                builder: (loadingContext) =>
+                    const Center(child: CustomLoader.small()),
               );
 
               try {
@@ -689,7 +719,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                 if (success && mounted) {
                   // Wait a bit for backend to process, then refresh from server
                   await Future.delayed(const Duration(milliseconds: 500));
-                  
+
                   // Refresh from server - backend should return updated list without deleted service
                   if (mounted) {
                     await _fetchMyServices();
@@ -701,18 +731,16 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                   Navigator.of(context, rootNavigator: true).pop();
                 }
                 if (mounted) {
-                  SnackBarHelper.error("Failed to delete service: ${e.toString()}");
+                  SnackBarHelper.error(
+                    "Failed to delete service: ${e.toString()}",
+                  );
                 }
               }
             },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
   }
 }
-

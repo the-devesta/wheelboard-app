@@ -8,7 +8,7 @@ import '../../../widgets/custom_loader.dart';
 
 class CalendarMarkDateScreen extends StatefulWidget {
   final DateTime? initialDate;
-  
+
   const CalendarMarkDateScreen({super.key, this.initialDate});
 
   @override
@@ -48,6 +48,8 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset:
+          false, // Prevent keyboard from pushing content up
       body: SafeArea(
         child: Column(
           children: [
@@ -106,7 +108,9 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                           ),
                           Expanded(
                             child: SingleChildScrollView(
-                              padding: const EdgeInsets.symmetric(horizontal: 15),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -138,10 +142,11 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                           color: Color(0xFFEDF1F7),
                                         ),
                                       ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 15,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 15,
+                                          ),
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -156,16 +161,26 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                             // First select date
                                             final date = await showDatePicker(
                                               context: context,
-                                              initialDate: _selectedStartDate ?? _selectedDate,
-                                              firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                                              initialDate:
+                                                  _selectedStartDate ??
+                                                  _selectedDate,
+                                              firstDate: DateTime.now()
+                                                  .subtract(
+                                                    const Duration(days: 365),
+                                                  ),
+                                              lastDate: DateTime.now().add(
+                                                const Duration(days: 365),
+                                              ),
                                             );
                                             if (date != null) {
                                               // Then select time
                                               final time = await showTimePicker(
                                                 context: context,
-                                                initialTime: _selectedStartDate != null
-                                                    ? TimeOfDay.fromDateTime(_selectedStartDate!)
+                                                initialTime:
+                                                    _selectedStartDate != null
+                                                    ? TimeOfDay.fromDateTime(
+                                                        _selectedStartDate!,
+                                                      )
                                                     : TimeOfDay.now(),
                                               );
                                               if (time != null) {
@@ -178,7 +193,8 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                                 );
                                                 setState(() {
                                                   _selectedStartDate = dateTime;
-                                                  _startDateController.text = _formatDateTime(dateTime);
+                                                  _startDateController.text =
+                                                      _formatDateTime(dateTime);
                                                 });
                                               }
                                             }
@@ -195,27 +211,31 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                               color: Color(0xFF8F9BB3),
                                             ),
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 15,
-                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 15,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -228,16 +248,26 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                             // First select date
                                             final date = await showDatePicker(
                                               context: context,
-                                              initialDate: _selectedEndDate ?? _selectedDate,
-                                              firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                                              initialDate:
+                                                  _selectedEndDate ??
+                                                  _selectedDate,
+                                              firstDate: DateTime.now()
+                                                  .subtract(
+                                                    const Duration(days: 365),
+                                                  ),
+                                              lastDate: DateTime.now().add(
+                                                const Duration(days: 365),
+                                              ),
                                             );
                                             if (date != null) {
                                               // Then select time
                                               final time = await showTimePicker(
                                                 context: context,
-                                                initialTime: _selectedEndDate != null
-                                                    ? TimeOfDay.fromDateTime(_selectedEndDate!)
+                                                initialTime:
+                                                    _selectedEndDate != null
+                                                    ? TimeOfDay.fromDateTime(
+                                                        _selectedEndDate!,
+                                                      )
                                                     : TimeOfDay.now(),
                                               );
                                               if (time != null) {
@@ -250,7 +280,8 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                                 );
                                                 setState(() {
                                                   _selectedEndDate = dateTime;
-                                                  _endDateController.text = _formatDateTime(dateTime);
+                                                  _endDateController.text =
+                                                      _formatDateTime(dateTime);
                                                 });
                                               }
                                             }
@@ -267,27 +298,31 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                               color: Color(0xFF8F9BB3),
                                             ),
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 15,
-                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 15,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -326,107 +361,10 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-                                  // Select Category
-                                  Text(
-                                    'Select Category',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF535353),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedCategory = 'Trip';
-                                            });
-                                          },
-                                          child: Container(
-                                            height: 44,
-                                            decoration: BoxDecoration(
-                                              color: _selectedCategory == 'Trip'
-                                                  ? const Color(0xFF735BF2).withOpacity(0.07)
-                                                  : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(11),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Container(
-                                                  width: 8,
-                                                  height: 8,
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(0xFF735BF2),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  'Trip',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: const Color(0xFF222B45),
-                                                    letterSpacing: 0.875,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedCategory = 'Job';
-                                            });
-                                          },
-                                          child: Container(
-                                            height: 44,
-                                            decoration: BoxDecoration(
-                                              color: _selectedCategory == 'Job'
-                                                  ? const Color(0xFF735BF2).withOpacity(0.07)
-                                                  : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(11),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Container(
-                                                  width: 8,
-                                                  height: 8,
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(0xFF735BF2),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  'Job',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: const Color(0xFF222B45),
-                                                    letterSpacing: 0.875,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 24),
                                   // Mark the date As
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         'Mark the date As:',
@@ -459,13 +397,18 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                               decoration: BoxDecoration(
                                                 color: _isActive
                                                     ? const Color(0xFF34C759)
-                                                    : const Color(0xFF787880).withOpacity(0.16),
-                                                borderRadius: BorderRadius.circular(100),
+                                                    : const Color(
+                                                        0xFF787880,
+                                                      ).withOpacity(0.16),
+                                                borderRadius:
+                                                    BorderRadius.circular(100),
                                               ),
                                               child: Stack(
                                                 children: [
                                                   AnimatedPositioned(
-                                                    duration: const Duration(milliseconds: 200),
+                                                    duration: const Duration(
+                                                      milliseconds: 200,
+                                                    ),
                                                     curve: Curves.easeInOut,
                                                     left: _isActive ? 24 : 2,
                                                     right: _isActive ? 2 : 24,
@@ -474,12 +417,20 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                                     child: Container(
                                                       decoration: BoxDecoration(
                                                         color: Colors.white,
-                                                        borderRadius: BorderRadius.circular(100),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              100,
+                                                            ),
                                                         boxShadow: const [
                                                           BoxShadow(
-                                                            color: Color(0x0A000000),
+                                                            color: Color(
+                                                              0x0A000000,
+                                                            ),
                                                             blurRadius: 3,
-                                                            offset: Offset(0, 3),
+                                                            offset: Offset(
+                                                              0,
+                                                              3,
+                                                            ),
                                                           ),
                                                         ],
                                                       ),
@@ -495,70 +446,94 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                   ),
                                   const SizedBox(height: 32),
                                   // Mark the Date Button
-                                  Obx(
-                                    () {
-                                      return SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton(
-                                        onPressed: calendarController.isLoading.value ? null : () async {
-                                          // Use default values if fields are empty
-                                          final eventName = _eventNameController.text.trim().isEmpty 
-                                              ? 'Calendar Event' 
-                                              : _eventNameController.text.trim();
-                                          
-                                          // Use selected date with current time if start date not selected
-                                          final startDateTime = _selectedStartDate ?? DateTime(
-                                            _selectedDate.year,
-                                            _selectedDate.month,
-                                            _selectedDate.day,
-                                            DateTime.now().hour,
-                                            DateTime.now().minute,
-                                          );
-                                          
-                                          // Use start date + 1 hour if end date not selected
-                                          final endDateTime = _selectedEndDate ?? startDateTime.add(const Duration(hours: 1));
+                                  Obx(() {
+                                    return SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed:
+                                            calendarController.isLoading.value
+                                            ? null
+                                            : () async {
+                                                // Use default values if fields are empty
+                                                final eventName =
+                                                    _eventNameController.text
+                                                        .trim()
+                                                        .isEmpty
+                                                    ? 'Calendar Event'
+                                                    : _eventNameController.text
+                                                          .trim();
 
-                                          // Save event
-                                          final success = await calendarController.saveEvent(
-                                            eventName: eventName,
-                                            startTime: startDateTime,
-                                            endTime: endDateTime,
-                                            note: _noteController.text.trim(),
-                                            category: _selectedCategory,
-                                            isActive: _isActive,
-                                          );
+                                                // Use selected date with current time if start date not selected
+                                                final startDateTime =
+                                                    _selectedStartDate ??
+                                                    DateTime(
+                                                      _selectedDate.year,
+                                                      _selectedDate.month,
+                                                      _selectedDate.day,
+                                                      DateTime.now().hour,
+                                                      DateTime.now().minute,
+                                                    );
 
-                                          if (success) {
-                                            Navigator.pop(context);
-                                          }
-                                        },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFF36969),
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(7),
-                                        ),
-                                      ),
-                                      child: calendarController.isLoading.value
-                                          ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: const CustomLoader.small(
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : Text(
-                                              'Mark the Date',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
+                                                // Use start date + 1 hour if end date not selected
+                                                final endDateTime =
+                                                    _selectedEndDate ??
+                                                    startDateTime.add(
+                                                      const Duration(hours: 1),
+                                                    );
+
+                                                // Save event
+                                                final success =
+                                                    await calendarController
+                                                        .saveEvent(
+                                                          eventName: eventName,
+                                                          startTime:
+                                                              startDateTime,
+                                                          endTime: endDateTime,
+                                                          note: _noteController
+                                                              .text
+                                                              .trim(),
+                                                          category:
+                                                              _selectedCategory,
+                                                          isActive: _isActive,
+                                                        );
+
+                                                if (success) {
+                                                  Navigator.pop(context);
+                                                }
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFFF36969,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              7,
                                             ),
+                                          ),
+                                        ),
+                                        child:
+                                            calendarController.isLoading.value
+                                            ? const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child: const CustomLoader.small(
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : Text(
+                                                'Mark the Date',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                       ),
                                     );
-                                  },
-                                ),
+                                  }),
                                   const SizedBox(height: 32),
                                 ],
                               ),
@@ -578,10 +553,24 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
   }
 
   String _formatDateTime(DateTime dateTime) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final dateStr = '${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}';
-    final timeStr = '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final dateStr =
+        '${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}';
+    final timeStr =
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     return '$dateStr, $timeStr';
   }
 }
-

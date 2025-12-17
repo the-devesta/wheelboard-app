@@ -35,6 +35,8 @@ class OpenJobsController extends GetxController {
           ? '${API.getOpenJobs}?userId=$userId'
           : API.getOpenJobs;
 
+      print("💼 API Endpoint: $endpoint");
+
       final response = await HttpHelper.getData(
         endpoint: endpoint,
         headers: {
@@ -63,8 +65,20 @@ class OpenJobsController extends GetxController {
       if (response.statusCode == 200) {
         try {
           final List data = json.decode(response.body);
+
+          // 🔍 Debug: Print first job raw data to see all fields
+          if (data.isNotEmpty) {
+            print("🔍 First job raw data keys: ${data[0].keys.toList()}");
+            print("🔍 First job raw data: ${data[0]}");
+          }
+
           openJobs.value = data.map((e) => OpenJob.fromJson(e)).toList();
           print("✅ Fetched ${openJobs.length} open jobs");
+
+          // 🔍 Debug: Print first parsed job's companyName
+          if (openJobs.isNotEmpty) {
+            print("🔍 First job companyName: ${openJobs[0].companyName}");
+          }
         } catch (parseError) {
           print("❌ Error parsing open jobs response: $parseError");
           SnackBarHelper.error("Failed to parse jobs data");
@@ -227,6 +241,7 @@ class OpenJobsController extends GetxController {
             isApplied: job.isApplied,
             likeCount: newLikeCount >= 0 ? newLikeCount : 0,
             isLiked: newIsLiked,
+            companyName: job.companyName, // Preserve company name
           );
 
           // Update the job in the list

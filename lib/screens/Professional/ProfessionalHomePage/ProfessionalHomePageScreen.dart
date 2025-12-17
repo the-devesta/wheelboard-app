@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../TransactionSummary/TransactionSummaryScreen.dart';
 import '../TripProgress/TripProgressScreen.dart';
 import '../widgets/professional_header_widget.dart';
 import '../widgets/banner_header_widget.dart';
@@ -13,7 +15,6 @@ import '../EarningSummary/EarningSummaryScreen.dart';
 import '../../CompanyTransport/add_expense_screen.dart';
 import '../MyLearning/MyLearningScreen.dart';
 import '../SOS/SOSScreen.dart';
-import '../AddReferral/AddReferralScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../controllers/notification_controller.dart';
@@ -26,8 +27,22 @@ class ProfessionalHomePageScreen extends StatelessWidget {
 
   String _formatDate(DateTime? date, String time) {
     if (date == null) return time;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final dateStr =
+        '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
     final timeStr = time.isNotEmpty
         ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
         : '';
@@ -36,10 +51,11 @@ class ProfessionalHomePageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AssignedTripController assignedTripController =
-        Get.put(AssignedTripController());
+    final AssignedTripController assignedTripController = Get.put(
+      AssignedTripController(),
+    );
     final notificationController = Get.put(NotificationController());
-    
+
     // Fetch notifications on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notificationController.fetchNotifications();
@@ -48,8 +64,9 @@ class ProfessionalHomePageScreen extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final bottomNavBarHeight = bottomPadding + 76; // Bottom nav height (76) + safe area padding
-    
+    final bottomNavBarHeight =
+        bottomPadding + 76; // Bottom nav height (76) + safe area padding
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -66,7 +83,8 @@ class ProfessionalHomePageScreen extends StatelessWidget {
 
                   // Banner Section with overlapping elements - Responsive
                   Stack(
-                    clipBehavior: Clip.none, // Allow overflow - don't clip trip card
+                    clipBehavior:
+                        Clip.none, // Allow overflow - don't clip trip card
                     children: [
                       // Banner background - Responsive height
                       SizedBox(
@@ -115,10 +133,11 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                             );
                           }
 
-                          final trip = assignedTripController.assignedTrips.first;
-                          final tags = ['Assigned']
-                              .where((t) => t.isNotEmpty)
-                              .toList();
+                          final trip =
+                              assignedTripController.assignedTrips.first;
+                          final tags = [
+                            'Assigned',
+                          ].where((t) => t.isNotEmpty).toList();
 
                           return GestureDetector(
                             onTap: () async {
@@ -127,8 +146,10 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                             child: TripCardWidget(
                               pickupAddress: trip.pickupLocation,
                               destinationAddress: trip.deliveryLocation,
-                              dateTime:
-                                  _formatDate(trip.pickupDate, trip.pickupTime),
+                              dateTime: _formatDate(
+                                trip.pickupDate,
+                                trip.pickupTime,
+                              ),
                               tags: tags,
                             ),
                           );
@@ -142,65 +163,35 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                   // Banner ends at: screenHeight * 0.23
                   // Trip card extends below banner - we need to account for full card height
                   // Using generous spacing to ensure no overlap: banner end + card extension + margin
-                  SizedBox(height: (screenHeight * 0.20) + 40), // Generous spacing to ensure trip card ends before jobs section
-
+                  SizedBox(
+                    height: (screenHeight * 0.20) + 40,
+                  ), // Generous spacing to ensure trip card ends before jobs section
                   // Jobs Section - Below banner and cards
                   _buildJobsSection(context),
 
                   // Bottom padding for floating buttons + bottom nav bar - Responsive
-                  SizedBox(height: bottomNavBarHeight + 100), // Space for floating buttons + bottom nav
+                  SizedBox(
+                    height: bottomNavBarHeight + 100,
+                  ), // Space for floating buttons + bottom nav
                 ],
               ),
             ),
 
-            // Fixed Bottom Action Buttons - Invite and SOS (vertical column on right) - Responsive
+            // Fixed Bottom Action Button - SOS only (Invite moved to Profile)
             Positioned(
               right: screenWidth * 0.04, // Responsive right padding
-              bottom: bottomNavBarHeight - 50, // Much closer to bottom navigation bar - Responsive
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Invite Button - Responsive (top)
-                  GestureDetector(
-                    onTap: () {
-                      Get.to(const AddReferralScreen());
-                    },
-                    child: Container(
-                      width: screenWidth * 0.3, // Responsive width (30% of screen)
-                      height: 43.5,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF5E5E),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          "Invite",
-                          style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.04, // Responsive font size
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.325,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // SOS Button - Responsive (bottom)
+              bottom:
+                  bottomNavBarHeight -
+                  50, // Much closer to bottom navigation bar - Responsive
+              child:
+                  // SOS Button - Responsive
                   GestureDetector(
                     onTap: () {
                       Get.to(const SOSScreen());
                     },
                     child: Container(
-                      width: screenWidth * 0.3, // Responsive width (30% of screen)
+                      width:
+                          screenWidth * 0.3, // Responsive width (30% of screen)
                       height: 43.5,
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF5E5E),
@@ -217,7 +208,8 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                         child: Text(
                           "SOS",
                           style: GoogleFonts.poppins(
-                            fontSize: screenWidth * 0.04, // Responsive font size
+                            fontSize:
+                                screenWidth * 0.04, // Responsive font size
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                             letterSpacing: 0.325,
@@ -226,8 +218,6 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                ],
-              ),
             ),
           ],
         ),
@@ -238,8 +228,9 @@ class ProfessionalHomePageScreen extends StatelessWidget {
   /// Quick Actions Row - Responsive
   Widget _buildQuickActions(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final buttonSpacing = screenWidth * 0.02; // Responsive spacing between buttons
-    
+    final buttonSpacing =
+        screenWidth * 0.02; // Responsive spacing between buttons
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -271,7 +262,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
           child: QuickActionButtonWidget(
             icon: Icons.add_circle_outline,
             title: "Add\nExpenses",
-            onTap: () => Get.to(const AddExpenseScreen(isProfessional: true)),
+            onTap: () => Get.to(const TransactionSummaryScreen()),
           ),
         ),
         SizedBox(width: buttonSpacing),
@@ -290,55 +281,27 @@ class ProfessionalHomePageScreen extends StatelessWidget {
   Widget _buildJobsSection(BuildContext context) {
     final OpenJobsController jobsController = Get.put(OpenJobsController());
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05), // Responsive padding (5% of screen width)
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.05,
+      ), // Responsive padding (5% of screen width)
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section Header - Responsive
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Jobs",
-                style: GoogleFonts.poppins(
-                  fontSize: screenWidth * 0.04, // Responsive font size (4% of screen width)
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.023, // Responsive horizontal padding
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFFE0E0E0)),
-                  borderRadius: BorderRadius.circular(9999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.tune, size: screenWidth * 0.04, color: const Color(0xFF003366)), // Responsive icon size
-                    SizedBox(width: screenWidth * 0.01), // Responsive spacing
-                    Text(
-                      "Filter",
-                      style: GoogleFonts.poppins(
-                        fontSize: screenWidth * 0.03, // Responsive font size (3% of screen width)
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF003366),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            "Jobs",
+            style: GoogleFonts.poppins(
+              fontSize:
+                  screenWidth *
+                  0.04, // Responsive font size (4% of screen width)
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
           ),
 
           SizedBox(height: screenWidth * 0.03), // Responsive spacing
-
           // Job Cards - Using Obx to reactively update when jobs are loaded
           Obx(() {
             if (jobsController.isLoading.value) {
@@ -388,25 +351,35 @@ class ProfessionalHomePageScreen extends StatelessWidget {
               children: jobsController.openJobs.asMap().entries.map((entry) {
                 final index = entry.key;
                 final job = entry.value;
-                
-                // Use role as company name, or city if role is empty
-                final displayName = job.role.isNotEmpty 
-                    ? job.role 
-                    : (job.city.isNotEmpty ? job.city : "Job Opening");
-                
+
+                // Use companyName from API, fallback to role or city
+                final displayCompanyName =
+                    (job.companyName != null && job.companyName!.isNotEmpty)
+                    ? job.companyName!
+                    : (job.role.isNotEmpty ? job.role : "Company");
+
                 return Padding(
-                  padding: EdgeInsets.only(bottom: index < jobsController.openJobs.length - 1 ? 12 : 0),
+                  padding: EdgeInsets.only(
+                    bottom: index < jobsController.openJobs.length - 1 ? 12 : 0,
+                  ),
                   child: JobCardWidget(
-                    companyName: displayName,
+                    companyName: displayCompanyName,
+                    role: job.role, // Show role like Driver, Helper
+                    city: job.city, // Show city
                     jobId: job.jobId,
                     likes: job.likeCount,
-                    applicants: job.openings, // Using openings as applicants count
+                    applicants:
+                        job.openings, // This shows as "Openings" in widget
                     isApplying: jobsController.isApplying(job.jobId),
                     isApplied: job.isApplied,
                     isLiked: job.isLiked,
                     onCallNow: () {
-                      // TODO: Implement call functionality
-                      Get.snackbar("Info", "Call functionality coming soon");
+                      // Show call dialog
+                      _showCallDialog(
+                        context,
+                        companyName: job.companyName ?? job.role,
+                        role: job.role,
+                      );
                     },
                     onLikeToggle: () async {
                       if (job.jobId.isNotEmpty) {
@@ -415,7 +388,9 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                     },
                     onApplyNow: () async {
                       if (job.jobId.isNotEmpty && !job.isApplied) {
-                        final success = await jobsController.applyForJob(job.jobId);
+                        final success = await jobsController.applyForJob(
+                          job.jobId,
+                        );
                         if (success) {
                           // Refresh jobs after applying to update isApplied status
                           await jobsController.refreshOpenJobs();
@@ -432,5 +407,112 @@ class ProfessionalHomePageScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Show call dialog to enter phone number
+  void _showCallDialog(
+    BuildContext context, {
+    String? companyName,
+    String? role,
+  }) {
+    final TextEditingController phoneController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Call Employer'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (companyName != null && companyName.isNotEmpty)
+                Text(
+                  'Company: $companyName',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              if (role != null && role.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Role: $role',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              const Text(
+                'Enter contact number to call:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  hintText: 'Enter phone number',
+                  prefixIcon: Icon(Icons.phone),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final phoneNumber = phoneController.text.trim();
+                if (phoneNumber.isNotEmpty) {
+                  Navigator.of(dialogContext).pop();
+                  _makePhoneCall(phoneNumber);
+                } else {
+                  Get.snackbar(
+                    'Error',
+                    'Please enter a phone number',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD500),
+                foregroundColor: const Color(0xFF003366),
+              ),
+              child: const Text('Call'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Make phone call using url_launcher
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    try {
+      final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      final Uri phoneUri = Uri.parse('tel:$cleanNumber');
+
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to make phone call. Please check if your device supports phone calls.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      print('Phone call error: $e');
+    }
   }
 }

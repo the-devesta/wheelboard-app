@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:get/get.dart';
 import 'home_screen.dart';
 import 'my_listings_screen.dart';
+import 'add_service_screen.dart';
 import '../CompanyTransport/feed_screen.dart';
 import '../CompanyTransport/job_screen.dart';
 
@@ -12,10 +14,12 @@ class CompanyServiceProviderMainWrapper extends StatefulWidget {
   const CompanyServiceProviderMainWrapper({super.key, this.initialIndex = 0});
 
   @override
-  State<CompanyServiceProviderMainWrapper> createState() => _CompanyServiceProviderMainWrapperState();
+  State<CompanyServiceProviderMainWrapper> createState() =>
+      _CompanyServiceProviderMainWrapperState();
 }
 
-class _CompanyServiceProviderMainWrapperState extends State<CompanyServiceProviderMainWrapper> {
+class _CompanyServiceProviderMainWrapperState
+    extends State<CompanyServiceProviderMainWrapper> {
   late int _currentIndex;
 
   @override
@@ -41,14 +45,30 @@ class _CompanyServiceProviderMainWrapperState extends State<CompanyServiceProvid
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
+      // Show FAB only on Home (0) and Listings (1) screens
+      floatingActionButton: (_currentIndex == 0 || _currentIndex == 1)
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Get.to(() => const AddServiceScreen());
+              },
+              backgroundColor: const Color(0xFFFF5252),
+              icon: const Icon(Icons.add, color: Colors.white, size: 18),
+              label: const Text(
+                'Add Service',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(
-              color: Colors.grey.withOpacity(0.2),
-              width: 0.5,
-            ),
+            top: BorderSide(color: Colors.grey.withOpacity(0.2), width: 0.5),
           ),
         ),
         child: BottomNavigationBar(
@@ -62,27 +82,13 @@ class _CompanyServiceProviderMainWrapperState extends State<CompanyServiceProvid
           selectedFontSize: 12,
           unselectedFontSize: 12,
           items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: "Home",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.list),
-              label: "Listings",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.article),
-              label: "Feeds",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.work),
-              label: "Jobs",
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+            BottomNavigationBarItem(icon: Icon(Icons.list), label: "Listings"),
+            BottomNavigationBarItem(icon: Icon(Icons.article), label: "Feeds"),
+            BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
           ],
         ),
       ),
     );
   }
 }
-
-

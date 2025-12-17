@@ -24,20 +24,32 @@ class _FleetUserprofileState extends State<FleetUserprofile> {
   }
 
   Future<void> _fetchCompanyProfile() async {
+    print('========================================');
+    print('🔍 FleetUserprofile: _fetchCompanyProfile called');
+    print('👉 companyId: ${widget.companyId}');
+    print('========================================');
+
     if (widget.companyId == null || widget.companyId!.isEmpty) {
+      print('❌ companyId is null or empty, cannot fetch profile');
       setState(() => _isLoading = false);
       return;
     }
 
     try {
       final endpoint = 'api/Post/CompProfile/${widget.companyId}';
+      print('📡 Calling API: $endpoint');
+
       final response = await HttpHelper.getData(
         endpoint: endpoint,
         headers: {'Accept': '*/*'},
       );
 
+      print('📥 Response Status: ${response.statusCode}');
+      print('📥 Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('✅ Profile data decoded successfully: $data');
         if (mounted) {
           setState(() {
             _profileData = data;
@@ -45,11 +57,13 @@ class _FleetUserprofileState extends State<FleetUserprofile> {
           });
         }
       } else {
-        print('Failed to fetch profile: ${response.statusCode}');
+        print('❌ Failed to fetch profile: ${response.statusCode}');
+        print('❌ Error Body: ${response.body}');
         if (mounted) setState(() => _isLoading = false);
       }
-    } catch (e) {
-      print('Error fetching profile: $e');
+    } catch (e, stackTrace) {
+      print('❌ Exception fetching profile: $e');
+      print('📋 Stack Trace: $stackTrace');
       if (mounted) setState(() => _isLoading = false);
     }
   }

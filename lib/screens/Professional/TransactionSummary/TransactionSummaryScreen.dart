@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'dart:math' as math;
+import '../../CompanyTransport/add_expense_screen.dart';
 
-class TransactionSummaryScreen extends StatelessWidget {
+class TransactionSummaryScreen extends StatefulWidget {
   const TransactionSummaryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Asset URLs from Figma
-    const String pieChartUrl = 'https://www.figma.com/api/mcp/asset/9b3ff472-8368-4222-a0e6-264d3ce5a591';
+  State<TransactionSummaryScreen> createState() =>
+      _TransactionSummaryScreenState();
+}
 
+class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
@@ -21,7 +35,7 @@ class TransactionSummaryScreen extends StatelessWidget {
                 color: Colors.white,
                 border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 23),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   GestureDetector(
@@ -33,7 +47,7 @@ class TransactionSummaryScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: Colors.grey.withOpacity(0.1),
                       ),
-                      child: const Icon(Icons.arrow_back_ios, size: 16),
+                      child: const Icon(Icons.arrow_back_ios_new, size: 18),
                     ),
                   ),
                   Expanded(
@@ -44,76 +58,94 @@ class TransactionSummaryScreen extends StatelessWidget {
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFFF36969),
-                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
                   ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.grey.withOpacity(0.1),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.grey.withOpacity(0.1),
+                      ),
+                      child: const Icon(Icons.more_vert, size: 20),
                     ),
-                    child: const Icon(Icons.more_vert, size: 22),
                   ),
                 ],
               ),
             ),
+
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Search and Filter
-                    Container(
+                    // Search and Filter Row
+                    Padding(
                       padding: const EdgeInsets.all(16),
-                      color: const Color(0xFFF9FAFB),
                       child: Row(
                         children: [
+                          // Search TextField
                           Expanded(
                             child: Container(
-                              height: 44,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              height: 48,
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                border: Border.all(color: const Color(0xFFE0E0E0)),
+                                border: Border.all(
+                                  color: const Color(0xFFE0E0E0),
+                                ),
                                 borderRadius: BorderRadius.circular(999),
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.search, size: 16, color: Color(0xFFADAEBC)),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Search transactions...',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      color: const Color(0xFFADAEBC),
-                                    ),
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  hintText: 'Search transactions...',
+                                  hintStyle: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: const Color(0xFFADAEBC),
                                   ),
-                                ],
+                                  prefixIcon: const Icon(
+                                    Icons.search,
+                                    size: 20,
+                                    color: Color(0xFFADAEBC),
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
+                          // Filter Button
                           Container(
-                            height: 44,
+                            height: 48,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(color: const Color(0xFFE0E0E0)),
+                              border: Border.all(
+                                color: const Color(0xFFE0E0E0),
+                              ),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.filter_list, size: 14, color: Color(0xFF2F80ED)),
-                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.filter_list,
+                                  size: 18,
+                                  color: Color(0xFF2F80ED),
+                                ),
+                                const SizedBox(width: 6),
                                 Text(
                                   'Filter',
                                   style: GoogleFonts.inter(
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w400,
+                                    fontWeight: FontWeight.w500,
                                     color: const Color(0xFF2F80ED),
                                   ),
                                 ),
@@ -123,60 +155,69 @@ class TransactionSummaryScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+
                     // Recent Transactions Section
-                    Container(
+                    Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      color: const Color(0xFFF9FAFB),
+                      child: Text(
+                        'Recent Transactions',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF535353),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Transaction Items
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Recent Transactions',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF535353),
-                              letterSpacing: -0.97,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
                           _buildTransactionItem(
                             date: '06.05.2025',
                             tripId: 'TRIP-1029',
                             category: 'Vehicle Repair',
                             description: 'Brake Service',
                             amount: '₹1,500',
-                            isHighlighted: true,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           _buildTransactionItem(
                             date: '04.05.2025',
                             tripId: 'TRIP-1025',
                             category: 'Fuel',
                             description: 'Diesel',
                             amount: '₹2,300',
-                            isHighlighted: false,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           _buildTransactionItem(
                             date: '03.05.2025',
                             tripId: 'TRIP-1019',
                             category: 'Food',
                             description: 'Lunch Stop',
                             amount: '₹450',
-                            isHighlighted: true,
                           ),
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 24),
+
                     // Distribution of Expenses Chart
                     Container(
-                      padding: const EdgeInsets.all(24),
                       margin: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Column(
                         children: [
@@ -186,102 +227,122 @@ class TransactionSummaryScreen extends StatelessWidget {
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF111827),
-                              letterSpacing: -0.95,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
+
+                          // Pie Chart with Legend
                           Row(
                             children: [
                               // Pie Chart
                               Expanded(
+                                flex: 3,
                                 child: SizedBox(
-                                  height: 226,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Image.network(
-                                        pieChartUrl,
-                                        width: 218,
-                                        height: 218,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Container(
-                                            width: 218,
-                                            height: 218,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: Colors.grey[200],
-                                            ),
-                                            child: const Center(
-                                              child: Icon(Icons.pie_chart, size: 64),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      Text(
+                                  height: 180,
+                                  child: CustomPaint(
+                                    painter: PieChartPainter(),
+                                    child: Center(
+                                      child: Text(
                                         '12340',
                                         style: GoogleFonts.inter(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black.withOpacity(0.9),
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF3D5A73),
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 16),
                               // Legend
                               Expanded(
+                                flex: 2,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    _buildLegendItem(const Color(0xFF2D9CDB), 'Advance'),
+                                    _buildLegendItem(
+                                      const Color(0xFF2D9CDB),
+                                      'Advance',
+                                    ),
                                     const SizedBox(height: 8),
-                                    _buildLegendItem(const Color(0xFF27AE60), 'Fuel'),
+                                    _buildLegendItem(
+                                      const Color(0xFF27AE60),
+                                      'Fuel',
+                                    ),
                                     const SizedBox(height: 8),
-                                    _buildLegendItem(const Color(0xFFF2994A), 'Challan'),
+                                    _buildLegendItem(
+                                      const Color(0xFFF2994A),
+                                      'Challan',
+                                    ),
                                     const SizedBox(height: 8),
-                                    _buildLegendItem(const Color(0xFFEB5757), 'Food'),
+                                    _buildLegendItem(
+                                      const Color(0xFFEB5757),
+                                      'Food',
+                                    ),
                                     const SizedBox(height: 8),
-                                    _buildLegendItem(const Color(0xFF9B51E0), 'Salary'),
+                                    _buildLegendItem(
+                                      const Color(0xFF9B51E0),
+                                      'Salary',
+                                    ),
                                     const SizedBox(height: 8),
-                                    _buildLegendItem(const Color(0xFFF2C94C), 'Enroute'),
+                                    _buildLegendItem(
+                                      const Color(0xFFF2C94C),
+                                      'Enroute',
+                                    ),
                                   ],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          // Category Legend
+
+                          const SizedBox(height: 20),
+
+                          // Bottom Category Legend
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              _buildCategoryDot(const Color(0xFF2D9CDB), 'Fuel'),
-                              const SizedBox(width: 16),
-                              _buildCategoryDot(const Color(0xFF27AE60), 'Food'),
-                              const SizedBox(width: 16),
-                              _buildCategoryDot(const Color(0xFFF2994A), 'Enroute'),
-                              const SizedBox(width: 16),
-                              _buildCategoryDot(const Color(0xFFEB5757), 'Misc'),
+                              _buildCategoryDot(
+                                const Color(0xFF2D9CDB),
+                                'Fuel',
+                              ),
+                              _buildCategoryDot(
+                                const Color(0xFF27AE60),
+                                'Food',
+                              ),
+                              _buildCategoryDot(
+                                const Color(0xFFF2994A),
+                                'Enroute',
+                              ),
+                              _buildCategoryDot(
+                                const Color(0xFFEB5757),
+                                'Misc',
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+
+                          const SizedBox(height: 16),
+
+                          // Top 3 Section
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.only(top: 12),
                             decoration: const BoxDecoration(
-                              border: Border(top: BorderSide(color: Color(0xFFE0E0E0))),
+                              border: Border(
+                                top: BorderSide(color: Color(0xFFE0E0E0)),
+                              ),
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Top 3:',
+                                  'Top 3: ',
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                     color: const Color(0xFF111827),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     'Fuel (₹2,300), Vehicle Repair (₹1,500), Food (₹450)',
@@ -298,45 +359,60 @@ class TransactionSummaryScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+
+                    const SizedBox(height: 100), // Space for bottom button
                   ],
                 ),
               ),
             ),
+
             // New Expense Button
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFF5F5F5))),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Handle new expense
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5E5E),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.add, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        'NEW EXPENSE',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Get.to(
+                        () => const AddExpenseScreen(isProfessional: true),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5E5E),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.add, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'NEW EXPENSE',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -353,25 +429,26 @@ class TransactionSummaryScreen extends StatelessWidget {
     required String category,
     required String description,
     required String amount,
-    required bool isHighlighted,
   }) {
     return Container(
-      padding: const EdgeInsets.all(0),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE8E8E8)),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         children: [
+          // Date Column
           Container(
-            width: 91,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isHighlighted ? const Color(0xFFF5F5F5) : Colors.white,
-              border: const Border(
-                right: BorderSide(color: Color(0xFFE0E0E0)),
+            width: 85,
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(10),
+                bottomLeft: Radius.circular(10),
               ),
+              border: Border(right: BorderSide(color: Color(0xFFE8E8E8))),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,51 +457,53 @@ class TransactionSummaryScreen extends StatelessWidget {
                   date,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: const Color(0xFF2F80ED),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   tripId,
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w400,
-                    color: const Color(0xFF858585),
+                    color: const Color(0xFF9CA3AF),
                   ),
                 ),
               ],
             ),
           ),
+          // Details Column
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     category,
                     style: GoogleFonts.poppins(
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF535353),
+                      color: const Color(0xFF374151),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     description,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      color: const Color(0xFF6B7280),
+                      color: const Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
               ),
             ),
           ),
+          // Amount Column
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.only(right: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -432,16 +511,16 @@ class TransactionSummaryScreen extends StatelessWidget {
                   amount,
                   style: GoogleFonts.inter(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF535353),
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF374151),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   'Paid',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w500,
                     color: const Color(0xFF27AE60),
                   ),
                 ),
@@ -455,22 +534,20 @@ class TransactionSummaryScreen extends StatelessWidget {
 
   Widget _buildLegendItem(Color color, String label) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
         Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w400,
-            color: Colors.black.withOpacity(0.7),
+            color: const Color(0xFF374151),
           ),
         ),
       ],
@@ -479,22 +556,20 @@ class TransactionSummaryScreen extends StatelessWidget {
 
   Widget _buildCategoryDot(Color color, String label) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF111827),
+            color: const Color(0xFF374151),
           ),
         ),
       ],
@@ -502,3 +577,70 @@ class TransactionSummaryScreen extends StatelessWidget {
   }
 }
 
+// Custom Pie Chart Painter (No external URL needed)
+class PieChartPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 10;
+    final innerRadius = radius * 0.55;
+
+    // Pie chart segments with colors and percentages
+    final segments = [
+      {'color': const Color(0xFF2D9CDB), 'percent': 0.25}, // Advance - Blue
+      {'color': const Color(0xFF27AE60), 'percent': 0.20}, // Fuel - Green
+      {'color': const Color(0xFFF2994A), 'percent': 0.15}, // Challan - Orange
+      {'color': const Color(0xFFEB5757), 'percent': 0.15}, // Food - Red
+      {'color': const Color(0xFF9B51E0), 'percent': 0.15}, // Salary - Purple
+      {'color': const Color(0xFFF2C94C), 'percent': 0.10}, // Enroute - Yellow
+    ];
+
+    double startAngle = -math.pi / 2; // Start from top
+
+    for (var segment in segments) {
+      final sweepAngle = 2 * math.pi * (segment['percent'] as double);
+      final paint = Paint()
+        ..color = segment['color'] as Color
+        ..style = PaintingStyle.fill;
+
+      // Draw arc
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        true,
+        paint,
+      );
+
+      startAngle += sweepAngle;
+    }
+
+    // Draw inner circle (donut hole)
+    final innerPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, innerRadius, innerPaint);
+
+    // Draw thin white borders between segments
+    startAngle = -math.pi / 2;
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (var segment in segments) {
+      final sweepAngle = 2 * math.pi * (segment['percent'] as double);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        true,
+        borderPaint,
+      );
+      startAngle += sweepAngle;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}

@@ -6,6 +6,8 @@ import '../../../widgets/custom_loader.dart';
 /// Job Card Widget matching Figma design
 class JobCardWidget extends StatelessWidget {
   final String companyName;
+  final String? role; // Job role like Driver, Helper, Technician
+  final String? city; // Job location city
   final String? jobId; // Job ID from API
   final int likes;
   final int applicants;
@@ -19,6 +21,8 @@ class JobCardWidget extends StatelessWidget {
   const JobCardWidget({
     super.key,
     required this.companyName,
+    this.role,
+    this.city,
     this.jobId,
     this.likes = 0,
     this.applicants = 0,
@@ -58,8 +62,20 @@ class JobCardWidget extends StatelessWidget {
               _buildCallNowButton(onTap: onCallNow),
             ],
           ),
-          const SizedBox(height: 12),
-          // Likes and Applicants
+          // Role (Driver, Helper, etc.) - shown below company name
+          if (role != null && role!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              role!,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF666666),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          // Likes and Openings
           Row(
             children: [
               // Like button (clickable)
@@ -78,7 +94,9 @@ class JobCardWidget extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: isLiked ? const Color(0xFF00AEEF) : const Color(0xFF1F1F1F),
+                        color: isLiked
+                            ? const Color(0xFF00AEEF)
+                            : const Color(0xFF1F1F1F),
                       ),
                     ),
                   ],
@@ -88,7 +106,7 @@ class JobCardWidget extends StatelessWidget {
               const Icon(Icons.people_outline, size: 13, color: Colors.black),
               const SizedBox(width: 6),
               Text(
-                "$applicants Applicants",
+                "$applicants Openings",
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -101,13 +119,9 @@ class JobCardWidget extends StatelessWidget {
           // Share and Apply Buttons
           Row(
             children: [
-              Expanded(
-                child: _buildShareButton(),
-              ),
+              Expanded(child: _buildShareButton()),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildApplyButton(onTap: onApplyNow),
-              ),
+              Expanded(child: _buildApplyButton(onTap: onApplyNow)),
             ],
           ),
         ],
@@ -137,9 +151,18 @@ class JobCardWidget extends StatelessWidget {
   }
 
   Widget _buildShareButton() {
+    // WheelBoard app share URL
+    const String wheelboardUrl = "https://wheelboard.app";
+
     return ElevatedButton.icon(
       onPressed: () {
-        Share.share("Check out this job on WheelBoard!\n$companyName");
+        final shareText =
+            "🚛 Job Opening at $companyName!\n\n"
+            "${role != null && role!.isNotEmpty ? '📋 Role: $role\n' : ''}"
+            "${city != null && city!.isNotEmpty ? '📍 Location: $city\n' : ''}"
+            "👥 Openings: $applicants\n\n"
+            "Apply now on WheelBoard:\n$wheelboardUrl";
+        Share.share(shareText);
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF00AEEF), // Blue
@@ -185,8 +208,8 @@ class JobCardWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: isApplying 
-              ? const Color(0xFFFFD500).withOpacity(0.6) 
+          color: isApplying
+              ? const Color(0xFFFFD500).withOpacity(0.6)
               : const Color(0xFFFFD500), // Yellow
           borderRadius: BorderRadius.circular(9999),
         ),
@@ -209,6 +232,4 @@ class JobCardWidget extends StatelessWidget {
       ),
     );
   }
-
 }
-

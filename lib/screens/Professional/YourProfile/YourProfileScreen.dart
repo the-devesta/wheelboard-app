@@ -9,6 +9,7 @@ import '../../../models/user_profile_model.dart';
 import '../../auth/onboarding_screen.dart' show RegisterScreen;
 import '../EditYourProfile01/EditYourProfile01Screen.dart';
 import '../../../widgets/custom_loader.dart';
+import '../AddReferral/AddReferralScreen.dart';
 
 class YourProfileScreen extends StatelessWidget {
   const YourProfileScreen({super.key});
@@ -805,8 +806,6 @@ class YourProfileScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        _buildToggleRow(Icons.dark_mode, 'Dark Theme', false),
-        const SizedBox(height: 24),
         _buildToggleRow(Icons.sms, 'SMS Notifications', true),
         const SizedBox(height: 24),
         _buildToggleRow(Icons.email, 'Email Notifications', false),
@@ -892,10 +891,53 @@ class YourProfileScreen extends StatelessWidget {
     return _buildCard(
       title: 'Quick Actions',
       children: [
+        // First row - Invite & Contact Us
         Row(
           children: [
-            Expanded(child: _buildActionCard('📞', 'Contact Us')),
+            // Invite button (moved from Home page)
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Get.to(const AddReferralScreen());
+                },
+                child: Container(
+                  height: 88,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5E5E).withOpacity(0.1),
+                    border: Border.all(color: const Color(0xFFFF5E5E)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.person_add,
+                        size: 24,
+                        color: Color(0xFFFF5E5E),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Invite & Earn',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFFFF5E5E),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(width: 12),
+            Expanded(child: _buildActionCard(Icons.phone, 'Contact Us')),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Second row - Sync Profile & Logout
+        Row(
+          children: [
             Expanded(child: _buildActionCard(Icons.sync, 'Sync Profile')),
             const SizedBox(width: 12),
             Expanded(
@@ -1220,9 +1262,6 @@ class YourProfileScreen extends StatelessWidget {
   Future<void> _performLogout() async {
     try {
       print("🚪 Starting logout process...");
-
-      // Show loading snackbar
-      SnackBarHelper.info("Logging out...");
 
       // Call AuthService logout
       final success = await AuthService.to.logout();

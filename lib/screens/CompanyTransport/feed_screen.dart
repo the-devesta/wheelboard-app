@@ -11,11 +11,18 @@ import '../../widgets/custom_loader.dart';
 import '../../utils/share_service.dart';
 
 class FeedScreen extends StatelessWidget {
-  final String profileImage = 'https://i.pravatar.cc/100';
-
   const FeedScreen({super.key});
 
+  // Generate unique avatar based on userName
+  String _getProfileImage(String userName) {
+    // Generate a number based on userName hash to get consistent but different avatars
+    final hash = userName.hashCode.abs() % 70; // pravatar has 70 images
+    return 'https://i.pravatar.cc/100?img=$hash';
+  }
+
   Widget buildPostCard(Post post) {
+    final profileImage = _getProfileImage(post.userName);
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       padding: EdgeInsets.all(12),
@@ -29,7 +36,9 @@ class FeedScreen extends StatelessWidget {
           // Header
           InkWell(
             onTap: () {
-              Get.to(FleetUserprofile());
+              print('👆 Tapped on profile for: ${post.userName}');
+              print('👉 companyId: ${post.companyId}');
+              Get.to(() => FleetUserprofile(companyId: post.companyId));
             },
             borderRadius: BorderRadius.circular(50),
             child: Row(

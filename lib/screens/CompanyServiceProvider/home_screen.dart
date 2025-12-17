@@ -13,11 +13,16 @@ import '../CompanyTransport/job_screen.dart';
 import '../CompanyTransport/notification_screen.dart';
 import '../../controllers/notification_controller.dart';
 import '../../controllers/user_profile_controller.dart';
+import '../../controllers/Professional/feeds_controller.dart';
+import '../../controllers/post_controller.dart';
+import '../CompanyTransport/feed_screen.dart';
 import '../../widgets/custom_loader.dart';
 import '../../models/service_model.dart';
 import '../../utils/session_manager.dart';
 import '../../apihelperclass/api_helper.dart';
 import '../../utils/constants.dart';
+import '../../utils/share_service.dart';
+import '../CompanyTransport/fleet_userprofile.dart';
 import 'dart:convert';
 
 class ServiceProviderHomeScreen extends StatefulWidget {
@@ -31,6 +36,7 @@ class ServiceProviderHomeScreen extends StatefulWidget {
 class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   final notificationController = Get.put(NotificationController());
   final userProfileController = Get.put(UserProfileController());
+  final feedsController = Get.put(FeedsController());
   List<ServiceModel> _services = [];
   bool _isLoadingServices = false;
   final Map<String, String> _serviceImages =
@@ -364,7 +370,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                           context,
                           icon: Icons.list_alt,
                           iconBgColor: const Color(0xFFFFF3E0),
-                          label: 'Active\nListing',
+                          label: 'Listing',
                         ),
                       ),
                     ),
@@ -504,7 +510,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        // Navigate to feeds
+                        Get.to(() => const FeedScreen());
                       },
                       child: Text(
                         'view more',
@@ -519,42 +525,43 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Feed Cards
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildFeedCard(context),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildFeedCard(context),
-              ),
-              const SizedBox(height: 100), // Space for bottom nav
+              // Feed Cards - Dynamic from API
+              Obx(() {
+                if (feedsController.isLoading.isTrue) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: CustomLoader(message: "Loading feeds..."),
+                  );
+                }
+
+                if (feedsController.feeds.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Center(child: Text("No popular feeds.")),
+                  );
+                }
+
+                // Display first 3 feeds
+                final popularFeeds = feedsController.feeds.take(3).toList();
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: popularFeeds.length,
+                  itemBuilder: (context, index) {
+                    final feed = popularFeeds[index];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index < popularFeeds.length - 1 ? 12 : 0,
+                      ),
+                      child: _buildFeedPostCard(context, feed),
+                    );
+                  },
+                );
+              }),
+              const SizedBox(height: 100), // Space for bottom nav and FAB
             ],
-          ),
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: ElevatedButton.icon(
-          onPressed: () {
-            Get.to(() => const AddServiceScreen());
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF5252),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(9999),
-            ),
-          ),
-          icon: const Icon(Icons.add, color: Colors.white, size: 16),
-          label: const Text(
-            'Add Service',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
           ),
         ),
       ),
@@ -826,7 +833,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          // Action Buttons
+          // Action Buttons - Edit and Unpublish
           Row(
             children: [
               Expanded(
@@ -856,23 +863,24 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Get.to(() => const AddServiceScreen());
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5252),
+                child: OutlinedButton.icon(
+                  onPressed: onUnpublish,
+                  style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    elevation: 0,
+                    side: const BorderSide(color: Color(0xFF808080)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  icon: const Icon(Icons.add, size: 16, color: Colors.white),
+                  icon: const Icon(
+                    Icons.visibility_off_outlined,
+                    size: 16,
+                    color: Color(0xFF808080),
+                  ),
                   label: const Text(
-                    'Add Service',
+                    'Unpublish',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF808080),
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1010,5 +1018,213 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
         ],
       ),
     );
+  }
+
+  /// Build feed post card - same style as Transport home screen
+  Widget _buildFeedPostCard(BuildContext context, Post post) {
+    final profile = userProfileController.userProfile.value;
+    final profileImageUrl =
+        profile?.profileImage != null && profile!.profileImage!.isNotEmpty
+        ? (profile.profileImage!.startsWith('http://') ||
+                  profile.profileImage!.startsWith('https://')
+              ? profile.profileImage!
+              : ApiConstants.baseUrl + profile.profileImage!)
+        : 'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          InkWell(
+            onTap: () {
+              Get.to(FleetUserprofile(companyId: post.companyId));
+            },
+            borderRadius: BorderRadius.circular(50),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: const Color(0xFFF25C5C),
+                  backgroundImage: NetworkImage(profileImageUrl),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post.userName.isNotEmpty
+                            ? post.userName
+                            : (profile?.displayName ?? "User"),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        post.category,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Post Content
+          if (post.content.isNotEmpty)
+            Text(
+              post.content,
+              style: const TextStyle(color: Colors.black87, fontSize: 14),
+            ),
+
+          // Post Images
+          if (post.imageUrls.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                _formatImageUrl(post.imageUrls[0]),
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+
+          // If no content and no images, show placeholder
+          if (post.content.isEmpty && post.imageUrls.isEmpty) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                "assets/truck.png",
+                height: 150,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 10),
+
+          // Reactions
+          Obx(() {
+            final isLiked = feedsController.isLiked(post.postId);
+            return Row(
+              children: [
+                // Like Button
+                GestureDetector(
+                  onTap: () => feedsController.toggleLike(post.postId),
+                  child: Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    size: 28,
+                    color: isLiked
+                        ? const Color(0xFFF36969)
+                        : const Color(0xFFFCACAC),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Share Button
+                GestureDetector(
+                  onTap: () {
+                    ShareService.sharePost(
+                      postId: post.postId,
+                      content: post.content,
+                      userName: post.userName,
+                      category: post.category,
+                    );
+                  },
+                  child: SvgPicture.asset(
+                    'assets/share.svg',
+                    width: 26,
+                    height: 26,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // View Button
+                GestureDetector(
+                  onTap: () => Get.to(() => const FeedScreen()),
+                  child: SvgPicture.asset(
+                    'assets/eye.svg',
+                    width: 26,
+                    height: 26,
+                  ),
+                ),
+                const Spacer(),
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: post.status == 'Pending'
+                        ? Colors.orange[100]
+                        : Colors.green[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    post.status,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: post.status == 'Pending'
+                          ? Colors.orange[800]
+                          : Colors.green[800],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+          const SizedBox(height: 10),
+
+          // Footer
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(post.timeAgo, style: const TextStyle(color: Colors.grey)),
+              if (post.content.length > 100)
+                const Text(
+                  "Read More",
+                  style: TextStyle(color: Colors.blueAccent),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Format image URL helper
+  String _formatImageUrl(String url) {
+    if (url.isEmpty) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    String cleanPath = url.replaceAll('\\', '/');
+    if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    return '${ApiConstants.baseUrl}/$cleanPath';
   }
 }
