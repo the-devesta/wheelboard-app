@@ -448,7 +448,7 @@ class _ProfessionalCard extends StatelessWidget {
               Row(
                 children: [
                   _StatusChip(
-                    label: status == 'ONBOARD' ? 'ONBOARDED' : status,
+                    label: status == 'ONBOARD' ? 'Onboard' : status,
                     isSelected: true,
                   ),
                   if (isFavorite && status != 'FAVOURITE') ...[

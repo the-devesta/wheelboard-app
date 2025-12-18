@@ -347,7 +347,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             Expanded(
               child: _buildDetailItem(
                 Icons.currency_rupee,
-                '₹${price.toStringAsFixed(0)}',
+                price > 0 ? '₹${price.toStringAsFixed(0)}' : 'N/A',
                 pricingOption,
               ),
             ),

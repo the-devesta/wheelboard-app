@@ -289,6 +289,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
@@ -299,8 +300,11 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                     fontSize: 17,
                     color: Color(0xFF2D3436),
                   ),
+                  maxLines: null,
+                  softWrap: true,
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -597,7 +601,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 ),
               ),
               Text(
-                '₹${price.toStringAsFixed(0)}',
+                price > 0 ? '₹${price.toStringAsFixed(0)}' : 'N/A',
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w600,
@@ -616,7 +620,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
   Widget _buildDetailRow(String label, String value) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -626,6 +630,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
             color: Color(0xFF828282),
           ),
         ),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
@@ -636,7 +641,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
               fontSize: 14,
               color: Color(0xFF2D3436),
             ),
-            overflow: TextOverflow.ellipsis,
+            maxLines: null,
+            softWrap: true,
           ),
         ),
       ],

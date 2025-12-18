@@ -33,6 +33,7 @@ class _AlliedBusinessRegistrationScreenState
   String? selectedBusinessType;
   List<String> selectedServices = [];
   List<PlatformFile> _pickedImages = [];
+  bool _hasAttemptedValidation = false;
 
   final List<String> businessTypes = [
     "Dealer",
@@ -139,25 +140,59 @@ class _AlliedBusinessRegistrationScreenState
                       _buildTextField(
                         controller: businessNameController,
                         hintText: "Enter your business name",
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Business name is required';
+                          }
+                          if (value.trim().length < 2) {
+                            return 'Business name must be at least 2 characters';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
-                      // GST No.
+                      // GST No. - Optional, no validation
                       _buildFieldLabel("GST No.", optional: true),
                       const SizedBox(height: 6),
                       _buildTextField(
                         controller: gstController,
                         hintText: "E.g. 22AAAAA0000A1Z5",
+                        isOptional: true,
                       ),
                       const SizedBox(height: 16),
                       // Business Type
                       _buildFieldLabel("Business Type", required: true),
                       const SizedBox(height: 12),
                       _buildBusinessTypeButtons(),
+                      // Error message for Business Type
+                      if (_hasAttemptedValidation && selectedBusinessType == null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Please select a business type',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: const Color(0xFFFF5A5F),
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       // Services Offered
-                      _buildFieldLabel("What kind of services do you offer?"),
+                      _buildFieldLabel("What kind of services do you offer?", required: true),
                       const SizedBox(height: 12),
                       _buildServicesButtons(),
+                      // Error message for Services
+                      if (_hasAttemptedValidation && selectedServices.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Please select at least one service',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: const Color(0xFFFF5A5F),
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       // Business Address
                       _buildFieldLabel("Business Address", required: true),
@@ -166,6 +201,15 @@ class _AlliedBusinessRegistrationScreenState
                         controller: addressController,
                         hintText: "Enter full business address",
                         maxLines: 3,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Business address is required';
+                          }
+                          if (value.trim().length < 10) {
+                            return 'Please enter a complete address (at least 10 characters)';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       // City
@@ -174,6 +218,15 @@ class _AlliedBusinessRegistrationScreenState
                       _buildTextField(
                         controller: cityController,
                         hintText: "Select city",
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'City is required';
+                          }
+                          if (value.trim().length < 2) {
+                            return 'Please enter a valid city name';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       // Phone Number
@@ -183,6 +236,20 @@ class _AlliedBusinessRegistrationScreenState
                         controller: phoneController,
                         hintText: "Enter your phone number",
                         keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Phone number is required';
+                          }
+                          // Remove spaces and special characters for validation
+                          final phoneDigits = value.replaceAll(RegExp(r'[^\d]'), '');
+                          if (phoneDigits.length < 10) {
+                            return 'Please enter a valid 10-digit phone number';
+                          }
+                          if (phoneDigits.length > 15) {
+                            return 'Phone number is too long';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 6),
                       _buildHelperText(
@@ -196,17 +263,43 @@ class _AlliedBusinessRegistrationScreenState
                         controller: emailController,
                         hintText: "Enter your email address",
                         keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Email address is required';
+                          }
+                          final emailRegex = RegExp(
+                            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                          );
+                          if (!emailRegex.hasMatch(value.trim())) {
+                            return 'Please enter a valid email address';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 6),
                       _buildHelperText("For important business updates."),
                       const SizedBox(height: 16),
-                      // WhatsApp
+                      // WhatsApp - Optional, but validate if provided
                       _buildFieldLabel("WhatsApp", optional: true),
                       const SizedBox(height: 6),
                       _buildTextField(
                         controller: whatsappController,
                         hintText: "WhatsApp number for updates",
                         keyboardType: TextInputType.phone,
+                        isOptional: true,
+                        validator: (value) {
+                          // Only validate if value is provided (optional field)
+                          if (value != null && value.trim().isNotEmpty) {
+                            final phoneDigits = value.replaceAll(RegExp(r'[^\d]'), '');
+                            if (phoneDigits.length < 10) {
+                              return 'Please enter a valid 10-digit WhatsApp number';
+                            }
+                            if (phoneDigits.length > 15) {
+                              return 'WhatsApp number is too long';
+                            }
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 6),
                       _buildHelperText(
@@ -349,6 +442,8 @@ class _AlliedBusinessRegistrationScreenState
     required TextEditingController controller,
     required String hintText,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    bool isOptional = false,
   }) {
     return Container(
       height: 48,
@@ -357,9 +452,10 @@ class _AlliedBusinessRegistrationScreenState
         border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        validator: validator,
         style: GoogleFonts.poppins(
           fontSize: 15,
           fontWeight: FontWeight.w400,
@@ -377,6 +473,10 @@ class _AlliedBusinessRegistrationScreenState
             horizontal: 12,
             vertical: 14,
           ),
+          errorStyle: GoogleFonts.poppins(
+            fontSize: 12,
+            color: const Color(0xFFFF5A5F),
+          ),
         ),
       ),
     );
@@ -386,6 +486,7 @@ class _AlliedBusinessRegistrationScreenState
     required TextEditingController controller,
     required String hintText,
     int maxLines = 3,
+    String? Function(String?)? validator,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -393,9 +494,10 @@ class _AlliedBusinessRegistrationScreenState
         border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        validator: validator,
         style: GoogleFonts.poppins(
           fontSize: 15,
           fontWeight: FontWeight.w400,
@@ -410,6 +512,10 @@ class _AlliedBusinessRegistrationScreenState
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(12),
+          errorStyle: GoogleFonts.poppins(
+            fontSize: 12,
+            color: const Color(0xFFFF5A5F),
+          ),
         ),
       ),
     );
@@ -425,6 +531,10 @@ class _AlliedBusinessRegistrationScreenState
           onTap: () {
             setState(() {
               selectedBusinessType = type;
+              // Clear error when user selects
+              if (_hasAttemptedValidation) {
+                _hasAttemptedValidation = false;
+              }
             });
           },
           child: Container(
@@ -466,6 +576,10 @@ class _AlliedBusinessRegistrationScreenState
                 selectedServices.remove(service);
               } else {
                 selectedServices.add(service);
+              }
+              // Clear error when user selects
+              if (_hasAttemptedValidation && selectedServices.isNotEmpty) {
+                _hasAttemptedValidation = false;
               }
             });
           },
@@ -591,10 +705,19 @@ class _AlliedBusinessRegistrationScreenState
             border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: TextField(
+          child: TextFormField(
             controller: descriptionController,
             maxLines: 3,
             maxLength: 400,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Business description is required';
+              }
+              if (value.trim().length < 10) {
+                return 'Please provide a more detailed description (at least 10 characters)';
+              }
+              return null;
+            },
             onChanged: (value) {
               setState(() {}); // Update character count
             },
@@ -613,6 +736,10 @@ class _AlliedBusinessRegistrationScreenState
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(12),
               counterText: '',
+              errorStyle: GoogleFonts.poppins(
+                fontSize: 12,
+                color: const Color(0xFFFF5A5F),
+              ),
             ),
           ),
         ),
@@ -652,30 +779,75 @@ class _AlliedBusinessRegistrationScreenState
                       return;
                     }
 
-                    if (_formKey.currentState!.validate()) {
-                      File? businessLogo;
-                      if (_pickedImages.isNotEmpty &&
-                          _pickedImages.first.path != null) {
-                        businessLogo = File(_pickedImages.first.path!);
-                      }
+                    // Mark that validation has been attempted
+                    setState(() {
+                      _hasAttemptedValidation = true;
+                    });
 
-                      final serviceProvider = ServiceProviderModel(
-                        userId: userId,
-                        businessName: businessNameController.text.trim(),
-                        gstNumber: gstController.text.trim(),
-                        businessType: selectedBusinessType ?? "",
-                        servicesOffered: selectedServices,
-                        businessAddress: addressController.text.trim(),
-                        city: cityController.text.trim(),
-                        phoneNumber: phoneController.text.trim(),
-                        email: emailController.text.trim(),
-                        whatsappNumber: whatsappController.text.trim(),
-                        businessLogo: businessLogo,
-                        description: descriptionController.text.trim(),
+                    // Validate form fields first
+                    if (!_formKey.currentState!.validate()) {
+                      // Scroll to first error
+                      Scrollable.ensureVisible(
+                        _formKey.currentContext!,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
                       );
-
-                      await controller.completeServiceProvider(serviceProvider);
+                      return;
                     }
+
+                    // Validate Business Type
+                    if (selectedBusinessType == null || selectedBusinessType!.isEmpty) {
+                      Get.snackbar(
+                        'Validation Error',
+                        'Please select a business type',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: const Color(0xFFFF5A5F),
+                        colorText: Colors.white,
+                        margin: const EdgeInsets.all(16),
+                      );
+                      return;
+                    }
+
+                    // Validate Services
+                    if (selectedServices.isEmpty) {
+                      Get.snackbar(
+                        'Validation Error',
+                        'Please select at least one service',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: const Color(0xFFFF5A5F),
+                        colorText: Colors.white,
+                        margin: const EdgeInsets.all(16),
+                      );
+                      return;
+                    }
+
+                    // All validations passed, proceed with submission
+                    File? businessLogo;
+                    if (_pickedImages.isNotEmpty &&
+                        _pickedImages.first.path != null) {
+                      businessLogo = File(_pickedImages.first.path!);
+                    }
+
+                    final serviceProvider = ServiceProviderModel(
+                      userId: userId,
+                      businessName: businessNameController.text.trim(),
+                      gstNumber: gstController.text.trim().isEmpty
+                          ? null
+                          : gstController.text.trim(), // GST is optional
+                      businessType: selectedBusinessType!,
+                      servicesOffered: selectedServices,
+                      businessAddress: addressController.text.trim(),
+                      city: cityController.text.trim(),
+                      phoneNumber: phoneController.text.trim(),
+                      email: emailController.text.trim(),
+                      whatsappNumber: whatsappController.text.trim().isEmpty
+                          ? null
+                          : whatsappController.text.trim(), // WhatsApp is optional
+                      businessLogo: businessLogo,
+                      description: descriptionController.text.trim(),
+                    );
+
+                    await controller.completeServiceProvider(serviceProvider);
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF5A5F),

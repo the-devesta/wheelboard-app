@@ -13,15 +13,11 @@ import '../../utils/share_service.dart';
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
 
-  // Generate unique avatar based on userName
-  String _getProfileImage(String userName) {
-    // Generate a number based on userName hash to get consistent but different avatars
-    final hash = userName.hashCode.abs() % 70; // pravatar has 70 images
-    return 'https://i.pravatar.cc/100?img=$hash';
-  }
-
   Widget buildPostCard(Post post) {
-    final profileImage = _getProfileImage(post.userName);
+    // Use company logo if available, otherwise use a placeholder
+    final companyLogoUrl = post.companyLogo != null && post.companyLogo!.isNotEmpty
+        ? post.companyLogo!
+        : null;
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -43,7 +39,68 @@ class FeedScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(50),
             child: Row(
               children: [
-                CircleAvatar(backgroundImage: NetworkImage(profileImage)),
+                // Company Logo or Profile Avatar
+                companyLogoUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(25),
+                        child: Image.network(
+                          _formatImageUrl(companyLogoUrl),
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          headers: _imageHeaders(),
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to initials avatar if logo fails to load
+                            return CircleAvatar(
+                              radius: 25,
+                              backgroundColor: const Color(0xFFFFE6E6),
+                              child: Text(
+                                post.userName.isNotEmpty
+                                    ? post.userName[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFF25C5C),
+                                  fontSize: 20,
+                                ),
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : CircleAvatar(
+                        radius: 25,
+                        backgroundColor: const Color(0xFFFFE6E6),
+                        child: Text(
+                          post.userName.isNotEmpty
+                              ? post.userName[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFF25C5C),
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
                 SizedBox(width: 10),
                 Expanded(
                   child: Column(

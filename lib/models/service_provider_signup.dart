@@ -3,7 +3,7 @@ import 'dart:io';
 class ServiceProviderModel {
   final String userId;
   final String businessName;
-  final String gstNumber;
+  final String? gstNumber; // Optional field
   final String businessType;
   final List<String> servicesOffered;
   final String businessAddress;
@@ -17,7 +17,7 @@ class ServiceProviderModel {
   ServiceProviderModel({
     required this.userId,
     required this.businessName,
-    required this.gstNumber,
+    this.gstNumber, // Now optional
     required this.businessType,
     required this.servicesOffered,
     required this.businessAddress,
@@ -34,7 +34,7 @@ class ServiceProviderModel {
     return {
       "UserId": userId,
       "BusinessName": businessName,
-      "GSTNumber": gstNumber,
+      if (gstNumber != null && gstNumber!.isNotEmpty) "GSTNumber": gstNumber!,
       "BusinessType": businessType,
       "ServicesOffered": servicesOffered.join(
         ", ",
@@ -43,7 +43,7 @@ class ServiceProviderModel {
       "City": city,
       "PhoneNumber": phoneNumber,
       "Email": email,
-      if (whatsappNumber != null) "WhatsAppNumber": whatsappNumber!,
+      if (whatsappNumber != null && whatsappNumber!.isNotEmpty) "WhatsAppNumber": whatsappNumber!,
       "Description": description,
     };
   }

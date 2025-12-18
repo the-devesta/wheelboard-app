@@ -162,6 +162,7 @@ class Post {
   final DateTime dateEntered;
   final String userName;
   final String? companyId;
+  final String? companyLogo;
 
   Post({
     required this.postId,
@@ -172,6 +173,7 @@ class Post {
     required this.dateEntered,
     required this.userName,
     required this.companyId,
+    this.companyLogo,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -188,6 +190,7 @@ class Post {
           : DateTime.now(),
       userName: json['userName'] ?? '',
       companyId: json['companyId'] as String?,
+      companyLogo: json['companyLogo'] as String?,
     );
   }
 
