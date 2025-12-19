@@ -14,7 +14,6 @@ class JobCardWidget extends StatelessWidget {
   final bool isApplying; // Show loading state when applying
   final bool isApplied; // Whether user has already applied
   final bool isLiked; // Whether user has liked this job
-  final VoidCallback? onCallNow;
   final VoidCallback? onApplyNow;
   final VoidCallback? onLikeToggle; // Callback for like toggle
 
@@ -29,7 +28,6 @@ class JobCardWidget extends StatelessWidget {
     this.isApplying = false,
     this.isApplied = false,
     this.isLiked = false,
-    this.onCallNow,
     this.onApplyNow,
     this.onLikeToggle,
   });
@@ -41,26 +39,26 @@ class JobCardWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Company Name and Call Now Button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  companyName,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF003366),
-                  ),
-                ),
-              ),
-              _buildCallNowButton(onTap: onCallNow),
-            ],
+          // Company Name
+          Text(
+            companyName,
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF003366),
+            ),
           ),
           // Role (Driver, Helper, etc.) - shown below company name
           if (role != null && role!.isNotEmpty) ...[
@@ -125,27 +123,6 @@ class JobCardWidget extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCallNowButton({VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFD500), // Yellow
-          borderRadius: BorderRadius.circular(9999),
-        ),
-        child: Text(
-          "Call Now",
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF003366),
-          ),
-        ),
       ),
     );
   }

@@ -1,22 +1,5 @@
-// class FindJobsScreen extends StatelessWidget {
-//   const FindJobsScreen({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Find Jobs'),
-//       ),
-//       body: const Center(
-//         child: Text('Find Jobs Screen'),
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
@@ -24,7 +7,6 @@ import '../../../models/unassigned_trip_model.dart';
 import '../../../models/Professional/open_job_model.dart';
 import '../TripOverview/TripOverviewScreen.dart';
 import '../../../widgets/custom_loader.dart';
-// import 'package:iconsax/iconsax.dart';
 
 class FindJobsScreen extends StatelessWidget {
   const FindJobsScreen({super.key});
@@ -50,16 +32,20 @@ class JobBoardScreen extends StatefulWidget {
   State<JobBoardScreen> createState() => _JobBoardScreenState();
 }
 
-class _JobBoardScreenState extends State<JobBoardScreen> {
+class _JobBoardScreenState extends State<JobBoardScreen>
+    with SingleTickerProviderStateMixin {
   final UnassignedTripsController tripsController = Get.put(
     UnassignedTripsController(),
   );
   final OpenJobsController jobsController = Get.put(OpenJobsController());
   final TextEditingController _searchController = TextEditingController();
 
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _searchController.addListener(_onSearchChanged);
     // Fetch jobs on init
     jobsController.fetchOpenJobs();
@@ -67,6 +53,7 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -92,7 +79,7 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
-            "Job Board",
+            "Find Jobs",
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -108,173 +95,219 @@ class _JobBoardScreenState extends State<JobBoardScreen> {
           ],
           elevation: 0,
           backgroundColor: Colors.white,
-        ),
-
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search bar
-              TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  setState(() {}); // Trigger rebuild to filter jobs
-                },
-                decoration: InputDecoration(
-                  hintText: "Location",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 0,
-                    horizontal: 20,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Jobs Section - Dynamic from API
-              Obx(() {
-                if (jobsController.isLoading.value) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: const CustomLoader(message: "Loading jobs..."),
-                    ),
-                  );
-                }
-
-                if (jobsController.openJobs.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Text(
-                        "No jobs available",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
-                  );
-                }
-
-                // Filter jobs based on search query (Location/City)
-                final searchQuery = _searchController.text.toLowerCase().trim();
-                final filteredJobs = searchQuery.isEmpty
-                    ? jobsController.openJobs
-                    : jobsController.openJobs.where((job) {
-                        return job.role.toLowerCase().contains(searchQuery) ||
-                            job.city.toLowerCase().contains(searchQuery) ||
-                            job.jobType.toLowerCase().contains(searchQuery) ||
-                            job.description.toLowerCase().contains(
-                              searchQuery,
-                            ) ||
-                            (job.companyName ?? '').toLowerCase().contains(
-                              searchQuery,
-                            );
-                      }).toList();
-
-                if (filteredJobs.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Text(
-                        "No matching jobs found.",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: filteredJobs.map((job) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: JobCard(
-                        job: job,
-                        onApply: () async {
-                          if (!job.isApplied) {
-                            final success = await jobsController.applyForJob(
-                              job.jobId,
-                            );
-                            if (success) {
-                              await jobsController.refreshOpenJobs();
-                            }
-                          }
-                        },
-                        onLikeToggle: () async {
-                          await jobsController.toggleJobLike(job.jobId);
-                        },
-                        isApplying: jobsController.isApplying(job.jobId),
-                      ),
-                    );
-                  }).toList(),
-                );
-              }),
-
-              const SizedBox(height: 12),
-              const Divider(height: 30),
-              const Center(
-                child: Text(
-                  "Trips",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.redAccent,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Obx(() {
-                if (tripsController.isLoading.value) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: const CustomLoader(message: "Loading jobs..."),
-                    ),
-                  );
-                }
-
-                final displayedTrips = tripsController.filteredTrips;
-
-                if (displayedTrips.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Text(
-                        "No trips available",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: displayedTrips.map((trip) {
-                    return TripCard(
-                      trip: trip,
-                      onTap: () async {
-                        await tripsController.fetchTripDetails(trip.tripId);
-                        if (tripsController.tripDetails.value != null) {
-                          TripOverviewPopup.show(
-                            context,
-                            tripId: trip.tripId,
-                            tripDetails: tripsController.tripDetails.value!,
-                          );
-                        }
-                      },
-                    );
-                  }).toList(),
-                );
-              }),
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: const Color(0xFF003366),
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: const Color(0xFF003366),
+            indicatorWeight: 3,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+            ),
+            tabs: const [
+              Tab(text: "Jobs"),
+              Tab(text: "Trips"),
             ],
           ),
         ),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            // Jobs Tab
+            _buildJobsTab(),
+            // Trips Tab
+            _buildTripsTab(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJobsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Search bar
+          TextField(
+            controller: _searchController,
+            onChanged: (value) {
+              setState(() {}); // Trigger rebuild to filter jobs
+            },
+            decoration: InputDecoration(
+              hintText: "Search by location, role, or company",
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 0,
+                horizontal: 20,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Jobs Section - Dynamic from API
+          Obx(() {
+            if (jobsController.isLoading.value) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: CustomLoader(message: "Loading jobs..."),
+                ),
+              );
+            }
+
+            if (jobsController.openJobs.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    "No jobs available",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              );
+            }
+
+            // Filter jobs based on search query (Location/City)
+            final searchQuery = _searchController.text.toLowerCase().trim();
+            final filteredJobs = searchQuery.isEmpty
+                ? jobsController.openJobs
+                : jobsController.openJobs.where((job) {
+                    return job.role.toLowerCase().contains(searchQuery) ||
+                        job.city.toLowerCase().contains(searchQuery) ||
+                        job.jobType.toLowerCase().contains(searchQuery) ||
+                        job.description.toLowerCase().contains(searchQuery) ||
+                        (job.companyName ?? '').toLowerCase().contains(
+                          searchQuery,
+                        );
+                  }).toList();
+
+            if (filteredJobs.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    "No matching jobs found.",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: filteredJobs.map((job) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: JobCard(
+                    job: job,
+                    onApply: () async {
+                      if (!job.isApplied) {
+                        final success = await jobsController.applyForJob(
+                          job.jobId,
+                        );
+                        if (success) {
+                          await jobsController.refreshOpenJobs();
+                        }
+                      }
+                    },
+                    onLikeToggle: () async {
+                      await jobsController.toggleJobLike(job.jobId);
+                    },
+                    isApplying: jobsController.isApplying(job.jobId),
+                  ),
+                );
+              }).toList(),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTripsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Search bar
+          TextField(
+            controller: _searchController,
+            onChanged: (value) {
+              setState(() {}); // Trigger rebuild to filter trips
+            },
+            decoration: InputDecoration(
+              hintText: "Search trips by location",
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 0,
+                horizontal: 20,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Obx(() {
+            if (tripsController.isLoading.value) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: CustomLoader(message: "Loading trips..."),
+                ),
+              );
+            }
+
+            final displayedTrips = tripsController.filteredTrips;
+
+            if (displayedTrips.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Text(
+                    "No trips available",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: displayedTrips.map((trip) {
+                return TripCard(
+                  trip: trip,
+                  onTap: () async {
+                    await tripsController.fetchTripDetails(trip.tripId);
+                    if (tripsController.tripDetails.value != null) {
+                      TripOverviewPopup.show(
+                        context,
+                        tripId: trip.tripId,
+                        tripDetails: tripsController.tripDetails.value!,
+                      );
+                    }
+                  },
+                );
+              }).toList(),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -304,103 +337,6 @@ class JobCard extends StatelessWidget {
     return "₹${salary.toStringAsFixed(0)}";
   }
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    try {
-      // Remove any spaces, dashes, or special characters
-      final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-
-      // Ensure the number starts with tel: protocol
-      final Uri phoneUri = Uri.parse('tel:$cleanNumber');
-
-      // Use launchUrl with mode: LaunchMode.externalApplication for better compatibility
-      if (await canLaunchUrl(phoneUri)) {
-        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback: try to launch directly without checking
-        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to make phone call. Please check if your device supports phone calls.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-      print('Phone call error: $e');
-    }
-  }
-
-  void _showCallDialog(BuildContext context, OpenJob job) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        final TextEditingController phoneController = TextEditingController();
-
-        return AlertDialog(
-          title: const Text('Call Employer'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Job: ${job.role.isNotEmpty ? job.role : job.description}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Enter contact number to call:',
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  hintText: 'Enter phone number',
-                  prefixIcon: Icon(Icons.phone),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final phoneNumber = phoneController.text.trim();
-                if (phoneNumber.isNotEmpty) {
-                  Navigator.of(context).pop();
-                  _makePhoneCall(phoneNumber);
-                } else {
-                  Get.snackbar(
-                    'Error',
-                    'Please enter a phone number',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: Colors.red,
-                    colorText: Colors.white,
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Call'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -420,49 +356,18 @@ class JobCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row - Company name and Call button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  job.companyName ?? "Company",
-                  style: const TextStyle(
-                    color: Color(0xFF003366),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  _showCallDialog(context, job);
-                },
-                icon: const Icon(Icons.call, size: 16),
-                label: const Text("Call Now"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(
-                    0xFFFFD500,
-                  ), // Yellow like Transport
-                  foregroundColor: const Color(0xFF003366),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+          // Company name
+          Text(
+            job.companyName ?? "Company",
+            style: const TextStyle(
+              color: Color(0xFF003366),
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
           ),
           const SizedBox(height: 6),
 
-          // Job Role (like Driver, Helper)
+          // Job Role
           Text(
             job.role.isNotEmpty ? job.role : "Job Opening",
             style: const TextStyle(
@@ -473,7 +378,7 @@ class JobCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Location, Type, Salary row
+          // Location and Salary row
           Row(
             children: [
               const Icon(
@@ -487,13 +392,6 @@ class JobCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 13, color: Colors.black87),
               ),
               const SizedBox(width: 12),
-              const Icon(Icons.work_outline, size: 16, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text(
-                job.jobType,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
-              ),
-              const SizedBox(width: 12),
               const Icon(Icons.currency_rupee, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
               Text(
@@ -504,7 +402,7 @@ class JobCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Contact/Additional info (optional - can show openings or duration)
+          // Duration and openings
           Row(
             children: [
               const Icon(Icons.access_time, size: 16, color: Colors.grey),
@@ -526,10 +424,10 @@ class JobCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Likes and Openings row (like Transport screen)
+          // Likes and Openings row
           Row(
             children: [
-              // Like button (clickable)
+              // Like button
               GestureDetector(
                 onTap: onLikeToggle,
                 child: Row(
@@ -579,10 +477,10 @@ class JobCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Share and Apply Buttons Row (like Transport screen)
+          // Share and Apply Buttons Row
           Row(
             children: [
-              // Share Button (Blue)
+              // Share Button
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
@@ -595,7 +493,7 @@ class JobCard extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00AEEF), // Blue
+                    backgroundColor: const Color(0xFF00AEEF),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
@@ -610,14 +508,14 @@ class JobCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Apply Button (Yellow/Grey if applied)
+              // Apply Button
               Expanded(
                 child: ElevatedButton(
                   onPressed: (isApplying || job.isApplied) ? null : onApply,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: job.isApplied
                         ? Colors.grey.shade300
-                        : const Color(0xFFFFD500), // Yellow
+                        : const Color(0xFFFFD500),
                     foregroundColor: job.isApplied
                         ? Colors.grey.shade600
                         : const Color(0xFF003366),

@@ -16,7 +16,9 @@ class TripDashboardScreen extends StatefulWidget {
 class _TripDashboardScreenState extends State<TripDashboardScreen> {
   String _selectedChartType = 'Trips';
   String _selectedCompletedFilter = 'Recent';
-  final AssignedTripController tripController = Get.put(AssignedTripController());
+  final AssignedTripController tripController = Get.put(
+    AssignedTripController(),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -31,104 +33,104 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF9FAFB),
         body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Container(
-              height: 60,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 23),
-              child: Row(
-                children: [
-                  const SizedBox(width: 40), // Spacer to center title
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'Trips Dashboard',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFFF36969),
-                          letterSpacing: 0.5,
+          child: Column(
+            children: [
+              // Header
+              Container(
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 23),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 40), // Spacer to center title
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'Trips Dashboard',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFF36969),
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Container(
-                    width: 18,
-                    height: 18,
-                    child: const Icon(Icons.more_vert, size: 18),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    // Stats Cards
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            icon: Icons.check_circle,
-                            iconBgColor: const Color(0xFFEEF2FB),
-                            iconColor: const Color(0xFF375DFB),
-                            value: '8',
-                            label: 'Completed\nTrips',
-                            valueColor: const Color(0xFF375DFB),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildStatCard(
-                            icon: Icons.currency_rupee,
-                            iconBgColor: const Color(0xFFE8F5E9),
-                            iconColor: const Color(0xFF27AE60),
-                            value: '₹70,000',
-                            label: 'This Month',
-                            valueColor: const Color(0xFF27AE60),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildStatCard(
-                            icon: Icons.star,
-                            iconBgColor: Colors.transparent,
-                            iconColor: Colors.transparent,
-                            value: '4.2',
-                            label: 'Avg. Rating',
-                            valueColor: const Color(0xFFF39C12),
-                            showStar: true,
-                          ),
-                        ),
-                      ],
+                    Container(
+                      width: 18,
+                      height: 18,
+                      child: const Icon(Icons.more_vert, size: 18),
                     ),
-                    const SizedBox(height: 24),
-                    // Trip Completion Trend
-                    _buildChartSection(),
-                    const SizedBox(height: 24),
-                    // Active Trips
-                    _buildActiveTripsSection(),
-                    const SizedBox(height: 24),
-                    // Completed Trips
-                    _buildCompletedTripsSection(),
-                    const SizedBox(height: 24),
-                    // Ratings Breakdown
-                    _buildRatingsSection(),
-                    const SizedBox(height: 32),
                   ],
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      // Stats Cards
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.check_circle,
+                              iconBgColor: const Color(0xFFEEF2FB),
+                              iconColor: const Color(0xFF375DFB),
+                              value: '8',
+                              label: 'Completed\nTrips',
+                              valueColor: const Color(0xFF375DFB),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.currency_rupee,
+                              iconBgColor: const Color(0xFFE8F5E9),
+                              iconColor: const Color(0xFF27AE60),
+                              value: '₹70,000',
+                              label: 'This Month',
+                              valueColor: const Color(0xFF27AE60),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.star,
+                              iconBgColor: Colors.transparent,
+                              iconColor: Colors.transparent,
+                              value: '4.2',
+                              label: 'Avg. Rating',
+                              valueColor: const Color(0xFFF39C12),
+                              showStar: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Trip Completion Trend
+                      _buildChartSection(),
+                      const SizedBox(height: 24),
+                      // Active Trips
+                      _buildActiveTripsSection(),
+                      const SizedBox(height: 24),
+                      // Completed Trips
+                      _buildCompletedTripsSection(),
+                      const SizedBox(height: 24),
+                      // Ratings Breakdown
+                      _buildRatingsSection(),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -229,7 +231,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
               Flexible(
                 child: Row(
                   children: [
-                    const Icon(Icons.trending_up, size: 20, color: Color(0xFF535353)),
+                    const Icon(
+                      Icons.trending_up,
+                      size: 20,
+                      color: Color(0xFF535353),
+                    ),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
@@ -251,9 +257,18 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _buildChartToggleButton('Trips', _selectedChartType == 'Trips'),
-                    _buildChartToggleButton('Earnings', _selectedChartType == 'Earnings'),
-                    _buildChartToggleButton('Distance', _selectedChartType == 'Distance'),
+                    _buildChartToggleButton(
+                      'Trips',
+                      _selectedChartType == 'Trips',
+                    ),
+                    _buildChartToggleButton(
+                      'Earnings',
+                      _selectedChartType == 'Earnings',
+                    ),
+                    _buildChartToggleButton(
+                      'Distance',
+                      _selectedChartType == 'Distance',
+                    ),
                   ],
                 ),
               ),
@@ -283,17 +298,83 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('30', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('27', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('24', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('21', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('18', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('15', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('12', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('9', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('6', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('3', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
-                              Text('0', style: GoogleFonts.inter(fontSize: 10, color: Colors.black.withOpacity(0.7))),
+                              Text(
+                                '30',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '27',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '24',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '21',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '18',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '15',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '12',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '9',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '6',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '3',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
+                              Text(
+                                '0',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
+                              ),
                             ],
                           );
                         },
@@ -305,13 +386,20 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                         children: [
                           // Grid lines
                           Column(
-                            children: List.generate(11, (index) => Expanded(
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  border: Border(bottom: BorderSide(color: Color(0xFFE5E5E5))),
+                            children: List.generate(
+                              11,
+                              (index) => Expanded(
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: Color(0xFFE5E5E5),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            )),
+                            ),
                           ),
                           // Chart line with data points
                           CustomPaint(
@@ -325,15 +413,28 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                             right: 0,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                                  .map((day) => Text(
-                                        day,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: Colors.black.withOpacity(0.7),
+                              children:
+                                  [
+                                        'Mon',
+                                        'Tue',
+                                        'Wed',
+                                        'Thu',
+                                        'Fri',
+                                        'Sat',
+                                        'Sun',
+                                      ]
+                                      .map(
+                                        (day) => Text(
+                                          day,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color: Colors.black.withOpacity(
+                                              0.7,
+                                            ),
+                                          ),
                                         ),
-                                      ))
-                                  .toList(),
+                                      )
+                                      .toList(),
                             ),
                           ),
                         ],
@@ -380,7 +481,9 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFEBF4FF) : Colors.white,
           border: Border.all(
-            color: isSelected ? const Color(0xFFBFD8FF) : const Color(0xFFE0E0E0),
+            color: isSelected
+                ? const Color(0xFFBFD8FF)
+                : const Color(0xFFE0E0E0),
           ),
           borderRadius: BorderRadius.circular(999),
         ),
@@ -389,7 +492,9 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: isSelected ? const Color(0xFF2F80ED) : const Color(0xFF7B7B7B),
+            color: isSelected
+                ? const Color(0xFF2F80ED)
+                : const Color(0xFF7B7B7B),
           ),
         ),
       ),
@@ -420,7 +525,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.local_shipping, size: 16, color: Color(0xFFF36969)),
+                  const Icon(
+                    Icons.local_shipping,
+                    size: 16,
+                    color: Color(0xFFF36969),
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Active Trips',
@@ -461,7 +570,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.local_shipping, size: 16, color: Color(0xFFF36969)),
+                const Icon(
+                  Icons.local_shipping,
+                  size: 16,
+                  color: Color(0xFFF36969),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Active Trips',
@@ -475,7 +588,8 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             ),
             const SizedBox(height: 16),
             ...activeTrips.map((trip) {
-              final isToday = trip.pickupDate.day == DateTime.now().day &&
+              final isToday =
+                  trip.pickupDate.day == DateTime.now().day &&
                   trip.pickupDate.month == DateTime.now().month &&
                   trip.pickupDate.year == DateTime.now().year;
               final timeStr = isToday
@@ -504,8 +618,22 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
 
   String _formatDate(DateTime? date, String time) {
     if (date == null) return time;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final dateStr =
+        '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
     final timeStr = time.isNotEmpty
         ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
         : '';
@@ -546,7 +674,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward, size: 16, color: Color(0xFFF36969)),
+              const Icon(
+                Icons.arrow_forward,
+                size: 16,
+                color: Color(0xFFF36969),
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -576,7 +708,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
               ),
               const Spacer(),
               if (trip != null) ...[
-                const Icon(Icons.currency_rupee, size: 12, color: Color(0xFF6B7280)),
+                const Icon(
+                  Icons.currency_rupee,
+                  size: 12,
+                  color: Color(0xFF6B7280),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '₹${trip.bidAmount.toStringAsFixed(0)}',
@@ -587,7 +723,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                   ),
                 ),
               ] else ...[
-                const Icon(Icons.local_shipping, size: 12, color: Color(0xFF6B7280)),
+                const Icon(
+                  Icons.local_shipping,
+                  size: 12,
+                  color: Color(0xFF6B7280),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   vehicleNumber,
@@ -669,7 +809,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.check_circle, size: 16, color: Color(0xFFF36969)),
+                const Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: Color(0xFFF36969),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Completed Trips',
@@ -686,11 +830,20 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildCompletedFilterButton('Recent', _selectedCompletedFilter == 'Recent'),
+                  _buildCompletedFilterButton(
+                    'Recent',
+                    _selectedCompletedFilter == 'Recent',
+                  ),
                   const SizedBox(width: 8),
-                  _buildCompletedFilterButton('Highest Rated', _selectedCompletedFilter == 'Highest Rated'),
+                  _buildCompletedFilterButton(
+                    'Highest Rated',
+                    _selectedCompletedFilter == 'Highest Rated',
+                  ),
                   const SizedBox(width: 8),
-                  _buildCompletedFilterButton('Highest Earning', _selectedCompletedFilter == 'Highest Earning'),
+                  _buildCompletedFilterButton(
+                    'Highest Earning',
+                    _selectedCompletedFilter == 'Highest Earning',
+                  ),
                 ],
               ),
             ),
@@ -742,7 +895,9 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFEBF4FF) : Colors.white,
           border: Border.all(
-            color: isSelected ? const Color(0xFFBFD8FF) : const Color(0xFFE0E0E0),
+            color: isSelected
+                ? const Color(0xFFBFD8FF)
+                : const Color(0xFFE0E0E0),
           ),
           borderRadius: BorderRadius.circular(999),
         ),
@@ -751,7 +906,9 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: isSelected ? const Color(0xFF2F80ED) : const Color(0xFF7B7B7B),
+            color: isSelected
+                ? const Color(0xFF2F80ED)
+                : const Color(0xFF7B7B7B),
           ),
         ),
       ),
@@ -816,7 +973,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             ),
             if (trip != null) ...[
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, size: 16, color: Color(0xFF6B7280)),
+              const Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: Color(0xFF6B7280),
+              ),
             ],
           ],
         ),
@@ -945,7 +1106,9 @@ class TripChartPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(x, y),
         4,
-        Paint()..color = const Color(0xFFF25C5C)..style = PaintingStyle.fill,
+        Paint()
+          ..color = const Color(0xFFF25C5C)
+          ..style = PaintingStyle.fill,
       );
     }
 
@@ -963,4 +1126,3 @@ class TripChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

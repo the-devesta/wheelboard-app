@@ -81,6 +81,7 @@ class API {
   static const String toggleJobLike = 'api/Job/job-like-toggle';
   static const String getJobApplications = 'api/Job/get-applications/';
   static const String updateJobStatus = 'api/Job/update-job-status';
+  static const String getAppliedUserProfile = 'api/Job/ApplyedUserProfile/';
 
   // Calendar Events APIs
   static const String saveCalendarEvent = 'api/Trip/save-calendar-events';

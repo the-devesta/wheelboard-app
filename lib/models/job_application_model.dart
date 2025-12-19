@@ -9,6 +9,7 @@ class JobApplicationModel {
   final String appliedDate;
   final String remarks;
   final String contactNumber;
+  final String userId;
 
   JobApplicationModel({
     required this.applicationId,
@@ -21,6 +22,7 @@ class JobApplicationModel {
     required this.appliedDate,
     required this.remarks,
     this.contactNumber = '',
+    required this.userId,
   });
 
   factory JobApplicationModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class JobApplicationModel {
           json['contactNumber'] as String? ??
           json['phoneNumber'] as String? ??
           '',
+      userId: json['userId'] as String? ?? '',
     );
   }
 
@@ -53,6 +56,7 @@ class JobApplicationModel {
       'appliedDate': appliedDate,
       'remarks': remarks,
       'contactNumber': contactNumber,
+      'userId': userId,
     };
   }
 
@@ -67,6 +71,7 @@ class JobApplicationModel {
     String? appliedDate,
     String? remarks,
     String? contactNumber,
+    String? userId,
   }) {
     return JobApplicationModel(
       applicationId: applicationId ?? this.applicationId,
@@ -79,6 +84,7 @@ class JobApplicationModel {
       appliedDate: appliedDate ?? this.appliedDate,
       remarks: remarks ?? this.remarks,
       contactNumber: contactNumber ?? this.contactNumber,
+      userId: userId ?? this.userId,
     );
   }
 }

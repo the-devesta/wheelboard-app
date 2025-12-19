@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
 import '../../controllers/job_controller.dart';
 import '../../models/job_application_model.dart';
+import '../../models/applied_user_profile_model.dart';
 import '../../widgets/custom_loader.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
 
 class JobApplicationsScreen extends StatefulWidget {
   final String? jobId; // Optional jobId if navigating from a specific job
@@ -83,6 +87,197 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       default:
         return const Color(0xFF92400E);
     }
+  }
+
+  Future<void> _showUserProfile(String userId, String fallbackName) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CustomLoader.small()),
+    );
+
+    try {
+      final response = await HttpHelper.getData(
+        endpoint: '${API.getAppliedUserProfile}$userId',
+        headers: {'Accept': '*/*'},
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      if (response.statusCode == 200) {
+        final profileData = json.decode(response.body);
+        final profile = AppliedUserProfile.fromJson(profileData);
+
+        showModalBottomSheet(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          builder: (_) => _buildProfileBottomSheet(profile),
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to load profile',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      Get.snackbar(
+        'Error',
+        'Failed to load profile',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Widget _buildProfileBottomSheet(AppliedUserProfile profile) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            CircleAvatar(
+              radius: 50,
+              backgroundImage: profile.profileImage.isNotEmpty
+                  ? NetworkImage(profile.profileImage)
+                  : null,
+              child: profile.profileImage.isEmpty
+                  ? Text(
+                      profile.profileName.isNotEmpty
+                          ? profile.profileName[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+              backgroundColor: const Color(0xFFE5E7EB),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              profile.profileName,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E1E1E),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (profile.profileType.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4F4),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  profile.profileType,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFFF36969),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 24),
+            _buildProfileDetailRow(Icons.phone, 'Phone', profile.phone),
+            _buildProfileDetailRow(Icons.email, 'Email', profile.email),
+            if (profile.address.isNotEmpty)
+              _buildProfileDetailRow(
+                Icons.location_on,
+                'Address',
+                profile.address,
+              ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF36969),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 20, color: const Color(0xFFF36969)),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value.isNotEmpty ? value : 'N/A',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -361,32 +556,6 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                       color: Color(0xFF1E1E1E),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () {
-                      // Navigate to profile - for now just show a message
-                      // You can implement navigation to professional profile screen here
-                      Get.snackbar(
-                        'Profile',
-                        'Profile view coming soon',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      'View Profile',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Inter',
-                        color: Color(0xFFFF6B6B),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -490,12 +659,11 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          // Navigate to profile view
-                          Get.snackbar(
-                            'Profile',
-                            'Viewing ${application.fullName}\'s profile',
-                            snackPosition: SnackPosition.BOTTOM,
+                        onPressed: () async {
+                          // Fetch and show user profile
+                          await _showUserProfile(
+                            application.userId,
+                            application.fullName,
                           );
                         },
                         icon: const Icon(Icons.person, size: 18),
@@ -514,29 +682,72 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          // Contact driver via phone
-                          final phone = application.contactNumber;
-                          if (phone.isNotEmpty) {
-                            final Uri phoneUri = Uri(
-                              scheme: 'tel',
-                              path: phone,
+                          // Fetch profile to get phone number
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (_) =>
+                                const Center(child: CustomLoader.small()),
+                          );
+
+                          try {
+                            final response = await HttpHelper.getData(
+                              endpoint:
+                                  '${API.getAppliedUserProfile}${application.userId}',
+                              headers: {'Accept': '*/*'},
                             );
-                            if (await canLaunchUrl(phoneUri)) {
-                              await launchUrl(phoneUri);
+
+                            if (!mounted) return;
+                            Navigator.of(context).pop();
+
+                            if (response.statusCode == 200) {
+                              final profileData = json.decode(response.body);
+                              final profile = AppliedUserProfile.fromJson(
+                                profileData,
+                              );
+                              final phone = profile.phone;
+
+                              if (phone.isNotEmpty) {
+                                final Uri phoneUri = Uri(
+                                  scheme: 'tel',
+                                  path: phone,
+                                );
+                                if (await canLaunchUrl(phoneUri)) {
+                                  await launchUrl(phoneUri);
+                                } else {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Cannot make phone call',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                  );
+                                }
+                              } else {
+                                Get.snackbar(
+                                  'Error',
+                                  'No contact number available',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                );
+                              }
                             } else {
                               Get.snackbar(
                                 'Error',
-                                'Cannot make phone call',
+                                'Failed to load contact number',
                                 snackPosition: SnackPosition.BOTTOM,
                                 backgroundColor: Colors.red,
                                 colorText: Colors.white,
                               );
                             }
-                          } else {
+                          } catch (e) {
+                            if (!mounted) return;
+                            Navigator.of(context).pop();
                             Get.snackbar(
                               'Error',
-                              'No contact number available',
+                              'Failed to load contact number',
                               snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.red,
+                              colorText: Colors.white,
                             );
                           }
                         },

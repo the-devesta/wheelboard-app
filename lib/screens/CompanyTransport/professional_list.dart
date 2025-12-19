@@ -14,7 +14,9 @@ class ProfessionalListScreen extends StatefulWidget {
 }
 
 class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
-  final ProfessionalListController controller = Get.put(ProfessionalListController());
+  final ProfessionalListController controller = Get.put(
+    ProfessionalListController(),
+  );
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -74,7 +76,11 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                         children: const [
                           SizedBox(height: 120),
                           Center(
-                            child: Icon(Icons.person_search, size: 48, color: Colors.grey),
+                            child: Icon(
+                              Icons.person_search,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
                           ),
                           SizedBox(height: 16),
                           Center(
@@ -92,13 +98,16 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                         itemBuilder: (context, index) {
                           final professional = professionals[index];
                           final isFavorite =
-                              controller.favoriteStatus[professional.driverId] ?? false;
+                              controller.favoriteStatus[professional
+                                  .driverId] ??
+                              false;
                           return _ProfessionalCard(
                             professional: professional,
                             isFavorite: isFavorite,
                             onTap: () => _openProfessionalDetails(professional),
-                            onToggleFavorite: () =>
-                                controller.toggleFavorite(professional.driverId),
+                            onToggleFavorite: () => controller.toggleFavorite(
+                              professional.driverId,
+                            ),
                             status: controller.selectedFilter.value,
                           );
                         },
@@ -150,8 +159,10 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                     fontSize: 14,
                   ),
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
                     borderSide: BorderSide.none,
@@ -205,8 +216,10 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
               child: GestureDetector(
                 onTap: () => controller.updateFilter(status),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? const Color(0xFFE83B4F)
@@ -214,10 +227,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                     borderRadius: BorderRadius.circular(30),
                     border: isSelected
                         ? null
-                        : Border.all(
-                            color: const Color(0xFFE83B4F),
-                            width: 1,
-                          ),
+                        : Border.all(color: const Color(0xFFE83B4F), width: 1),
                   ),
                   child: Text(
                     status,
@@ -225,8 +235,9 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                       color: isSelected
                           ? Colors.white
                           : const Color(0xFFE83B4F),
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: 12,
                     ),
                   ),
@@ -243,9 +254,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
-        child: const CustomLoader.small(),
-      ),
+      builder: (_) => const Center(child: const CustomLoader.small()),
     );
 
     final details = await controller.fetchProfessionalDetails(summary.driverId);
@@ -295,7 +304,8 @@ class _ProfessionalCard extends StatelessWidget {
     const rating = 4.9;
     const location = 'Khuarwas';
     const experience = '4 yrs';
-    final isVerified = professional.fullName.hashCode % 2 == 0; // Random verification
+    final isVerified =
+        professional.fullName.hashCode % 2 == 0; // Random verification
 
     return GestureDetector(
       onTap: onTap,
@@ -323,8 +333,9 @@ class _ProfessionalCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: const Color(0xFFFFE6E6),
-                    backgroundImage:
-                        avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                    backgroundImage: avatarUrl != null
+                        ? NetworkImage(avatarUrl)
+                        : null,
                     child: avatarUrl == null
                         ? Text(
                             initials,
@@ -358,30 +369,35 @@ class _ProfessionalCard extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    professional.driverType.isNotEmpty
-                                        ? professional.driverType
-                                        : 'Not specified',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12,
+                                  // Show professional type (Driver, Helper, Technician)
+                                  if (professional.professionalType.isNotEmpty)
+                                    Text(
+                                      professional.professionalType,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ),
                             if (isVerified)
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE7F9EF),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.verified,
-                                        color: Color(0xFF1AD07D), size: 14),
+                                    Icon(
+                                      Icons.verified,
+                                      color: Color(0xFF1AD07D),
+                                      size: 14,
+                                    ),
                                     SizedBox(width: 4),
                                     Text(
                                       'Verified',
@@ -399,8 +415,11 @@ class _ProfessionalCard extends StatelessWidget {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const Icon(Icons.star,
-                                color: Color(0xFFE83B4F), size: 16),
+                            const Icon(
+                              Icons.star,
+                              color: Color(0xFFE83B4F),
+                              size: 16,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               rating.toString(),
@@ -410,7 +429,10 @@ class _ProfessionalCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text('•', style: TextStyle(color: Colors.grey.shade700)),
+                            Text(
+                              '•',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               location,
@@ -420,7 +442,10 @@ class _ProfessionalCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text('•', style: TextStyle(color: Colors.grey.shade700)),
+                            Text(
+                              '•',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               experience,
@@ -454,9 +479,9 @@ class _ProfessionalCard extends StatelessWidget {
                   if (isFavorite && status != 'FAVOURITE') ...[
                     const SizedBox(width: 8),
                     const _StatusChip(label: 'FAVOURITE', isSelected: false),
-                  ]
+                  ],
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -520,7 +545,9 @@ class _ProfessionalDetailsSheet extends StatelessWidget {
             child: CircleAvatar(
               radius: 45,
               backgroundColor: const Color(0xFFFFE6E6),
-              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+              backgroundImage: avatarUrl != null
+                  ? NetworkImage(avatarUrl)
+                  : null,
               child: avatarUrl == null
                   ? Text(
                       _getInitials(profile.fullName),
@@ -537,10 +564,7 @@ class _ProfessionalDetailsSheet extends StatelessWidget {
           Center(
             child: Text(
               profile.fullName,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 4),
@@ -555,7 +579,9 @@ class _ProfessionalDetailsSheet extends StatelessWidget {
           _detailsTile('Vehicle Number', profile.vehicleNumber),
           _detailsTile(
             'Description',
-            profile.description.isNotEmpty ? profile.description : 'Not provided',
+            profile.description.isNotEmpty
+                ? profile.description
+                : 'Not provided',
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -614,7 +640,11 @@ String? _resolveImageUrl(String? imagePath) {
 }
 
 String _getInitials(String name) {
-  final parts = name.trim().split(' ').where((part) => part.isNotEmpty).toList();
+  final parts = name
+      .trim()
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .toList();
   if (parts.isEmpty) return 'P';
 
   String first = parts.first;

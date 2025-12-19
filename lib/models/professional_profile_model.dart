@@ -5,6 +5,7 @@ class ProfessionalProfile {
   final String vehicleNumber;
   final String description;
   final String driverType;
+  final String professionalType;
   final String? driverImagePath;
 
   const ProfessionalProfile({
@@ -14,6 +15,7 @@ class ProfessionalProfile {
     required this.vehicleNumber,
     required this.description,
     required this.driverType,
+    required this.professionalType,
     this.driverImagePath,
   });
 
@@ -25,6 +27,7 @@ class ProfessionalProfile {
       vehicleNumber: json['vehicleNumber']?.toString() ?? 'N/A',
       description: json['description']?.toString() ?? '',
       driverType: json['driverType']?.toString() ?? 'Unknown',
+      professionalType: json['professionalType']?.toString() ?? '',
       driverImagePath: json['driverImagePath']?.toString(),
     );
   }
@@ -37,6 +40,7 @@ class ProfessionalProfile {
       'vehicleNumber': vehicleNumber,
       'description': description,
       'driverType': driverType,
+      'professionalType': professionalType,
       'driverImagePath': driverImagePath,
     };
   }
@@ -48,6 +52,7 @@ class ProfessionalProfile {
     String? vehicleNumber,
     String? description,
     String? driverType,
+    String? professionalType,
     String? driverImagePath,
   }) {
     return ProfessionalProfile(
@@ -57,9 +62,8 @@ class ProfessionalProfile {
       vehicleNumber: vehicleNumber ?? this.vehicleNumber,
       description: description ?? this.description,
       driverType: driverType ?? this.driverType,
+      professionalType: professionalType ?? this.professionalType,
       driverImagePath: driverImagePath ?? this.driverImagePath,
     );
   }
 }
-
-

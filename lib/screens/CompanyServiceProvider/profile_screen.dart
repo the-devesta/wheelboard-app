@@ -32,12 +32,14 @@ class _ServiceProviderProfileScreenState
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(
+        0xFFF4E3E3,
+      ), // Pink background like Professional
       body: SafeArea(
         child: Obx(() {
           if (controller.isLoading.value) {
             return const Center(
-              child: const CustomLoader(message: "Loading profile..."),
+              child: CustomLoader(message: "Loading profile..."),
             );
           }
 
@@ -63,40 +65,26 @@ class _ServiceProviderProfileScreenState
 
           return Column(
             children: [
-              // Header
-              _buildHeader(),
-              // Main Content
+              _buildHeader(context),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.only(bottom: 20),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 16),
-                      // Profile Card
+                      const SizedBox(height: 12),
                       _buildProfileCard(profile),
                       const SizedBox(height: 20),
-                      // Services Offered Section
                       _buildServicesOfferedSection(),
                       const SizedBox(height: 20),
-                      // Business Information Card
                       _buildBusinessInfoCard(profile),
                       const SizedBox(height: 20),
-                      // Description Card
                       _buildDescriptionCard(),
                       const SizedBox(height: 20),
-                      // View Subscription Plans Button
-                      _buildSubscriptionButton(),
-                      const SizedBox(height: 20),
-                      // Edit Profile Button
-                      _buildEditProfileButton(),
-                      const SizedBox(height: 12),
-                      // Switch Profile Button
-                      _buildSwitchProfileButton(),
-                      const SizedBox(height: 12),
-                      // Log Out Button (moved inside scrollview)
-                      _buildLogOutButton(),
-                      const SizedBox(height: 20),
+                      _buildSubscriptionPlans(),
+                      const SizedBox(height: 16),
+                      _buildQuickActions(),
+                      const SizedBox(height: 16),
+                      _buildFooter(),
                     ],
                   ),
                 ),
@@ -108,37 +96,53 @@ class _ServiceProviderProfileScreenState
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
-      height: 69,
+      height: 60,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5), width: 1)),
+        border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 23),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.withOpacity(0.1),
+              ),
+              child: const Icon(Icons.arrow_back_ios, size: 16),
+            ),
           ),
           Expanded(
             child: Center(
               child: Text(
-                'My Profile',
+                'Business Profile',
                 style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFF36969),
                 ),
               ),
             ),
           ),
-          IconButton(
-            onPressed: () {
-              // Navigate to edit profile - TODO: Add edit profile screen
-              // Get.to(() => EditServiceProviderProfileScreen());
+          GestureDetector(
+            onTap: () {
+              // Navigate to edit profile
             },
-            icon: const Icon(Icons.edit, color: Color(0xFFF36969)),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.withOpacity(0.1),
+              ),
+              child: const Icon(Icons.edit, size: 22),
+            ),
           ),
         ],
       ),
@@ -148,42 +152,51 @@ class _ServiceProviderProfileScreenState
   Widget _buildProfileCard(UserProfileModel? profile) {
     return Container(
       width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          // Profile Image with Camera Icon
+          const SizedBox(height: 8),
           Stack(
+            alignment: Alignment.center,
             children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.grey[200],
-                ),
-                child: ClipOval(
+              GestureDetector(
+                onTap: () {
+                  // Handle profile picture edit
+                },
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFF36969),
+                      width: 4,
+                    ),
+                    image:
+                        profile?.businessLogoPath != null &&
+                            profile!.businessLogoPath!.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(profile.businessLogoPath!),
+                            fit: BoxFit.cover,
+                            onError: (exception, stackTrace) {},
+                          )
+                        : null,
+                    color:
+                        profile?.businessLogoPath == null ||
+                            profile!.businessLogoPath!.isEmpty
+                        ? Colors.grey[300]
+                        : null,
+                  ),
                   child:
-                      profile?.businessLogoPath != null &&
-                          profile!.businessLogoPath!.isNotEmpty
-                      ? Image.network(
-                          profile.businessLogoPath!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.business, size: 40),
-                            );
-                          },
-                        )
-                      : Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.business, size: 40),
-                        ),
+                      profile?.businessLogoPath == null ||
+                          profile!.businessLogoPath!.isEmpty
+                      ? const Icon(Icons.business, size: 50, color: Colors.grey)
+                      : null,
                 ),
               ),
               Positioned(
@@ -194,126 +207,123 @@ class _ServiceProviderProfileScreenState
                     // Handle profile picture edit
                   },
                   child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF36969),
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF36969),
                       shape: BoxShape.circle,
+                      border: Border.fromBorderSide(
+                        BorderSide(color: Colors.white, width: 2),
+                      ),
                     ),
                     child: const Icon(
                       Icons.camera_alt,
+                      size: 16,
                       color: Colors.white,
-                      size: 12,
                     ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 16),
-          // Company Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  profile?.businessName ?? 'Business Name',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                if (profile?.businessType != null &&
-                    profile!.businessType!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Type: ${profile.businessType}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-                if (profile?.businessCategory != null &&
-                    profile!.businessCategory!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  // Tags
-                  Row(children: [_buildTag(profile.businessCategory!)]),
-                ],
-              ],
+          const SizedBox(height: 16),
+          Text(
+            profile?.businessName ?? 'Business Name',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF535353),
             ),
+          ),
+          const SizedBox(height: 8),
+          if (profile?.businessCategory != null &&
+              profile!.businessCategory!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF8B8B),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                profile.businessCategory!,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          // Rating
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.star, size: 14, color: Color(0xFFF36969)),
+              const SizedBox(width: 4),
+              Text(
+                '4.5 / 5',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFF36969),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTag(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF4F4),
-        borderRadius: BorderRadius.circular(9999),
-      ),
-      child: Text(
-        text,
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: const Color(0xFFF36969),
-        ),
-      ),
-    );
-  }
-
   Widget _buildServicesOfferedSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Services Offered',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Services Offered',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF535353),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        // Service Filter Buttons
-        // Service Filter Buttons
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _buildServiceButton(
-              'Tyre Services',
-              isSelected: selectedService == 'Tyre Services',
-            ),
-            _buildServiceButton(
-              'Vehicle Services',
-              isSelected: selectedService == 'Vehicle Services',
-            ),
-            _buildServiceButton(
-              'Tyre Retreader',
-              isSelected: selectedService == 'Tyre Retreader',
-            ),
-            _buildServiceButton(
-              'Other',
-              isSelected: selectedService == 'Other',
-            ),
-          ],
-        ),
-      ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildServiceButton(
+                'Tyre Services',
+                isSelected: selectedService == 'Tyre Services',
+              ),
+              _buildServiceButton(
+                'Vehicle Services',
+                isSelected: selectedService == 'Vehicle Services',
+              ),
+              _buildServiceButton(
+                'Tyre Retreader',
+                isSelected: selectedService == 'Tyre Retreader',
+              ),
+              _buildServiceButton(
+                'Other',
+                isSelected: selectedService == 'Other',
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildServiceButton(
-    String text, {
-    bool isSelected = false,
-    bool isOutlined = false,
-  }) {
+  Widget _buildServiceButton(String text, {bool isSelected = false}) {
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -323,9 +333,7 @@ class _ServiceProviderProfileScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected && !isOutlined
-              ? const Color(0xFFF36969)
-              : Colors.transparent,
+          color: isSelected ? const Color(0xFFF36969) : Colors.transparent,
           border: Border.all(color: const Color(0xFFF36969), width: 2),
           borderRadius: BorderRadius.circular(9999),
         ),
@@ -334,9 +342,7 @@ class _ServiceProviderProfileScreenState
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: isSelected && !isOutlined
-                ? Colors.white
-                : const Color(0xFFF36969),
+            color: isSelected ? Colors.white : const Color(0xFFF36969),
           ),
         ),
       ),
@@ -346,7 +352,50 @@ class _ServiceProviderProfileScreenState
   Widget _buildBusinessInfoCard(UserProfileModel? profile) {
     String? profileCity = profile?.city;
 
+    return _buildCard(
+      title: 'Business Information',
+      children: [
+        _buildInfoItem(
+          Icons.location_on,
+          'Business Address',
+          profileCity != null && profileCity.isNotEmpty
+              ? profileCity
+              : 'Address not available',
+        ),
+        _buildInfoItem(
+          Icons.location_city,
+          'City',
+          profileCity != null && profileCity.isNotEmpty ? profileCity : 'N/A',
+        ),
+        _buildInfoItem(
+          Icons.phone,
+          'Phone',
+          profile?.mobileNo != null && profile!.mobileNo!.isNotEmpty
+              ? '+91 ${profile.mobileNo}'
+              : 'N/A',
+        ),
+        _buildInfoItem(
+          Icons.chat,
+          'WhatsApp',
+          profile?.mobileNo != null && profile!.mobileNo!.isNotEmpty
+              ? '+91 ${profile.mobileNo}'
+              : 'N/A',
+        ),
+        _buildInfoItem(
+          Icons.email,
+          'Email Address',
+          profile?.email != null && profile!.email!.isNotEmpty
+              ? profile.email!
+              : 'N/A',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionCard() {
     return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -355,231 +404,163 @@ class _ServiceProviderProfileScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Business Address
-          _buildLabel('Business Address'),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  profileCity != null && profileCity.isNotEmpty
-                      ? profileCity
-                      : 'Address not available',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ],
+          Text(
+            'Description',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF535353),
             ),
           ),
-          const SizedBox(height: 20),
-          // City
-          _buildLabel('City'),
-          const SizedBox(height: 8),
-          _buildInputField(
-            profileCity != null && profileCity.isNotEmpty ? profileCity : 'N/A',
+          const SizedBox(height: 12),
+          Text(
+            'TechCorp Solutions is a leading provider of automotive services and solutions. We specialize in comprehensive tyre services, vehicle maintenance, and advanced retreading technologies. Our commitment to quality and customer satisfaction has made us a trusted partner for businesses across Karnataka.',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+              color: Colors.grey[700],
+              height: 1.6,
+            ),
+            maxLines: isDescriptionExpanded ? null : 3,
+            overflow: isDescriptionExpanded ? null : TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 20),
-          // Phone and WhatsApp
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabelWithIcon('Phone', Icons.phone),
-                    const SizedBox(height: 8),
-                    _buildInputField(
-                      profile?.mobileNo != null && profile!.mobileNo!.isNotEmpty
-                          ? '+91 ${profile.mobileNo}'
-                          : 'N/A',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabelWithIcon('WhatsApp', Icons.chat),
-                    const SizedBox(height: 8),
-                    _buildInputField(
-                      profile?.mobileNo != null && profile!.mobileNo!.isNotEmpty
-                          ? '+91 ${profile.mobileNo}'
-                          : 'N/A',
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // Email
-          _buildLabelWithIcon('Email Address', Icons.email),
           const SizedBox(height: 8),
-          _buildInputField(
-            profile?.email != null && profile!.email!.isNotEmpty
-                ? profile.email!
-                : 'N/A',
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                isDescriptionExpanded = !isDescriptionExpanded;
+              });
+            },
+            child: Text(
+              isDescriptionExpanded ? 'Read less' : 'Read more',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFF36969),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: Colors.grey[600],
+  Widget _buildSubscriptionPlans() {
+    return _buildCard(
+      title: 'Subscription Plans',
+      children: [_buildPlanCard('Gold Member')],
+    );
+  }
+
+  Widget _buildPlanCard(String plan) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 57,
+            height: 57,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFA500), Color(0xFFFFD700)],
+              ),
+              borderRadius: BorderRadius.circular(28.5),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+              ],
+            ),
+            child: const Center(
+              child: Text('🏆', style: TextStyle(fontSize: 30)),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              plan,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              // Navigate to subscription plans
+            },
+            child: Text(
+              'View Plans',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF407BFF),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildLabelWithIcon(String text, IconData icon) {
-    return Row(
+  Widget _buildQuickActions() {
+    return _buildCard(
+      title: 'Quick Actions',
       children: [
-        Icon(icon, size: 14, color: Colors.grey[600]),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[600],
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(Icons.edit, 'Edit Profile', () {
+                // Navigate to edit profile
+              }),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildActionCard(Icons.swap_horiz, 'Switch Profile', () {
+                // Navigate to switch profile
+              }),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildInputField(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      height: 46,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          text,
-          style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[800]),
+  Widget _buildActionCard(IconData icon, String title, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9F9F9),
+          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFF4F4),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Text(
-              'Description',
+        child: Column(
+          children: [
+            Icon(icon, size: 24, color: const Color(0xFFF36969)),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFFF36969),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF535353),
               ),
             ),
-          ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isDescriptionExpanded
-                      ? 'TechCorp Solutions is a leading provider of automotive services and solutions. We specialize in comprehensive tyre services, vehicle maintenance, and advanced retreading technologies. Our commitment to quality and customer satisfaction has made us a trusted partner for businesses across Karnataka.'
-                      : 'TechCorp Solutions is a leading provider of automotive services and solutions. We specialize in comprehensive tyre services, vehicle maintenance, and advanced retreading technologies. Our commitment to quality and customer satisfaction has made us a trusted partner for businesses across Karnataka.',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Colors.grey[700],
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isDescriptionExpanded = !isDescriptionExpanded;
-                    });
-                  },
-                  child: Text(
-                    'Read more',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFFF36969),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubscriptionButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton(
-        onPressed: () {
-          // Navigate to subscription plans
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green[600],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: Text(
-          'View Subscription Plans',
-          style: GoogleFonts.outfit(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Colors.white,
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildLogOutButton() {
-    return SizedBox(
+  Widget _buildFooter() {
+    return Container(
       width: double.infinity,
-      height: 52,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: OutlinedButton.icon(
         onPressed: () async {
           final confirm = await showDialog<bool>(
@@ -618,9 +599,10 @@ class _ServiceProviderProfileScreenState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          padding: const EdgeInsets.symmetric(vertical: 16),
         ),
         icon: Transform.rotate(
-          angle: 3.14159, // 180 degrees
+          angle: 3.14159,
           child: const Icon(Icons.logout, color: Color(0xFFF36969), size: 20),
         ),
         label: Text(
@@ -635,56 +617,66 @@ class _ServiceProviderProfileScreenState
     );
   }
 
-  Widget _buildEditProfileButton() {
-    return SizedBox(
+  Widget _buildCard({required String title, required List<Widget> children}) {
+    return Container(
       width: double.infinity,
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: () {
-          // Navigate to edit profile - TODO: Add edit profile screen
-          // Get.to(() => EditServiceProviderProfileScreen());
-        },
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFF36969), width: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF535353),
+            ),
           ),
-        ),
-        icon: const Icon(Icons.edit, color: Color(0xFFF36969), size: 18),
-        label: Text(
-          'Edit Profile',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFF36969),
-          ),
-        ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
       ),
     );
   }
 
-  Widget _buildSwitchProfileButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton(
-        onPressed: () {
-          // Navigate to switch profile - TODO: Add switch profile functionality
-        },
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFF36969), width: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildInfoItem(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF757575)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF757575),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF424242),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        child: Text(
-          'Switch Profile',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFF36969),
-          ),
-        ),
+        ],
       ),
     );
   }

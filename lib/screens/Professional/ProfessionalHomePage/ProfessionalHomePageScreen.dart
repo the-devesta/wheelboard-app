@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../TransactionSummary/TransactionSummaryScreen.dart';
 import '../TripProgress/TripProgressScreen.dart';
 import '../widgets/professional_header_widget.dart';
@@ -373,14 +372,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                     isApplying: jobsController.isApplying(job.jobId),
                     isApplied: job.isApplied,
                     isLiked: job.isLiked,
-                    onCallNow: () {
-                      // Show call dialog
-                      _showCallDialog(
-                        context,
-                        companyName: job.companyName ?? job.role,
-                        role: job.role,
-                      );
-                    },
+
                     onLikeToggle: () async {
                       if (job.jobId.isNotEmpty) {
                         await jobsController.toggleJobLike(job.jobId);
@@ -407,112 +399,5 @@ class ProfessionalHomePageScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// Show call dialog to enter phone number
-  void _showCallDialog(
-    BuildContext context, {
-    String? companyName,
-    String? role,
-  }) {
-    final TextEditingController phoneController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Call Employer'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (companyName != null && companyName.isNotEmpty)
-                Text(
-                  'Company: $companyName',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              if (role != null && role.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    'Role: $role',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              const Text(
-                'Enter contact number to call:',
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  hintText: 'Enter phone number',
-                  prefixIcon: Icon(Icons.phone),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final phoneNumber = phoneController.text.trim();
-                if (phoneNumber.isNotEmpty) {
-                  Navigator.of(dialogContext).pop();
-                  _makePhoneCall(phoneNumber);
-                } else {
-                  Get.snackbar(
-                    'Error',
-                    'Please enter a phone number',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: Colors.red,
-                    colorText: Colors.white,
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD500),
-                foregroundColor: const Color(0xFF003366),
-              ),
-              child: const Text('Call'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Make phone call using url_launcher
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    try {
-      final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-      final Uri phoneUri = Uri.parse('tel:$cleanNumber');
-
-      if (await canLaunchUrl(phoneUri)) {
-        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to make phone call. Please check if your device supports phone calls.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-      print('Phone call error: $e');
-    }
   }
 }
