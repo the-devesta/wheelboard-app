@@ -29,9 +29,7 @@ class TripController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: url,
-        headers: {
-          "Accept": "*/*",
-        },
+        headers: {"Accept": "*/*"},
       );
 
       if (response.statusCode == 200) {
@@ -41,7 +39,9 @@ class TripController extends GetxController {
         // ✅ Auto-select first driver if none selected
         if (drivers.isNotEmpty && selectedDriver.value == null) {
           selectedDriver.value = drivers.first.driverId;
-          print("🚚 Auto-selected driver: ${drivers.first.fullName} (${drivers.first.driverId})");
+          print(
+            "🚚 Auto-selected driver: ${drivers.first.fullName} (${drivers.first.driverId})",
+          );
         }
       } else {
         Get.snackbar("Error", "Failed to load drivers: ${response.statusCode}");
@@ -60,9 +60,7 @@ class TripController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: url,
-        headers: {
-          "Accept": "*/*",
-        },
+        headers: {"Accept": "*/*"},
       );
 
       if (response.statusCode == 200) {
@@ -87,9 +85,11 @@ class TripController extends GetxController {
 
       // ✅ Validate only fields that are on the screen
       // DriverId is optional (not on screen), so no validation needed
-      
+
       if (trip.vehicleId.isEmpty) {
-        Get.snackbar("Error", "Please select a vehicle", 
+        Get.snackbar(
+          "Error",
+          "Please select a vehicle",
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -98,7 +98,9 @@ class TripController extends GetxController {
       }
 
       if (trip.pickupLocation.isEmpty) {
-        Get.snackbar("Error", "Please enter pickup location", 
+        Get.snackbar(
+          "Error",
+          "Please enter pickup location",
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -107,7 +109,9 @@ class TripController extends GetxController {
       }
 
       if (trip.deliveryLocation.isEmpty) {
-        Get.snackbar("Error", "Please enter delivery location", 
+        Get.snackbar(
+          "Error",
+          "Please enter delivery location",
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -116,7 +120,9 @@ class TripController extends GetxController {
       }
 
       if (trip.pickupDate == null) {
-        Get.snackbar("Error", "Please select pickup date", 
+        Get.snackbar(
+          "Error",
+          "Please select pickup date",
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -125,19 +131,23 @@ class TripController extends GetxController {
       }
 
       if (trip.pickupTime.isEmpty) {
-        Get.snackbar("Error", "Please select pickup time", 
+        Get.snackbar(
+          "Error",
+          "Please select pickup time",
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
         isLoading.value = false;
         return;
       }
-      
+
       // SpecialInstructions and PayRange are optional (can be empty)
 
       // ✅ Validate userId (userId-based authentication, token not required)
       if (trip.userId.isEmpty) {
-        Get.snackbar("Error", "User ID is missing. Please login again.", 
+        Get.snackbar(
+          "Error",
+          "User ID is missing. Please login again.",
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -175,33 +185,57 @@ class TripController extends GetxController {
         "PickupDate": trip.pickupDate != null
             ? trip.pickupDate!.toIso8601String()
             : "",
-        "PickupTime": trip.pickupTime.trim().isNotEmpty 
-            ? trip.pickupTime.trim() 
+        "PickupTime": trip.pickupTime.trim().isNotEmpty
+            ? trip.pickupTime.trim()
             : "",
         // Send empty string if not provided (backend accepts empty string)
         "SpecialInstructions": trip.specialInstructions.trim(),
         "PayRange": trip.payRange.trim(),
-        "TripCode": trip.tripCode.trim().isNotEmpty 
-            ? trip.tripCode.trim() 
-            : "",
-        "TripStatus": trip.tripStatus.trim().isNotEmpty 
-            ? trip.tripStatus.trim() 
+        "TripCode": trip.tripCode.trim().isNotEmpty ? trip.tripCode.trim() : "",
+        "TripStatus": trip.tripStatus.trim().isNotEmpty
+            ? trip.tripStatus.trim()
             : "Pending",
       };
-      
-      // ✅ DriverId should NOT be sent for new trips (when tripId is empty)
-      // Only include DriverId for scheduled trips where driver is explicitly selected
-      // For new post trips, driverId should always be empty and not sent
-      final isNewTrip = trip.tripId.isEmpty || trip.tripId.trim().isEmpty;
-      if (!isNewTrip && trip.driverId.trim().isNotEmpty) {
+
+      // ✅ DriverId logic:
+      // - For SCHEDULED trips (isScheduledTrip = true): Send DriverId if selected
+      // - For POST trips (isScheduledTrip = false): Do NOT send DriverId
+      // This allows scheduled trips to have assigned drivers while post trips remain open for bidding
+
+      // 🔍 DEBUG: Log DriverId decision logic
+      print("=================================");
+      print("🔍 DRIVER ID DECISION LOGIC");
+      print("=================================");
+      print("Is Scheduled Trip: ${trip.isScheduledTrip}");
+      print("Trip DriverId value: '${trip.driverId}'");
+      print("Trip DriverId isEmpty: ${trip.driverId.isEmpty}");
+      print("Trip DriverId after trim: '${trip.driverId.trim()}'");
+      print(
+        "Trip DriverId.trim().isNotEmpty: ${trip.driverId.trim().isNotEmpty}",
+      );
+
+      // ✅ Send DriverId ONLY for scheduled trips with driver selected
+      if (trip.isScheduledTrip && trip.driverId.trim().isNotEmpty) {
         fields["DriverId"] = trip.driverId.trim();
+        print(
+          "✅ DriverId WILL BE SENT: ${trip.driverId.trim()} (Scheduled Trip)",
+        );
+      } else {
+        if (!trip.isScheduledTrip) {
+          print(
+            "❌ DriverId NOT SENT - Reason: This is a POST trip (not scheduled)",
+          );
+        } else if (trip.driverId.trim().isEmpty) {
+          print("❌ DriverId NOT SENT - Reason: driverId is empty");
+        }
       }
-      
+      print("=================================");
+
       // ✅ Include VehicleNo if available (optional field from backend)
       if (vehicleNumber.isNotEmpty) {
         fields["VehicleNo"] = vehicleNumber;
       }
-      
+
       // 🔍 Debug: Log all fields before sending
       print("==================================");
       print("📤 TRIP CREATION REQUEST");
@@ -212,12 +246,26 @@ class TripController extends GetxController {
       print("👉 Authentication: userId-based (UserId in headers)");
       print("👉 Trip UserId: ${trip.userId}");
       print("👉 Headers: {Accept: */*, UserId: ${trip.userId}}");
-      print("👉 Fields: $fields");
       print("==================================");
-      
+      print("📋 FIELDS BEING SENT:");
+      print("==================================");
+      fields.forEach((key, value) {
+        if (key == "DriverId") {
+          print("👨‍✈️ $key: '$value' ✅ DRIVER ID IS BEING SENT!");
+        } else {
+          print("   $key: '$value'");
+        }
+      });
+      if (!fields.containsKey("DriverId")) {
+        print("⚠️ DriverId: NOT INCLUDED IN REQUEST");
+      }
+      print("==================================");
+
       // ⚠️ Warn if user type doesn't match expected
       if (savedUserType != null && savedUserType != "Transport") {
-        print("⚠️ WARNING: User Type is '$savedUserType', but Trip creation typically requires 'Transport' type!");
+        print(
+          "⚠️ WARNING: User Type is '$savedUserType', but Trip creation typically requires 'Transport' type!",
+        );
       }
 
       // ✅ Call HttpHelper (no files for now, so pass empty list)
@@ -229,7 +277,8 @@ class TripController extends GetxController {
         fieldKey: "file", // backend field name for files (ignored here)
         headers: {
           "Accept": "*/*",
-          "UserId": trip.userId, // Include userId in headers for userId-based authentication
+          "UserId": trip
+              .userId, // Include userId in headers for userId-based authentication
         },
       );
 
@@ -248,7 +297,7 @@ class TripController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         print("✅ Trip Added Successfully!");
         print("✅ Response: ${response.body}");
-        
+
         // Try to parse JSON response if available
         try {
           final responseData = jsonDecode(response.body);
@@ -256,13 +305,15 @@ class TripController extends GetxController {
         } catch (e) {
           print("ℹ️ Response is not JSON: ${response.body}");
         }
-        
-        Get.snackbar("Success", "Trip added successfully!", 
+
+        Get.snackbar(
+          "Success",
+          "Trip added successfully!",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
-        
+
         // Navigate to home screen after successful trip creation
         // Close all previous screens and go to main wrapper (home)
         Future.delayed(const Duration(milliseconds: 500), () {
@@ -271,16 +322,16 @@ class TripController extends GetxController {
       } else if (response.statusCode == 400) {
         // 🔴 Handle 400 Bad Request - Validation errors
         print("❌ 400 Bad Request - Validation Error!");
-        
+
         String errorMessage = "Validation Error: ";
         try {
           final errorData = jsonDecode(response.body);
-          
+
           // Check for validation errors object
           if (errorData.containsKey('errors') && errorData['errors'] is Map) {
             final errors = errorData['errors'] as Map<String, dynamic>;
             final errorMessages = <String>[];
-            
+
             errors.forEach((field, messages) {
               if (messages is List) {
                 for (var msg in messages) {
@@ -290,25 +341,26 @@ class TripController extends GetxController {
                 errorMessages.add("$field: $messages");
               }
             });
-            
+
             errorMessage = errorMessages.join('\n');
             print("❌ Validation Errors:");
             errors.forEach((field, messages) {
               print("   - $field: $messages");
             });
           } else {
-            errorMessage = errorData['title'] ?? 
-                          errorData['message'] ?? 
-                          errorData.toString();
+            errorMessage =
+                errorData['title'] ??
+                errorData['message'] ??
+                errorData.toString();
           }
         } catch (e) {
-          errorMessage = response.body.isNotEmpty 
-                        ? response.body 
-                        : "Invalid request data";
+          errorMessage = response.body.isNotEmpty
+              ? response.body
+              : "Invalid request data";
         }
-        
+
         Get.snackbar(
-          "Validation Error", 
+          "Validation Error",
           errorMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.orange,
@@ -322,25 +374,28 @@ class TripController extends GetxController {
         print("   1. Token expired or invalid");
         print("   2. User doesn't have permission to create trips");
         print("   3. API endpoint requires different authentication");
-        
+
         String errorMessage = "Access Denied (403). ";
-        
+
         // Check if response contains HTML (server error page)
-        if (response.body.contains('<!DOCTYPE html>') || response.body.contains('Forbidden')) {
-          errorMessage += "Your session may have expired. Please try logging in again.";
+        if (response.body.contains('<!DOCTYPE html>') ||
+            response.body.contains('Forbidden')) {
+          errorMessage +=
+              "Your session may have expired. Please try logging in again.";
         } else {
           try {
             final errorData = jsonDecode(response.body);
-            errorMessage += errorData['message'] ?? 
-                          errorData['error'] ?? 
-                          "Please check your permissions.";
+            errorMessage +=
+                errorData['message'] ??
+                errorData['error'] ??
+                "Please check your permissions.";
           } catch (e) {
             errorMessage += "Please login again and try.";
           }
         }
-        
+
         Get.snackbar(
-          "Access Denied", 
+          "Access Denied",
           errorMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.orange,
@@ -351,31 +406,34 @@ class TripController extends GetxController {
         print("❌ Trip Addition Failed!");
         print("❌ Error Status: ${response.statusCode}");
         print("❌ Error Body: ${response.body}");
-        
+
         // Try to parse error message from response
         String errorMessage = "Failed to create trip (${response.statusCode})";
         try {
           final errorData = jsonDecode(response.body);
-          errorMessage = errorData['message'] ?? 
-                        errorData['error'] ?? 
-                        errorData.toString();
+          errorMessage =
+              errorData['message'] ??
+              errorData['error'] ??
+              errorData.toString();
         } catch (e) {
           // If response is HTML, extract meaningful text
           if (response.body.contains('<title>')) {
-            final titleMatch = RegExp(r'<title>(.*?)</title>').firstMatch(response.body);
+            final titleMatch = RegExp(
+              r'<title>(.*?)</title>',
+            ).firstMatch(response.body);
             if (titleMatch != null) {
               errorMessage = titleMatch.group(1) ?? errorMessage;
             }
           } else if (response.body.isNotEmpty) {
             // Show first 100 chars if it's not HTML
-            errorMessage = response.body.length > 100 
-                          ? "${response.body.substring(0, 100)}..." 
-                          : response.body;
+            errorMessage = response.body.length > 100
+                ? "${response.body.substring(0, 100)}..."
+                : response.body;
           }
         }
-        
+
         Get.snackbar(
-          "Error", 
+          "Error",
           errorMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
@@ -394,14 +452,12 @@ class TripController extends GetxController {
   Future<void> fetchTrips(String userId) async {
     try {
       isTripsLoading.value = true;
-      
+
       print("🚚 Fetching trips for userId: $userId");
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getTripList}$userId',
-        headers: {
-          'Accept': '*/*',
-        },
+        headers: {'Accept': '*/*'},
       );
 
       print("🚚 Trips response status: ${response.statusCode}");
@@ -426,14 +482,14 @@ class TripController extends GetxController {
     return trips.where((trip) {
       final tripStatus = trip.tripStatus.toLowerCase();
       final searchStatus = status.toLowerCase();
-      
+
       if (searchStatus == 'completed') {
         return tripStatus == 'completed' || tripStatus.contains('complete');
       } else if (searchStatus == 'in-process' || searchStatus == 'in process') {
-        return tripStatus == 'in-process' || 
-               tripStatus == 'in process' || 
-               tripStatus.contains('process') ||
-               tripStatus == 'ongoing';
+        return tripStatus == 'in-process' ||
+            tripStatus == 'in process' ||
+            tripStatus.contains('process') ||
+            tripStatus == 'ongoing';
       } else if (searchStatus == 'upcoming') {
         return tripStatus == 'upcoming' || tripStatus == 'pending';
       }

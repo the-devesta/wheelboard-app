@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../models/vehicle_lease_application_model.dart';
-import '../../models/get_vehicle_model.dart';
+import '../../../models/vehicle_lease_application_model.dart';
+import '../../../models/get_vehicle_model.dart';
 
 /// Applications Screen for Vehicle Lease Applications
 /// Shows applications for a specific vehicle with filtering by status

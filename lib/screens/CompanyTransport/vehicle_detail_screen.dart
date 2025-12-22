@@ -6,7 +6,7 @@ import '../../controllers/main_wrapper_controller.dart';
 import '../../controllers/fleet_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
-import 'add_vehicle_lease_screen.dart';
+import 'Lease/add_vehicle_lease_screen.dart';
 
 class VehicleDetailScreen extends StatefulWidget {
   final Vehicle vehicle;

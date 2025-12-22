@@ -156,6 +156,33 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                           return;
                         }
 
+                        // 🔍 DEBUG: Log selected values before creating trip
+                        print("=================================");
+                        print("🚚 SCHEDULE TRIP - DEBUG INFO");
+                        print("=================================");
+                        print("👤 User ID: $userId");
+                        print(
+                          "🚗 Selected Vehicle ID: ${tripController.selectedVehicle.value ?? 'NOT SELECTED'}",
+                        );
+                        print(
+                          "👨‍✈️ Selected Driver ID: ${tripController.selectedDriver.value ?? 'NOT SELECTED'}",
+                        );
+                        print("📍 Pickup Location: ${pickupController.text}");
+                        print(
+                          "📍 Delivery Location: ${deliveryController.text}",
+                        );
+                        print("📅 Pickup Date: $selectedDate");
+                        print(
+                          "⏰ Pickup Time: ${selectedTime != null ? _formatTimeOfDay(selectedTime!) : '00:00:00'}",
+                        );
+                        print(
+                          "📝 Special Instructions: ${specialInstructionsController.text.trim()}",
+                        );
+                        print(
+                          "💰 Pay Range: ${payRangeController.text.trim()}",
+                        );
+                        print("=================================");
+
                         // ✅ Build Trip object (TripId not needed - backend will generate)
                         final trip = Trip(
                           tripId: "", // Empty - backend will generate TripId
@@ -175,7 +202,31 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                           tripCode:
                               "TRIP-${DateTime.now().millisecondsSinceEpoch}",
                           tripStatus: "Pending",
+                          isScheduledTrip:
+                              true, // ✅ This is a scheduled trip with driver selection
                         );
+
+                        // 🔍 DEBUG: Log Trip object after creation
+                        print("=================================");
+                        print("📦 TRIP OBJECT CREATED");
+                        print("=================================");
+                        print("Trip ID: ${trip.tripId}");
+                        print("User ID: ${trip.userId}");
+                        print("Vehicle ID: ${trip.vehicleId}");
+                        print(
+                          "👨‍✈️ Driver ID: ${trip.driverId} ${trip.driverId.isEmpty ? '❌ EMPTY!' : '✅ HAS VALUE'}",
+                        );
+                        print("Pickup Location: ${trip.pickupLocation}");
+                        print("Delivery Location: ${trip.deliveryLocation}");
+                        print("Pickup Date: ${trip.pickupDate}");
+                        print("Pickup Time: ${trip.pickupTime}");
+                        print(
+                          "Special Instructions: ${trip.specialInstructions}",
+                        );
+                        print("Pay Range: ${trip.payRange}");
+                        print("Trip Code: ${trip.tripCode}");
+                        print("Trip Status: ${trip.tripStatus}");
+                        print("=================================");
 
                         // ✅ Send API call (userId-based auth, no token needed)
                         await tripController.addTrip(trip);

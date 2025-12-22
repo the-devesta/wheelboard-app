@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
-import '../../controllers/vehicle_lease_controller.dart';
-import '../../controllers/fleet_controller.dart';
-import '../../models/vehicle_lease_model.dart';
-import '../../models/get_vehicle_model.dart';
-import '../../services/auth_service.dart';
-import '../../widgets/custom_snackbar.dart';
+import '../../../controllers/vehicle_lease_controller.dart';
+import '../../../controllers/fleet_controller.dart';
+import '../../../models/vehicle_lease_model.dart';
+import '../../../models/get_vehicle_model.dart';
+import '../../../services/auth_service.dart';
+import '../../../widgets/custom_snackbar.dart';
 
 /// Add Vehicle Lease Screen for Transport side
 /// Allows users to post a vehicle for lease
@@ -67,7 +67,11 @@ class _AddVehicleLeaseScreenState extends State<AddVehicleLeaseScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVehicles();
+    // Defer loading vehicles until after the first frame is built
+    // This prevents snackbar errors during build phase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVehicles();
+    });
     if (widget.preselectedVehicle != null) {
       _selectedVehicle = widget.preselectedVehicle;
       _vehicleTitleController.text = widget.preselectedVehicle!.vehicleModel;

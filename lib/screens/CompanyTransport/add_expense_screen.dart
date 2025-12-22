@@ -14,7 +14,7 @@ import '../../widgets/custom_loader.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final bool isProfessional;
-  
+
   const AddExpenseScreen({super.key, this.isProfessional = false});
 
   @override
@@ -24,7 +24,7 @@ class AddExpenseScreen extends StatefulWidget {
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final ExpenseController expenseController = Get.put(ExpenseController());
   late final dynamic tripController;
-  
+
   bool get isProfessional => widget.isProfessional;
 
   ExpensePurpose? _selectedExpensePurpose;
@@ -67,7 +67,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     } else {
       tripController = Get.put(TripController());
     }
-    
+
     _selectedDate = DateTime.now();
     _dateController.text = _formatDate(_selectedDate!);
     _amountController.text = '0.00';
@@ -89,8 +89,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${date.day.toString().padLeft(2, '0')}-${months[date.month - 1]}-${date.year}';
   }
@@ -182,9 +192,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               const SizedBox(height: 20),
               // Expense Purpose List
               ...expenseController.expensePurposes.map((purpose) {
-                final color = _expenseColors[purpose.purposeName] ?? Colors.grey;
-                final icon = _expenseIcons[purpose.purposeName] ?? Icons.category;
-                final isSelected = _selectedExpensePurpose?.expensePurposeId ==
+                final color =
+                    _expenseColors[purpose.purposeName] ?? Colors.grey;
+                final icon =
+                    _expenseIcons[purpose.purposeName] ?? Icons.category;
+                final isSelected =
+                    _selectedExpensePurpose?.expensePurposeId ==
                     purpose.expensePurposeId;
 
                 return InkWell(
@@ -207,11 +220,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(
-                          icon,
-                          size: 20,
-                          color: color,
-                        ),
+                        Icon(icon, size: 20, color: color),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -248,12 +257,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ),
       builder: (context) => Obx(() {
         if (isProfessional) {
-          final assignedTripController = tripController as AssignedTripController;
+          final assignedTripController =
+              tripController as AssignedTripController;
           if (assignedTripController.isLoading.value) {
             return const CustomLoader.small(message: "Loading trips...");
           }
           final allTrips = assignedTripController.assignedTrips;
-          
+
           return Container(
             padding: const EdgeInsets.all(20),
             constraints: BoxConstraints(
@@ -293,16 +303,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 // Trip List
                 Expanded(
                   child: allTrips.isEmpty
-                      ? const Center(
-                          child: Text('No trips available'),
-                        )
+                      ? const Center(child: Text('No trips available'))
                       : ListView.builder(
                           shrinkWrap: true,
                           itemCount: allTrips.length,
                           itemBuilder: (context, index) {
                             final trip = allTrips[index];
-                            final isSelected = _selectedTrip != null && 
-                                (_selectedTrip as AssignedTrip).bidId == trip.bidId;
+                            final isSelected =
+                                _selectedTrip != null &&
+                                (_selectedTrip as AssignedTrip).bidId ==
+                                    trip.bidId;
 
                             return InkWell(
                               onTap: () {
@@ -319,7 +329,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: isSelected
                                       ? Border.all(
-                                          color: const Color(0xFF2196F3), width: 2)
+                                          color: const Color(0xFF2196F3),
+                                          width: 2,
+                                        )
                                       : Border.all(color: Colors.grey.shade300),
                                 ),
                                 child: Column(
@@ -328,8 +340,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                     // Route
                                     Row(
                                       children: [
-                                        const Icon(Icons.location_on,
-                                            color: Color(0xFF2196F3), size: 18),
+                                        const Icon(
+                                          Icons.location_on,
+                                          color: Color(0xFF2196F3),
+                                          size: 18,
+                                        ),
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
@@ -342,7 +357,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                         ),
                                         Flexible(
                                           child: Text(
-                                            'Trip ID: ${trip.bidId.length > 12 ? trip.bidId.substring(0, 12) + '...' : trip.bidId}',
+                                            'Trip ID: ${(trip.bidId ?? trip.tripId).length > 12 ? (trip.bidId ?? trip.tripId).substring(0, 12) + '...' : (trip.bidId ?? trip.tripId)}',
                                             style: GoogleFonts.inter(
                                               fontSize: 12,
                                               color: Colors.grey,
@@ -417,15 +432,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 // Trip List
                 Expanded(
                   child: allTrips.isEmpty
-                      ? const Center(
-                          child: Text('No trips available'),
-                        )
+                      ? const Center(child: Text('No trips available'))
                       : ListView.builder(
                           shrinkWrap: true,
                           itemCount: allTrips.length,
                           itemBuilder: (context, index) {
                             final trip = allTrips[index];
-                            final isSelected = _selectedTrip != null && 
+                            final isSelected =
+                                _selectedTrip != null &&
                                 (_selectedTrip as Trip).tripId == trip.tripId;
 
                             return InkWell(
@@ -443,7 +457,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: isSelected
                                       ? Border.all(
-                                          color: const Color(0xFF2196F3), width: 2)
+                                          color: const Color(0xFF2196F3),
+                                          width: 2,
+                                        )
                                       : Border.all(color: Colors.grey.shade300),
                                 ),
                                 child: Column(
@@ -452,8 +468,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                     // Route
                                     Row(
                                       children: [
-                                        const Icon(Icons.location_on,
-                                            color: Color(0xFF2196F3), size: 18),
+                                        const Icon(
+                                          Icons.location_on,
+                                          color: Color(0xFF2196F3),
+                                          size: 18,
+                                        ),
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
@@ -589,7 +608,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     // Get tripId based on trip type
     String tripId;
     if (isProfessional && _selectedTrip is AssignedTrip) {
-      tripId = (_selectedTrip as AssignedTrip).bidId;
+      tripId =
+          (_selectedTrip as AssignedTrip).bidId ??
+          (_selectedTrip as AssignedTrip).tripId;
     } else if (_selectedTrip is Trip) {
       tripId = (_selectedTrip as Trip).tripId;
     } else {
@@ -643,10 +664,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ),
         centerTitle: true,
         shape: const Border(
-          bottom: BorderSide(
-            color: Color(0xFFFCD2D2),
-            width: 1,
-          ),
+          bottom: BorderSide(color: Color(0xFFFCD2D2), width: 1),
         ),
       ),
       body: SingleChildScrollView(
@@ -702,7 +720,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 // Save Button
                 Center(
                   child: Obx(() {
-                    final isSaving = _isSaving || expenseController.isSaving.value;
+                    final isSaving =
+                        _isSaving || expenseController.isSaving.value;
                     return Container(
                       width: 312,
                       height: 58,
@@ -714,9 +733,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                               ),
-                        color: isSaving
-                            ? Colors.grey
-                            : null,
+                        color: isSaving ? Colors.grey : null,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Material(
@@ -725,7 +742,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           onTap: isSaving ? null : _saveExpense,
                           borderRadius: BorderRadius.circular(14),
                           child: Center(
-                                child: isSaving
+                            child: isSaving
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
@@ -808,24 +825,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 12),
               if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 20,
-                  color: color,
-                ),
+                Icon(icon, size: 20, color: color),
                 const SizedBox(width: 12),
               ],
             ],
             Expanded(
               child: Text(
-                _selectedExpensePurpose?.purposeName ?? 'Select expense purpose...',
+                _selectedExpensePurpose?.purposeName ??
+                    'Select expense purpose...',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Poppins',
@@ -863,10 +874,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               child: Text(
                 _selectedTrip != null
                     ? (isProfessional && _selectedTrip is AssignedTrip
-                        ? '${(_selectedTrip as AssignedTrip).pickupLocation} → ${(_selectedTrip as AssignedTrip).deliveryLocation}'
-                        : (_selectedTrip is Trip
-                            ? '${(_selectedTrip as Trip).pickupLocation} → ${(_selectedTrip as Trip).deliveryLocation}'
-                            : 'Select a trip...'))
+                          ? '${(_selectedTrip as AssignedTrip).pickupLocation} → ${(_selectedTrip as AssignedTrip).deliveryLocation}'
+                          : (_selectedTrip is Trip
+                                ? '${(_selectedTrip as Trip).pickupLocation} → ${(_selectedTrip as Trip).deliveryLocation}'
+                                : 'Select a trip...'))
                     : 'Select a trip...',
                 style: TextStyle(
                   fontSize: 16,
@@ -915,10 +926,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           Expanded(
             child: TextField(
               controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               onTap: () {
                 // Clear "0.00" when user taps to enter amount
-                if (_amountController.text == '0.00' || _amountController.text == '0') {
+                if (_amountController.text == '0.00' ||
+                    _amountController.text == '0') {
                   _amountController.clear();
                 }
               },
@@ -937,7 +951,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   color: const Color(0xFFADAEBC),
                 ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 15,
+                ),
               ),
               style: TextStyle(
                 fontSize: 16,
@@ -968,7 +985,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(left: 16),
                 child: Text(
-                  _dateController.text.isEmpty ? 'Select date' : _dateController.text,
+                  _dateController.text.isEmpty
+                      ? 'Select date'
+                      : _dateController.text,
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
@@ -1043,11 +1062,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.attach_file,
-              size: 16,
-              color: Color(0xFF424242),
-            ),
+            const Icon(Icons.attach_file, size: 16, color: Color(0xFF424242)),
             const SizedBox(width: 8),
             Flexible(
               child: Text(

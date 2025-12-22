@@ -31,7 +31,7 @@ class AssignedTripController extends GetxController {
       print("🚗 Fetching assigned trips for userId: $userId");
 
       final response = await HttpHelper.getData(
-        endpoint: '${API.getAssignedTrips}$userId',
+        endpoint: '${API.getTripListByDriver}$userId',
         headers: {
           'Authorization': 'Bearer ${_authService.currentToken}',
           'Accept': 'application/json',
@@ -39,11 +39,16 @@ class AssignedTripController extends GetxController {
       );
 
       print("🚗 Assigned trips response status: ${response.statusCode}");
-      print("🚗 Assigned trips response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}");
+      print(
+        "🚗 Assigned trips response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
+      );
 
       // Check if response is HTML (error page)
-      if (response.body.trim().startsWith('<!DOCTYPE') || response.body.trim().startsWith('<html')) {
-        print("❌ Server returned HTML instead of JSON - API endpoint may be incorrect");
+      if (response.body.trim().startsWith('<!DOCTYPE') ||
+          response.body.trim().startsWith('<html')) {
+        print(
+          "❌ Server returned HTML instead of JSON - API endpoint may be incorrect",
+        );
         assignedTrips.value = [];
         isLoading(false);
         return;
@@ -56,8 +61,9 @@ class AssignedTripController extends GetxController {
             print('ℹ️ No assigned trips found for this user');
             assignedTrips.value = [];
           } else {
-            assignedTrips.value =
-                tripData.map((data) => AssignedTrip.fromJson(data)).toList();
+            assignedTrips.value = tripData
+                .map((data) => AssignedTrip.fromJson(data))
+                .toList();
             print("✅ Fetched ${assignedTrips.length} assigned trips");
           }
         } catch (parseError) {
@@ -65,7 +71,10 @@ class AssignedTripController extends GetxController {
           // Check if it's an error message
           try {
             final errorData = jsonDecode(response.body);
-            final errorMessage = errorData['message'] ?? errorData['error'] ?? 'No bids found for this trip';
+            final errorMessage =
+                errorData['message'] ??
+                errorData['error'] ??
+                'No bids found for this trip';
             print('ℹ️ $errorMessage');
           } catch (e) {
             print('❌ Failed to parse error message');
@@ -77,7 +86,10 @@ class AssignedTripController extends GetxController {
         // Try to parse error message
         try {
           final errorData = jsonDecode(response.body);
-          final errorMessage = errorData['message'] ?? errorData['error'] ?? 'Failed to load assigned trips';
+          final errorMessage =
+              errorData['message'] ??
+              errorData['error'] ??
+              'Failed to load assigned trips';
           print('ℹ️ $errorMessage');
         } catch (e) {
           print('❌ Response body: ${response.body}');

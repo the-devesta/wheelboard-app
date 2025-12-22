@@ -715,7 +715,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '₹${trip.bidAmount.toStringAsFixed(0)}',
+                  '₹${(trip.bidAmount ?? 0).toStringAsFixed(0)}',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
@@ -797,7 +797,9 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
       // Sort based on filter
       List<AssignedTrip> sortedTrips = List.from(completedTrips);
       if (_selectedCompletedFilter == 'Highest Earning') {
-        sortedTrips.sort((a, b) => b.bidAmount.compareTo(a.bidAmount));
+        sortedTrips.sort(
+          (a, b) => (b.bidAmount ?? 0).compareTo(a.bidAmount ?? 0),
+        );
       } else if (_selectedCompletedFilter == 'Recent') {
         sortedTrips.sort((a, b) => b.pickupDate.compareTo(a.pickupDate));
       }
@@ -873,7 +875,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                     trip: trip,
                     from: trip.pickupLocation,
                     to: trip.deliveryLocation,
-                    earning: '+₹${trip.bidAmount.toStringAsFixed(0)}',
+                    earning: '+₹${(trip.bidAmount ?? 0).toStringAsFixed(0)}',
                   ),
                 );
               }).toList(),

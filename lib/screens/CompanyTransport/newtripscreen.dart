@@ -189,6 +189,8 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                           tripCode:
                               "TRIP-${DateTime.now().millisecondsSinceEpoch}", // Auto-generated
                           tripStatus: "Pending", // Default status
+                          isScheduledTrip:
+                              false, // ❌ This is a POST trip - no driver assigned
                         );
 
                         // ✅ Send API call (userId-based auth, no token needed)

@@ -10,8 +10,22 @@ class TripDetailsScreen extends StatelessWidget {
 
   String _formatDate(DateTime? date, String time) {
     if (date == null) return time;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final dateStr =
+        '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
     final timeStr = time.isNotEmpty
         ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
         : '';
@@ -77,7 +91,7 @@ class TripDetailsScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              trip.bidId,
+                              trip.tripId,
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -88,7 +102,10 @@ class TripDetailsScreen extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEBF4FF),
                           borderRadius: BorderRadius.circular(20),
@@ -137,7 +154,7 @@ class TripDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Pickup Location
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,29 +286,33 @@ class TripDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   _buildInfoRow(
                     icon: Icons.access_time,
                     label: 'Pickup Date & Time',
                     value: _formatDate(trip.pickupDate, trip.pickupTime),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   _buildInfoRow(
                     icon: Icons.currency_rupee,
                     label: 'Bid Amount',
-                    value: '₹${trip.bidAmount.toStringAsFixed(2)}',
+                    value: '₹${(trip.bidAmount ?? 0).toStringAsFixed(2)}',
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   _buildInfoRow(
                     icon: Icons.description,
                     label: 'Description',
-                    value: trip.bidDescription.isNotEmpty ? trip.bidDescription : 'No description',
+                    value:
+                        trip.bidDescription != null &&
+                            trip.bidDescription!.isNotEmpty
+                        ? trip.bidDescription!
+                        : 'No description',
                   ),
-                  
+
                   if (trip.specialInstructions.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     _buildInfoRow(
@@ -333,12 +354,24 @@ class TripDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
-                  _buildFinancialRow('Total Trip Cost', '₹${trip.totalTripCost.toStringAsFixed(2)}', Colors.black),
+
+                  _buildFinancialRow(
+                    'Total Trip Cost',
+                    '₹${(trip.totalTripCost ?? 0).toStringAsFixed(2)}',
+                    Colors.black,
+                  ),
                   const SizedBox(height: 12),
-                  _buildFinancialRow('Platform Fee', '₹${trip.platformFee.toStringAsFixed(2)}', const Color(0xFF6B7280)),
+                  _buildFinancialRow(
+                    'Platform Fee',
+                    '₹${(trip.platformFee ?? 0).toStringAsFixed(2)}',
+                    const Color(0xFF6B7280),
+                  ),
                   const SizedBox(height: 12),
-                  _buildFinancialRow('Amount to Driver', '₹${trip.amountToDriver.toStringAsFixed(2)}', const Color(0xFF27AE60)),
+                  _buildFinancialRow(
+                    'Amount to Driver',
+                    '₹${(trip.amountToDriver ?? 0).toStringAsFixed(2)}',
+                    const Color(0xFF27AE60),
+                  ),
                 ],
               ),
             ),
@@ -375,10 +408,11 @@ class TripDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        if (trip.driverPhoto.isNotEmpty)
+                        if (trip.driverPhoto != null &&
+                            trip.driverPhoto!.isNotEmpty)
                           CircleAvatar(
                             radius: 30,
-                            backgroundImage: NetworkImage(trip.driverPhoto),
+                            backgroundImage: NetworkImage(trip.driverPhoto!),
                             onBackgroundImageError: (exception, stackTrace) {},
                           )
                         else
@@ -476,4 +510,3 @@ class TripDetailsScreen extends StatelessWidget {
     );
   }
 }
-
