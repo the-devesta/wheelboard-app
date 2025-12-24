@@ -42,6 +42,8 @@ class API {
       'api/User/update-professional-profile';
   static const String updateTransportProfile =
       'api/User/update-transport-profile';
+  static const String updateServiceProvider =
+      'api/User/update-service-provider';
 
   // Service APIs
   static const String serviceList = 'api/Service/service-list';

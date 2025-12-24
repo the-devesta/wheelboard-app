@@ -11,6 +11,7 @@ import '../../models/add_new_trip_model.dart';
 import '../../models/assigned_trip_model.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
+import '../../services/auth_service.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final bool isProfessional;
@@ -717,29 +718,65 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                 const SizedBox(height: 40),
 
+                // Hired Warning (for professionals only)
+                if (isProfessional && AuthService.to.isUserHired)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.orange.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "You are currently hired. Adding expenses is not available.",
+                            style: TextStyle(
+                              color: Colors.orange.shade900,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 // Save Button
                 Center(
                   child: Obx(() {
                     final isSaving =
                         _isSaving || expenseController.isSaving.value;
+                    final isHired =
+                        isProfessional && AuthService.to.isUserHired;
+                    final isDisabled = isSaving || isHired;
+
                     return Container(
                       width: 312,
                       height: 58,
                       decoration: BoxDecoration(
-                        gradient: isSaving
+                        gradient: isDisabled
                             ? null
                             : const LinearGradient(
                                 colors: [Color(0xFFFF5E5E), Color(0xFFF36969)],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                               ),
-                        color: isSaving ? Colors.grey : null,
+                        color: isDisabled ? Colors.grey : null,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: isSaving ? null : _saveExpense,
+                          onTap: isDisabled ? null : _saveExpense,
                           borderRadius: BorderRadius.circular(14),
                           child: Center(
                             child: isSaving
@@ -751,7 +788,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                     ),
                                   )
                                 : Text(
-                                    "SAVE NOW",
+                                    isHired ? "DISABLED (HIRED)" : "SAVE NOW",
                                     style: TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.w600,

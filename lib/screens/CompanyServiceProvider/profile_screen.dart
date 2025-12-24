@@ -7,6 +7,7 @@ import '../../controllers/user_profile_controller.dart';
 import '../../models/user_profile_model.dart';
 import '../auth/onboarding_screen.dart';
 import '../../widgets/custom_loader.dart';
+import '../auth/service_provider_login.dart';
 
 class ServiceProviderProfileScreen extends StatefulWidget {
   const ServiceProviderProfileScreen({super.key});
@@ -131,8 +132,33 @@ class _ServiceProviderProfileScreenState
             ),
           ),
           GestureDetector(
-            onTap: () {
-              // Navigate to edit profile
+            onTap: () async {
+              final controller = Get.find<UserProfileController>();
+              final profile = controller.userProfile.value;
+
+              if (profile != null && profile.userId.isNotEmpty) {
+                final result = await Get.to(
+                  () => const AlliedBusinessRegistrationScreen(),
+                  arguments: {
+                    'userId': profile.userId,
+                    'isUpdate': true,
+                    'businessName': profile.businessName,
+                    'gstNumber': profile.gstNumber,
+                    'businessType': profile.businessType,
+                    'city': profile.city,
+                    'phoneNumber': profile.mobileNo,
+                    'email': profile.email,
+                    'businessLogoPath': profile.businessLogoPath,
+                  },
+                ); // Refresh profile if update was successful
+                if (result == true) {
+                  controller.fetchCurrentUserProfile();
+                }
+              } else {
+                SnackBarHelper.error(
+                  'Unable to edit profile. User ID not found.',
+                );
+              }
             },
             child: Container(
               width: 44,
@@ -513,8 +539,33 @@ class _ServiceProviderProfileScreenState
         Row(
           children: [
             Expanded(
-              child: _buildActionCard(Icons.edit, 'Edit Profile', () {
-                // Navigate to edit profile
+              child: _buildActionCard(Icons.edit, 'Edit Profile', () async {
+                final controller = Get.find<UserProfileController>();
+                final profile = controller.userProfile.value;
+
+                if (profile != null && profile.userId.isNotEmpty) {
+                  final result = await Get.to(
+                    () => const AlliedBusinessRegistrationScreen(),
+                    arguments: {
+                      'userId': profile.userId,
+                      'isUpdate': true,
+                      'businessName': profile.businessName,
+                      'gstNumber': profile.gstNumber,
+                      'businessType': profile.businessType,
+                      'city': profile.city,
+                      'phoneNumber': profile.mobileNo,
+                      'email': profile.email,
+                      'businessLogoPath': profile.businessLogoPath,
+                    },
+                  ); // Refresh profile if update was successful
+                  if (result == true) {
+                    controller.fetchCurrentUserProfile();
+                  }
+                } else {
+                  SnackBarHelper.error(
+                    'Unable to edit profile. User ID not found.',
+                  );
+                }
               }),
             ),
             const SizedBox(width: 16),

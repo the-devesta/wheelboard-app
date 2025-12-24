@@ -511,10 +511,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
       }
 
       final activeTrips = tripController.assignedTrips.where((trip) {
-        // Consider trips as active if pickup date is today or in the future
-        final now = DateTime.now();
-        final tripDate = trip.pickupDate;
-        return tripDate.isAfter(now) || tripDate.isAtSameMomentAs(now);
+        // Filter based on tripStatus field from API
+        final status = trip.tripStatus.toLowerCase();
+        return status == 'upcoming' ||
+            status == 'active' ||
+            status == 'in progress';
       }).toList();
 
       if (activeTrips.isEmpty) {
@@ -788,10 +789,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
       }
 
       final completedTrips = tripController.assignedTrips.where((trip) {
-        // Consider trips as completed if pickup date is in the past
-        final now = DateTime.now();
-        final tripDate = trip.pickupDate;
-        return tripDate.isBefore(now);
+        // Filter based on tripStatus field from API
+        final status = trip.tripStatus.toLowerCase();
+        return status == 'completed' ||
+            status == 'finished' ||
+            status == 'done';
       }).toList();
 
       // Sort based on filter

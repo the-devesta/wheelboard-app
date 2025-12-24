@@ -1,4 +1,3 @@
-
 // }
 
 import 'package:flutter/material.dart';
@@ -6,11 +5,12 @@ import 'package:get/get.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
 import '../../../widgets/custom_loader.dart';
+import '../../../services/auth_service.dart';
 
 class BidSubmissionScreen extends StatefulWidget {
   final String tripId;
   final UnassignedTripDetails tripDetails;
-  
+
   const BidSubmissionScreen({
     super.key,
     required this.tripId,
@@ -24,7 +24,9 @@ class BidSubmissionScreen extends StatefulWidget {
 class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController messageController = TextEditingController();
-  final UnassignedTripsController controller = Get.put(UnassignedTripsController());
+  final UnassignedTripsController controller = Get.put(
+    UnassignedTripsController(),
+  );
 
   String _getLocationName(String location) {
     if (location.isEmpty) return 'Unknown';
@@ -34,8 +36,22 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
 
   String _formatDate(DateTime? date, String time) {
     if (date == null) return time;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final dateStr =
+        '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
     final timeStr = time.isNotEmpty
         ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
         : '';
@@ -88,20 +104,32 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: Colors.redAccent),
+                      const Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: Colors.redAccent,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: Text("From: ${_getLocationName(widget.tripDetails.pickupLocation)}"),
+                        child: Text(
+                          "From: ${_getLocationName(widget.tripDetails.pickupLocation)}",
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: Colors.redAccent),
+                      const Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: Colors.redAccent,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: Text("To: ${_getLocationName(widget.tripDetails.deliveryLocation)}"),
+                        child: Text(
+                          "To: ${_getLocationName(widget.tripDetails.deliveryLocation)}",
+                        ),
                       ),
                     ],
                   ),
@@ -110,7 +138,12 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                     children: [
                       const Icon(Icons.calendar_today, size: 16),
                       const SizedBox(width: 4),
-                      Text(_formatDate(widget.tripDetails.pickupDate, widget.tripDetails.pickupTime)),
+                      Text(
+                        _formatDate(
+                          widget.tripDetails.pickupDate,
+                          widget.tripDetails.pickupTime,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -144,7 +177,7 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Section title
             const Text(
               "Submit Your Bid",
@@ -224,50 +257,103 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
             const SizedBox(height: 20),
 
             // Submit Bid button
-            Obx(() => SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: controller.isSubmittingBid.value ? null : () async {
-                  final amount = double.tryParse(amountController.text.trim());
-                  if (amount == null || amount <= 0) {
-                    Get.snackbar("Error", "Please enter a valid bid amount");
-                    return;
-                  }
+            Obx(() {
+              final isHired = AuthService.to.isUserHired;
+              final isSubmitting = controller.isSubmittingBid.value;
 
-                  final success = await controller.submitBid(
-                    tripId: widget.tripId,
-                    bidAmount: amount,
-                    bidDescription: messageController.text.trim(),
-                  );
+              return Column(
+                children: [
+                  if (isHired)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.orange.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "You are currently hired by a company. Bidding is not available.",
+                              style: TextStyle(
+                                color: Colors.orange.shade900,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isHired || isSubmitting
+                          ? null
+                          : () async {
+                              final amount = double.tryParse(
+                                amountController.text.trim(),
+                              );
+                              if (amount == null || amount <= 0) {
+                                Get.snackbar(
+                                  "Error",
+                                  "Please enter a valid bid amount",
+                                );
+                                return;
+                              }
 
-                  if (success) {
-                    Navigator.pop(context);
-                    controller.refreshTrips();
-                  }
-                },
-                icon: controller.isSubmittingBid.value
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: const CustomLoader.small(
-                          color: Colors.white,
+                              final success = await controller.submitBid(
+                                tripId: widget.tripId,
+                                bidAmount: amount,
+                                bidDescription: messageController.text.trim(),
+                              );
+
+                              if (success) {
+                                Navigator.pop(context);
+                                controller.refreshTrips();
+                              }
+                            },
+                      icon: isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: const CustomLoader.small(
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send, size: 18),
+                      label: Text(
+                        isHired
+                            ? "Bidding Disabled (Hired)"
+                            : (isSubmitting ? "Submitting..." : "Submit Bid"),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                      )
-                    : const Icon(Icons.send, size: 18),
-                label: Text(
-                  controller.isSubmittingBid.value ? "Submitting..." : "Submit Bid",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.tealAccent.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isHired
+                            ? Colors.grey.shade400
+                            : Colors.tealAccent.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            )),
+                ],
+              );
+            }),
 
             const SizedBox(height: 30),
 

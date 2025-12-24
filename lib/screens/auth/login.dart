@@ -307,6 +307,7 @@ class ProfessionLogin extends StatelessWidget {
       final businessCategory = responseData['businessCategory'] ?? '';
       final isProfileComplete = responseData['isProfileComplete'] ?? false;
       final isKYCCompleted = responseData['isKYCCompleted'] ?? false;
+      final isHired = responseData['isHired'] ?? false;
       final token = responseData['token'] ?? '';
       final userId = responseData['userId'] ?? '';
 
@@ -321,6 +322,7 @@ class ProfessionLogin extends StatelessWidget {
         userId: userId,
         userType: businessCategory,
         isKYCCompleted: isKYCCompleted,
+        isHired: isHired,
       );
 
       if (loginSuccess) {

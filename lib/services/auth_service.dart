@@ -13,6 +13,7 @@ class AuthService extends GetxService {
   final RxString userId = ''.obs;
   final RxString userType = ''.obs; // 'Professional' or 'Company'
   final RxBool isKYCCompleted = false.obs; // KYC completion status
+  final RxBool isHired = false.obs; // Professional hired status
 
   @override
   void onInit() {
@@ -29,6 +30,7 @@ class AuthService extends GetxService {
       final user = await _sessionManager.getString("userId");
       final type = await _sessionManager.getString("userType");
       final kycStatus = await _sessionManager.getBool("isKYCCompleted");
+      final hiredStatus = await _sessionManager.getBool("isHired");
 
       print("🔐 Token exists: ${token != null && token.isNotEmpty}");
       print("🔐 User exists: ${user != null && user.isNotEmpty}");
@@ -42,17 +44,20 @@ class AuthService extends GetxService {
         userId.value = user;
         userType.value = type ?? '';
         isKYCCompleted.value = kycStatus ?? false;
+        isHired.value = hiredStatus ?? false;
         isLoggedIn.value = true;
 
         print("✅ User is already logged in: $user");
         print("✅ User Type: ${type ?? 'N/A'}");
         print("✅ KYC Completed: ${kycStatus ?? false}");
+        print("✅ Is Hired: ${hiredStatus ?? false}");
         print("✅ AuthService state: isLoggedIn = ${isLoggedIn.value}");
       } else {
         authToken.value = '';
         userId.value = '';
         userType.value = '';
         isKYCCompleted.value = false;
+        isHired.value = false;
         isLoggedIn.value = false;
         print("❌ User is not logged in");
       }
@@ -68,6 +73,7 @@ class AuthService extends GetxService {
     required String userId,
     required String userType,
     bool? isKYCCompleted,
+    bool? isHired,
   }) async {
     try {
       print("==================================");
@@ -85,18 +91,21 @@ class AuthService extends GetxService {
       await _sessionManager.saveString("userId", userId);
       await _sessionManager.saveString("userType", userType);
       await _sessionManager.saveBool("isKYCCompleted", isKYCCompleted ?? false);
+      await _sessionManager.saveBool("isHired", isHired ?? false);
 
       // Update observable variables
       authToken.value = token;
       this.userId.value = userId;
       this.userType.value = userType;
       this.isKYCCompleted.value = isKYCCompleted ?? false;
+      this.isHired.value = isHired ?? false;
       isLoggedIn.value = true;
 
       print("✅ LOGIN SUCCESSFUL!");
       print("✅ User Type Saved: $userType");
       print("✅ User ID Saved: $userId");
       print("✅ KYC Completed: ${isKYCCompleted ?? false}");
+      print("✅ Is Hired: ${isHired ?? false}");
       print("✅ Token Saved: ${token.substring(0, 20)}...");
       print("==================================");
 
@@ -117,12 +126,14 @@ class AuthService extends GetxService {
       await _sessionManager.remove("userId");
       await _sessionManager.remove("userType");
       await _sessionManager.remove("isKYCCompleted");
+      await _sessionManager.remove("isHired");
 
       // Reset observable variables
       authToken.value = '';
       userId.value = '';
       userType.value = '';
       isKYCCompleted.value = false;
+      isHired.value = false;
       isLoggedIn.value = false;
 
       print("✅ User logged out successfully");
@@ -149,6 +160,9 @@ class AuthService extends GetxService {
 
   /// Get KYC completion status
   bool get isUserKYCCompleted => isKYCCompleted.value;
+
+  /// Get hired status (for professionals)
+  bool get isUserHired => isHired.value;
 
   /// Force refresh login status
   Future<void> refreshLoginStatus() async {

@@ -239,7 +239,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           child: Align(
                             alignment: Alignment.centerRight,
                             child: Text(
-                              "Upload Images of vehicles or Job Poster",
+                              "Upload Images of vehicles or Job Poster (Optional)",
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -376,12 +376,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                       );
                                       return;
                                     }
-                                    if (imageFiles.isEmpty && !isEditMode) {
-                                      SnackBarHelper.error(
-                                        "Please upload at least one image",
-                                      );
-                                      return;
-                                    }
+                                    // Image upload is now optional
+                                    // Removed validation: if (imageFiles.isEmpty && !isEditMode)
 
                                     final openings =
                                         int.tryParse(

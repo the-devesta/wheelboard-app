@@ -100,6 +100,89 @@ class ServiceProviderController extends GetxController {
     }
   }
 
+  /// Update Service Provider Profile
+  Future<void> updateServiceProvider(ServiceProviderModel model) async {
+    if (isLoading.value) {
+      print("⚠️ API call already in progress, skipping...");
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      print("🚀 Starting Service Provider Profile Update...");
+
+      final fields = model.toJsonFields();
+      final files = <File>[];
+
+      if (model.getBusinessLogo() != null) {
+        files.add(model.getBusinessLogo()!);
+      }
+
+      print("📤 Sending update request to API...");
+
+      final streamedResponse =
+          await HttpHelper.uploadMultipart(
+            endpoint: API.updateServiceProvider,
+            fields: fields,
+            files: files,
+            fieldKey: "BusinessLogo",
+            headers: {'Accept': 'application/json'},
+          ).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              print("⏱️ Request timed out after 30 seconds");
+              throw Exception(
+                'Request timeout. Please check your internet connection and try again.',
+              );
+            },
+          );
+
+      print("✅ Request sent, waiting for response...");
+      print("📊 Response Status Code: ${streamedResponse.statusCode}");
+
+      final response = await http.Response.fromStream(streamedResponse).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print("⏱️ Response reading timed out");
+          throw Exception('Response timeout. Please try again.');
+        },
+      );
+
+      print("📥 Response received!");
+      print("📊 Status Code: ${response.statusCode}");
+      print(
+        "📄 Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print("✅ Profile updated successfully!");
+        SnackBarHelper.success("Profile updated successfully!");
+        await Future.delayed(const Duration(milliseconds: 800));
+        Get.back(result: true); // Go back with success result
+        return;
+      }
+
+      print("❌ API Error - Status: ${response.statusCode}");
+      final errorMessage = ErrorHandler.parseError(
+        response.body,
+        statusCode: response.statusCode,
+      );
+
+      print("❌ Error Message: $errorMessage");
+      SnackBarHelper.error(errorMessage);
+    } catch (e) {
+      print("❌ Exception caught: $e");
+      print("❌ Exception type: ${e.runtimeType}");
+
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      print("❌ Final Error Message: $errorMessage");
+      SnackBarHelper.error(errorMessage);
+    } finally {
+      print("🏁 Request completed, resetting loading state");
+      isLoading.value = false;
+    }
+  }
+
   /// Add a new service
   Future<Map<String, dynamic>?> addService(AddServiceModel model) async {
     if (isLoading.value) return null;

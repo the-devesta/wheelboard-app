@@ -38,10 +38,7 @@ class _JobsScreenState extends State<JobsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Get.back(),
-        ),
+
         title: const Text("Your Jobs", style: TextStyle(color: Colors.black)),
         centerTitle: true,
       ),
@@ -347,7 +344,7 @@ class JobCard extends StatelessWidget {
                   _infoRow("Openings", job.openings.toString()),
                   _infoRow("Salary", "₹${job.salary}"),
                   _infoRow("City", job.city),
-                  _infoRow("Job Type", job.jobType),
+
                   _infoRow("Description", job.description),
                 ],
               ),

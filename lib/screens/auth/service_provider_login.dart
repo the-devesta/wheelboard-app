@@ -34,6 +34,8 @@ class _AlliedBusinessRegistrationScreenState
   List<String> selectedServices = [];
   List<PlatformFile> _pickedImages = [];
   bool _hasAttemptedValidation = false;
+  bool isUpdateMode = false; // Track if we're in update mode
+  String? existingLogoUrl; // Store existing logo URL
 
   final List<String> businessTypes = [
     "Dealer",
@@ -58,29 +60,68 @@ class _AlliedBusinessRegistrationScreenState
     final arguments = Get.arguments;
     if (arguments != null && arguments is Map) {
       userId = arguments["userId"]?.toString() ?? "";
+
+      // Check if this is update mode
+      isUpdateMode = arguments["isUpdate"] == true;
     } else {
       userId = "";
     }
 
-    // ✅ Pre-fill data from registration if available
+    // ✅ Pre-fill data from registration or existing profile
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final registrationData = Get.arguments;
       if (registrationData != null && registrationData is Map) {
-        // Pre-fill business name from company name
-        if (registrationData["companyName"] != null &&
-            registrationData["companyName"].toString().isNotEmpty) {
-          businessNameController.text = registrationData["companyName"]
-              .toString();
+        if (isUpdateMode) {
+          // Update mode - load existing profile data
+          _loadExistingProfile(registrationData);
+        } else {
+          // Registration mode - pre-fill from signup
+          _prefillFromSignup(registrationData);
         }
-        // Pre-fill email
-        if (registrationData["email"] != null &&
-            registrationData["email"].toString().isNotEmpty) {
-          emailController.text = registrationData["email"].toString();
-        }
-        // Pre-fill phone number
-        if (registrationData["mobileNo"] != null &&
-            registrationData["mobileNo"].toString().isNotEmpty) {
-          phoneController.text = registrationData["mobileNo"].toString();
+      }
+    });
+  }
+
+  void _prefillFromSignup(Map arguments) {
+    // Pre-fill business name from company name
+    if (arguments["companyName"] != null &&
+        arguments["companyName"].toString().isNotEmpty) {
+      businessNameController.text = arguments["companyName"].toString();
+    }
+    // Pre-fill email
+    if (arguments["email"] != null &&
+        arguments["email"].toString().isNotEmpty) {
+      emailController.text = arguments["email"].toString();
+    }
+    // Pre-fill phone number
+    if (arguments["mobileNo"] != null &&
+        arguments["mobileNo"].toString().isNotEmpty) {
+      phoneController.text = arguments["mobileNo"].toString();
+    }
+  }
+
+  void _loadExistingProfile(Map arguments) {
+    setState(() {
+      // Load all existing data
+      businessNameController.text = arguments["businessName"]?.toString() ?? "";
+      gstController.text = arguments["gstNumber"]?.toString() ?? "";
+      addressController.text = arguments["businessAddress"]?.toString() ?? "";
+      cityController.text = arguments["city"]?.toString() ?? "";
+      phoneController.text = arguments["phoneNumber"]?.toString() ?? "";
+      emailController.text = arguments["email"]?.toString() ?? "";
+      whatsappController.text = arguments["whatsappNumber"]?.toString() ?? "";
+      descriptionController.text = arguments["description"]?.toString() ?? "";
+      selectedBusinessType = arguments["businessType"]?.toString();
+      existingLogoUrl = arguments["businessLogoPath"]?.toString();
+
+      // Parse services offered
+      if (arguments["servicesOffered"] != null) {
+        final servicesStr = arguments["servicesOffered"].toString();
+        if (servicesStr.isNotEmpty) {
+          selectedServices = servicesStr
+              .split(',')
+              .map((e) => e.trim())
+              .toList();
         }
       }
     });
@@ -165,7 +206,8 @@ class _AlliedBusinessRegistrationScreenState
                       const SizedBox(height: 12),
                       _buildBusinessTypeButtons(),
                       // Error message for Business Type
-                      if (_hasAttemptedValidation && selectedBusinessType == null)
+                      if (_hasAttemptedValidation &&
+                          selectedBusinessType == null)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
@@ -178,7 +220,10 @@ class _AlliedBusinessRegistrationScreenState
                         ),
                       const SizedBox(height: 16),
                       // Services Offered
-                      _buildFieldLabel("What kind of services do you offer?", required: true),
+                      _buildFieldLabel(
+                        "What kind of services do you offer?",
+                        required: true,
+                      ),
                       const SizedBox(height: 12),
                       _buildServicesButtons(),
                       // Error message for Services
@@ -241,7 +286,10 @@ class _AlliedBusinessRegistrationScreenState
                             return 'Phone number is required';
                           }
                           // Remove spaces and special characters for validation
-                          final phoneDigits = value.replaceAll(RegExp(r'[^\d]'), '');
+                          final phoneDigits = value.replaceAll(
+                            RegExp(r'[^\d]'),
+                            '',
+                          );
                           if (phoneDigits.length < 10) {
                             return 'Please enter a valid 10-digit phone number';
                           }
@@ -290,7 +338,10 @@ class _AlliedBusinessRegistrationScreenState
                         validator: (value) {
                           // Only validate if value is provided (optional field)
                           if (value != null && value.trim().isNotEmpty) {
-                            final phoneDigits = value.replaceAll(RegExp(r'[^\d]'), '');
+                            final phoneDigits = value.replaceAll(
+                              RegExp(r'[^\d]'),
+                              '',
+                            );
                             if (phoneDigits.length < 10) {
                               return 'Please enter a valid 10-digit WhatsApp number';
                             }
@@ -344,7 +395,9 @@ class _AlliedBusinessRegistrationScreenState
           ),
           Expanded(
             child: Text(
-              "Allied Business Registration",
+              isUpdateMode
+                  ? "Edit Business Profile"
+                  : "Allied Business Registration",
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -640,6 +693,21 @@ class _AlliedBusinessRegistrationScreenState
                     fit: BoxFit.cover,
                   ),
                 )
+              : existingLogoUrl != null && existingLogoUrl!.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    existingLogoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.image_outlined,
+                        color: Color(0xFFF36969),
+                        size: 30,
+                      );
+                    },
+                  ),
+                )
               : const Icon(
                   Icons.image_outlined,
                   color: Color(0xFFF36969),
@@ -796,7 +864,8 @@ class _AlliedBusinessRegistrationScreenState
                     }
 
                     // Validate Business Type
-                    if (selectedBusinessType == null || selectedBusinessType!.isEmpty) {
+                    if (selectedBusinessType == null ||
+                        selectedBusinessType!.isEmpty) {
                       Get.snackbar(
                         'Validation Error',
                         'Please select a business type',
@@ -833,7 +902,7 @@ class _AlliedBusinessRegistrationScreenState
                       businessName: businessNameController.text.trim(),
                       gstNumber: gstController.text.trim().isEmpty
                           ? null
-                          : gstController.text.trim(), // GST is optional
+                          : gstController.text.trim(),
                       businessType: selectedBusinessType!,
                       servicesOffered: selectedServices,
                       businessAddress: addressController.text.trim(),
@@ -842,12 +911,17 @@ class _AlliedBusinessRegistrationScreenState
                       email: emailController.text.trim(),
                       whatsappNumber: whatsappController.text.trim().isEmpty
                           ? null
-                          : whatsappController.text.trim(), // WhatsApp is optional
+                          : whatsappController.text.trim(),
                       businessLogo: businessLogo,
                       description: descriptionController.text.trim(),
                     );
 
-                    await controller.completeServiceProvider(serviceProvider);
+                    // Call appropriate method based on mode
+                    if (isUpdateMode) {
+                      await controller.updateServiceProvider(serviceProvider);
+                    } else {
+                      await controller.completeServiceProvider(serviceProvider);
+                    }
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF5A5F),
@@ -862,7 +936,7 @@ class _AlliedBusinessRegistrationScreenState
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   )
                 : Text(
-                    "Continue",
+                    isUpdateMode ? "Update Profile" : "Continue",
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
