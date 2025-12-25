@@ -99,7 +99,7 @@ class _Referral01ScreenState extends State<Referral01Screen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const NewReferralScreen(),
+                        builder: (context) => NewReferralScreen(),
                       ),
                     );
                   },
@@ -113,7 +113,11 @@ class _Referral01ScreenState extends State<Referral01Screen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.person_add, color: Colors.white, size: 18),
+                      const Icon(
+                        Icons.person_add,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'NEW REFERRAL',
@@ -193,7 +197,10 @@ class _Referral01ScreenState extends State<Referral01Screen> {
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEBF4FF),
                     borderRadius: BorderRadius.circular(16),
@@ -224,7 +231,10 @@ class _Referral01ScreenState extends State<Referral01Screen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F7F0),
                     borderRadius: BorderRadius.circular(16),
@@ -417,8 +427,8 @@ class _Referral01ScreenState extends State<Referral01Screen> {
                       status == 'Accepted'
                           ? Icons.check_circle
                           : status == 'Pending'
-                              ? Icons.pending
-                              : Icons.cancel,
+                          ? Icons.pending
+                          : Icons.cancel,
                       size: 11,
                       color: statusColor,
                     ),
@@ -472,7 +482,9 @@ class _Referral01ScreenState extends State<Referral01Screen> {
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: points > 0 ? const Color(0xFF27AE60) : const Color(0xFF2F80ED),
+                  color: points > 0
+                      ? const Color(0xFF27AE60)
+                      : const Color(0xFF2F80ED),
                 ),
               ),
             ],
@@ -534,15 +546,40 @@ class _Referral01ScreenState extends State<Referral01Screen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildStatRow(Icons.send, 'Total Referrals Sent', '7', const Color(0xFF2F80ED)),
+                  _buildStatRow(
+                    Icons.send,
+                    'Total Referrals Sent',
+                    '7',
+                    const Color(0xFF2F80ED),
+                  ),
                   const SizedBox(height: 16),
-                  _buildStatRow(Icons.check_circle, 'Accepted Referrals', '3', const Color(0xFF27AE60)),
+                  _buildStatRow(
+                    Icons.check_circle,
+                    'Accepted Referrals',
+                    '3',
+                    const Color(0xFF27AE60),
+                  ),
                   const SizedBox(height: 16),
-                  _buildStatRow(Icons.pending, 'Pending Referrals', '2', const Color(0xFFF2C94C)),
+                  _buildStatRow(
+                    Icons.pending,
+                    'Pending Referrals',
+                    '2',
+                    const Color(0xFFF2C94C),
+                  ),
                   const SizedBox(height: 16),
-                  _buildStatRow(Icons.stars, 'Total Points Earned', '75', const Color(0xFF2F80ED)),
+                  _buildStatRow(
+                    Icons.stars,
+                    'Total Points Earned',
+                    '75',
+                    const Color(0xFF2F80ED),
+                  ),
                   const SizedBox(height: 16),
-                  _buildStatRow(Icons.redeem, 'Points Redeemed', '50', const Color(0xFFF2C94C)),
+                  _buildStatRow(
+                    Icons.redeem,
+                    'Points Redeemed',
+                    '50',
+                    const Color(0xFFF2C94C),
+                  ),
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () {
@@ -577,7 +614,12 @@ class _Referral01ScreenState extends State<Referral01Screen> {
     );
   }
 
-  Widget _buildStatRow(IconData icon, String label, String value, Color valueColor) {
+  Widget _buildStatRow(
+    IconData icon,
+    String label,
+    String value,
+    Color valueColor,
+  ) {
     return Row(
       children: [
         Icon(icon, size: 16, color: const Color(0xFF111827)),

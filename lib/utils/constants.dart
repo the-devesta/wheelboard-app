@@ -6,6 +6,8 @@ class API {
   static const String companySignUp = 'api/User/company_signup';
   static const String professionalSignUp = 'api/User/professional_signup';
   static const String login = 'api/User/login';
+  static const String saveReferal = 'api/User/save-referral';
+
   static const String completeTransport = 'api/User/complete-transport';
   static const String completeServiceProvider =
       'api/User/complete-service-provider';
@@ -28,6 +30,7 @@ class API {
   static const String assignTrip = 'api/Trip/assign-trip/';
   static const String getAssignedTrips = 'api/Trip/assign-trip/';
   static const String getTripListByDriver = 'api/Trip/assign-trip-list/';
+  static const String getReferralList = 'api/User/GetReferralsByUserId/';
   static const String createTripOrder = 'api/Trip/create-order';
   static const String verifyTripPayment = 'api/Trip/verify-payment';
   static const String getTripConfirmation = 'api/Trip/confirmation/';

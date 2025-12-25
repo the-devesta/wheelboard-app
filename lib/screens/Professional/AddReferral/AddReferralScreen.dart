@@ -1,32 +1,13 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:wheelboard/controllers/Professional/add_referral_controller.dart';
 import '../NewReferral/newreferralscreen.dart';
 
 class AddReferralScreen extends StatelessWidget {
-  const AddReferralScreen({super.key});
-
+  AddReferralScreen({super.key});
+  AddReferralController controller = Get.put(AddReferralController());
   @override
   Widget build(BuildContext context) {
-    final referrals = [
-      {
-        "name": "Ajay Verma",
-        "role": "Driver",
-        "date": "22 May 2025",
-        "status": "Accepted",
-        "points": "+25 PTS",
-        "isAccepted": true,
-      },
-      {
-        "name": "Sonia Malik",
-        "role": "Tyre Fitter",
-        "date": "20 May 2025",
-        "status": "Pending",
-        "points": "",
-        "isAccepted": false,
-      },
-    ];
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -207,133 +188,131 @@ class AddReferralScreen extends StatelessWidget {
                   "Recent Referrals",
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    "View All →",
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
+                SizedBox(height: 12),
+                // TextButton(
+                //   onPressed: () {},
+                //   child: const Text(
+                //     "View All →",
+                //     style: TextStyle(
+                //       color: Colors.blue,
+                //       fontWeight: FontWeight.w500,
+                //       fontSize: 13,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
 
             /// Referral List
-            SizedBox(
-              height: 150,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: referrals.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final r = referrals[index];
-                  return Container(
-                    width: 220,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.08),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        /// Name & Status
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              (r["name"] ?? "").toString(),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                            if (r["isAccepted"] == true)
-                              const Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle,
-                                    size: 16,
-                                    color: Colors.green,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    "Accepted",
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else
-                              const Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 16,
-                                    color: Colors.amber,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    "Pending",
-                                    style: TextStyle(
-                                      color: Colors.amber,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
+            Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                        Text(
-                          (r["role"] ?? "").toString(),
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
+              if (controller.referrals.isEmpty) {
+                return const Text("No referrals found");
+              }
+
+              return SizedBox(
+                height: 120,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: controller.referrals.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final r = controller.referrals[index];
+
+                    return Container(
+                      width: 220,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              (r["date"] ?? "").toString(),
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                r.fullName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
                               ),
+                              r.isAccepted
+                                  ? Row(
+                                      children: [
+                                        Text(
+                                          r.referralStatus,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                        SizedBox(width: 6),
+                                        const Icon(
+                                          Icons.check_circle,
+                                          size: 12,
+                                          color: Colors.green,
+                                        ),
+                                      ],
+                                    )
+                                  : Row(
+                                      children: [
+                                        Text(
+                                          r.referralStatus.toLowerCase(),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.orange,
+                                          ),
+                                        ),
+                                        SizedBox(width: 6),
+                                        const Icon(
+                                          Icons.access_time,
+                                          size: 12,
+                                          color: Colors.orange,
+                                        ),
+                                      ],
+                                    ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+
+                          Text(
+                            r.role,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
                             ),
-                            Text(
-                              (r["points"] ?? "").toString(),
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          ),
+
+                          const Spacer(),
+
+                          Text(
+                            r.referralStatus,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: r.isAccepted ? Colors.green : Colors.amber,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              );
+            }),
 
             const SizedBox(height: 24),
 
@@ -379,13 +358,14 @@ class AddReferralScreen extends StatelessWidget {
                   onPressed: () {
                     Get.to(() => NewReferralScreen());
                   },
-                  icon: const Icon(Icons.person_add, color: Colors.white, size: 18),
+                  icon: const Icon(
+                    Icons.person_add,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   label: const Text(
                     "NEW REFERRAL",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5E5E),

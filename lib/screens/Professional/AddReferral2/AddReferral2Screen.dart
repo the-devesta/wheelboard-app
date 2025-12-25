@@ -9,11 +9,19 @@ class AddReferral2Screen extends StatefulWidget {
 }
 
 class _AddReferral2ScreenState extends State<AddReferral2Screen> {
-  final TextEditingController _nameController = TextEditingController(text: 'Rohit Sharma');
-  final TextEditingController _phoneController = TextEditingController(text: '9725194416');
-  final TextEditingController _emailController = TextEditingController(text: 'rohit@gmail.com');
-  final TextEditingController _locationController = TextEditingController(text: 'Mumbai');
-  
+  final TextEditingController _nameController = TextEditingController(
+    text: 'Rohit Sharma',
+  );
+  final TextEditingController _phoneController = TextEditingController(
+    text: '9725194416',
+  );
+  final TextEditingController _emailController = TextEditingController(
+    text: 'rohit@gmail.com',
+  );
+  final TextEditingController _locationController = TextEditingController(
+    text: 'Mumbai',
+  );
+
   String _selectedRole = 'Driver';
   bool _notifyWhenAccepted = true;
 
@@ -162,7 +170,10 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                               _buildRoleButton('Driver', Icons.directions_car),
                               _buildRoleButton('Tyre Fitter', Icons.build),
                               _buildRoleButton('Mechanic', Icons.hardware),
-                              _buildRoleButton('Consulting Agent', Icons.person),
+                              _buildRoleButton(
+                                'Consulting Agent',
+                                Icons.person,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 24),
@@ -233,8 +244,12 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                                 // Handle send invite
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFEC0000).withOpacity(0.6),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                backgroundColor: const Color(
+                                  0xFFEC0000,
+                                ).withOpacity(0.6),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(999),
                                 ),
@@ -355,7 +370,10 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
               color: const Color(0xFF535353),
             ),
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               border: InputBorder.none,
               hintText: showLabel ? '' : label,
               hintStyle: GoogleFonts.poppins(
@@ -391,11 +409,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
               ),
             ),
           ),
-          Container(
-            width: 1,
-            height: 24,
-            color: const Color(0xFFE5E7EB),
-          ),
+          Container(width: 1, height: 24, color: const Color(0xFFE5E7EB)),
           Expanded(
             child: TextField(
               controller: _phoneController,
@@ -406,7 +420,10 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                 color: const Color(0xFF535353),
               ),
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 border: InputBorder.none,
                 hintText: 'Phone Number',
                 hintStyle: GoogleFonts.poppins(
@@ -445,9 +462,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
         padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 9),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFF36565) : Colors.white,
-          border: Border.all(
-            color: const Color(0xFFBDBDBD),
-          ),
+          border: Border.all(color: const Color(0xFFBDBDBD)),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Row(
@@ -473,4 +488,3 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
     );
   }
 }
-
