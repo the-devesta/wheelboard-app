@@ -699,15 +699,11 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildFeedPostCard(BuildContext context, Post post) {
-    final profileController = Get.find<UserProfileController>();
-    final profile = profileController.userProfile.value;
-    final profileImageUrl =
-        profile?.profileImage != null && profile!.profileImage!.isNotEmpty
-        ? (profile.profileImage!.startsWith('http://') ||
-                  profile.profileImage!.startsWith('https://')
-              ? profile.profileImage!
-              : ApiConstants.baseUrl + profile.profileImage!)
-        : 'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
+    // Use company logo if available, otherwise use a placeholder
+    final companyLogoUrl =
+        post.companyLogo != null && post.companyLogo!.isNotEmpty
+        ? post.companyLogo!
+        : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -728,23 +724,76 @@ class HomeScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(50),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: const Color(0xFFF25C5C),
-                  backgroundImage: NetworkImage(profileImageUrl),
-                  onBackgroundImageError: (exception, stackTrace) {
-                    // Fallback handled by NetworkImage
-                  },
-                ),
+                // Company Logo or Profile Avatar
+                companyLogoUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          _formatImageUrl(companyLogoUrl),
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          headers: _imageHeaders(),
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to initials avatar if logo fails to load
+                            return CircleAvatar(
+                              radius: 20,
+                              backgroundColor: const Color(0xFFFFE6E6),
+                              child: Text(
+                                post.userName.isNotEmpty
+                                    ? post.userName[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFF25C5C),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : CircleAvatar(
+                        radius: 20,
+                        backgroundColor: const Color(0xFFFFE6E6),
+                        child: Text(
+                          post.userName.isNotEmpty
+                              ? post.userName[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFF25C5C),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        post.userName.isNotEmpty
-                            ? post.userName
-                            : (profile?.displayName ?? "User"),
+                        post.userName.isNotEmpty ? post.userName : "User",
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(

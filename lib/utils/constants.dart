@@ -73,6 +73,7 @@ class API {
   static const String createPost = 'api/Post/add';
   // static const String getUserPosts = 'api/Post/user/';
   static const String getAllPost = 'api/Post/get-all-post';
+  static const String togglePostLike = 'api/Post/post-like-toggle';
 
   // Job APIs
   static const String getAppliedJobs = 'api/Job/applied-jobs/';

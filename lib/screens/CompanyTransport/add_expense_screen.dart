@@ -62,12 +62,27 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   void initState() {
     super.initState();
+
+    // 🔍 DEBUG: Check user type and controller selection
+    print("🔍 ========================================");
+    print("🔍 ADD EXPENSE SCREEN INITIALIZATION");
+    print("🔍 ========================================");
+    print("🔍 isProfessional flag: $isProfessional");
+    print(
+      "🔍 User Type: ${isProfessional ? 'Professional/Driver' : 'Transport Company'}",
+    );
+
     // Initialize appropriate controller based on user type
     if (isProfessional) {
+      print("🔍 Using: AssignedTripController");
+      print("🔍 API: api/Trip/assign-trip-list/{userId}");
       tripController = Get.put(AssignedTripController());
     } else {
+      print("🔍 Using: TripController");
+      print("🔍 API: api/Trip/trip-list/{userId}");
       tripController = Get.put(TripController());
     }
+    print("🔍 ========================================");
 
     _selectedDate = DateTime.now();
     _dateController.text = _formatDate(_selectedDate!);
@@ -260,6 +275,20 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         if (isProfessional) {
           final assignedTripController =
               tripController as AssignedTripController;
+
+          // 🔍 DEBUG: Log loading state and trip count
+          print("🔍 === PROFESSIONAL TRIP SELECTION DEBUG ===");
+          print("🔍 Is Loading: ${assignedTripController.isLoading.value}");
+          print(
+            "🔍 Trip Count: ${assignedTripController.assignedTrips.length}",
+          );
+          if (assignedTripController.assignedTrips.isNotEmpty) {
+            print(
+              "🔍 First Trip: ${assignedTripController.assignedTrips.first.pickupLocation} → ${assignedTripController.assignedTrips.first.deliveryLocation}",
+            );
+          }
+          print("🔍 ========================================");
+
           if (assignedTripController.isLoading.value) {
             return const CustomLoader.small(message: "Loading trips...");
           }
@@ -291,7 +320,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Select Trip',
+                      'Select Trip (${allTrips.length})',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -304,7 +333,35 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 // Trip List
                 Expanded(
                   child: allTrips.isEmpty
-                      ? const Center(child: Text('No trips available'))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inbox_outlined,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No trips available',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Assigned trips will appear here',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
                       : ListView.builder(
                           shrinkWrap: true,
                           itemCount: allTrips.length,
@@ -320,6 +377,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                 setState(() {
                                   _selectedTrip = trip;
                                 });
+                                print(
+                                  "✅ Selected trip: ${trip.pickupLocation} → ${trip.deliveryLocation}",
+                                );
                                 Navigator.pop(context);
                               },
                               child: Container(
@@ -389,6 +449,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           );
         } else {
           final tripControllerTyped = tripController as TripController;
+
+          // 🔍 DEBUG: Log loading state and trip count for Transport
+          print("🔍 === TRANSPORT TRIP SELECTION DEBUG ===");
+          print("🔍 Is Loading: ${tripControllerTyped.isTripsLoading.value}");
+          print("🔍 Trip Count: ${tripControllerTyped.trips.length}");
+          if (tripControllerTyped.trips.isNotEmpty) {
+            print(
+              "🔍 First Trip: ${tripControllerTyped.trips.first.pickupLocation} → ${tripControllerTyped.trips.first.deliveryLocation}",
+            );
+          }
+          print("🔍 ========================================");
+
           if (tripControllerTyped.isTripsLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -420,7 +492,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Select Trip',
+                      'Select Trip (${allTrips.length})',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -433,7 +505,35 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 // Trip List
                 Expanded(
                   child: allTrips.isEmpty
-                      ? const Center(child: Text('No trips available'))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inbox_outlined,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No trips available',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Create trips to add expenses',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
                       : ListView.builder(
                           shrinkWrap: true,
                           itemCount: allTrips.length,
@@ -448,6 +548,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                 setState(() {
                                   _selectedTrip = trip;
                                 });
+                                print(
+                                  "✅ Selected trip: ${trip.pickupLocation} → ${trip.deliveryLocation}",
+                                );
                                 Navigator.pop(context);
                               },
                               child: Container(

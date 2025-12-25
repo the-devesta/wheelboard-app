@@ -149,31 +149,37 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                     // Profile Picture
                     Obx(() {
                       final profile = userProfileController.userProfile.value;
-                      final profileImage = profile?.profileImage;
+                      // 🔧 FIX: Use businessLogoPath directly like profile_screen.dart
+                      final logoPath = profile?.businessLogoPath;
+
+                      // 🔍 DEBUG: Log profile data
+                      if (profile != null) {
+                        print(
+                          "🔍 SP Profile - Type: ${profile.userType}, Logo: $logoPath",
+                        );
+                      } else {
+                        print("🔍 SP Profile is NULL");
+                      }
 
                       return GestureDetector(
                         onTap: () {
                           Get.to(() => const ServiceProviderProfileScreen());
                         },
-                        child: profileImage != null && profileImage.isNotEmpty
+                        child: logoPath != null && logoPath.isNotEmpty
                             ? CircleAvatar(
-                                radius: 33,
-                                backgroundImage: NetworkImage(profileImage),
+                                radius: 28,
+                                backgroundColor: const Color(0xFFE0E0E0),
+                                backgroundImage: NetworkImage(logoPath),
                                 onBackgroundImageError:
                                     (exception, stackTrace) {
-                                      // Handle image error
+                                      print("❌ Error loading logo: $exception");
                                     },
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 33,
-                                  color: Color(0xFF333333),
-                                ),
                               )
                             : const CircleAvatar(
                                 radius: 33,
                                 backgroundColor: Color(0xFFE0E0E0),
                                 child: Icon(
-                                  Icons.person,
+                                  Icons.business,
                                   size: 33,
                                   color: Color(0xFF333333),
                                 ),
@@ -894,142 +900,13 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     );
   }
 
-  Widget _buildFeedCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFBFBFB),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Profile Header
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 17,
-                backgroundImage: NetworkImage('https://i.pravatar.cc/34?img=5'),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Delhi Transport',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                  color: const Color(0xFF535353),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Post Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              'assets/truck.png',
-              width: double.infinity,
-              height: 152,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 152,
-                  color: const Color(0xFFE0E0E0),
-                  child: const Icon(
-                    Icons.image,
-                    size: 48,
-                    color: Color(0xFF999999),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Action Buttons
-          Row(
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: Icon(
-                  Icons.favorite,
-                  size: 25,
-                  color: const Color(0xFFF36969),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: () {},
-                icon: SvgPicture.asset(
-                  'assets/share.svg',
-                  width: 20,
-                  height: 20,
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: () {},
-                icon: SvgPicture.asset('assets/eye.svg', width: 20, height: 20),
-              ),
-            ],
-          ),
-          // Title
-          Text(
-            'Tips for fleet management',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Description
-          Text(
-            'Learn how to optimize your fleet operations and reduce costs',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 12,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Footer
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Posted 2 days Ago',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 13,
-                  color: const Color(0xFF666666),
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'Read more',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 15,
-                    color: const Color(0xFF375DFB),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Build feed post card - same style as Transport home screen
   Widget _buildFeedPostCard(BuildContext context, Post post) {
-    final profile = userProfileController.userProfile.value;
-    final profileImageUrl =
-        profile?.profileImage != null && profile!.profileImage!.isNotEmpty
-        ? (profile.profileImage!.startsWith('http://') ||
-                  profile.profileImage!.startsWith('https://')
-              ? profile.profileImage!
-              : ApiConstants.baseUrl + profile.profileImage!)
-        : 'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
+    // Use company logo if available, otherwise use a placeholder
+    final companyLogoUrl =
+        post.companyLogo != null && post.companyLogo!.isNotEmpty
+        ? post.companyLogo!
+        : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1049,20 +926,75 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
             borderRadius: BorderRadius.circular(50),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: const Color(0xFFF25C5C),
-                  backgroundImage: NetworkImage(profileImageUrl),
-                ),
+                // Company Logo or Profile Avatar
+                companyLogoUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          _formatImageUrl(companyLogoUrl),
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to initials avatar if logo fails to load
+                            return CircleAvatar(
+                              radius: 20,
+                              backgroundColor: const Color(0xFFFFE6E6),
+                              child: Text(
+                                post.userName.isNotEmpty
+                                    ? post.userName[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFF25C5C),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : CircleAvatar(
+                        radius: 20,
+                        backgroundColor: const Color(0xFFFFE6E6),
+                        child: Text(
+                          post.userName.isNotEmpty
+                              ? post.userName[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFF25C5C),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        post.userName.isNotEmpty
-                            ? post.userName
-                            : (profile?.displayName ?? "User"),
+                        post.userName.isNotEmpty ? post.userName : "User",
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(

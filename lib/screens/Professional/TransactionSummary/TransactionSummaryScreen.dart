@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'dart:math' as math;
 import '../../CompanyTransport/add_expense_screen.dart';
+import '../../../services/auth_service.dart';
 
 class TransactionSummaryScreen extends StatefulWidget {
   const TransactionSummaryScreen({super.key});
@@ -386,8 +387,18 @@ class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: () {
+                      // 🔧 FIX: Dynamically determine user type instead of hardcoding
+                      // Check if user is Professional/Driver or Transport Company
+                      final userType = Get.find<AuthService>().userType;
+                      final isProfessional =
+                          userType == 'Professional' || userType == 'Driver';
+
+                      print("🔍 Opening Add Expense Screen");
+                      print("🔍 User Type: $userType");
+                      print("🔍 isProfessional: $isProfessional");
+
                       Get.to(
-                        () => const AddExpenseScreen(isProfessional: true),
+                        () => AddExpenseScreen(isProfessional: isProfessional),
                       );
                     },
                     style: ElevatedButton.styleFrom(

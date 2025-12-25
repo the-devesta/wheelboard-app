@@ -61,11 +61,30 @@ class FeedsController extends GetxController {
   }
 
   /// Toggle like on a post
-  void toggleLike(String postId) {
-    if (likedPosts.contains(postId)) {
-      likedPosts.remove(postId);
-    } else {
-      likedPosts.add(postId);
+  Future<void> toggleLike(String postId) async {
+    try {
+      // Get or create PostController instance
+      PostController postController;
+      try {
+        postController = Get.find<PostController>();
+      } catch (e) {
+        // If not found, create it
+        postController = Get.put(PostController());
+      }
+
+      // Call API to toggle like
+      final success = await postController.togglePostLike(postId);
+
+      if (success) {
+        // Update local state for immediate UI feedback
+        if (likedPosts.contains(postId)) {
+          likedPosts.remove(postId);
+        } else {
+          likedPosts.add(postId);
+        }
+      }
+    } catch (e) {
+      print("❌ Error toggling like: $e");
     }
   }
 
@@ -79,4 +98,3 @@ class FeedsController extends GetxController {
     await fetchFeeds();
   }
 }
-

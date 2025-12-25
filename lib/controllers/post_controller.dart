@@ -150,6 +150,82 @@ class PostController extends GetxController {
   Future<void> refreshPosts() async {
     await fetchUserPosts();
   }
+
+  /// Toggle like on a post
+  Future<bool> togglePostLike(String postId) async {
+    try {
+      final authService = AuthService.to;
+      final token = authService.currentToken;
+      final userId = authService.currentUserId;
+
+      if (token.isEmpty || userId.isEmpty) {
+        Get.snackbar("Error", "Please login to like posts");
+        return false;
+      }
+
+      print("👍 Toggling like for post: $postId");
+      print("👍 User ID: $userId");
+
+      // 🔧 FIX: Send postId and userId as query parameters (not body)
+      final endpoint = '${API.togglePostLike}?postId=$postId&userId=$userId';
+
+      final response = await HttpHelper.postData(
+        endpoint: endpoint,
+        data: {}, // Empty body
+        headers: {
+          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': '*/*',
+        },
+      );
+
+      print("👍 Toggle post like response status: ${response.statusCode}");
+      print("👍 Toggle post like response body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final postIndex = posts.indexWhere((post) => post.postId == postId);
+        if (postIndex != -1) {
+          final post = posts[postIndex];
+          // Toggle the like status and update count
+          final newIsLiked = !post.isLiked;
+          final newLikeCount = newIsLiked
+              ? post.likeCount + 1
+              : (post.likeCount > 0 ? post.likeCount - 1 : 0);
+
+          // Create updated post using copyWith
+          final updatedPost = post.copyWith(
+            likeCount: newLikeCount,
+            isLiked: newIsLiked,
+          );
+
+          // Update the post in the list - create new list to trigger GetX reactivity
+          final updatedPosts = List<Post>.from(posts);
+          updatedPosts[postIndex] = updatedPost;
+          posts.value = updatedPosts;
+          posts.refresh(); // Force refresh to ensure UI updates
+          print("✅ Successfully toggled like for post: $postId");
+        }
+        return true;
+      } else {
+        print("❌ Failed to toggle post like: ${response.statusCode}");
+        try {
+          final errorData = json.decode(response.body);
+          final errorMessage =
+              errorData['message'] ??
+              errorData['error'] ??
+              "Failed to toggle like";
+          Get.snackbar("Error", errorMessage);
+        } catch (e) {
+          Get.snackbar("Error", "Failed to toggle like");
+        }
+        return false;
+      }
+    } catch (e) {
+      print("❌ Error toggling post like: $e");
+      Get.snackbar("Error", "Failed to toggle like: ${e.toString()}");
+      return false;
+    }
+  }
 }
 
 /// Post Model
@@ -163,6 +239,8 @@ class Post {
   final String userName;
   final String? companyId;
   final String? companyLogo;
+  final int likeCount;
+  final bool isLiked;
 
   Post({
     required this.postId,
@@ -174,6 +252,8 @@ class Post {
     required this.userName,
     required this.companyId,
     this.companyLogo,
+    this.likeCount = 0,
+    this.isLiked = false,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -191,6 +271,36 @@ class Post {
       userName: json['userName'] ?? '',
       companyId: json['companyId'] as String?,
       companyLogo: json['companyLogo'] as String?,
+      likeCount: json['likeCount'] ?? 0,
+      isLiked: json['isLiked'] ?? false,
+    );
+  }
+
+  Post copyWith({
+    String? postId,
+    String? content,
+    String? category,
+    String? status,
+    List<String>? imageUrls,
+    DateTime? dateEntered,
+    String? userName,
+    String? companyId,
+    String? companyLogo,
+    int? likeCount,
+    bool? isLiked,
+  }) {
+    return Post(
+      postId: postId ?? this.postId,
+      content: content ?? this.content,
+      category: category ?? this.category,
+      status: status ?? this.status,
+      imageUrls: imageUrls ?? this.imageUrls,
+      dateEntered: dateEntered ?? this.dateEntered,
+      userName: userName ?? this.userName,
+      companyId: companyId ?? this.companyId,
+      companyLogo: companyLogo ?? this.companyLogo,
+      likeCount: likeCount ?? this.likeCount,
+      isLiked: isLiked ?? this.isLiked,
     );
   }
 
