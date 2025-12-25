@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/add_trip_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../utils/distance_service.dart';
+import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
 import 'dart:math';
 
@@ -37,6 +38,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
   // Distance calculation state
   DistanceResult? _distanceResult;
   bool _isCalculatingDistance = false;
+  bool _isLoadingLocation = false;
 
   @override
   void initState() {
@@ -388,6 +390,51 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
         "${dt.minute.toString().padLeft(2, '0')}:00";
   }
 
+  /// Get current location and fill in the controller
+  Future<void> _getCurrentLocation(TextEditingController controller) async {
+    setState(() => _isLoadingLocation = true);
+
+    try {
+      final address = await LocationService.getCurrentLocationAddress();
+
+      if (address != null && address.isNotEmpty) {
+        setState(() {
+          controller.text = address;
+        });
+
+        // Auto-calculate distance if both locations are set
+        _autoCalculateDistance();
+
+        Get.snackbar(
+          '✅ Success',
+          'Current location filled successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green.withOpacity(0.8),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+      } else {
+        Get.snackbar(
+          '❌ Error',
+          'Could not get current location. Please check permissions.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        '❌ Error',
+        'Failed to get location: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    } finally {
+      setState(() => _isLoadingLocation = false);
+    }
+  }
+
   Widget _buildPickupField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,6 +508,34 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
               },
             ),
           ),
+        // Current Location Button for Pickup
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _isLoadingLocation 
+                ? null 
+                : () => _getCurrentLocation(pickupController),
+            icon: _isLoadingLocation
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.my_location, size: 18),
+            label: Text(
+              _isLoadingLocation 
+                  ? 'Getting location...' 
+                  : 'Use Current Location',
+              style: const TextStyle(fontSize: 12),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF006FFD),
+              side: const BorderSide(color: Color(0xFF006FFD)),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+          ),
+        ),
       ],
     );
   }

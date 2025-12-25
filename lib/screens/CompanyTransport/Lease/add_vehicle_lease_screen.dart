@@ -42,7 +42,7 @@ class _AddVehicleLeaseScreenState extends State<AddVehicleLeaseScreen> {
   final TextEditingController _endTimeController = TextEditingController();
 
   // Selected Values
-  Vehicle? _selectedVehicle;
+  String? _selectedVehicleId;
   int _selectedPricingType = 0;
   DateTime? _startDate;
   DateTime? _endDate;
@@ -73,7 +73,7 @@ class _AddVehicleLeaseScreenState extends State<AddVehicleLeaseScreen> {
       _loadVehicles();
     });
     if (widget.preselectedVehicle != null) {
-      _selectedVehicle = widget.preselectedVehicle;
+      _selectedVehicleId = widget.preselectedVehicle!.vehicleId;
       _vehicleTitleController.text = widget.preselectedVehicle!.vehicleModel;
       _vehicleNumberController.text = widget.preselectedVehicle!.vehicleNumber;
     }
@@ -485,8 +485,8 @@ class _AddVehicleLeaseScreenState extends State<AddVehicleLeaseScreen> {
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<Vehicle>(
-          value: _selectedVehicle,
+        child: DropdownButton<String>(
+          value: _selectedVehicleId,
           hint: Text(
             'Select a vehicle',
             style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
@@ -494,18 +494,21 @@ class _AddVehicleLeaseScreenState extends State<AddVehicleLeaseScreen> {
           isExpanded: true,
           icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[600]),
           items: vehicles.map((vehicle) {
-            return DropdownMenuItem<Vehicle>(
-              value: vehicle,
+            return DropdownMenuItem<String>(
+              value: vehicle.vehicleId,
               child: Text(
                 '${vehicle.vehicleModel} - ${vehicle.vehicleNumber}',
                 style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
               ),
             );
           }).toList(),
-          onChanged: (vehicle) {
+          onChanged: (vehicleId) {
             setState(() {
-              _selectedVehicle = vehicle;
-              if (vehicle != null) {
+              _selectedVehicleId = vehicleId;
+              if (vehicleId != null) {
+                final vehicle = vehicles.firstWhere(
+                  (v) => v.vehicleId == vehicleId,
+                );
                 _vehicleTitleController.text = vehicle.vehicleModel;
                 _vehicleNumberController.text = vehicle.vehicleNumber;
               }
@@ -746,13 +749,20 @@ class _AddVehicleLeaseScreenState extends State<AddVehicleLeaseScreen> {
       return;
     }
 
+    // Find selected vehicle
+    final selectedVehicle = _selectedVehicleId != null
+        ? _fleetController.vehicles.firstWhereOrNull(
+            (v) => v.vehicleId == _selectedVehicleId,
+          )
+        : null;
+
     final leaseModel = VehicleLeaseModel(
       userId: userId,
-      vehicleId: _selectedVehicle?.vehicleId,
+      vehicleId: _selectedVehicleId,
       vehicleTitle: _vehicleTitleController.text.trim(),
       vehicleNumber: _vehicleNumberController.text.trim(),
       model:
-          _selectedVehicle?.vehicleModel ??
+          selectedVehicle?.vehicleModel ??
           _vehicleTitleController.text.trim(), // Required by API
       odometerStartReading: int.tryParse(_odometerController.text.trim()) ?? 0,
       pricingType: _selectedPricingType,

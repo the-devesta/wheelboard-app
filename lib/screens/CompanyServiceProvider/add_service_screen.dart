@@ -8,6 +8,7 @@ import '../../models/add_service_model.dart';
 import '../../models/update_service_model.dart';
 import '../../models/service_model.dart';
 import '../../utils/session_manager.dart';
+import '../../utils/placeservices.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/custom_loader.dart';
 
@@ -45,6 +46,12 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   bool _isVisible = true;
   List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
+
+  // Google Places Service
+  final PlacesService _placesService = PlacesService(
+    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+  );
+  List<Suggestion> _addressSuggestions = [];
 
   // Category options
   final List<String> _categoryOptions = [
@@ -478,24 +485,140 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   }
 
   Widget _buildLocationSection() {
-    return _buildSection('', [
+    return _buildSection('Location', [
+      // Full Address with Google Places Autocomplete
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Full Address *',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: _fullAddressController,
+            decoration: InputDecoration(
+              hintText: 'Search for your business address',
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF0075FF)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              suffixIcon: const Icon(
+                Icons.location_on,
+                color: Color(0xFF0075FF),
+              ),
+            ),
+            onChanged: (value) async {
+              if (value.isNotEmpty) {
+                try {
+                  final results = await _placesService.fetchSuggestions(value);
+                  setState(() => _addressSuggestions = results);
+                } catch (e) {
+                  print('Error fetching address suggestions: $e');
+                }
+              } else {
+                setState(() => _addressSuggestions = []);
+              }
+            },
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Address is required';
+              }
+              return null;
+            },
+          ),
+          if (_addressSuggestions.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: _addressSuggestions.length,
+                separatorBuilder: (_, __) =>
+                    Divider(height: 1, color: Colors.grey.shade200),
+                itemBuilder: (context, index) {
+                  final suggestion = _addressSuggestions[index];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(
+                      Icons.location_on_outlined,
+                      color: Color(0xFF0075FF),
+                      size: 12,
+                    ),
+                    title: Text(
+                      suggestion.description,
+                      style: const TextStyle(fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: suggestion.subTitle.isNotEmpty
+                        ? Text(
+                            suggestion.subTitle,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _fullAddressController.text = suggestion.description;
+                        // Auto-fill city if available
+                        if (suggestion.city.isNotEmpty) {
+                          _cityController.text = suggestion.city;
+                        }
+                        _addressSuggestions.clear();
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+      const SizedBox(height: 16),
       _CustomTextField(
         labelText: 'City *',
         controller: _cityController,
-        suffixIcon: const Icon(Icons.arrow_drop_down),
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
             return 'City is required';
           }
           return null;
         },
-      ),
-      const SizedBox(height: 16),
-      _CustomTextField(
-        labelText: 'Full Address (optional)',
-        maxLines: 4,
-        minLines: 1,
-        controller: _fullAddressController,
       ),
     ]);
   }

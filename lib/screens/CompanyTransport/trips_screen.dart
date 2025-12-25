@@ -30,6 +30,12 @@ class _TripPageState extends State<TripPage>
   );
   late TabController _tabController;
 
+  // Search and Filter Controllers
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _destinationFilter = '';
+  String _bidsFilter = ''; // 'available', 'awaiting', or ''
+
   @override
   void initState() {
     super.initState();
@@ -48,11 +54,19 @@ class _TripPageState extends State<TripPage>
         _tabController.animateTo(index);
       }
     });
+
+    // Listen to search changes
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -62,6 +76,52 @@ class _TripPageState extends State<TripPage>
     if (userId != null && userId.isNotEmpty) {
       tripController.fetchTrips(userId);
     }
+  }
+
+  /// Filter trips based on search query and filters
+  List<Trip> _filterTrips(List<Trip> trips) {
+    return trips.where((trip) {
+      // Search filter - search in pickup, delivery location, and trip code
+      if (_searchQuery.isNotEmpty) {
+        final matchesSearch =
+            trip.pickupLocation.toLowerCase().contains(_searchQuery) ||
+            trip.deliveryLocation.toLowerCase().contains(_searchQuery) ||
+            trip.tripCode.toLowerCase().contains(_searchQuery) ||
+            (trip.vehicleType?.toLowerCase().contains(_searchQuery) ?? false);
+
+        if (!matchesSearch) return false;
+      }
+
+      // Destination filter
+      if (_destinationFilter.isNotEmpty) {
+        if (!trip.deliveryLocation.toLowerCase().contains(
+          _destinationFilter.toLowerCase(),
+        )) {
+          return false;
+        }
+      }
+
+      // Bids filter
+      if (_bidsFilter == 'available') {
+        // Show trips with bids (totalBidCount > 0)
+        if ((trip.totalBidCount ?? 0) == 0) return false;
+      } else if (_bidsFilter == 'awaiting') {
+        // Show trips without bids (totalBidCount == 0)
+        if ((trip.totalBidCount ?? 0) > 0) return false;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  /// Clear all filters
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _searchQuery = '';
+      _destinationFilter = '';
+      _bidsFilter = '';
+    });
   }
 
   @override
@@ -124,8 +184,9 @@ class _TripPageState extends State<TripPage>
                                 color: Colors.grey[100],
                                 borderRadius: BorderRadius.circular(30),
                               ),
-                              child: const TextField(
-                                decoration: InputDecoration(
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: const InputDecoration(
                                   hintText: "Search Trips",
                                   border: InputBorder.none,
                                   icon: Icon(Icons.search),
@@ -174,13 +235,15 @@ class _TripPageState extends State<TripPage>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text("See all", style: TextStyle(color: Colors.blue)),
                       ],
                     ),
                     const SizedBox(height: 16),
 
                     Obx(() {
-                      final recentTrips = tripController.trips.take(2).toList();
+                      // Apply filters to trips
+                      final filteredTrips = _filterTrips(tripController.trips);
+                      final recentTrips = filteredTrips.take(2).toList();
+
                       if (tripController.isTripsLoading.value) {
                         return const SizedBox(
                           height: 185,
@@ -188,9 +251,29 @@ class _TripPageState extends State<TripPage>
                         );
                       }
                       if (recentTrips.isEmpty) {
-                        return const SizedBox(
+                        return SizedBox(
                           height: 185,
-                          child: Center(child: Text("No recent trips")),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  size: 48,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _searchQuery.isNotEmpty ||
+                                          _destinationFilter.isNotEmpty ||
+                                          _bidsFilter.isNotEmpty
+                                      ? "No trips match your filters"
+                                      : "No recent trips",
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          ),
                         );
                       }
                       return SizedBox(
@@ -566,9 +649,11 @@ class _TripPageState extends State<TripPage>
       ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          String selectedStatus = '';
-          String selectedBids = '';
-          final destinationController = TextEditingController();
+          // Initialize with current filter values
+          final destinationController = TextEditingController(
+            text: _destinationFilter,
+          );
+          String tempBidsFilter = _bidsFilter;
 
           return Container(
             padding: const EdgeInsets.all(20),
@@ -588,57 +673,58 @@ class _TripPageState extends State<TripPage>
                       ),
                     ),
                     const Spacer(),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.more_vert, size: 20),
-                        onPressed: () {},
-                      ),
+                    TextButton(
+                      onPressed: () {
+                        _clearFilters();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Clear All'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
 
                 // Destination Field
-                Row(
-                  children: [
-                    const Text(
-                      'Destination :',
-                      style: TextStyle(
+                const Text(
+                  'Destination',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: destinationController,
+                    textAlignVertical: TextAlignVertical.center,
+                    decoration: InputDecoration(
+                      hintText: 'Enter destination city...',
+                      hintStyle: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[400],
+                      ),
+                      prefixIcon: Icon(
+                        Icons.location_on,
+                        color: Colors.grey[400],
+                        size: 20,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: TextField(
-                          controller: destinationController,
-                          decoration: const InputDecoration(
-                            hintText: 'Enter Destination..',
-                            hintStyle: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -652,19 +738,15 @@ class _TripPageState extends State<TripPage>
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    _filterChip('Completed', selectedStatus == 'Completed', () {
+                    _filterChip('Completed', false, () {
                       Navigator.pop(context);
                       _tabController.animateTo(0);
                     }),
-                    _filterChip(
-                      'In-progress',
-                      selectedStatus == 'In-progress',
-                      () {
-                        Navigator.pop(context);
-                        _tabController.animateTo(1);
-                      },
-                    ),
-                    _filterChip('Upcoming', selectedStatus == 'Upcoming', () {
+                    _filterChip('In-progress', false, () {
+                      Navigator.pop(context);
+                      _tabController.animateTo(1);
+                    }),
+                    _filterChip('Upcoming', false, () {
                       Navigator.pop(context);
                       _tabController.animateTo(2);
                     }),
@@ -684,35 +766,67 @@ class _TripPageState extends State<TripPage>
                   children: [
                     _filterChip(
                       'Bids Available',
-                      selectedBids == 'Bids Available',
+                      tempBidsFilter == 'available',
                       () {
-                        Navigator.pop(context);
-                        Get.snackbar(
-                          'Filter',
-                          'Showing trips with bids',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: const Color(0xFFF36969),
-                          colorText: Colors.white,
-                        );
+                        setModalState(() {
+                          tempBidsFilter = tempBidsFilter == 'available'
+                              ? ''
+                              : 'available';
+                        });
                       },
                     ),
                     _filterChip(
                       'Bids Awaiting',
-                      selectedBids == 'Bids Awaiting',
+                      tempBidsFilter == 'awaiting',
                       () {
-                        Navigator.pop(context);
-                        Get.snackbar(
-                          'Filter',
-                          'Showing trips awaiting bids',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: const Color(0xFFF36969),
-                          colorText: Colors.white,
-                        );
+                        setModalState(() {
+                          tempBidsFilter = tempBidsFilter == 'awaiting'
+                              ? ''
+                              : 'awaiting';
+                        });
                       },
                     ),
                   ],
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
+
+                // Apply Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _destinationFilter = destinationController.text.trim();
+                        _bidsFilter = tempBidsFilter;
+                      });
+                      Navigator.pop(context);
+                      Get.snackbar(
+                        '✅ Filters Applied',
+                        'Showing filtered trips',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: Colors.green.withOpacity(0.8),
+                        colorText: Colors.white,
+                        duration: const Duration(seconds: 2),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF36969),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Apply Filters',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
               ],
             ),
           );

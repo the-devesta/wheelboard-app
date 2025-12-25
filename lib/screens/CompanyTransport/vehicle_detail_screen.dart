@@ -7,6 +7,7 @@ import '../../controllers/fleet_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
 import 'Lease/add_vehicle_lease_screen.dart';
+import 'schedulescreen.dart';
 
 class VehicleDetailScreen extends StatefulWidget {
   final Vehicle vehicle;
@@ -910,40 +911,30 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
               ),
             ),
 
-            // Schedule Button
+            // Schedule Trip Floating Action Button
             Positioned(
-              bottom: 100,
+              bottom: 15,
               right: 16,
-              child: ElevatedButton(
+              child: FloatingActionButton.extended(
                 onPressed: () {
                   // Navigate to schedule screen
-                  // Get.to(() => ScheduleScreen());
+                  Get.to(() => const ScheduleTripScreen());
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF26868),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 6,
+                backgroundColor: const Color(0xFFF26868),
+                elevation: 25,
+                icon: const Icon(
+                  Icons.calendar_today,
+                  size: 18,
+                  color: Colors.white,
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Schedule ',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Icon(Icons.calendar_today, size: 20, color: Colors.white),
-                  ],
+                label: const Text(
+                  'Schedule Trip',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

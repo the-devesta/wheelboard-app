@@ -650,7 +650,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
 
   Widget _buildActionCard(dynamic icon, String title) {
     return Container(
-      height: 88,
+      height: 100,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFF9F9F9),
