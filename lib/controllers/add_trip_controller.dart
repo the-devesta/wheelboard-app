@@ -9,6 +9,7 @@ import '../utils/constants.dart';
 import '../utils/session_manager.dart';
 import '../utils/navigation_helper.dart';
 import '../models/add_new_trip_model.dart';
+import '../utils/app_logger.dart';
 
 class TripController extends GetxController {
   var drivers = <Driver>[].obs;
@@ -39,7 +40,7 @@ class TripController extends GetxController {
         // ✅ Auto-select first driver if none selected
         if (drivers.isNotEmpty && selectedDriver.value == null) {
           selectedDriver.value = drivers.first.driverId;
-          print(
+          AppLogger.d(
             "🚚 Auto-selected driver: ${drivers.first.fullName} (${drivers.first.driverId})",
           );
         }
@@ -169,7 +170,7 @@ class TripController extends GetxController {
           );
           vehicleNumber = selectedVehicle.vehicleNumber;
         } catch (e) {
-          print("⚠️ Vehicle not found for vehicleId: ${trip.vehicleId}");
+          AppLogger.d("⚠️ Vehicle not found for vehicleId: ${trip.vehicleId}");
         }
       }
 
@@ -203,33 +204,33 @@ class TripController extends GetxController {
       // This allows scheduled trips to have assigned drivers while post trips remain open for bidding
 
       // 🔍 DEBUG: Log DriverId decision logic
-      print("=================================");
-      print("🔍 DRIVER ID DECISION LOGIC");
-      print("=================================");
-      print("Is Scheduled Trip: ${trip.isScheduledTrip}");
-      print("Trip DriverId value: '${trip.driverId}'");
-      print("Trip DriverId isEmpty: ${trip.driverId.isEmpty}");
-      print("Trip DriverId after trim: '${trip.driverId.trim()}'");
-      print(
+      AppLogger.d("=================================");
+      AppLogger.d("🔍 DRIVER ID DECISION LOGIC");
+      AppLogger.d("=================================");
+      AppLogger.d("Is Scheduled Trip: ${trip.isScheduledTrip}");
+      AppLogger.d("Trip DriverId value: '${trip.driverId}'");
+      AppLogger.d("Trip DriverId isEmpty: ${trip.driverId.isEmpty}");
+      AppLogger.d("Trip DriverId after trim: '${trip.driverId.trim()}'");
+      AppLogger.d(
         "Trip DriverId.trim().isNotEmpty: ${trip.driverId.trim().isNotEmpty}",
       );
 
       // ✅ Send DriverId ONLY for scheduled trips with driver selected
       if (trip.isScheduledTrip && trip.driverId.trim().isNotEmpty) {
         fields["DriverId"] = trip.driverId.trim();
-        print(
+        AppLogger.d(
           "✅ DriverId WILL BE SENT: ${trip.driverId.trim()} (Scheduled Trip)",
         );
       } else {
         if (!trip.isScheduledTrip) {
-          print(
+          AppLogger.d(
             "❌ DriverId NOT SENT - Reason: This is a POST trip (not scheduled)",
           );
         } else if (trip.driverId.trim().isEmpty) {
-          print("❌ DriverId NOT SENT - Reason: driverId is empty");
+          AppLogger.d("❌ DriverId NOT SENT - Reason: driverId is empty");
         }
       }
-      print("=================================");
+      AppLogger.d("=================================");
 
       // ✅ Include VehicleNo if available (optional field from backend)
       if (vehicleNumber.isNotEmpty) {
@@ -237,33 +238,33 @@ class TripController extends GetxController {
       }
 
       // 🔍 Debug: Log all fields before sending
-      print("==================================");
-      print("📤 TRIP CREATION REQUEST");
-      print("==================================");
-      print("👤 Current User Type: ${savedUserType ?? 'NOT FOUND'}");
-      print("👤 Current User ID: ${savedUserId ?? 'NOT FOUND'}");
-      print("👉 Endpoint: ${API.addTrip}");
-      print("👉 Authentication: userId-based (UserId in headers)");
-      print("👉 Trip UserId: ${trip.userId}");
-      print("👉 Headers: {Accept: */*, UserId: ${trip.userId}}");
-      print("==================================");
-      print("📋 FIELDS BEING SENT:");
-      print("==================================");
+      AppLogger.d("==================================");
+      AppLogger.d("📤 TRIP CREATION REQUEST");
+      AppLogger.d("==================================");
+      AppLogger.d("👤 Current User Type: ${savedUserType ?? 'NOT FOUND'}");
+      AppLogger.d("👤 Current User ID: ${savedUserId ?? 'NOT FOUND'}");
+      AppLogger.d("👉 Endpoint: ${API.addTrip}");
+      AppLogger.d("👉 Authentication: userId-based (UserId in headers)");
+      AppLogger.d("👉 Trip UserId: ${trip.userId}");
+      AppLogger.d("👉 Headers: {Accept: */*, UserId: ${trip.userId}}");
+      AppLogger.d("==================================");
+      AppLogger.d("📋 FIELDS BEING SENT:");
+      AppLogger.d("==================================");
       fields.forEach((key, value) {
         if (key == "DriverId") {
-          print("👨‍✈️ $key: '$value' ✅ DRIVER ID IS BEING SENT!");
+          AppLogger.d("👨‍✈️ $key: '$value' ✅ DRIVER ID IS BEING SENT!");
         } else {
-          print("   $key: '$value'");
+          AppLogger.d("   $key: '$value'");
         }
       });
       if (!fields.containsKey("DriverId")) {
-        print("⚠️ DriverId: NOT INCLUDED IN REQUEST");
+        AppLogger.d("⚠️ DriverId: NOT INCLUDED IN REQUEST");
       }
-      print("==================================");
+      AppLogger.d("==================================");
 
       // ⚠️ Warn if user type doesn't match expected
       if (savedUserType != null && savedUserType != "Transport") {
-        print(
+        AppLogger.d(
           "⚠️ WARNING: User Type is '$savedUserType', but Trip creation typically requires 'Transport' type!",
         );
       }
@@ -286,24 +287,24 @@ class TripController extends GetxController {
       final response = await http.Response.fromStream(streamedResponse);
 
       // 🔍 Debug logging
-      print("==================================");
-      print("📥 Trip API Response Received");
-      print("👉 Status Code: ${response.statusCode}");
-      print("👉 Response Body: ${response.body}");
-      print("👉 Response Headers: ${response.headers}");
-      print("==================================");
+      AppLogger.d("==================================");
+      AppLogger.d("📥 Trip API Response Received");
+      AppLogger.d("👉 Status Code: ${response.statusCode}");
+      AppLogger.d("👉 Response Body: ${response.body}");
+      AppLogger.d("👉 Response Headers: ${response.headers}");
+      AppLogger.d("==================================");
 
       // ✅ Parse result
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print("✅ Trip Added Successfully!");
-        print("✅ Response: ${response.body}");
+        AppLogger.d("✅ Trip Added Successfully!");
+        AppLogger.d("✅ Response: ${response.body}");
 
         // Try to parse JSON response if available
         try {
           final responseData = jsonDecode(response.body);
-          print("✅ Parsed Response: $responseData");
+          AppLogger.d("✅ Parsed Response: $responseData");
         } catch (e) {
-          print("ℹ️ Response is not JSON: ${response.body}");
+          AppLogger.d("ℹ️ Response is not JSON: ${response.body}");
         }
 
         Get.snackbar(
@@ -321,7 +322,7 @@ class TripController extends GetxController {
         });
       } else if (response.statusCode == 400) {
         // 🔴 Handle 400 Bad Request - Validation errors
-        print("❌ 400 Bad Request - Validation Error!");
+        AppLogger.d("❌ 400 Bad Request - Validation Error!");
 
         String errorMessage = "Validation Error: ";
         try {
@@ -343,9 +344,9 @@ class TripController extends GetxController {
             });
 
             errorMessage = errorMessages.join('\n');
-            print("❌ Validation Errors:");
+            AppLogger.d("❌ Validation Errors:");
             errors.forEach((field, messages) {
-              print("   - $field: $messages");
+              AppLogger.d("   - $field: $messages");
             });
           } else {
             errorMessage =
@@ -369,11 +370,11 @@ class TripController extends GetxController {
         );
       } else if (response.statusCode == 403) {
         // 🔴 Handle 403 Forbidden specifically
-        print("❌ 403 Forbidden - Access Denied!");
-        print("❌ This usually means:");
-        print("   1. Token expired or invalid");
-        print("   2. User doesn't have permission to create trips");
-        print("   3. API endpoint requires different authentication");
+        AppLogger.d("❌ 403 Forbidden - Access Denied!");
+        AppLogger.d("❌ This usually means:");
+        AppLogger.d("   1. Token expired or invalid");
+        AppLogger.d("   2. User doesn't have permission to create trips");
+        AppLogger.d("   3. API endpoint requires different authentication");
 
         String errorMessage = "Access Denied (403). ";
 
@@ -403,9 +404,9 @@ class TripController extends GetxController {
           duration: const Duration(seconds: 5),
         );
       } else {
-        print("❌ Trip Addition Failed!");
-        print("❌ Error Status: ${response.statusCode}");
-        print("❌ Error Body: ${response.body}");
+        AppLogger.d("❌ Trip Addition Failed!");
+        AppLogger.d("❌ Error Status: ${response.statusCode}");
+        AppLogger.d("❌ Error Body: ${response.body}");
 
         // Try to parse error message from response
         String errorMessage = "Failed to create trip (${response.statusCode})";
@@ -453,25 +454,25 @@ class TripController extends GetxController {
     try {
       isTripsLoading.value = true;
 
-      print("🚚 Fetching trips for userId: $userId");
+      AppLogger.d("🚚 Fetching trips for userId: $userId");
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getTripList}$userId',
         headers: {'Accept': '*/*'},
       );
 
-      print("🚚 Trips response status: ${response.statusCode}");
-      print("🚚 Trips response body: ${response.body}");
+      AppLogger.d("🚚 Trips response status: ${response.statusCode}");
+      AppLogger.d("🚚 Trips response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         trips.value = data.map((e) => Trip.fromJson(e)).toList();
-        print("✅ Fetched ${trips.length} trips");
+        AppLogger.d("✅ Fetched ${trips.length} trips");
       } else {
-        print("❌ Failed to fetch trips: ${response.statusCode}");
+        AppLogger.d("❌ Failed to fetch trips: ${response.statusCode}");
       }
     } catch (e) {
-      print("❌ Error fetching trips: $e");
+      AppLogger.d("❌ Error fetching trips: $e");
     } finally {
       isTripsLoading.value = false;
     }

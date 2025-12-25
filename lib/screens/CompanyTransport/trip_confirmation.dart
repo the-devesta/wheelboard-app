@@ -118,7 +118,7 @@ class ConfirmTripPage extends StatelessWidget {
 // Trip Detail Row
 class TripDetailRow extends StatelessWidget {
   final String detail;
-  const TripDetailRow(this.detail);
+  const TripDetailRow(this.detail, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +138,7 @@ class TripDetailRow extends StatelessWidget {
 // Trip ID Box
 class TripIDBox extends StatelessWidget {
   final String tripId;
-  const TripIDBox(this.tripId);
+  const TripIDBox(this.tripId, {super.key});
 
   @override
   Widget build(BuildContext context) {

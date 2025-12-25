@@ -36,7 +36,7 @@ class AssignTripBid {
       parsedDate = DateTime.tryParse(pickupDateValue.toString());
     }
 
-    double _parseDouble(dynamic value) {
+    double parseDouble(dynamic value) {
       if (value == null) return 0;
       if (value is int) return value.toDouble();
       if (value is double) return value;
@@ -45,7 +45,7 @@ class AssignTripBid {
 
     return AssignTripBid(
       bidId: json['bidId'] ?? '',
-      bidAmount: _parseDouble(json['bidAmount']),
+      bidAmount: parseDouble(json['bidAmount']),
       bidDescription: json['bidDescription'] ?? '',
       pickupLocation: json['pickupLocation'] ?? '',
       deliveryLocation: json['deliveryLocation'] ?? '',
@@ -54,9 +54,9 @@ class AssignTripBid {
       specialInstructions: json['specialInstructions'] ?? '',
       driverName: json['driverName'] ?? '',
       driverPhoto: json['driverPhoto'] ?? '',
-      platformFee: _parseDouble(json['platformFee']),
-      amountToDriver: _parseDouble(json['amountToDriver']),
-      totalTripCost: _parseDouble(json['totalTripCost']),
+      platformFee: parseDouble(json['platformFee']),
+      amountToDriver: parseDouble(json['amountToDriver']),
+      totalTripCost: parseDouble(json['totalTripCost']),
     );
   }
 }

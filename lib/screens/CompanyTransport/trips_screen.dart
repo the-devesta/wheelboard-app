@@ -104,10 +104,10 @@ class _TripPageState extends State<TripPage>
       // Bids filter
       if (_bidsFilter == 'available') {
         // Show trips with bids (totalBidCount > 0)
-        if ((trip.totalBidCount ?? 0) == 0) return false;
+        if (trip.totalBidCount == 0) return false;
       } else if (_bidsFilter == 'awaiting') {
         // Show trips without bids (totalBidCount == 0)
-        if ((trip.totalBidCount ?? 0) > 0) return false;
+        if (trip.totalBidCount > 0) return false;
       }
 
       return true;
@@ -247,7 +247,7 @@ class _TripPageState extends State<TripPage>
                       if (tripController.isTripsLoading.value) {
                         return const SizedBox(
                           height: 185,
-                          child: const CustomLoader.small(),
+                          child: CustomLoader.small(),
                         );
                       }
                       if (recentTrips.isEmpty) {

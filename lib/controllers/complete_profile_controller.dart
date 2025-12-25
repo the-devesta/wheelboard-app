@@ -10,6 +10,7 @@ import '../utils/constants.dart';
 import '../utils/error_handler.dart';
 import '../widgets/custom_snackbar.dart';
 import 'package:http/http.dart' as http;
+import '../utils/app_logger.dart';
 
 class CompleteProfileController extends GetxController {
   var selectedDialCode = '+91'.obs;
@@ -43,7 +44,7 @@ class CompleteProfileController extends GetxController {
           profileImage.value = permanentFile;
           SnackBarHelper.success("Image selected successfully");
         } catch (e) {
-          print("Error copying image: $e");
+          AppLogger.d("Error copying image: $e");
           // Fallback to original path if copy fails
           profileImage.value = File(pickedFile.path);
           SnackBarHelper.success("Image selected successfully");
@@ -75,9 +76,9 @@ class CompleteProfileController extends GetxController {
         // Check if file exists before adding
         if (await model.companyLogo!.exists()) {
           files.add(model.companyLogo!);
-          print("✅ Company Logo file exists: ${model.companyLogo!.path}");
+          AppLogger.d("✅ Company Logo file exists: ${model.companyLogo!.path}");
         } else {
-          print("❌ Company Logo file not found: ${model.companyLogo!.path}");
+          AppLogger.d("❌ Company Logo file not found: ${model.companyLogo!.path}");
           SnackBarHelper.error(
             "Image file not found. Please select image again.",
           );
@@ -86,13 +87,13 @@ class CompleteProfileController extends GetxController {
       }
 
       // ✅ Debug log
-      print("==================================");
-      print("📡 Complete Transport Profile Request");
-      print("👉 URL: ${API.completeTransport}");
-      print("👉 Headers: $headers");
-      print("👉 Fields: $fields");
-      print("👉 Files attached: ${files.length}");
-      print("==================================");
+      AppLogger.d("==================================");
+      AppLogger.d("📡 Complete Transport Profile Request");
+      AppLogger.d("👉 URL: ${API.completeTransport}");
+      AppLogger.d("👉 Headers: $headers");
+      AppLogger.d("👉 Fields: $fields");
+      AppLogger.d("👉 Files attached: ${files.length}");
+      AppLogger.d("==================================");
 
       // ✅ Call multipart API
       final streamedResponse = await HttpHelper.uploadMultipart(
@@ -106,23 +107,23 @@ class CompleteProfileController extends GetxController {
       // 🔍 Convert to a normal Response so you can read the body
       final response = await http.Response.fromStream(streamedResponse);
 
-      print("==================================");
-      print("📥 Response Received");
-      print("👉 Status Code: ${response.statusCode}");
-      print("👉 Body: ${response.body}");
-      print("==================================");
+      AppLogger.d("==================================");
+      AppLogger.d("📥 Response Received");
+      AppLogger.d("👉 Status Code: ${response.statusCode}");
+      AppLogger.d("👉 Body: ${response.body}");
+      AppLogger.d("==================================");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
           final responseData = json.decode(response.body);
           if (responseData['message'] != null ||
               responseData['success'] == true) {
-            print("✅ Profile completed successfully");
+            AppLogger.d("✅ Profile completed successfully");
             return true;
           }
         } catch (e) {
           // If response is not JSON but status is 200, consider it success
-          print("✅ Profile completed successfully (non-JSON response)");
+          AppLogger.d("✅ Profile completed successfully (non-JSON response)");
           return true;
         }
       } else if (response.statusCode == 400) {
@@ -179,13 +180,13 @@ class CompleteProfileController extends GetxController {
           statusCode: response.statusCode,
         );
 
-        print("❌ Profile completion failed: $errorMessage");
+        AppLogger.d("❌ Profile completion failed: $errorMessage");
         SnackBarHelper.error(errorMessage);
         return false;
       }
     } catch (e, stacktrace) {
-      print("❌ Exception: $e");
-      print("❌ StackTrace: $stacktrace");
+      AppLogger.d("❌ Exception: $e");
+      AppLogger.d("❌ StackTrace: $stacktrace");
 
       // ✅ Use ErrorHandler for network errors
       final errorMessage = ErrorHandler.handleNetworkError(e);

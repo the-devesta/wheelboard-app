@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../controllers/service_provider_controller.dart';
@@ -11,6 +10,7 @@ import '../../utils/session_manager.dart';
 import '../../utils/placeservices.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/custom_loader.dart';
+import '../../utils/app_logger.dart';
 
 class AddServiceScreen extends StatefulWidget {
   final ServiceModel? service; // Optional service for edit mode
@@ -44,7 +44,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   String _businessFrom = '09:00';
   String _businessTo = '18:00';
   bool _isVisible = true;
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
 
   // Google Places Service
@@ -236,7 +236,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _selectedCategory,
+            initialValue: _selectedCategory,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -533,7 +533,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                   final results = await _placesService.fetchSuggestions(value);
                   setState(() => _addressSuggestions = results);
                 } catch (e) {
-                  print('Error fetching address suggestions: $e');
+                  AppLogger.d('Error fetching address suggestions: $e');
                 }
               } else {
                 setState(() => _addressSuggestions = []);
@@ -807,7 +807,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                 _isVisible = value;
               });
             },
-            activeColor: const Color(0xFF00B894),
+            activeThumbColor: const Color(0xFF00B894),
           ),
         ],
       ),
@@ -1012,7 +1012,6 @@ class _CustomTextField extends StatelessWidget {
   final int? maxLines;
   final int? minLines;
   final Widget? prefixIcon;
-  final Widget? suffixIcon;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
@@ -1023,7 +1022,6 @@ class _CustomTextField extends StatelessWidget {
     this.maxLines,
     this.minLines,
     this.prefixIcon,
-    this.suffixIcon,
     this.controller,
     this.keyboardType,
     this.validator,
@@ -1046,7 +1044,6 @@ class _CustomTextField extends StatelessWidget {
         labelText: labelText,
         labelStyle: const TextStyle(color: Colors.grey),
         prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),

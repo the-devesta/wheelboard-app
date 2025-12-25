@@ -5,6 +5,7 @@ import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../services/auth_service.dart';
 import 'package:http/http.dart' as http;
+import '../utils/app_logger.dart';
 
 class PostController extends GetxController {
   var isLoading = false.obs;
@@ -84,8 +85,8 @@ class PostController extends GetxController {
 
         final response = await http.Response.fromStream(streamedResponse);
 
-        print("📝 Post creation response status: ${response.statusCode}");
-        print("📝 Post creation response body: ${response.body}");
+        AppLogger.d("📝 Post creation response status: ${response.statusCode}");
+        AppLogger.d("📝 Post creation response body: ${response.body}");
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
@@ -100,7 +101,7 @@ class PostController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("❌ Error creating post: $e");
+      AppLogger.d("❌ Error creating post: $e");
       Get.snackbar("Error", "Failed to create post: ${e.toString()}");
       return false;
     } finally {
@@ -118,7 +119,7 @@ class PostController extends GetxController {
       final token = authService.currentToken;
 
       if (userId.isEmpty || token.isEmpty) {
-        print("⚠️ User not logged in, cannot fetch posts");
+        AppLogger.d("⚠️ User not logged in, cannot fetch posts");
         return;
       }
 
@@ -127,19 +128,19 @@ class PostController extends GetxController {
         headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
       );
 
-      print("📝 Fetch posts response status: ${response.statusCode}");
-      print("📝 Fetch posts response body: ${response.body}");
+      AppLogger.d("📝 Fetch posts response status: ${response.statusCode}");
+      AppLogger.d("📝 Fetch posts response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         posts.value = data.map((e) => Post.fromJson(e)).toList();
-        print("✅ Fetched ${posts.length} posts");
+        AppLogger.d("✅ Fetched ${posts.length} posts");
       } else {
-        print("❌ Failed to fetch posts: ${response.statusCode}");
+        AppLogger.d("❌ Failed to fetch posts: ${response.statusCode}");
         Get.snackbar("Error", "Failed to load posts");
       }
     } catch (e) {
-      print("❌ Error fetching posts: $e");
+      AppLogger.d("❌ Error fetching posts: $e");
       Get.snackbar("Error", "Failed to load posts: ${e.toString()}");
     } finally {
       isLoading.value = false;
@@ -163,8 +164,8 @@ class PostController extends GetxController {
         return false;
       }
 
-      print("👍 Toggling like for post: $postId");
-      print("👍 User ID: $userId");
+      AppLogger.d("👍 Toggling like for post: $postId");
+      AppLogger.d("👍 User ID: $userId");
 
       // 🔧 FIX: Send postId and userId as query parameters (not body)
       final endpoint = '${API.togglePostLike}?postId=$postId&userId=$userId';
@@ -179,8 +180,8 @@ class PostController extends GetxController {
         },
       );
 
-      print("👍 Toggle post like response status: ${response.statusCode}");
-      print("👍 Toggle post like response body: ${response.body}");
+      AppLogger.d("👍 Toggle post like response status: ${response.statusCode}");
+      AppLogger.d("👍 Toggle post like response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final postIndex = posts.indexWhere((post) => post.postId == postId);
@@ -203,11 +204,11 @@ class PostController extends GetxController {
           updatedPosts[postIndex] = updatedPost;
           posts.value = updatedPosts;
           posts.refresh(); // Force refresh to ensure UI updates
-          print("✅ Successfully toggled like for post: $postId");
+          AppLogger.d("✅ Successfully toggled like for post: $postId");
         }
         return true;
       } else {
-        print("❌ Failed to toggle post like: ${response.statusCode}");
+        AppLogger.d("❌ Failed to toggle post like: ${response.statusCode}");
         try {
           final errorData = json.decode(response.body);
           final errorMessage =
@@ -221,7 +222,7 @@ class PostController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("❌ Error toggling post like: $e");
+      AppLogger.d("❌ Error toggling post like: $e");
       Get.snackbar("Error", "Failed to toggle like: ${e.toString()}");
       return false;
     }

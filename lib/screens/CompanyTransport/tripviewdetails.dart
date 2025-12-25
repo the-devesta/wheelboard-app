@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'trip_post_confirmation.dart';
 
 class TripDetailConfirmationScreen extends StatelessWidget {
+  const TripDetailConfirmationScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,7 +135,7 @@ class TripDetailRow extends StatelessWidget {
   final String title;
   final String value;
 
-  const TripDetailRow({required this.title, required this.value});
+  const TripDetailRow({super.key, required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {

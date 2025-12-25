@@ -10,6 +10,7 @@ import '../../auth/onboarding_screen.dart' show RegisterScreen;
 import '../EditYourProfile01/EditYourProfile01Screen.dart';
 import '../../../widgets/custom_loader.dart';
 import '../AddReferral/AddReferralScreen.dart';
+import '../../../utils/app_logger.dart';
 
 class YourProfileScreen extends StatelessWidget {
   const YourProfileScreen({super.key});
@@ -30,7 +31,7 @@ class YourProfileScreen extends StatelessWidget {
         child: Obx(() {
           if (controller.isLoading.value) {
             return const Center(
-              child: const CustomLoader(message: "Loading profile..."),
+              child: CustomLoader(message: "Loading profile..."),
             );
           }
 
@@ -280,13 +281,13 @@ class YourProfileScreen extends StatelessWidget {
     try {
       final authService = AuthService.to;
       isKycComplete = authService.isUserKYCCompleted;
-      print("🔐 KYC Status from AuthService in Profile: $isKycComplete");
+      AppLogger.d("🔐 KYC Status from AuthService in Profile: $isKycComplete");
     } catch (e) {
       // ✅ Fallback to profile controller
       final controller = Get.find<UserProfileController>();
       final profile = controller.userProfile.value;
       isKycComplete = profile?.isKYCCompleted ?? false;
-      print("👤 KYC Status from Profile Controller: $isKycComplete");
+      AppLogger.d("👤 KYC Status from Profile Controller: $isKycComplete");
     }
 
     return Container(
@@ -836,7 +837,7 @@ class YourProfileScreen extends StatelessWidget {
         Switch(
           value: value,
           onChanged: (_) {},
-          activeColor: const Color(0xFF30DB5B),
+          activeThumbColor: const Color(0xFF30DB5B),
         ),
       ],
     );
@@ -1261,21 +1262,21 @@ class YourProfileScreen extends StatelessWidget {
   /// Perform proper logout using AuthService
   Future<void> _performLogout() async {
     try {
-      print("🚪 Starting logout process...");
+      AppLogger.d("🚪 Starting logout process...");
 
       // Call AuthService logout
       final success = await AuthService.to.logout();
 
       if (success) {
-        print("✅ Logout successful, navigating to onboarding");
+        AppLogger.d("✅ Logout successful, navigating to onboarding");
         // Navigate to onboarding screen after successful logout
         Get.offAll(() => const RegisterScreen());
       } else {
-        print("❌ Logout failed");
+        AppLogger.d("❌ Logout failed");
         SnackBarHelper.error("Logout failed. Please try again.");
       }
     } catch (e) {
-      print("❌ Error during logout: $e");
+      AppLogger.d("❌ Error during logout: $e");
       SnackBarHelper.error("An error occurred during logout.");
     }
   }
@@ -1436,7 +1437,7 @@ class YourProfileScreen extends StatelessWidget {
         SnackBarHelper.error('Verification failed');
       }
     } catch (e) {
-      print('Error verifying driving license: $e');
+      AppLogger.d('Error verifying driving license: $e');
       SnackBarHelper.error('Failed to verify: ${e.toString()}');
     }
   }

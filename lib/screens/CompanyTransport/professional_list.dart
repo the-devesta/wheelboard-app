@@ -254,7 +254,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: const CustomLoader.small()),
+      builder: (_) => const Center(child: CustomLoader.small()),
     );
 
     final details = await controller.fetchProfessionalDetails(summary.driverId);

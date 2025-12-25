@@ -8,6 +8,7 @@ import '../../utils/distance_service.dart';
 import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
 import 'dart:math';
+import '../../utils/app_logger.dart';
 
 class Newtripscreen extends StatefulWidget {
   const Newtripscreen({super.key});
@@ -55,7 +56,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     if (userId != null && userId.isNotEmpty) {
       tripController.fetchDrivers(userId);
     } else {
-      debugPrint("UserId is null or empty");
+      AppLogger.d("UserId is null or empty");
     }
   }
 
@@ -66,7 +67,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     if (userId != null && userId.isNotEmpty) {
       tripController.fetchVehicles(userId);
     } else {
-      debugPrint("UserId is null or empty");
+      AppLogger.d("UserId is null or empty");
     }
   }
 
@@ -251,7 +252,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
             return const Text("No vehicles available");
           }
           return DropdownButtonFormField<String>(
-            value: tripController.selectedVehicle.value,
+            initialValue: tripController.selectedVehicle.value,
             hint: Text(
               "Select Vehicle",
               style: TextStyle(
@@ -450,7 +451,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                     final loc = await placesService.fetchPlaceLocation(
                       s.placeId,
                     );
-                    debugPrint("Pickup LatLng: $loc");
+                    AppLogger.d("Pickup LatLng: $loc");
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();
@@ -572,7 +573,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                     final loc = await placesService.fetchPlaceLocation(
                       s.placeId,
                     );
-                    debugPrint("Delivery LatLng: $loc");
+                    AppLogger.d("Delivery LatLng: $loc");
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();

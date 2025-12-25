@@ -14,8 +14,11 @@ import '../../models/add_drivermodel.dart';
 import '../../models/add_new_vehicle_model.dart';
 import '../../widgets/custom_loader.dart';
 import 'dart:io';
+import '../../utils/app_logger.dart';
 
 class FleetVehiclesScreen extends StatefulWidget {
+  const FleetVehiclesScreen({super.key});
+
   @override
   State<FleetVehiclesScreen> createState() => _FleetVehiclesScreenState();
 }
@@ -40,13 +43,13 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     final token = await sessionManager.getString("authToken");
     final userId = await sessionManager.getString("userId");
 
-    // print(userId);
-    // print(token);
+    // AppLogger.d(userId);
+    // AppLogger.d(token);
 
     if (token != null && userId != null) {
       driverController.fetchDrivers(userId, token);
     } else {
-      debugPrint("Token or UserId is null");
+      AppLogger.d("Token or UserId is null");
     }
   }
 
@@ -55,13 +58,13 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     final token = await sessionManager.getString("authToken");
     final userId = await sessionManager.getString("userId");
 
-    // print(userId);
-    // print(token);
+    // AppLogger.d(userId);
+    // AppLogger.d(token);
 
     if (token != null && userId != null) {
       await driverController.fetchVehicles(userId, token);
     } else {
-      debugPrint("Token or UserId is null");
+      AppLogger.d("Token or UserId is null");
     }
   }
 

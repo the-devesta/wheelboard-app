@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/utils/constants.dart';
 import 'package:wheelboard/widgets/custom_loader.dart';
+import '../../utils/app_logger.dart';
 
 class FleetUserprofile extends StatefulWidget {
   final String? companyId;
@@ -24,32 +25,32 @@ class _FleetUserprofileState extends State<FleetUserprofile> {
   }
 
   Future<void> _fetchCompanyProfile() async {
-    print('========================================');
-    print('🔍 FleetUserprofile: _fetchCompanyProfile called');
-    print('👉 companyId: ${widget.companyId}');
-    print('========================================');
+    AppLogger.d('========================================');
+    AppLogger.d('🔍 FleetUserprofile: _fetchCompanyProfile called');
+    AppLogger.d('👉 companyId: ${widget.companyId}');
+    AppLogger.d('========================================');
 
     if (widget.companyId == null || widget.companyId!.isEmpty) {
-      print('❌ companyId is null or empty, cannot fetch profile');
+      AppLogger.d('❌ companyId is null or empty, cannot fetch profile');
       setState(() => _isLoading = false);
       return;
     }
 
     try {
       final endpoint = 'api/Post/CompProfile/${widget.companyId}';
-      print('📡 Calling API: $endpoint');
+      AppLogger.d('📡 Calling API: $endpoint');
 
       final response = await HttpHelper.getData(
         endpoint: endpoint,
         headers: {'Accept': '*/*'},
       );
 
-      print('📥 Response Status: ${response.statusCode}');
-      print('📥 Response Body: ${response.body}');
+      AppLogger.d('📥 Response Status: ${response.statusCode}');
+      AppLogger.d('📥 Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Profile data decoded successfully: $data');
+        AppLogger.d('✅ Profile data decoded successfully: $data');
         if (mounted) {
           setState(() {
             _profileData = data;
@@ -57,13 +58,13 @@ class _FleetUserprofileState extends State<FleetUserprofile> {
           });
         }
       } else {
-        print('❌ Failed to fetch profile: ${response.statusCode}');
-        print('❌ Error Body: ${response.body}');
+        AppLogger.d('❌ Failed to fetch profile: ${response.statusCode}');
+        AppLogger.d('❌ Error Body: ${response.body}');
         if (mounted) setState(() => _isLoading = false);
       }
     } catch (e, stackTrace) {
-      print('❌ Exception fetching profile: $e');
-      print('📋 Stack Trace: $stackTrace');
+      AppLogger.d('❌ Exception fetching profile: $e');
+      AppLogger.d('📋 Stack Trace: $stackTrace');
       if (mounted) setState(() => _isLoading = false);
     }
   }

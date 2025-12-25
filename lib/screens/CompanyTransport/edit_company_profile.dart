@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/controllers/company_profile_controller.dart';
 import '../../utils/placeservices.dart';
+import '../../utils/app_logger.dart';
 
 class EditCompanyProfileScreen extends StatefulWidget {
   const EditCompanyProfileScreen({super.key});
@@ -42,13 +43,13 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
           try {
             if (Navigator.canPop(context)) {
               Navigator.pop(context, true);
-              print("✅ Navigation: Navigator.pop() called from screen");
+              AppLogger.d("✅ Navigation: Navigator.pop() called from screen");
             } else {
               Get.back(result: true);
-              print("✅ Navigation: Get.back() called from screen");
+              AppLogger.d("✅ Navigation: Get.back() called from screen");
             }
           } catch (e) {
-            print("⚠️ Navigation error from screen: $e");
+            AppLogger.d("⚠️ Navigation error from screen: $e");
           }
         }
       }
@@ -388,7 +389,7 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
                     });
                   }
                 } catch (e) {
-                  print("Error fetching suggestions: $e");
+                  AppLogger.d("Error fetching suggestions: $e");
                   if (mounted) {
                     setState(() {
                       locationSuggestions = [];

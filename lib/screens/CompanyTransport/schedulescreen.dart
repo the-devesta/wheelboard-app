@@ -8,6 +8,7 @@ import '../../utils/distance_service.dart';
 import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
 import 'dart:math';
+import '../../utils/app_logger.dart';
 
 class ScheduleTripScreen extends StatefulWidget {
   const ScheduleTripScreen({super.key});
@@ -54,7 +55,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     if (userId != null && userId.isNotEmpty) {
       tripController.fetchDrivers(userId);
     } else {
-      debugPrint("UserId is null or empty");
+      AppLogger.d("UserId is null or empty");
     }
   }
 
@@ -65,7 +66,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     if (userId != null && userId.isNotEmpty) {
       tripController.fetchVehicles(userId);
     } else {
-      debugPrint("UserId is null or empty");
+      AppLogger.d("UserId is null or empty");
     }
   }
 
@@ -159,31 +160,31 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                         }
 
                         // 🔍 DEBUG: Log selected values before creating trip
-                        print("=================================");
-                        print("🚚 SCHEDULE TRIP - DEBUG INFO");
-                        print("=================================");
-                        print("👤 User ID: $userId");
-                        print(
+                        AppLogger.d("=================================");
+                        AppLogger.d("🚚 SCHEDULE TRIP - DEBUG INFO");
+                        AppLogger.d("=================================");
+                        AppLogger.d("👤 User ID: $userId");
+                        AppLogger.d(
                           "🚗 Selected Vehicle ID: ${tripController.selectedVehicle.value ?? 'NOT SELECTED'}",
                         );
-                        print(
+                        AppLogger.d(
                           "👨‍✈️ Selected Driver ID: ${tripController.selectedDriver.value ?? 'NOT SELECTED'}",
                         );
-                        print("📍 Pickup Location: ${pickupController.text}");
-                        print(
+                        AppLogger.d("📍 Pickup Location: ${pickupController.text}");
+                        AppLogger.d(
                           "📍 Delivery Location: ${deliveryController.text}",
                         );
-                        print("📅 Pickup Date: $selectedDate");
-                        print(
+                        AppLogger.d("📅 Pickup Date: $selectedDate");
+                        AppLogger.d(
                           "⏰ Pickup Time: ${selectedTime != null ? _formatTimeOfDay(selectedTime!) : '00:00:00'}",
                         );
-                        print(
+                        AppLogger.d(
                           "📝 Special Instructions: ${specialInstructionsController.text.trim()}",
                         );
-                        print(
+                        AppLogger.d(
                           "💰 Pay Range: ${payRangeController.text.trim()}",
                         );
-                        print("=================================");
+                        AppLogger.d("=================================");
 
                         // ✅ Build Trip object (TripId not needed - backend will generate)
                         final trip = Trip(
@@ -209,26 +210,26 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                         );
 
                         // 🔍 DEBUG: Log Trip object after creation
-                        print("=================================");
-                        print("📦 TRIP OBJECT CREATED");
-                        print("=================================");
-                        print("Trip ID: ${trip.tripId}");
-                        print("User ID: ${trip.userId}");
-                        print("Vehicle ID: ${trip.vehicleId}");
-                        print(
+                        AppLogger.d("=================================");
+                        AppLogger.d("📦 TRIP OBJECT CREATED");
+                        AppLogger.d("=================================");
+                        AppLogger.d("Trip ID: ${trip.tripId}");
+                        AppLogger.d("User ID: ${trip.userId}");
+                        AppLogger.d("Vehicle ID: ${trip.vehicleId}");
+                        AppLogger.d(
                           "👨‍✈️ Driver ID: ${trip.driverId} ${trip.driverId.isEmpty ? '❌ EMPTY!' : '✅ HAS VALUE'}",
                         );
-                        print("Pickup Location: ${trip.pickupLocation}");
-                        print("Delivery Location: ${trip.deliveryLocation}");
-                        print("Pickup Date: ${trip.pickupDate}");
-                        print("Pickup Time: ${trip.pickupTime}");
-                        print(
+                        AppLogger.d("Pickup Location: ${trip.pickupLocation}");
+                        AppLogger.d("Delivery Location: ${trip.deliveryLocation}");
+                        AppLogger.d("Pickup Date: ${trip.pickupDate}");
+                        AppLogger.d("Pickup Time: ${trip.pickupTime}");
+                        AppLogger.d(
                           "Special Instructions: ${trip.specialInstructions}",
                         );
-                        print("Pay Range: ${trip.payRange}");
-                        print("Trip Code: ${trip.tripCode}");
-                        print("Trip Status: ${trip.tripStatus}");
-                        print("=================================");
+                        AppLogger.d("Pay Range: ${trip.payRange}");
+                        AppLogger.d("Trip Code: ${trip.tripCode}");
+                        AppLogger.d("Trip Status: ${trip.tripStatus}");
+                        AppLogger.d("=================================");
 
                         // ✅ Send API call (userId-based auth, no token needed)
                         await tripController.addTrip(trip);
@@ -286,7 +287,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
             return const Text("No vehicles available");
           }
           return DropdownButtonFormField<String>(
-            value: tripController.selectedVehicle.value,
+            initialValue: tripController.selectedVehicle.value,
             hint: Text(
               "Select Vehicle",
               style: TextStyle(
@@ -342,7 +343,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
             return const Text("No drivers available");
           }
           return DropdownButtonFormField<String>(
-            value: tripController.selectedDriver.value,
+            initialValue: tripController.selectedDriver.value,
             hint: Text(
               "Select Driver",
               style: TextStyle(
@@ -499,7 +500,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                     final loc = await placesService.fetchPlaceLocation(
                       s.placeId,
                     );
-                    debugPrint("Pickup LatLng: $loc");
+                    AppLogger.d("Pickup LatLng: $loc");
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();
@@ -604,7 +605,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                     final loc = await placesService.fetchPlaceLocation(
                       s.placeId,
                     );
-                    debugPrint("Delivery LatLng: $loc");
+                    AppLogger.d("Delivery LatLng: $loc");
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();

@@ -4,12 +4,10 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import '../apihelperclass/api_helper.dart';
-import '../services/auth_service.dart';
 import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 class ProfileService {
-  final AuthService _authService = AuthService.to;
-
   Map<String, String> _defaultHeaders(String userId) {
     // APIS are authenticated via UserId in header, not bearer token
     return {'Accept': '*/*', if (userId.isNotEmpty) 'UserId': userId};
@@ -114,7 +112,7 @@ class ProfileService {
             jsonDecode(response.body) as Map,
           );
         } catch (e) {
-          print('Error parsing response: $e');
+          AppLogger.d('Error parsing response: $e');
         }
       }
 

@@ -5,6 +5,7 @@ import '../utils/constants.dart';
 import '../services/auth_service.dart';
 import '../models/notification_model.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/app_logger.dart';
 
 class NotificationController extends GetxController {
   var isLoading = false.obs;
@@ -26,11 +27,11 @@ class NotificationController extends GetxController {
       final token = authService.currentToken;
 
       if (userId.isEmpty) {
-        print("⚠️ User not logged in, cannot fetch notifications");
+        AppLogger.d("⚠️ User not logged in, cannot fetch notifications");
         return;
       }
 
-      print("🔔 Fetching notifications for userId: $userId");
+      AppLogger.d("🔔 Fetching notifications for userId: $userId");
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getNotifications}?userId=$userId',
@@ -40,22 +41,22 @@ class NotificationController extends GetxController {
         },
       );
 
-      print("🔔 Notifications response status: ${response.statusCode}");
-      print("🔔 Notifications response body: ${response.body}");
+      AppLogger.d("🔔 Notifications response status: ${response.statusCode}");
+      AppLogger.d("🔔 Notifications response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         notifications.value = data
             .map((e) => NotificationModel.fromJson(e))
             .toList();
-        print("✅ Fetched ${notifications.length} notifications");
+        AppLogger.d("✅ Fetched ${notifications.length} notifications");
       } else {
-        print("❌ Failed to fetch notifications: ${response.statusCode}");
+        AppLogger.d("❌ Failed to fetch notifications: ${response.statusCode}");
         SnackBarHelper.error("Failed to load notifications");
         notifications.value = [];
       }
     } catch (e) {
-      print("❌ Error fetching notifications: $e");
+      AppLogger.d("❌ Error fetching notifications: $e");
       SnackBarHelper.error("Failed to load notifications: ${e.toString()}");
       notifications.value = [];
     } finally {
@@ -69,7 +70,7 @@ class NotificationController extends GetxController {
       final authService = AuthService.to;
       final token = authService.currentToken;
 
-      print("🔔 Marking notification as read: $notificationId");
+      AppLogger.d("🔔 Marking notification as read: $notificationId");
 
       final response = await HttpHelper.postData(
         endpoint: '${API.markNotificationRead}?notificationId=$notificationId',
@@ -80,8 +81,8 @@ class NotificationController extends GetxController {
         },
       );
 
-      print("🔔 Mark read response status: ${response.statusCode}");
-      print("🔔 Mark read response body: ${response.body}");
+      AppLogger.d("🔔 Mark read response status: ${response.statusCode}");
+      AppLogger.d("🔔 Mark read response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Update local state
@@ -96,11 +97,11 @@ class NotificationController extends GetxController {
         }
         return true;
       } else {
-        print("❌ Failed to mark notification as read: ${response.statusCode}");
+        AppLogger.d("❌ Failed to mark notification as read: ${response.statusCode}");
         return false;
       }
     } catch (e) {
-      print("❌ Error marking notification as read: $e");
+      AppLogger.d("❌ Error marking notification as read: $e");
       return false;
     }
   }

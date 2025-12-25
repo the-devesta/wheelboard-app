@@ -796,7 +796,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                 ? const Center(
                                     child: Padding(
                                       padding: EdgeInsets.all(20.0),
-                                      child: const CustomLoader.small(),
+                                      child: CustomLoader.small(),
                                     ),
                                   )
                                 : recentTrips.isEmpty
@@ -895,7 +895,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                       top: 51,
                       child: GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: Container(
+                        child: SizedBox(
                           width: 20,
                           height: 20,
                           child: const Icon(

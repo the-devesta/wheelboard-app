@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 // import '../controllers/apihelperclass/...';
 import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 class HttpHelper {
   static String get baseUrl => ApiConstants.baseUrl;
@@ -28,10 +29,10 @@ class HttpHelper {
     Uri uri = Uri.parse(baseUrl + endpoint);
     
     // Debug logging for release mode
-    print("🌐 API Request:");
-    print("🌐 URL: $uri");
-    print("🌐 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
-    print("🌐 Data: ${jsonEncode(data)}");
+    AppLogger.d("🌐 API Request:");
+    AppLogger.d("🌐 URL: $uri");
+    AppLogger.d("🌐 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
+    AppLogger.d("🌐 Data: ${jsonEncode(data)}");
     
     try {
       final response = await http.post(
@@ -40,8 +41,8 @@ class HttpHelper {
         body: jsonEncode(data),
       );
       
-      print("🌐 Response Status: ${response.statusCode}");
-      print("🌐 Response Body: ${response.body}");
+      AppLogger.d("🌐 Response Status: ${response.statusCode}");
+      AppLogger.d("🌐 Response Body: ${response.body}");
       
       // Check for specific error cases
       if (response.statusCode == 0) {
@@ -50,7 +51,7 @@ class HttpHelper {
       
       return response;
     } catch (e) {
-      print("🌐 API Error: $e");
+      AppLogger.d("🌐 API Error: $e");
       if (e.toString().contains('HandshakeException') || 
           e.toString().contains('CertificateException')) {
         throw Exception("SSL Certificate error. Please check your network configuration.");
@@ -125,19 +126,19 @@ class HttpHelper {
       );
 
       request.files.add(multipartFile);
-      print(
+      AppLogger.d(
           "📂 Attached File: $fileName as $fieldKey with Content-Type: ${mediaType?.toString() ?? 'unknown'}");
     }
 
     // 🔍 Debug logging
-    print("==================================");
-    print("📡 Sending Multipart Request");
-    print("👉 Method: ${request.method}");
-    print("👉 URL: $uri");
-    print("👉 Headers: ${request.headers}");
-    print("👉 Fields: ${request.fields}");
-    print("👉 Files attached: ${files.length}");
-    print("==================================");
+    AppLogger.d("==================================");
+    AppLogger.d("📡 Sending Multipart Request");
+    AppLogger.d("👉 Method: ${request.method}");
+    AppLogger.d("👉 URL: $uri");
+    AppLogger.d("👉 Headers: ${request.headers}");
+    AppLogger.d("👉 Fields: ${request.fields}");
+    AppLogger.d("👉 Files attached: ${files.length}");
+    AppLogger.d("==================================");
 
     // Send request
     return await request.send();
@@ -152,10 +153,10 @@ class HttpHelper {
     
     final requestBody = {"vehicleNumber": vehicleNumber};
     
-    print("🚗 Vehicle API Request:");
-    print("🚗 URL: $uri");
-    print("🚗 Body: ${jsonEncode(requestBody)}");
-    print("🚗 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
+    AppLogger.d("🚗 Vehicle API Request:");
+    AppLogger.d("🚗 URL: $uri");
+    AppLogger.d("🚗 Body: ${jsonEncode(requestBody)}");
+    AppLogger.d("🚗 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
     
     return await http.post(
       uri,
@@ -187,9 +188,9 @@ class HttpHelper {
     final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
     Uri uri = Uri.parse('$cleanBaseUrl/api/Transport/drivers-details/$driverId');
     
-    print("👤 Driver Details API Request:");
-    print("👤 URL: $uri");
-    print("👤 Headers: ${headers ?? {'accept': '*/*'}}");
+    AppLogger.d("👤 Driver Details API Request:");
+    AppLogger.d("👤 URL: $uri");
+    AppLogger.d("👤 Headers: ${headers ?? {'accept': '*/*'}}");
     
     return await http.get(
       uri,

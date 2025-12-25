@@ -446,7 +446,5 @@ class NotificationItem {
   );
 
   static String _genId() =>
-      DateTime.now().microsecondsSinceEpoch.toString() +
-      "_" +
-      UniqueKey().toString();
+      "${DateTime.now().microsecondsSinceEpoch}_${UniqueKey()}";
 }

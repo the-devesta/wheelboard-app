@@ -19,63 +19,6 @@ class TripDropdown extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
-        child: Row(
-          children: [
-            Expanded(
-              child: Builder(
-                builder: (context) {
-                  if (selectedValue != null && items.isNotEmpty) {
-                    try {
-                      final trip = items.firstWhere((t) => t.tripId == selectedValue);
-                      return Text(
-                        "${trip.origin} → ${trip.destination}",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF424242),
-                        ),
-                      );
-                    } catch (e) {
-                      return Text(
-                        "Select trip",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFFADAEBC),
-                        ),
-                      );
-                    }
-                  }
-                  return Text(
-                    "Select trip",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFFADAEBC),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: Color(0xFF424242),
-            ),
-          ],
-        ),
-      ),
       itemBuilder: (context) {
         return [
           PopupMenuItem<String>(
@@ -268,10 +211,67 @@ class TripDropdown extends StatelessWidget {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ];
       },
       onSelected: onChanged,
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
+        child: Row(
+          children: [
+            Expanded(
+              child: Builder(
+                builder: (context) {
+                  if (selectedValue != null && items.isNotEmpty) {
+                    try {
+                      final trip = items.firstWhere((t) => t.tripId == selectedValue);
+                      return Text(
+                        "${trip.origin} → ${trip.destination}",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF424242),
+                        ),
+                      );
+                    } catch (e) {
+                      return Text(
+                        "Select trip",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFFADAEBC),
+                        ),
+                      );
+                    }
+                  }
+                  return Text(
+                    "Select trip",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFFADAEBC),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: Color(0xFF424242),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

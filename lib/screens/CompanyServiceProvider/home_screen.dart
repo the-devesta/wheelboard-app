@@ -24,6 +24,7 @@ import '../../utils/constants.dart';
 import '../../utils/share_service.dart';
 import '../CompanyTransport/fleet_userprofile.dart';
 import 'dart:convert';
+import '../../utils/app_logger.dart';
 
 class ServiceProviderHomeScreen extends StatefulWidget {
   const ServiceProviderHomeScreen({super.key});
@@ -121,7 +122,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
       }
     } catch (e) {
       // Silently handle errors for home screen
-      print('Error fetching services: $e');
+      AppLogger.d('Error fetching services: $e');
     } finally {
       setState(() {
         _isLoadingServices = false;
@@ -154,11 +155,11 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
 
                       // 🔍 DEBUG: Log profile data
                       if (profile != null) {
-                        print(
+                        AppLogger.d(
                           "🔍 SP Profile - Type: ${profile.userType}, Logo: $logoPath",
                         );
                       } else {
-                        print("🔍 SP Profile is NULL");
+                        AppLogger.d("🔍 SP Profile is NULL");
                       }
 
                       return GestureDetector(
@@ -172,7 +173,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                                 backgroundImage: NetworkImage(logoPath),
                                 onBackgroundImageError:
                                     (exception, stackTrace) {
-                                      print("❌ Error loading logo: $exception");
+                                      AppLogger.d("❌ Error loading logo: $exception");
                                     },
                               )
                             : const CircleAvatar(
@@ -422,7 +423,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                     const SizedBox(height: 12),
                     if (_isLoadingServices)
                       const Center(
-                        child: const Padding(
+                        child: Padding(
                           padding: EdgeInsets.all(20.0),
                           child: CustomLoader.small(),
                         ),

@@ -7,6 +7,7 @@ import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import 'package:wheelboard/utils/constants.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class ExpenseController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -76,15 +77,15 @@ class ExpenseController extends GetxController {
         files.add(receiptFile);
       }
 
-      print("💾 Saving expense:");
-      print("💾 TripId: $tripId");
-      print("💾 ExpensePurposeId: $expensePurposeId");
-      print("💾 ExpenseDate: $formattedDate");
-      print("💾 Amount: $amount");
-      print("💾 Description: $description");
-      print("💾 ExpenseId: ${fields['ExpenseId']}");
-      print("💾 ReceiptPath: ${fields['ReceiptPath']}");
-      print("💾 Has Receipt File: ${receiptFile != null}");
+      AppLogger.d("💾 Saving expense:");
+      AppLogger.d("💾 TripId: $tripId");
+      AppLogger.d("💾 ExpensePurposeId: $expensePurposeId");
+      AppLogger.d("💾 ExpenseDate: $formattedDate");
+      AppLogger.d("💾 Amount: $amount");
+      AppLogger.d("💾 Description: $description");
+      AppLogger.d("💾 ExpenseId: ${fields['ExpenseId']}");
+      AppLogger.d("💾 ReceiptPath: ${fields['ReceiptPath']}");
+      AppLogger.d("💾 Has Receipt File: ${receiptFile != null}");
 
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.saveTripExpense,
@@ -98,8 +99,8 @@ class ExpenseController extends GetxController {
 
       final response = await http.Response.fromStream(streamedResponse);
 
-      print("💾 Expense save response status: ${response.statusCode}");
-      print("💾 Expense save response body: ${response.body}");
+      AppLogger.d("💾 Expense save response status: ${response.statusCode}");
+      AppLogger.d("💾 Expense save response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
@@ -133,7 +134,7 @@ class ExpenseController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("❌ Error saving expense: $e");
+      AppLogger.d("❌ Error saving expense: $e");
       SnackBarHelper.error('Error saving expense: ${e.toString()}');
       return false;
     } finally {

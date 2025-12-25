@@ -195,7 +195,7 @@ class JobCardWidget extends StatelessWidget {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: const CustomLoader.small(),
+                  child: CustomLoader.small(),
                 )
               : Text(
                   "Apply now",

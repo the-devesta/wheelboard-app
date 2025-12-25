@@ -10,6 +10,7 @@ import 'package:wheelboard/models/user_profile_model.dart';
 import '../auth/onboarding_screen.dart';
 import 'edit_company_profile.dart';
 import 'switch_profile_popup.dart';
+import '../../utils/app_logger.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
   const CompanyProfileScreen({super.key});
@@ -524,7 +525,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFF30DB5B),
+          activeThumbColor: const Color(0xFF30DB5B),
         ),
       ],
     );
@@ -594,7 +595,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                   showSwitchProfilePopup(
                     context,
                     onSwitchToBusiness: () {
-                      print("Switching to Business Account...");
+                      AppLogger.d("Switching to Business Account...");
                     },
                     onLogout: () async {
                       await _performLogout();
@@ -883,21 +884,21 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   /// Perform proper logout using AuthService
   Future<void> _performLogout() async {
     try {
-      print("🚪 Starting logout process...");
+      AppLogger.d("🚪 Starting logout process...");
 
       // Call AuthService logout
       final success = await AuthService.to.logout();
 
       if (success) {
-        print("✅ Logout successful, navigating to onboarding");
+        AppLogger.d("✅ Logout successful, navigating to onboarding");
         // Navigate to onboarding screen after successful logout
         Get.offAll(() => const RegisterScreen());
       } else {
-        print("❌ Logout failed");
+        AppLogger.d("❌ Logout failed");
         SnackBarHelper.error("Logout failed. Please try again.");
       }
     } catch (e) {
-      print("❌ Error during logout: $e");
+      AppLogger.d("❌ Error during logout: $e");
       SnackBarHelper.error("An error occurred during logout.");
     }
   }

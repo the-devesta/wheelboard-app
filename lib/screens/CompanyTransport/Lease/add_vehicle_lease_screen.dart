@@ -46,7 +46,7 @@ class _AddVehicleLeaseScreenState extends State<AddVehicleLeaseScreen> {
   int _selectedPricingType = 0;
   DateTime? _startDate;
   DateTime? _endDate;
-  List<String> _selectedBusinessDays = [];
+  final List<String> _selectedBusinessDays = [];
 
   final List<String> _businessDayOptions = [
     'Monday',

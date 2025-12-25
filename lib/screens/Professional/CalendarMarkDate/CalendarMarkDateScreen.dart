@@ -21,7 +21,7 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
-  String _selectedCategory = 'Trip';
+  final String _selectedCategory = 'Trip';
   bool _isActive = true;
   DateTime _selectedDate = DateTime.now();
   DateTime? _selectedStartDate;
@@ -519,7 +519,7 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                             ? const SizedBox(
                                                 height: 20,
                                                 width: 20,
-                                                child: const CustomLoader.small(
+                                                child: CustomLoader.small(
                                                   color: Colors.white,
                                                 ),
                                               )

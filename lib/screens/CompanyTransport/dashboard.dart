@@ -10,6 +10,7 @@ import 'job_form_screen.dart';
 import 'job_application_screen.dart';
 import 'trips_screen.dart';
 import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
+import '../../utils/app_logger.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -539,7 +540,7 @@ class DashboardScreen extends StatelessWidget {
                               : "General",
                           updatedAt: formattedDate,
                           onDelete: () {
-                            print("Delete tapped");
+                            AppLogger.d("Delete tapped");
                           },
                         );
                       }).toList()
@@ -1434,8 +1435,9 @@ class DashboardScreen extends StatelessWidget {
               interval: maxY > 0 ? maxY / 5 : 5,
               reservedSize: 30,
               getTitlesWidget: (value, meta) {
-                if (value == meta.min || value == meta.max)
+                if (value == meta.min || value == meta.max) {
                   return const Text('');
+                }
                 return Text(
                   value.toInt().toString(),
                   style: TextStyle(color: Colors.grey.shade400, fontSize: 12),

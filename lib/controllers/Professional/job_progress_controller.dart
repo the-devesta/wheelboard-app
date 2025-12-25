@@ -5,6 +5,7 @@ import '../../utils/constants.dart';
 import '../../services/auth_service.dart';
 import '../../models/Professional/applied_job_model.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class JobProgressController extends GetxController {
   var isLoading = false.obs;
@@ -29,12 +30,12 @@ class JobProgressController extends GetxController {
       final token = authService.currentToken;
 
       if (userId.isEmpty) {
-        print("⚠️ User not logged in, cannot fetch applied jobs");
+        AppLogger.d("⚠️ User not logged in, cannot fetch applied jobs");
         SnackBarHelper.error("Please login to view applied jobs");
         return;
       }
 
-      print("📋 Fetching applied jobs for userId: $userId");
+      AppLogger.d("📋 Fetching applied jobs for userId: $userId");
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getAppliedJobs}$userId',
@@ -44,19 +45,19 @@ class JobProgressController extends GetxController {
         },
       );
 
-      print("📋 Applied jobs response status: ${response.statusCode}");
-      print("📋 Applied jobs response body: ${response.body}");
+      AppLogger.d("📋 Applied jobs response status: ${response.statusCode}");
+      AppLogger.d("📋 Applied jobs response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         appliedJobs.value = data.map((e) => AppliedJob.fromJson(e)).toList();
-        print("✅ Fetched ${appliedJobs.length} applied jobs");
+        AppLogger.d("✅ Fetched ${appliedJobs.length} applied jobs");
       } else {
-        print("❌ Failed to fetch applied jobs: ${response.statusCode}");
+        AppLogger.d("❌ Failed to fetch applied jobs: ${response.statusCode}");
         SnackBarHelper.error("Failed to load applied jobs");
       }
     } catch (e) {
-      print("❌ Error fetching applied jobs: $e");
+      AppLogger.d("❌ Error fetching applied jobs: $e");
       SnackBarHelper.error("Failed to load applied jobs: ${e.toString()}");
     } finally {
       isLoading.value = false;

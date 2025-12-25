@@ -18,13 +18,13 @@
 //       final List<File> files = vehicleModel.images ?? [];
 
 //       // 🔹 Debug logs before sending
-//       debugPrint("==================================");
-//       debugPrint("📡 Sending Multipart Request");
-//       debugPrint("👉 URL: ${API.addVehicle}");
-//       debugPrint("👉 Headers: {Authorization: Bearer $token}");
-//       debugPrint("👉 Fields: $fields");
-//       debugPrint("👉 Files attached: ${files.length}");
-//       debugPrint("==================================");
+//       AppLogger.d("==================================");
+//       AppLogger.d("📡 Sending Multipart Request");
+//       AppLogger.d("👉 URL: ${API.addVehicle}");
+//       AppLogger.d("👉 Headers: {Authorization: Bearer $token}");
+//       AppLogger.d("👉 Fields: $fields");
+//       AppLogger.d("👉 Files attached: ${files.length}");
+//       AppLogger.d("==================================");
 
 //       // Call helper
 //       final streamedResponse = await HttpHelper.uploadMultipart(
@@ -39,12 +39,12 @@
 //       final response = await http.Response.fromStream(streamedResponse);
 
 //       // 🔹 Debug response
-//       debugPrint("==================================");
-//       debugPrint("📩 Response from API");
-//       debugPrint("🔹 Status Code: ${response.statusCode}");
-//       debugPrint("🔹 Body: ${response.body}");
-//       debugPrint("🔹 Headers: ${response.headers}");
-//       debugPrint("==================================");
+//       AppLogger.d("==================================");
+//       AppLogger.d("📩 Response from API");
+//       AppLogger.d("🔹 Status Code: ${response.statusCode}");
+//       AppLogger.d("🔹 Body: ${response.body}");
+//       AppLogger.d("🔹 Headers: ${response.headers}");
+//       AppLogger.d("==================================");
 
 //       if (response.statusCode == 200) {
 //         Get.snackbar("Success", "Vehicle added successfully ✅");
@@ -55,8 +55,8 @@
 //       }
 //     } catch (e, stack) {
 //       // 🔹 Log exception with stacktrace
-//       debugPrint("❌ Exception occurred: $e");
-//       debugPrint("🪜 Stacktrace: $stack");
+//       AppLogger.d("❌ Exception occurred: $e");
+//       AppLogger.d("🪜 Stacktrace: $stack");
 //       Get.snackbar("Error", "Something went wrong: $e");
 //       return false;
 //     } finally {
@@ -71,6 +71,7 @@ import 'package:http/http.dart' as http;
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../models/add_new_vehicle_model.dart';
+import '../utils/app_logger.dart';
 
 class AddVehicleController extends GetxController {
   var isLoading = false.obs;
@@ -79,40 +80,40 @@ class AddVehicleController extends GetxController {
     try {
       isLoading.value = true;
 
-      print("🚗 ==================================");
-      print("🚗 STARTING VEHICLE ADDITION");
-      print("🚗 ==================================");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 STARTING VEHICLE ADDITION");
+      AppLogger.d("🚗 ==================================");
 
       // Collect fields (now Map<String, dynamic>)
       final Map<String, dynamic> fields = vehicleModel.toJsonFields();
       final List<File> files = vehicleModel.images ?? [];
 
-      print("🚗 Vehicle Model Data:");
-      print("🚗 - Vehicle Type: ${vehicleModel.vehicleType}");
-      print("🚗 - Vehicle Number: ${vehicleModel.vehicleNumber}");
-      print("🚗 - Vehicle Model: ${vehicleModel.vehicleModel}");
-      print("🚗 - Manufacturing Year: ${vehicleModel.manufacturingYear}");
-      print("🚗 - Ownership Type: ${vehicleModel.ownershipType}");
-      print("🚗 - Description: ${vehicleModel.description}");
-      print("🚗 - Is Declaration Accepted: ${vehicleModel.isDeclarationAccepted}");
-      print("🚗 - Images Count: ${files.length}");
+      AppLogger.d("🚗 Vehicle Model Data:");
+      AppLogger.d("🚗 - Vehicle Type: ${vehicleModel.vehicleType}");
+      AppLogger.d("🚗 - Vehicle Number: ${vehicleModel.vehicleNumber}");
+      AppLogger.d("🚗 - Vehicle Model: ${vehicleModel.vehicleModel}");
+      AppLogger.d("🚗 - Manufacturing Year: ${vehicleModel.manufacturingYear}");
+      AppLogger.d("🚗 - Ownership Type: ${vehicleModel.ownershipType}");
+      AppLogger.d("🚗 - Description: ${vehicleModel.description}");
+      AppLogger.d("🚗 - Is Declaration Accepted: ${vehicleModel.isDeclarationAccepted}");
+      AppLogger.d("🚗 - Images Count: ${files.length}");
 
       // 🔹 Debug logs before sending
-      print("🚗 ==================================");
-      print("🚗 SENDING MULTIPART REQUEST");
-      print("🚗 ==================================");
-      print("🚗 Full URL: ${ApiConstants.baseUrl}${API.addVehicle}");
-      print("🚗 Token: ${token.isNotEmpty ? 'Present (${token.length} chars)' : 'EMPTY OR NULL'}");
-      print("🚗 Headers: {Authorization: Bearer $token}");
-      print("🚗 Fields: $fields");
-      print("🚗 Files attached: ${files.length}");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 SENDING MULTIPART REQUEST");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 Full URL: ${ApiConstants.baseUrl}${API.addVehicle}");
+      AppLogger.d("🚗 Token: ${token.isNotEmpty ? 'Present (${token.length} chars)' : 'EMPTY OR NULL'}");
+      AppLogger.d("🚗 Headers: {Authorization: Bearer $token}");
+      AppLogger.d("🚗 Fields: $fields");
+      AppLogger.d("🚗 Files attached: ${files.length}");
       
       if (files.isNotEmpty) {
         for (int i = 0; i < files.length; i++) {
-          print("🚗 File $i: ${files[i].path}");
+          AppLogger.d("🚗 File $i: ${files[i].path}");
         }
       }
-      print("🚗 ==================================");
+      AppLogger.d("🚗 ==================================");
 
       // Call helper (make sure HttpHelper can handle dynamic fields)
       final streamedResponse = await HttpHelper.uploadMultipart(
@@ -128,38 +129,38 @@ class AddVehicleController extends GetxController {
       final response = await http.Response.fromStream(streamedResponse);
 
       // 🔹 Debug response
-      print("🚗 ==================================");
-      print("🚗 RESPONSE FROM API");
-      print("🚗 ==================================");
-      print("🚗 Status Code: ${response.statusCode}");
-      print("🚗 Response Body: ${response.body}");
-      print("🚗 Response Headers: ${response.headers}");
-      print("🚗 ==================================");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 RESPONSE FROM API");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 Status Code: ${response.statusCode}");
+      AppLogger.d("🚗 Response Body: ${response.body}");
+      AppLogger.d("🚗 Response Headers: ${response.headers}");
+      AppLogger.d("🚗 ==================================");
 
       if (response.statusCode == 200) {
-        print("🚗 ✅ VEHICLE ADDED SUCCESSFULLY!");
+        AppLogger.d("🚗 ✅ VEHICLE ADDED SUCCESSFULLY!");
         Get.snackbar("Success", "Vehicle added successfully ✅");
         return true;
       } else {
-        print("🚗 ❌ VEHICLE ADDITION FAILED!");
-        print("🚗 Error Status: ${response.statusCode}");
-        print("🚗 Error Body: ${response.body}");
+        AppLogger.d("🚗 ❌ VEHICLE ADDITION FAILED!");
+        AppLogger.d("🚗 Error Status: ${response.statusCode}");
+        AppLogger.d("🚗 Error Body: ${response.body}");
         Get.snackbar("Error", "Failed with status: ${response.statusCode}");
         return false;
       }
     } catch (e, stack) {
       // 🔹 Log exception with stacktrace
-      print("🚗 ==================================");
-      print("🚗 EXCEPTION OCCURRED");
-      print("🚗 ==================================");
-      print("🚗 Exception: $e");
-      print("🚗 Stacktrace: $stack");
-      print("🚗 ==================================");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 EXCEPTION OCCURRED");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 Exception: $e");
+      AppLogger.d("🚗 Stacktrace: $stack");
+      AppLogger.d("🚗 ==================================");
       Get.snackbar("Error", "Something went wrong: $e");
       return false;
     } finally {
       isLoading.value = false;
-      print("🚗 Loading state set to false");
+      AppLogger.d("🚗 Loading state set to false");
     }
   }
 
@@ -167,49 +168,49 @@ class AddVehicleController extends GetxController {
     try {
       isLoading.value = true;
 
-      print("🚗 ==================================");
-      print("🚗 STARTING VEHICLE UPDATE");
-      print("🚗 ==================================");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 STARTING VEHICLE UPDATE");
+      AppLogger.d("🚗 ==================================");
 
       // Collect fields (now Map<String, dynamic>)
       final Map<String, dynamic> fields = vehicleModel.toJsonFields();
       final List<File> files = vehicleModel.images ?? [];
 
-      print("🚗 Vehicle Update Data:");
-      print("🚗 - Vehicle ID: ${vehicleModel.vehicleId}");
-      print("🚗 - User ID: ${vehicleModel.userId}");
-      print("🚗 - Vehicle Type: ${vehicleModel.vehicleType}");
-      print("🚗 - Vehicle Number: ${vehicleModel.vehicleNumber}");
-      print("🚗 - Vehicle Model: ${vehicleModel.vehicleModel}");
-      print("🚗 - Manufacturing Year: ${vehicleModel.manufacturingYear}");
-      print("🚗 - Ownership Type: ${vehicleModel.ownershipType}");
-      print("🚗 - Description: ${vehicleModel.description}");
-      print("🚗 - Is Declaration Accepted: ${vehicleModel.isDeclarationAccepted}");
-      print("🚗 - Images Count: ${files.length}");
+      AppLogger.d("🚗 Vehicle Update Data:");
+      AppLogger.d("🚗 - Vehicle ID: ${vehicleModel.vehicleId}");
+      AppLogger.d("🚗 - User ID: ${vehicleModel.userId}");
+      AppLogger.d("🚗 - Vehicle Type: ${vehicleModel.vehicleType}");
+      AppLogger.d("🚗 - Vehicle Number: ${vehicleModel.vehicleNumber}");
+      AppLogger.d("🚗 - Vehicle Model: ${vehicleModel.vehicleModel}");
+      AppLogger.d("🚗 - Manufacturing Year: ${vehicleModel.manufacturingYear}");
+      AppLogger.d("🚗 - Ownership Type: ${vehicleModel.ownershipType}");
+      AppLogger.d("🚗 - Description: ${vehicleModel.description}");
+      AppLogger.d("🚗 - Is Declaration Accepted: ${vehicleModel.isDeclarationAccepted}");
+      AppLogger.d("🚗 - Images Count: ${files.length}");
       
       // Check if VehicleId is valid
       if (vehicleModel.vehicleId == null || vehicleModel.vehicleId!.isEmpty) {
-        print("🚗 ⚠️ WARNING: VehicleId is NULL or EMPTY!");
-        print("🚗 This might cause 403 error - vehicle ownership cannot be verified");
+        AppLogger.d("🚗 ⚠️ WARNING: VehicleId is NULL or EMPTY!");
+        AppLogger.d("🚗 This might cause 403 error - vehicle ownership cannot be verified");
       } else {
-        print("🚗 ✅ VehicleId is present: ${vehicleModel.vehicleId}");
+        AppLogger.d("🚗 ✅ VehicleId is present: ${vehicleModel.vehicleId}");
       }
       
       // Check if UserId matches
       if (vehicleModel.userId == null || vehicleModel.userId!.isEmpty) {
-        print("🚗 ⚠️ WARNING: UserId is NULL or EMPTY!");
+        AppLogger.d("🚗 ⚠️ WARNING: UserId is NULL or EMPTY!");
       } else {
-        print("🚗 ✅ UserId is present: ${vehicleModel.userId}");
+        AppLogger.d("🚗 ✅ UserId is present: ${vehicleModel.userId}");
       }
 
-      print("🚗 ==================================");
-      print("🚗 SENDING UPDATE REQUEST");
-      print("🚗 ==================================");
-      print("🚗 URL: ${API.updateVehicle}");
-      print("🚗 Headers: {Authorization: Bearer $token}");
-      print("🚗 Fields: $fields");
-      print("🚗 Files attached: ${files.length}");
-      print("🚗 ==================================");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 SENDING UPDATE REQUEST");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 URL: ${API.updateVehicle}");
+      AppLogger.d("🚗 Headers: {Authorization: Bearer $token}");
+      AppLogger.d("🚗 Fields: $fields");
+      AppLogger.d("🚗 Files attached: ${files.length}");
+      AppLogger.d("🚗 ==================================");
 
       // Call helper (make sure HttpHelper can handle dynamic fields)
       final streamedResponse = await HttpHelper.uploadMultipart(
@@ -224,38 +225,38 @@ class AddVehicleController extends GetxController {
       // Convert streamed response
       final response = await http.Response.fromStream(streamedResponse);
 
-      print("🚗 ==================================");
-      print("🚗 UPDATE RESPONSE FROM API");
-      print("🚗 ==================================");
-      print("🚗 Status Code: ${response.statusCode}");
-      print("🚗 Response Body: ${response.body}");
-      print("🚗 Response Headers: ${response.headers}");
-      print("🚗 ==================================");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 UPDATE RESPONSE FROM API");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 Status Code: ${response.statusCode}");
+      AppLogger.d("🚗 Response Body: ${response.body}");
+      AppLogger.d("🚗 Response Headers: ${response.headers}");
+      AppLogger.d("🚗 ==================================");
 
       if (response.statusCode == 200) {
-        print("🚗 ✅ VEHICLE UPDATED SUCCESSFULLY!");
+        AppLogger.d("🚗 ✅ VEHICLE UPDATED SUCCESSFULLY!");
         Get.snackbar("Success", "Vehicle updated successfully ✅");
         return true;
       } else {
-        print("🚗 ❌ VEHICLE UPDATE FAILED!");
-        print("🚗 Error Status: ${response.statusCode}");
-        print("🚗 Error Body: ${response.body}");
+        AppLogger.d("🚗 ❌ VEHICLE UPDATE FAILED!");
+        AppLogger.d("🚗 Error Status: ${response.statusCode}");
+        AppLogger.d("🚗 Error Body: ${response.body}");
         Get.snackbar("Error", "Failed with status: ${response.statusCode}");
         return false;
       }
     } catch (e, stack) {
       // 🔹 Log exception with stacktrace
-      print("🚗 ==================================");
-      print("🚗 UPDATE EXCEPTION OCCURRED");
-      print("🚗 ==================================");
-      print("🚗 Exception: $e");
-      print("🚗 Stacktrace: $stack");
-      print("🚗 ==================================");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 UPDATE EXCEPTION OCCURRED");
+      AppLogger.d("🚗 ==================================");
+      AppLogger.d("🚗 Exception: $e");
+      AppLogger.d("🚗 Stacktrace: $stack");
+      AppLogger.d("🚗 ==================================");
       Get.snackbar("Error", "Something went wrong: $e");
       return false;
     } finally {
       isLoading.value = false;
-      print("🚗 Update loading state set to false");
+      AppLogger.d("🚗 Update loading state set to false");
     }
   }
 }

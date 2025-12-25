@@ -4,6 +4,7 @@ import '../../apihelperclass/api_helper.dart';
 import '../../utils/constants.dart';
 import '../../services/auth_service.dart';
 import '../../controllers/post_controller.dart';
+import '../../utils/app_logger.dart';
 
 class FeedsController extends GetxController {
   var isLoading = false.obs;
@@ -26,11 +27,11 @@ class FeedsController extends GetxController {
       final token = authService.currentToken;
 
       if (userId.isEmpty) {
-        print("⚠️ User not logged in, cannot fetch feeds");
+        AppLogger.d("⚠️ User not logged in, cannot fetch feeds");
         return;
       }
 
-      print("📰 Fetching feeds...");
+      AppLogger.d("📰 Fetching feeds...");
 
       // Using getUserPosts API - if it returns all posts, great. Otherwise, we might need a different endpoint
       final response = await HttpHelper.getData(
@@ -41,19 +42,19 @@ class FeedsController extends GetxController {
         },
       );
 
-      print("📰 Feeds response status: ${response.statusCode}");
-      print("📰 Feeds response body: ${response.body}");
+      AppLogger.d("📰 Feeds response status: ${response.statusCode}");
+      AppLogger.d("📰 Feeds response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         feeds.value = data.map((e) => Post.fromJson(e)).toList();
-        print("✅ Fetched ${feeds.length} feeds");
+        AppLogger.d("✅ Fetched ${feeds.length} feeds");
       } else {
-        print("❌ Failed to fetch feeds: ${response.statusCode}");
+        AppLogger.d("❌ Failed to fetch feeds: ${response.statusCode}");
         Get.snackbar("Error", "Failed to load feeds");
       }
     } catch (e) {
-      print("❌ Error fetching feeds: $e");
+      AppLogger.d("❌ Error fetching feeds: $e");
       Get.snackbar("Error", "Failed to load feeds: ${e.toString()}");
     } finally {
       isLoading.value = false;
@@ -84,7 +85,7 @@ class FeedsController extends GetxController {
         }
       }
     } catch (e) {
-      print("❌ Error toggling like: $e");
+      AppLogger.d("❌ Error toggling like: $e");
     }
   }
 

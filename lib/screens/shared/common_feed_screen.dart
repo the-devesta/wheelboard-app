@@ -9,6 +9,7 @@ import '../../controllers/post_controller.dart';
 import '../../controllers/Professional/feeds_controller.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/share_service.dart';
+import '../../utils/app_logger.dart';
 
 /// Common Feed Screen
 /// Used across Transport, Service Provider, and Professional modules
@@ -35,8 +36,8 @@ class CommonFeedScreen extends StatelessWidget {
           // Header
           InkWell(
             onTap: () {
-              print('👆 Tapped on profile for: ${post.userName}');
-              print('👉 companyId: ${post.companyId}');
+              AppLogger.d('👆 Tapped on profile for: ${post.userName}');
+              AppLogger.d('👉 companyId: ${post.companyId}');
               Get.to(() => FleetUserprofile(companyId: post.companyId));
             },
             borderRadius: BorderRadius.circular(50),
@@ -139,7 +140,7 @@ class CommonFeedScreen extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: post.imageUrls.length == 1
-                  ? Container(
+                  ? SizedBox(
                       width: double.infinity,
                       height: 200,
                       child: Image.network(

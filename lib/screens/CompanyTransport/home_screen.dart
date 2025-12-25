@@ -24,6 +24,7 @@ import 'feed_screen.dart';
 import '../../services/auth_service.dart';
 import '../../controllers/post_controller.dart';
 import '../../widgets/custom_loader.dart';
+import '../../utils/app_logger.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -233,7 +234,7 @@ class HomeScreen extends StatelessWidget {
                         return GestureDetector(
                           onTap: () {
                             // Handle tap here
-                            print(
+                            AppLogger.d(
                               'Tapped on item: ${item['label']} (Index: $index)',
                             );
 
@@ -821,7 +822,7 @@ class HomeScreen extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: post.imageUrls.length == 1
-                  ? Container(
+                  ? SizedBox(
                       width: double.infinity,
                       height: 200,
                       child: Image.network(

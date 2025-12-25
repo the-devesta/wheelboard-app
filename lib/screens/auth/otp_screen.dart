@@ -7,7 +7,7 @@ import '../../CommonWidget/app_textfield.dart';
 import '../../widgets/custom_snackbar.dart';
 
 class EnterOtpScreen extends StatefulWidget {
-  const EnterOtpScreen({Key? key}) : super(key: key);
+  const EnterOtpScreen({super.key});
 
   @override
   State<EnterOtpScreen> createState() => _EnterOtpScreenState();

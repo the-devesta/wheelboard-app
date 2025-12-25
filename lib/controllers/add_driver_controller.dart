@@ -6,6 +6,7 @@ import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../models/add_drivermodel.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/app_logger.dart';
 
 class AddDriverController extends GetxController {
   var isLoading = false.obs;
@@ -47,7 +48,7 @@ class AddDriverController extends GetxController {
         return responseBody;
       }
     } catch (e) {
-      print("Error parsing response: $e");
+      AppLogger.d("Error parsing response: $e");
     }
     return defaultMessage;
   }
@@ -75,7 +76,7 @@ class AddDriverController extends GetxController {
 
       final response = await http.Response.fromStream(streamedResponse);
 
-      print(
+      AppLogger.d(
         "👤 Add Driver Response: ${response.statusCode} - ${response.body}",
       );
 
@@ -93,7 +94,7 @@ class AddDriverController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("👤 Add Driver Exception: $e");
+      AppLogger.d("👤 Add Driver Exception: $e");
       SnackBarHelper.error(
         "Unable to connect to server. Please check your internet connection.",
       );
@@ -126,7 +127,7 @@ class AddDriverController extends GetxController {
 
       final response = await http.Response.fromStream(streamedResponse);
 
-      print(
+      AppLogger.d(
         "👤 Update Driver Response: ${response.statusCode} - ${response.body}",
       );
 
@@ -144,7 +145,7 @@ class AddDriverController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("👤 Update Driver Exception: $e");
+      AppLogger.d("👤 Update Driver Exception: $e");
       SnackBarHelper.error(
         "Unable to connect to server. Please check your internet connection.",
       );

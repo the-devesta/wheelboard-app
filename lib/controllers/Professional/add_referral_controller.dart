@@ -1,11 +1,10 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/models/Professional/referral_model.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import 'package:wheelboard/utils/constants.dart';
-import 'package:wheelboard/utils/error_handler.dart';
+import '../../utils/app_logger.dart';
 
 class AddReferralController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -39,7 +38,7 @@ class AddReferralController extends GetxController {
         );
       } else {}
     } catch (e) {
-      debugPrint('Error==>> ${e.toString()}');
+      AppLogger.d('Error==>> ${e.toString()}');
     } finally {
       isLoading.value = false;
     }

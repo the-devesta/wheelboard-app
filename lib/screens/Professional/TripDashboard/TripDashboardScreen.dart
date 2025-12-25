@@ -59,7 +59,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                         ),
                       ),
                     ),
-                    Container(
+                    SizedBox(
                       width: 18,
                       height: 18,
                       child: const Icon(Icons.more_vert, size: 18),
@@ -163,7 +163,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
               child: Icon(icon, size: 20, color: iconColor),
             )
           else
-            Container(
+            SizedBox(
               width: 40,
               height: 40,
               child: Stack(
@@ -506,7 +506,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
       if (tripController.isLoading.value) {
         return const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          child: const CustomLoader(message: "Loading trips..."),
+          child: CustomLoader(message: "Loading trips..."),
         );
       }
 
@@ -610,7 +610,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                   statusBgColor: const Color(0xFFEBF4FF),
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       );
@@ -880,7 +880,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                     earning: '+₹${(trip.bidAmount ?? 0).toStringAsFixed(0)}',
                   ),
                 );
-              }).toList(),
+              }),
           ],
         ),
       );

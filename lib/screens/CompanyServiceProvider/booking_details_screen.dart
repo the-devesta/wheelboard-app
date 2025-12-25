@@ -6,6 +6,7 @@ import '../../utils/constants.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'dart:convert';
 import '../../widgets/custom_loader.dart';
+import '../../utils/app_logger.dart';
 
 class BookingDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -25,8 +26,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    print("🔍 BookingDetailsScreen initialized");
-    print("🔍 Received Service ID: ${widget.serviceId}");
+    AppLogger.d("🔍 BookingDetailsScreen initialized");
+    AppLogger.d("🔍 Received Service ID: ${widget.serviceId}");
     _fetchBookingDetails();
   }
 
@@ -45,21 +46,21 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       final sessionManager = SessionManager();
       final token = await sessionManager.getString("authToken");
 
-      print("==========================================");
-      print("🔍 FETCHING BOOKING DETAILS");
-      print("==========================================");
-      print("🔍 Service ID: ${widget.serviceId}");
-      print("🔍 Service ID Type: ${widget.serviceId.runtimeType}");
-      print("🔍 Service ID Length: ${widget.serviceId.length}");
+      AppLogger.d("==========================================");
+      AppLogger.d("🔍 FETCHING BOOKING DETAILS");
+      AppLogger.d("==========================================");
+      AppLogger.d("🔍 Service ID: ${widget.serviceId}");
+      AppLogger.d("🔍 Service ID Type: ${widget.serviceId.runtimeType}");
+      AppLogger.d("🔍 Service ID Length: ${widget.serviceId.length}");
 
       final endpoint = '${API.serviceAssignList}?serviceId=${widget.serviceId}';
-      print("🔍 Endpoint: $endpoint");
+      AppLogger.d("🔍 Endpoint: $endpoint");
 
       final baseUrl = HttpHelper.baseUrl;
       final fullUrl = '$baseUrl$endpoint';
-      print("🔍 Base URL: $baseUrl");
-      print("🔍 Full URL: $fullUrl");
-      print("==========================================");
+      AppLogger.d("🔍 Base URL: $baseUrl");
+      AppLogger.d("🔍 Full URL: $fullUrl");
+      AppLogger.d("==========================================");
 
       // Fetch assigned service list for this serviceId
       final response = await HttpHelper.getData(
@@ -71,55 +72,55 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         },
       );
 
-      print("🔍 Response Status Code: ${response.statusCode}");
-      print("🔍 Response Body: ${response.body}");
+      AppLogger.d("🔍 Response Status Code: ${response.statusCode}");
+      AppLogger.d("🔍 Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List<dynamic> data =
             jsonDecode(response.body) as List<dynamic>? ?? [];
 
-        print("🔍 Parsed Data Count: ${data.length}");
-        print("🔍 Parsed Data: $data");
+        AppLogger.d("🔍 Parsed Data Count: ${data.length}");
+        AppLogger.d("🔍 Parsed Data: $data");
 
         if (data.isNotEmpty) {
           // Use the first assignment (or you can show a list if multiple)
           final bookingData = data[0] as Map<String, dynamic>;
-          print("✅ Booking Data Found:");
-          print("   - Assignment ID: ${bookingData['assignmentId']}");
-          print("   - Service Title: ${bookingData['serviceTitle']}");
-          print("   - Customer Name: ${bookingData['customerName']}");
-          print("   - Status: ${bookingData['status']}");
-          print("   - Scheduled Date: ${bookingData['scheduledDate']}");
-          print("   - Scheduled Time: ${bookingData['scheduledTime']}");
-          print("   - Vehicle Number: ${bookingData['vehicleNumber']}");
-          print("   - Amount: ${bookingData['amount']}");
-          print("   - Pricing Option: ${bookingData['pricingOption']}");
-          print("   - Description: ${bookingData['description']}");
-          print("   - Full Data: $bookingData");
+          AppLogger.d("✅ Booking Data Found:");
+          AppLogger.d("   - Assignment ID: ${bookingData['assignmentId']}");
+          AppLogger.d("   - Service Title: ${bookingData['serviceTitle']}");
+          AppLogger.d("   - Customer Name: ${bookingData['customerName']}");
+          AppLogger.d("   - Status: ${bookingData['status']}");
+          AppLogger.d("   - Scheduled Date: ${bookingData['scheduledDate']}");
+          AppLogger.d("   - Scheduled Time: ${bookingData['scheduledTime']}");
+          AppLogger.d("   - Vehicle Number: ${bookingData['vehicleNumber']}");
+          AppLogger.d("   - Amount: ${bookingData['amount']}");
+          AppLogger.d("   - Pricing Option: ${bookingData['pricingOption']}");
+          AppLogger.d("   - Description: ${bookingData['description']}");
+          AppLogger.d("   - Full Data: $bookingData");
 
           setState(() {
             _bookingData = bookingData;
           });
         } else {
-          print("⚠️ No assignments found in response");
+          AppLogger.d("⚠️ No assignments found in response");
           SnackBarHelper.error("No assignments found for this service");
           setState(() {
             _bookingData = null;
           });
         }
       } else {
-        print(
+        AppLogger.d(
           "❌ Failed to fetch booking details. Status: ${response.statusCode}",
         );
-        print("❌ Response: ${response.body}");
+        AppLogger.d("❌ Response: ${response.body}");
         SnackBarHelper.error("Failed to load booking details");
         setState(() {
           _bookingData = null;
         });
       }
     } catch (e, stackTrace) {
-      print("❌ Error fetching booking details: $e");
-      print("❌ Stack Trace: $stackTrace");
+      AppLogger.d("❌ Error fetching booking details: $e");
+      AppLogger.d("❌ Stack Trace: $stackTrace");
       SnackBarHelper.error("Error: ${e.toString()}");
       setState(() {
         _bookingData = null;
@@ -128,7 +129,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       setState(() {
         _isLoading = false;
       });
-      print("🔍 Fetch completed. Loading: false");
+      AppLogger.d("🔍 Fetch completed. Loading: false");
     }
   }
 

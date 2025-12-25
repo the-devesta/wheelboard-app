@@ -7,7 +7,7 @@ import '../../controllers/service_provider_controller.dart';
 import '../../models/service_provider_signup.dart';
 
 class AlliedBusinessRegistrationScreen extends StatefulWidget {
-  const AlliedBusinessRegistrationScreen({Key? key}) : super(key: key);
+  const AlliedBusinessRegistrationScreen({super.key});
 
   @override
   State<AlliedBusinessRegistrationScreen> createState() =>

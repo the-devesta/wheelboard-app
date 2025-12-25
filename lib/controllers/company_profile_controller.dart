@@ -10,6 +10,7 @@ import '../models/user_profile_model.dart';
 import '../utils/constants.dart';
 import '../widgets/custom_snackbar.dart';
 import 'user_profile_controller.dart';
+import '../utils/app_logger.dart';
 
 class CompanyProfileController extends GetxController {
   final UserProfileController _profileController = Get.find<UserProfileController>();
@@ -69,7 +70,7 @@ class CompanyProfileController extends GetxController {
       _existingLogoUrl.value = profile.companyLogoPath;
     } catch (e) {
       // Controller was disposed, ignore the error
-      print("⚠️ Controller disposed, skipping profile application: $e");
+      AppLogger.d("⚠️ Controller disposed, skipping profile application: $e");
     }
   }
 
@@ -109,7 +110,7 @@ class CompanyProfileController extends GetxController {
     }
 
     isSaving.value = true;
-    print("🔄 Updating company profile...");
+    AppLogger.d("🔄 Updating company profile...");
     try {
       final response = await HttpHelper.uploadMultipart(
         endpoint: API.updateTransportProfile,
@@ -126,22 +127,22 @@ class CompanyProfileController extends GetxController {
         fieldKey: 'CompanyLogo',
       );
       final resolved = await http.Response.fromStream(response);
-      print("✅ API Response Status: ${resolved.statusCode}");
-      print("✅ API Response Body: ${resolved.body}");
+      AppLogger.d("✅ API Response Status: ${resolved.statusCode}");
+      AppLogger.d("✅ API Response Body: ${resolved.body}");
       if (resolved.statusCode >= 200 && resolved.statusCode < 300) {
-        print("✅ Profile updated successfully.");
+        AppLogger.d("✅ Profile updated successfully.");
         SnackBarHelper.success("Profile updated successfully.");
         await _profileController.fetchCurrentUserProfile();
         // Navigation will be handled by screen level listener
         // No need to navigate from controller
       } else {
-        print("❌ Failed to update profile. Status Code: ${resolved.statusCode}");
-        print("❌ Response Body: ${resolved.body}");
+        AppLogger.d("❌ Failed to update profile. Status Code: ${resolved.statusCode}");
+        AppLogger.d("❌ Response Body: ${resolved.body}");
         throw Exception(
             'Failed to update profile (${resolved.statusCode}): ${resolved.body}');
       }
     } catch (e) {
-      print("❌ An error occurred while updating profile: $e");
+      AppLogger.d("❌ An error occurred while updating profile: $e");
       SnackBarHelper.error("Failed to update profile: $e");
     } finally {
       isSaving.value = false;

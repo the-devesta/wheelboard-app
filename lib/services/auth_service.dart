@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../utils/session_manager.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/app_logger.dart';
 
 class AuthService extends GetxService {
   static AuthService get to => Get.find();
@@ -15,26 +16,20 @@ class AuthService extends GetxService {
   final RxBool isKYCCompleted = false.obs; // KYC completion status
   final RxBool isHired = false.obs; // Professional hired status
 
-  @override
-  void onInit() {
-    super.onInit();
-    // ✅ Don't auto-check on init, let splash screen control when to check
-    // _checkLoginStatus();
-  }
 
   /// Check if user is already logged in
   Future<void> _checkLoginStatus() async {
     try {
-      print("🔐 AuthService: Checking login status...");
+      AppLogger.d("🔐 AuthService: Checking login status...");
       final token = await _sessionManager.getString("authToken");
       final user = await _sessionManager.getString("userId");
       final type = await _sessionManager.getString("userType");
       final kycStatus = await _sessionManager.getBool("isKYCCompleted");
       final hiredStatus = await _sessionManager.getBool("isHired");
 
-      print("🔐 Token exists: ${token != null && token.isNotEmpty}");
-      print("🔐 User exists: ${user != null && user.isNotEmpty}");
-      print("🔐 KYC Status from session: ${kycStatus ?? false}");
+      AppLogger.d("🔐 Token exists: ${token != null && token.isNotEmpty}");
+      AppLogger.d("🔐 User exists: ${user != null && user.isNotEmpty}");
+      AppLogger.d("🔐 KYC Status from session: ${kycStatus ?? false}");
 
       if (token != null &&
           token.isNotEmpty &&
@@ -47,11 +42,11 @@ class AuthService extends GetxService {
         isHired.value = hiredStatus ?? false;
         isLoggedIn.value = true;
 
-        print("✅ User is already logged in: $user");
-        print("✅ User Type: ${type ?? 'N/A'}");
-        print("✅ KYC Completed: ${kycStatus ?? false}");
-        print("✅ Is Hired: ${hiredStatus ?? false}");
-        print("✅ AuthService state: isLoggedIn = ${isLoggedIn.value}");
+        AppLogger.d("✅ User is already logged in: $user");
+        AppLogger.d("✅ User Type: ${type ?? 'N/A'}");
+        AppLogger.d("✅ KYC Completed: ${kycStatus ?? false}");
+        AppLogger.d("✅ Is Hired: ${hiredStatus ?? false}");
+        AppLogger.d("✅ AuthService state: isLoggedIn = ${isLoggedIn.value}");
       } else {
         authToken.value = '';
         userId.value = '';
@@ -59,10 +54,10 @@ class AuthService extends GetxService {
         isKYCCompleted.value = false;
         isHired.value = false;
         isLoggedIn.value = false;
-        print("❌ User is not logged in");
+        AppLogger.d("❌ User is not logged in");
       }
     } catch (e) {
-      print("❌ Error checking login status: $e");
+      AppLogger.d("❌ Error checking login status: $e");
       isLoggedIn.value = false;
     }
   }
@@ -76,15 +71,15 @@ class AuthService extends GetxService {
     bool? isHired,
   }) async {
     try {
-      print("==================================");
-      print("🔐 AUTH SERVICE: LOGIN PROCESS");
-      print("==================================");
-      print(
+      AppLogger.d("==================================");
+      AppLogger.d("🔐 AUTH SERVICE: LOGIN PROCESS");
+      AppLogger.d("==================================");
+      AppLogger.d(
         "🔐 Token: ${token.isNotEmpty ? 'Present (${token.substring(0, 20)}...)' : 'Empty'}",
       );
-      print("🔐 UserId: $userId");
-      print("🔐 UserType: $userType");
-      print("==================================");
+      AppLogger.d("🔐 UserId: $userId");
+      AppLogger.d("🔐 UserType: $userType");
+      AppLogger.d("==================================");
 
       // Store in session
       await _sessionManager.saveString("authToken", token);
@@ -101,18 +96,18 @@ class AuthService extends GetxService {
       this.isHired.value = isHired ?? false;
       isLoggedIn.value = true;
 
-      print("✅ LOGIN SUCCESSFUL!");
-      print("✅ User Type Saved: $userType");
-      print("✅ User ID Saved: $userId");
-      print("✅ KYC Completed: ${isKYCCompleted ?? false}");
-      print("✅ Is Hired: ${isHired ?? false}");
-      print("✅ Token Saved: ${token.substring(0, 20)}...");
-      print("==================================");
+      AppLogger.d("✅ LOGIN SUCCESSFUL!");
+      AppLogger.d("✅ User Type Saved: $userType");
+      AppLogger.d("✅ User ID Saved: $userId");
+      AppLogger.d("✅ KYC Completed: ${isKYCCompleted ?? false}");
+      AppLogger.d("✅ Is Hired: ${isHired ?? false}");
+      AppLogger.d("✅ Token Saved: ${token.substring(0, 20)}...");
+      AppLogger.d("==================================");
 
       SnackBarHelper.success("Login successful! Welcome back.");
       return true;
     } catch (e) {
-      print("❌ LOGIN ERROR: $e");
+      AppLogger.d("❌ LOGIN ERROR: $e");
       SnackBarHelper.error("Login failed. Please try again.");
       return false;
     }
@@ -136,11 +131,11 @@ class AuthService extends GetxService {
       isHired.value = false;
       isLoggedIn.value = false;
 
-      print("✅ User logged out successfully");
+      AppLogger.d("✅ User logged out successfully");
       SnackBarHelper.info("You have been logged out successfully.");
       return true;
     } catch (e) {
-      print("❌ Error during logout: $e");
+      AppLogger.d("❌ Error during logout: $e");
       SnackBarHelper.error("Logout failed. Please try again.");
       return false;
     }
@@ -173,6 +168,6 @@ class AuthService extends GetxService {
   Future<void> updateKYCStatus(bool status) async {
     await _sessionManager.saveBool("isKYCCompleted", status);
     isKYCCompleted.value = status;
-    print("✅ KYC Status Updated: $status");
+    AppLogger.d("✅ KYC Status Updated: $status");
   }
 }

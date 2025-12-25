@@ -393,7 +393,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                           )
                         else
                           DropdownButtonFormField<String>(
-                            value: _selectedVehicleId,
+                            initialValue: _selectedVehicleId,
                             decoration: InputDecoration(
                               hintText: 'Select a vehicle',
                               border: OutlineInputBorder(

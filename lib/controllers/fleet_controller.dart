@@ -5,6 +5,7 @@ import '../models/get_vehicle_model.dart';
 import '../models/vehicle_detail_response_model.dart';
 import '../utils/constants.dart';
 import '../apihelperclass/api_helper.dart'; // adjust import path if needed
+import '../utils/app_logger.dart';
 
 class DriverController extends GetxController {
   // 🚗 Drivers
@@ -32,12 +33,12 @@ class DriverController extends GetxController {
         },
       );
 
-      print("================================== ");
-      //print("📩 Response from Vehicles API");
-      //  print("🔹 Status Code: ${response.statusCode}");
-      print("🔹 Body: ${response.body} teja");
-      // print("🔹 Headers: ${response.headers}");
-      print("==================================");
+      AppLogger.d("================================== ");
+      //AppLogger.d("📩 Response from Vehicles API");
+      //  AppLogger.d("🔹 Status Code: ${response.statusCode}");
+      AppLogger.d("🔹 Body: ${response.body} teja");
+      // AppLogger.d("🔹 Headers: ${response.headers}");
+      AppLogger.d("==================================");
 
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
@@ -92,11 +93,11 @@ class DriverController extends GetxController {
       final url = "${API.getVehicles}/$userId";
 
       // 🔹 Log request
-      // print("==================================");
-      // print("📡 Fetching Vehicles");
-      // print("👉 URL: $url");
-      // print("👉 Headers: {Authorization: Bearer $token}");
-      // print("==================================");
+      // AppLogger.d("==================================");
+      // AppLogger.d("📡 Fetching Vehicles");
+      // AppLogger.d("👉 URL: $url");
+      // AppLogger.d("👉 Headers: {Authorization: Bearer $token}");
+      // AppLogger.d("==================================");
 
       final response = await HttpHelper.getData(
         endpoint: url,
@@ -107,17 +108,17 @@ class DriverController extends GetxController {
       );
 
       // 🔹 Log response
-      // print("==================================");
-      // print("📩 Response from Vehicles API");
-      // print("🔹 Status Code: ${response.statusCode}");
-      // print("🔹 Body: ${response.body}");
-      // print("🔹 Headers: ${response.headers}");
-      // print("==================================");
+      // AppLogger.d("==================================");
+      // AppLogger.d("📩 Response from Vehicles API");
+      // AppLogger.d("🔹 Status Code: ${response.statusCode}");
+      // AppLogger.d("🔹 Body: ${response.body}");
+      // AppLogger.d("🔹 Headers: ${response.headers}");
+      // AppLogger.d("==================================");
 
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         vehicles.value = data.map((e) => Vehicle.fromJson(e)).toList();
-        //  print("✅ Vehicles loaded: ${vehicles.length}");
+        //  AppLogger.d("✅ Vehicles loaded: ${vehicles.length}");
       } else {
         Get.snackbar(
           "Error",
@@ -125,7 +126,7 @@ class DriverController extends GetxController {
         );
       }
     } catch (e) {
-      //  print("❌ Exception in fetchVehicles: $e");
+      //  AppLogger.d("❌ Exception in fetchVehicles: $e");
       Get.snackbar("Error", "Exception: $e");
     } finally {
       isVehicleLoading.value = false;
@@ -144,10 +145,10 @@ class DriverController extends GetxController {
 
       final url = "${API.getVehicleDetailsById}$vehicleId";
 
-      print("==================================");
-      print("📡 Fetching Vehicle Details");
-      print("👉 URL: $url");
-      print("==================================");
+      AppLogger.d("==================================");
+      AppLogger.d("📡 Fetching Vehicle Details");
+      AppLogger.d("👉 URL: $url");
+      AppLogger.d("==================================");
 
       final response = await HttpHelper.getData(
         endpoint: url,
@@ -157,16 +158,16 @@ class DriverController extends GetxController {
         },
       );
 
-      print("==================================");
-      print("📩 Response from Vehicle Details API");
-      print("🔹 Status Code: ${response.statusCode}");
-      print("🔹 Body: ${response.body}");
-      print("==================================");
+      AppLogger.d("==================================");
+      AppLogger.d("📩 Response from Vehicle Details API");
+      AppLogger.d("🔹 Status Code: ${response.statusCode}");
+      AppLogger.d("🔹 Body: ${response.body}");
+      AppLogger.d("==================================");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         vehicleDetails.value = VehicleDetailResponseModel.fromJson(data);
-        print("✅ Vehicle details loaded successfully");
+        AppLogger.d("✅ Vehicle details loaded successfully");
       } else {
         Get.snackbar(
           "Error",
@@ -174,7 +175,7 @@ class DriverController extends GetxController {
         );
       }
     } catch (e) {
-      print("❌ Exception in fetchVehicleDetails: $e");
+      AppLogger.d("❌ Exception in fetchVehicleDetails: $e");
       Get.snackbar("Error", "Exception: $e");
     } finally {
       isVehicleDetailsLoading.value = false;

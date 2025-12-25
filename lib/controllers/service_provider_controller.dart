@@ -10,19 +10,20 @@ import '../utils/constants.dart';
 import '../utils/error_handler.dart';
 import '../widgets/custom_snackbar.dart';
 import '../screens/auth/login.dart';
+import '../utils/app_logger.dart';
 
 class ServiceProviderController extends GetxController {
   var isLoading = false.obs;
 
   Future<void> completeServiceProvider(ServiceProviderModel model) async {
     if (isLoading.value) {
-      print("⚠️ API call already in progress, skipping...");
+      AppLogger.d("⚠️ API call already in progress, skipping...");
       return;
     }
 
     try {
       isLoading.value = true;
-      print("🚀 Starting Service Provider Registration...");
+      AppLogger.d("🚀 Starting Service Provider Registration...");
 
       final fields = model.toJsonFields();
       final files = <File>[];
@@ -31,7 +32,7 @@ class ServiceProviderController extends GetxController {
         files.add(model.getBusinessLogo()!);
       }
 
-      print("📤 Sending request to API...");
+      AppLogger.d("📤 Sending request to API...");
 
       // Add timeout of 30 seconds
       final streamedResponse =
@@ -44,32 +45,32 @@ class ServiceProviderController extends GetxController {
           ).timeout(
             const Duration(seconds: 30),
             onTimeout: () {
-              print("⏱️ Request timed out after 30 seconds");
+              AppLogger.d("⏱️ Request timed out after 30 seconds");
               throw Exception(
                 'Request timeout. Please check your internet connection and try again.',
               );
             },
           );
 
-      print("✅ Request sent, waiting for response...");
-      print("📊 Response Status Code: ${streamedResponse.statusCode}");
+      AppLogger.d("✅ Request sent, waiting for response...");
+      AppLogger.d("📊 Response Status Code: ${streamedResponse.statusCode}");
 
       final response = await http.Response.fromStream(streamedResponse).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          print("⏱️ Response reading timed out");
+          AppLogger.d("⏱️ Response reading timed out");
           throw Exception('Response timeout. Please try again.');
         },
       );
 
-      print("📥 Response received!");
-      print("📊 Status Code: ${response.statusCode}");
-      print(
+      AppLogger.d("📥 Response received!");
+      AppLogger.d("📊 Status Code: ${response.statusCode}");
+      AppLogger.d(
         "📄 Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print("✅ Profile completed successfully!");
+        AppLogger.d("✅ Profile completed successfully!");
         SnackBarHelper.success(
           "Profile completed successfully! Please login to continue.",
         );
@@ -79,23 +80,23 @@ class ServiceProviderController extends GetxController {
         return;
       }
 
-      print("❌ API Error - Status: ${response.statusCode}");
+      AppLogger.d("❌ API Error - Status: ${response.statusCode}");
       final errorMessage = ErrorHandler.parseError(
         response.body,
         statusCode: response.statusCode,
       );
 
-      print("❌ Error Message: $errorMessage");
+      AppLogger.d("❌ Error Message: $errorMessage");
       SnackBarHelper.error(errorMessage);
     } catch (e) {
-      print("❌ Exception caught: $e");
-      print("❌ Exception type: ${e.runtimeType}");
+      AppLogger.d("❌ Exception caught: $e");
+      AppLogger.d("❌ Exception type: ${e.runtimeType}");
 
       final errorMessage = ErrorHandler.handleNetworkError(e);
-      print("❌ Final Error Message: $errorMessage");
+      AppLogger.d("❌ Final Error Message: $errorMessage");
       SnackBarHelper.error(errorMessage);
     } finally {
-      print("🏁 Request completed, resetting loading state");
+      AppLogger.d("🏁 Request completed, resetting loading state");
       isLoading.value = false;
     }
   }
@@ -103,13 +104,13 @@ class ServiceProviderController extends GetxController {
   /// Update Service Provider Profile
   Future<void> updateServiceProvider(ServiceProviderModel model) async {
     if (isLoading.value) {
-      print("⚠️ API call already in progress, skipping...");
+      AppLogger.d("⚠️ API call already in progress, skipping...");
       return;
     }
 
     try {
       isLoading.value = true;
-      print("🚀 Starting Service Provider Profile Update...");
+      AppLogger.d("🚀 Starting Service Provider Profile Update...");
 
       final fields = model.toJsonFields();
       final files = <File>[];
@@ -118,7 +119,7 @@ class ServiceProviderController extends GetxController {
         files.add(model.getBusinessLogo()!);
       }
 
-      print("📤 Sending update request to API...");
+      AppLogger.d("📤 Sending update request to API...");
 
       final streamedResponse =
           await HttpHelper.uploadMultipart(
@@ -130,55 +131,55 @@ class ServiceProviderController extends GetxController {
           ).timeout(
             const Duration(seconds: 30),
             onTimeout: () {
-              print("⏱️ Request timed out after 30 seconds");
+              AppLogger.d("⏱️ Request timed out after 30 seconds");
               throw Exception(
                 'Request timeout. Please check your internet connection and try again.',
               );
             },
           );
 
-      print("✅ Request sent, waiting for response...");
-      print("📊 Response Status Code: ${streamedResponse.statusCode}");
+      AppLogger.d("✅ Request sent, waiting for response...");
+      AppLogger.d("📊 Response Status Code: ${streamedResponse.statusCode}");
 
       final response = await http.Response.fromStream(streamedResponse).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          print("⏱️ Response reading timed out");
+          AppLogger.d("⏱️ Response reading timed out");
           throw Exception('Response timeout. Please try again.');
         },
       );
 
-      print("📥 Response received!");
-      print("📊 Status Code: ${response.statusCode}");
-      print(
+      AppLogger.d("📥 Response received!");
+      AppLogger.d("📊 Status Code: ${response.statusCode}");
+      AppLogger.d(
         "📄 Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print("✅ Profile updated successfully!");
+        AppLogger.d("✅ Profile updated successfully!");
         SnackBarHelper.success("Profile updated successfully!");
         await Future.delayed(const Duration(milliseconds: 800));
         Get.back(result: true); // Go back with success result
         return;
       }
 
-      print("❌ API Error - Status: ${response.statusCode}");
+      AppLogger.d("❌ API Error - Status: ${response.statusCode}");
       final errorMessage = ErrorHandler.parseError(
         response.body,
         statusCode: response.statusCode,
       );
 
-      print("❌ Error Message: $errorMessage");
+      AppLogger.d("❌ Error Message: $errorMessage");
       SnackBarHelper.error(errorMessage);
     } catch (e) {
-      print("❌ Exception caught: $e");
-      print("❌ Exception type: ${e.runtimeType}");
+      AppLogger.d("❌ Exception caught: $e");
+      AppLogger.d("❌ Exception type: ${e.runtimeType}");
 
       final errorMessage = ErrorHandler.handleNetworkError(e);
-      print("❌ Final Error Message: $errorMessage");
+      AppLogger.d("❌ Final Error Message: $errorMessage");
       SnackBarHelper.error(errorMessage);
     } finally {
-      print("🏁 Request completed, resetting loading state");
+      AppLogger.d("🏁 Request completed, resetting loading state");
       isLoading.value = false;
     }
   }
@@ -285,7 +286,7 @@ class ServiceProviderController extends GetxController {
     try {
       isLoading.value = true;
 
-      print("🗑️ Deleting service: $serviceId for user: $userId");
+      AppLogger.d("🗑️ Deleting service: $serviceId for user: $userId");
 
       // Construct the delete endpoint URL
       final endpoint = '${API.deleteService}/$serviceId/user/$userId/delete';
@@ -300,8 +301,8 @@ class ServiceProviderController extends GetxController {
         },
       );
 
-      print("🗑️ Delete response status: ${response.statusCode}");
-      print("🗑️ Delete response body: ${response.body}");
+      AppLogger.d("🗑️ Delete response status: ${response.statusCode}");
+      AppLogger.d("🗑️ Delete response body: ${response.body}");
 
       if (response.statusCode == 200 ||
           response.statusCode == 201 ||
@@ -318,7 +319,7 @@ class ServiceProviderController extends GetxController {
       SnackBarHelper.error(errorMessage);
       return false;
     } catch (e) {
-      print("❌ Error deleting service: $e");
+      AppLogger.d("❌ Error deleting service: $e");
       final errorMessage = ErrorHandler.handleNetworkError(e);
       SnackBarHelper.error(errorMessage);
       return false;

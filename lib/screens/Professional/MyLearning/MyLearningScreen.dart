@@ -107,7 +107,7 @@ class MyLearningScreen extends StatelessWidget {
           children: [
             _buildProgressCard(),
             const SizedBox(height: 16),
-            ...modules.map((m) => _buildModuleCard(m)).toList(),
+            ...modules.map((m) => _buildModuleCard(m)),
             const SizedBox(height: 40),
           ],
         ),

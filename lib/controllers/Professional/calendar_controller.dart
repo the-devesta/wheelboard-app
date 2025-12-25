@@ -6,6 +6,7 @@ import '../../utils/constants.dart';
 import '../../services/auth_service.dart';
 import '../../models/Professional/calendar_event_model.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class CalendarController extends GetxController {
   var isLoading = false.obs;
@@ -30,13 +31,13 @@ class CalendarController extends GetxController {
       final userId = authService.currentUserId;
 
       if (userId.isEmpty) {
-        print("⚠️ User not logged in, cannot fetch events");
+        AppLogger.d("⚠️ User not logged in, cannot fetch events");
         // Silently handle - just show empty calendar
         events.value = [];
         return;
       }
 
-      print("📅 Fetching calendar events for userId: $userId");
+      AppLogger.d("📅 Fetching calendar events for userId: $userId");
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getEventsByUserId}$userId',
@@ -46,24 +47,24 @@ class CalendarController extends GetxController {
         },
       );
 
-      print("📅 Events response status: ${response.statusCode}");
-      print("📅 Events response body: ${response.body}");
+      AppLogger.d("📅 Events response status: ${response.statusCode}");
+      AppLogger.d("📅 Events response body: ${response.body}");
 
       if (response.statusCode == 200) {
         try {
           final List data = json.decode(response.body);
           events.value = data.map((e) => CalendarEvent.fromJson(e)).toList();
-          print("✅ Fetched ${events.length} calendar events");
+          AppLogger.d("✅ Fetched ${events.length} calendar events");
           hasError.value = false;
         } catch (e) {
           // If response is not valid JSON, treat as empty
-          print("⚠️ Invalid JSON response, treating as empty: $e");
+          AppLogger.d("⚠️ Invalid JSON response, treating as empty: $e");
           events.value = [];
           hasError.value = false;
         }
       } else {
         // Silently handle error - just show empty calendar
-        print("⚠️ Failed to fetch events: ${response.statusCode} - Handling silently");
+        AppLogger.d("⚠️ Failed to fetch events: ${response.statusCode} - Handling silently");
         events.value = [];
         hasError.value = true;
         errorMessage.value = 'Unable to load events';
@@ -71,7 +72,7 @@ class CalendarController extends GetxController {
       }
     } catch (e) {
       // Silently handle error - just show empty calendar
-      print("⚠️ Error fetching calendar events (handled silently): $e");
+      AppLogger.d("⚠️ Error fetching calendar events (handled silently): $e");
       events.value = [];
       hasError.value = true;
       errorMessage.value = 'Unable to load events';
@@ -118,9 +119,9 @@ class CalendarController extends GetxController {
         'isActive': isActive,
       };
 
-      print("📅 Saving calendar event:");
-      print("📅 Event ID (GUID): $eventId");
-      print("📅 Request Data: ${json.encode(requestData)}");
+      AppLogger.d("📅 Saving calendar event:");
+      AppLogger.d("📅 Event ID (GUID): $eventId");
+      AppLogger.d("📅 Request Data: ${json.encode(requestData)}");
 
       final response = await HttpHelper.postData(
         endpoint: API.saveCalendarEvent,
@@ -132,8 +133,8 @@ class CalendarController extends GetxController {
         },
       );
 
-      print("📅 Save event response status: ${response.statusCode}");
-      print("📅 Save event response body: ${response.body}");
+      AppLogger.d("📅 Save event response status: ${response.statusCode}");
+      AppLogger.d("📅 Save event response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
@@ -161,7 +162,7 @@ class CalendarController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("❌ Error saving calendar event: $e");
+      AppLogger.d("❌ Error saving calendar event: $e");
       SnackBarHelper.error("Failed to save event: ${e.toString()}");
       return false;
     } finally {

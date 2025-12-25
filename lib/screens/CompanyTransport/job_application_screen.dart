@@ -162,6 +162,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
               backgroundImage: profile.profileImage.isNotEmpty
                   ? NetworkImage(profile.profileImage)
                   : null,
+              backgroundColor: const Color(0xFFE5E7EB),
               child: profile.profileImage.isEmpty
                   ? Text(
                       profile.profileName.isNotEmpty
@@ -173,7 +174,6 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                       ),
                     )
                   : null,
-              backgroundColor: const Color(0xFFE5E7EB),
             ),
             const SizedBox(height: 16),
             Text(
@@ -414,6 +414,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                 backgroundImage: application.profileImage.isNotEmpty
                     ? NetworkImage(application.profileImage)
                     : null,
+                backgroundColor: const Color(0xFFE5E7EB),
                 child: application.profileImage.isEmpty
                     ? Text(
                         application.fullName.isNotEmpty
@@ -426,7 +427,6 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                         ),
                       )
                     : null,
-                backgroundColor: const Color(0xFFE5E7EB),
               ),
               const SizedBox(width: 12),
               Expanded(

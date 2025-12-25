@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../utils/error_handler.dart';
+import '../utils/app_logger.dart';
 import '../widgets/custom_snackbar.dart';
 
 class LoginController extends GetxController {
@@ -15,12 +16,12 @@ class LoginController extends GetxController {
   Future<Map<String, dynamic>?> login(String phone, String password) async {
     // ✅ Validate inputs before making API call
     if (phone.trim().isEmpty) {
-      print("❌ Login failed: Phone number is empty");
+      AppLogger.e('Login failed: Phone number is empty');
       return null;
     }
 
     if (password.trim().isEmpty) {
-      print("❌ Login failed: Password is empty");
+      AppLogger.e('Login failed: Password is empty');
       return null;
     }
 
@@ -32,28 +33,33 @@ class LoginController extends GetxController {
         "password": password.trim(),
       };
 
-      print("==================================");
-      print("🔐 Login Request");
-      print("👉 Phone: $phone");
-      print("👉 Password: ${'*' * password.length}");
-      print("👉 Endpoint: ${API.login}");
-      print("==================================");
+      // Log API Request
+      AppLogger.apiRequest(
+        endpoint: API.login,
+        method: 'POST',
+        data: {
+          "mobileNo": phone.trim(),
+          "password": '*' * password.length, // Hide password in logs
+        },
+      );
 
       final response = await HttpHelper.postData(
         endpoint: API.login,
         data: requestData,
       );
 
-      print("==================================");
-      print("🔐 Login Response");
-      print("👉 Status Code: ${response.statusCode}");
-      print("👉 Body: ${response.body}");
-      print("==================================");
+      // Log API Response
+      AppLogger.apiResponse(
+        endpoint: API.login,
+        statusCode: response.statusCode,
+        body: response.body,
+        isError: response.statusCode != 200,
+      );
 
       if (response.statusCode == 200) {
         try {
           final data = json.decode(response.body);
-          print("🔐 Login successful, data received: ${data.toString()}");
+          AppLogger.i('Login successful, data received');
 
           // ✅ Check for success field and data object
           final isSuccess = data['success'] == true;
@@ -66,26 +72,25 @@ class LoginController extends GetxController {
                 responseData.containsKey('userId') &&
                 responseData['token'] != null &&
                 responseData['userId'] != null) {
-              print("✅ Login data extracted successfully");
+              AppLogger.auth('Login data extracted successfully');
               return responseData; // Return the data object
             } else {
-              print("❌ Login failed: Missing token or userId in response");
+              AppLogger.e('Login failed: Missing token or userId in response');
               return null;
             }
           } else if (!isSuccess) {
-            print("❌ Login failed: success field is false");
+            AppLogger.e('Login failed: success field is false');
             return null;
           } else {
-            print("❌ Login failed: No data in response");
+            AppLogger.e('Login failed: No data in response');
             return null;
           }
         } catch (e) {
-          print("❌ Login failed: Error parsing response - $e");
+          AppLogger.e('Login failed: Error parsing response', error: e);
           return null;
         }
       } else {
-        print("❌ Login failed with status: ${response.statusCode}");
-        print("❌ Response body: ${response.body}");
+        AppLogger.e('Login failed with status: ${response.statusCode}');
 
         // Use ErrorHandler to parse and display user-friendly error
         final errorMessage = ErrorHandler.parseError(
@@ -96,12 +101,7 @@ class LoginController extends GetxController {
         return null;
       }
     } catch (e, stackTrace) {
-      print("==================================");
-      print("❌ LOGIN EXCEPTION");
-      print("📋 Error: $e");
-      print("📋 Stack Trace:");
-      print(stackTrace);
-      print("==================================");
+      AppLogger.e('LOGIN EXCEPTION', error: e, stackTrace: stackTrace);
 
       // Use ErrorHandler for network errors
       final errorMessage = ErrorHandler.handleNetworkError(e);

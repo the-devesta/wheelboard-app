@@ -9,6 +9,7 @@ import 'add_service_screen.dart';
 import 'booking_details_screen.dart';
 import 'dart:convert';
 import '../../widgets/custom_loader.dart';
+import '../../utils/app_logger.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -581,8 +582,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       padding: const EdgeInsets.all(16),
       child: ElevatedButton(
         onPressed: () {
-          print("🔍 Navigating to BookingDetailsScreen...");
-          print("🔍 Service ID being passed: ${widget.serviceId}");
+          AppLogger.d("🔍 Navigating to BookingDetailsScreen...");
+          AppLogger.d("🔍 Service ID being passed: ${widget.serviceId}");
           Get.to(() => BookingDetailsScreen(serviceId: widget.serviceId));
         },
         style: ElevatedButton.styleFrom(

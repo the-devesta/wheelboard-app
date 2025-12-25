@@ -521,7 +521,7 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                           ? const SizedBox(
                                               height: 20,
                                               width: 20,
-                                              child: const CustomLoader.small(
+                                              child: CustomLoader.small(
                                                 color: Colors.white,
                                               ),
                                             )

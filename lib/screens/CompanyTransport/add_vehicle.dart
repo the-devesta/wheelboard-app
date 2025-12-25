@@ -14,6 +14,7 @@ import '../../utils/session_manager.dart';
 import '../../apihelperclass/api_helper.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/custom_loader.dart';
+import '../../utils/app_logger.dart';
 
 class AddVehicleScreen extends StatefulWidget {
   final VehicleModel? vehicleData; // ✅ For edit mode
@@ -108,19 +109,19 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     try {
       SnackBarHelper.info("Searching vehicle details...");
       
-      print("🔍 Searching for vehicle: $vehicleNumber");
+      AppLogger.d("🔍 Searching for vehicle: $vehicleNumber");
       
       final response = await HttpHelper.getVehicleDetails(
         vehicleNumber: vehicleNumber,
       );
 
-      print("📡 API Response Status: ${response.statusCode}");
-      print("📡 API Response Body: ${response.body}");
+      AppLogger.d("📡 API Response Status: ${response.statusCode}");
+      AppLogger.d("📡 API Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         
-        print("📊 Parsed Response: $data");
+        AppLogger.d("📊 Parsed Response: $data");
         
         if (data['code'] == 200 && data['result'] != null) {
           try {
@@ -142,25 +143,25 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             setState(() {}); // Refresh UI
             
             SnackBarHelper.success("Vehicle details fetched successfully!");
-            print("🚗 Vehicle Details Fetched:");
-            print("🚗 Model: ${vehicleDetails.model}");
-            print("🚗 Manufacturer: ${vehicleDetails.vehicleManufacturerName}");
-            print("🚗 Category: ${vehicleDetails.vehicleCategory}");
-            print("🚗 Manufacturing Year: ${vehicleDetails.vehicleManufacturingMonthYear}");
+            AppLogger.d("🚗 Vehicle Details Fetched:");
+            AppLogger.d("🚗 Model: ${vehicleDetails.model}");
+            AppLogger.d("🚗 Manufacturer: ${vehicleDetails.vehicleManufacturerName}");
+            AppLogger.d("🚗 Category: ${vehicleDetails.vehicleCategory}");
+            AppLogger.d("🚗 Manufacturing Year: ${vehicleDetails.vehicleManufacturingMonthYear}");
           } catch (parseError) {
-            print("❌ Error parsing vehicle details: $parseError");
+            AppLogger.d("❌ Error parsing vehicle details: $parseError");
             SnackBarHelper.error("Error parsing vehicle details. Please try again.");
           }
         } else {
-          print("❌ API returned error or no result");
+          AppLogger.d("❌ API returned error or no result");
           SnackBarHelper.error("Vehicle details not found for this number");
         }
       } else {
-        print("❌ API request failed with status: ${response.statusCode}");
+        AppLogger.d("❌ API request failed with status: ${response.statusCode}");
         SnackBarHelper.error("Failed to fetch vehicle details. Please try again.");
       }
     } catch (e) {
-      print("❌ Error fetching vehicle details: $e");
+      AppLogger.d("❌ Error fetching vehicle details: $e");
       SnackBarHelper.error("Error fetching vehicle details: $e");
     } finally {
       setState(() {
@@ -214,7 +215,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           await fleetController.fetchVehicles(refreshUserId, refreshToken);
         }
       } catch (e) {
-        print("⚠️ Could not refresh fleet data: $e");
+        AppLogger.d("⚠️ Could not refresh fleet data: $e");
       }
       
       Navigator.pop(context);
@@ -518,7 +519,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                           border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: _vehicleType,
+                          initialValue: _vehicleType,
                           items: const [
                             DropdownMenuItem(value: "Shipment", child: Text("Shipment")),
                             DropdownMenuItem(value: "Construction", child: Text("Construction")),
@@ -584,7 +585,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                             value: _isDeclarationAccepted,
                             onChanged: (v) =>
                                 setState(() => _isDeclarationAccepted = v),
-                            activeColor: const Color(0xFFF25C5C),
+                            activeThumbColor: const Color(0xFFF25C5C),
                           ),
                         ],
                       ),

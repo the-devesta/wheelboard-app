@@ -22,39 +22,6 @@ class ExpenseTypeDropdown extends StatelessWidget {
           bottomRight: Radius.circular(16),
         ),
       ),
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFD9D9D9), width: 1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                selectedValue != null
-                    ? items.firstWhere((e) => e.value == selectedValue, orElse: () => items.first).label
-                    : "Select expense type",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w500,
-                  color: selectedValue != null
-                      ? const Color(0xFF424242)
-                      : const Color(0xFFADAEBC),
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: Color(0xFF424242),
-            ),
-          ],
-        ),
-      ),
       itemBuilder: (context) {
         return [
           PopupMenuItem<String>(
@@ -115,10 +82,43 @@ class ExpenseTypeDropdown extends StatelessWidget {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ];
       },
       onSelected: onChanged,
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFD9D9D9), width: 1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                selectedValue != null
+                    ? items.firstWhere((e) => e.value == selectedValue, orElse: () => items.first).label
+                    : "Select expense type",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500,
+                  color: selectedValue != null
+                      ? const Color(0xFF424242)
+                      : const Color(0xFFADAEBC),
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: Color(0xFF424242),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

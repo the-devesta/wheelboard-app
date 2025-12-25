@@ -649,7 +649,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
             border: Border.all(color: const Color(0xFFEDF1F3), width: 1),
           ),
           child: DropdownButtonFormField<String>(
-            value: validValue,
+            initialValue: validValue,
             items: items
                 .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                 .toList(),

@@ -4,6 +4,7 @@ import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../models/vehicle_lease_model.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/app_logger.dart';
 
 /// Controller for Vehicle Lease operations
 class VehicleLeaseController extends GetxController {
@@ -18,32 +19,32 @@ class VehicleLeaseController extends GetxController {
     try {
       isLoading.value = true;
 
-      print("🚛 ==================================");
-      print("🚛 STARTING VEHICLE LEASE ADDITION");
-      print("🚛 ==================================");
+      AppLogger.d("🚛 ==================================");
+      AppLogger.d("🚛 STARTING VEHICLE LEASE ADDITION");
+      AppLogger.d("🚛 ==================================");
 
       final requestData = leaseModel.toJson();
 
-      print("🚛 Lease Data:");
-      print("🚛 - User ID: ${leaseModel.userId}");
-      print("🚛 - Vehicle ID: ${leaseModel.vehicleId}");
-      print("🚛 - Vehicle Title: ${leaseModel.vehicleTitle}");
-      print("🚛 - Vehicle Number: ${leaseModel.vehicleNumber}");
-      print("🚛 - Model: ${leaseModel.model}");
-      print("🚛 - Odometer Reading: ${leaseModel.odometerStartReading}");
-      print("🚛 - Pricing Type: ${leaseModel.pricingType}");
-      print("🚛 - Flat Price: ${leaseModel.flatPrice}");
-      print("🚛 - Avg Monthly Run: ${leaseModel.avgMonthlyRun}");
-      print("🚛 - Trip Efficiency Rate: ${leaseModel.tripEfficiencyRate}");
-      print("🚛 - Start Date: ${leaseModel.startDate}");
-      print("🚛 - End Date: ${leaseModel.endDate}");
-      print("🚛 - Business Days: ${leaseModel.businessDays}");
-      print("🚛 - Start Time: ${leaseModel.startTime}");
-      print("🚛 - End Time: ${leaseModel.endTime}");
-      print("🚛 - Instructions: ${leaseModel.instructions}");
-      print("🚛 ==================================");
-      print("🚛 Request JSON: ${jsonEncode(requestData)}");
-      print("🚛 ==================================");
+      AppLogger.d("🚛 Lease Data:");
+      AppLogger.d("🚛 - User ID: ${leaseModel.userId}");
+      AppLogger.d("🚛 - Vehicle ID: ${leaseModel.vehicleId}");
+      AppLogger.d("🚛 - Vehicle Title: ${leaseModel.vehicleTitle}");
+      AppLogger.d("🚛 - Vehicle Number: ${leaseModel.vehicleNumber}");
+      AppLogger.d("🚛 - Model: ${leaseModel.model}");
+      AppLogger.d("🚛 - Odometer Reading: ${leaseModel.odometerStartReading}");
+      AppLogger.d("🚛 - Pricing Type: ${leaseModel.pricingType}");
+      AppLogger.d("🚛 - Flat Price: ${leaseModel.flatPrice}");
+      AppLogger.d("🚛 - Avg Monthly Run: ${leaseModel.avgMonthlyRun}");
+      AppLogger.d("🚛 - Trip Efficiency Rate: ${leaseModel.tripEfficiencyRate}");
+      AppLogger.d("🚛 - Start Date: ${leaseModel.startDate}");
+      AppLogger.d("🚛 - End Date: ${leaseModel.endDate}");
+      AppLogger.d("🚛 - Business Days: ${leaseModel.businessDays}");
+      AppLogger.d("🚛 - Start Time: ${leaseModel.startTime}");
+      AppLogger.d("🚛 - End Time: ${leaseModel.endTime}");
+      AppLogger.d("🚛 - Instructions: ${leaseModel.instructions}");
+      AppLogger.d("🚛 ==================================");
+      AppLogger.d("🚛 Request JSON: ${jsonEncode(requestData)}");
+      AppLogger.d("🚛 ==================================");
 
       final response = await HttpHelper.postData(
         endpoint: API.addVehicleLease,
@@ -55,32 +56,32 @@ class VehicleLeaseController extends GetxController {
         },
       );
 
-      print("🚛 ==================================");
-      print("🚛 RESPONSE FROM API");
-      print("🚛 ==================================");
-      print("🚛 Status Code: ${response.statusCode}");
-      print("🚛 Response Body: ${response.body}");
-      print("🚛 ==================================");
+      AppLogger.d("🚛 ==================================");
+      AppLogger.d("🚛 RESPONSE FROM API");
+      AppLogger.d("🚛 ==================================");
+      AppLogger.d("🚛 Status Code: ${response.statusCode}");
+      AppLogger.d("🚛 Response Body: ${response.body}");
+      AppLogger.d("🚛 ==================================");
 
       if (response.statusCode == 200) {
         final responseBody = jsonDecode(response.body);
         if (responseBody['success'] == true) {
-          print("🚛 ✅ VEHICLE LEASE ADDED SUCCESSFULLY!");
+          AppLogger.d("🚛 ✅ VEHICLE LEASE ADDED SUCCESSFULLY!");
           SnackBarHelper.success(
             responseBody['message'] ?? "Lease posted successfully",
           );
           return true;
         } else {
-          print("🚛 ❌ API returned success: false");
+          AppLogger.d("🚛 ❌ API returned success: false");
           SnackBarHelper.error(
             responseBody['message'] ?? "Failed to add lease",
           );
           return false;
         }
       } else {
-        print("🚛 ❌ VEHICLE LEASE ADDITION FAILED!");
-        print("🚛 Error Status: ${response.statusCode}");
-        print("🚛 Error Body: ${response.body}");
+        AppLogger.d("🚛 ❌ VEHICLE LEASE ADDITION FAILED!");
+        AppLogger.d("🚛 Error Status: ${response.statusCode}");
+        AppLogger.d("🚛 Error Body: ${response.body}");
 
         String errorMessage = "Failed to add lease";
         try {
@@ -108,17 +109,17 @@ class VehicleLeaseController extends GetxController {
         return false;
       }
     } catch (e, stack) {
-      print("🚛 ==================================");
-      print("🚛 EXCEPTION OCCURRED");
-      print("🚛 ==================================");
-      print("🚛 Exception: $e");
-      print("🚛 Stacktrace: $stack");
-      print("🚛 ==================================");
+      AppLogger.d("🚛 ==================================");
+      AppLogger.d("🚛 EXCEPTION OCCURRED");
+      AppLogger.d("🚛 ==================================");
+      AppLogger.d("🚛 Exception: $e");
+      AppLogger.d("🚛 Stacktrace: $stack");
+      AppLogger.d("🚛 ==================================");
       SnackBarHelper.error("Something went wrong: $e");
       return false;
     } finally {
       isLoading.value = false;
-      print("🚛 Loading state set to false");
+      AppLogger.d("🚛 Loading state set to false");
     }
   }
 
@@ -128,9 +129,9 @@ class VehicleLeaseController extends GetxController {
       isLoading.value = true;
 
       // TODO: Implement when GET lease list API is available
-      print("🚛 Get Vehicle Leases - Not yet implemented");
+      AppLogger.d("🚛 Get Vehicle Leases - Not yet implemented");
     } catch (e) {
-      print("🚛 Error fetching leases: $e");
+      AppLogger.d("🚛 Error fetching leases: $e");
       SnackBarHelper.error("Failed to fetch leases");
     } finally {
       isLoading.value = false;

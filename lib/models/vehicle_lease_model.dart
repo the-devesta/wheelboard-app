@@ -1,5 +1,6 @@
 /// Vehicle Lease Model for Transport side
 /// Used for adding/managing vehicle leases via API
+library;
 
 class VehicleLeaseModel {
   final String? userId;

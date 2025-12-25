@@ -5,7 +5,7 @@ import '../NewReferral/newreferralscreen.dart';
 
 class AddReferralScreen extends StatelessWidget {
   AddReferralScreen({super.key});
-  AddReferralController controller = Get.put(AddReferralController());
+  final AddReferralController controller = Get.put(AddReferralController());
   @override
   Widget build(BuildContext context) {
     return Scaffold(

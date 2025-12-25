@@ -7,6 +7,7 @@ import './services/auth_service.dart';
 import './utils/navigation_helper.dart';
 import 'screens/auth/onboarding_screen.dart';
 import 'widgets/custom_loader.dart';
+import 'utils/app_logger.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -74,14 +75,14 @@ class _SplashScreenState extends State<SplashScreen> {
     
     final loggedIn = authService.isUserLoggedIn;
 
-    print("🔐 Splash Screen Check:");
-    print("🔐 Is Logged In: $loggedIn");
+    AppLogger.d("🔐 Splash Screen Check:");
+    AppLogger.d("🔐 Is Logged In: $loggedIn");
 
     if (!loggedIn) {
-      print("🔐 Navigating to RegisterScreen");
+      AppLogger.d("🔐 Navigating to RegisterScreen");
       Get.offAll(() => const RegisterScreen()); // not logged in → Register/Login
     } else {
-      print("🔐 Navigating to appropriate wrapper based on user type");
+      AppLogger.d("🔐 Navigating to appropriate wrapper based on user type");
       // Navigate to correct wrapper based on user type
       NavigationHelper.navigateToMainWrapper();
     }

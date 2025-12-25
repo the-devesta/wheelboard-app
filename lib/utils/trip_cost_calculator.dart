@@ -1,5 +1,6 @@
 /// Trip Cost Calculator Utility
 /// Calculates trip cost based on distance, time, and various rates
+library;
 
 class TripCostCalculator {
   // Default rates (can be customized per vehicle type)

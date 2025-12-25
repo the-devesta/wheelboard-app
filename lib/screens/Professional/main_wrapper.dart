@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import '../../services/auth_service.dart';
 import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
 import 'FindJobs/FindJobsScreen.dart';
@@ -7,6 +6,7 @@ import 'FeedsProfessional/FeedsProfessionalScreen.dart';
 import 'TripDashboard/TripDashboardScreen.dart';
 import 'widgets/professional_bottom_nav_widget.dart';
 import 'JobProgress/JobProgressScreen.dart';
+import '../../utils/app_logger.dart';
 
 /// Main Wrapper for Professional User Type
 /// This wrapper contains bottom navigation and manages all Professional screens
@@ -32,9 +32,9 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
       try {
         final authService = AuthService.to;
         await authService.refreshLoginStatus();
-        print("✅ AuthService refreshed in Professional wrapper");
+        AppLogger.d("✅ AuthService refreshed in Professional wrapper");
       } catch (e) {
-        print("⚠️ Could not refresh AuthService: $e");
+        AppLogger.d("⚠️ Could not refresh AuthService: $e");
       }
     });
   }

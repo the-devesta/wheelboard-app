@@ -35,7 +35,7 @@ class AppliedJob {
 
   factory AppliedJob.fromJson(Map<String, dynamic> json) {
     // Helper function to convert salary to int (handles both int and double)
-    int _parseSalary(dynamic value) {
+    int parseSalary(dynamic value) {
       if (value == null) return 0;
       if (value is int) return value;
       if (value is double) return value.toInt();
@@ -49,7 +49,7 @@ class AppliedJob {
     return AppliedJob(
       applicationId: json['applicationId'] ?? '',
       jobId: json['jobId'] ?? '',
-      salary: _parseSalary(json['salary']),
+      salary: parseSalary(json['salary']),
       jobRole: json['jobRole'] ?? '',
       jobDuration: json['jobDuration'] ?? '',
       jobCity: json['jobCity'] ?? '',
@@ -62,7 +62,7 @@ class AppliedJob {
           ? DateTime.parse(json['appliedDate'])
           : DateTime.now(),
       status: json['status'] ?? 'Pending',
-      salaryExpectation: _parseSalary(json['salaryExpectation']),
+      salaryExpectation: parseSalary(json['salaryExpectation']),
       remarks: json['remarks'] ?? '',
     );
   }

@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../constants/apps_colors.dart';
-import '../../../models/get_vehicle_model.dart';
 import '../../../controllers/fleet_controller.dart';
 import '../../../services/auth_service.dart';
-import '../bottom_navigation.dart';
 
 /// ON Lease Vehicles Screen - Shows vehicles that are currently on lease
 /// Based on Figma Design with tabs: ON Lease, Paused, OFF Lease

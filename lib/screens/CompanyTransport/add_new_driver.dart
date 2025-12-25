@@ -12,6 +12,7 @@ import '../../models/driver_license_model.dart';
 import '../../utils/session_manager.dart';
 import '../../apihelperclass/api_helper.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class AddNewDriverScreen extends StatefulWidget {
   final DriverModel? driverData; // ✅ For edit mode
@@ -185,7 +186,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                 // License vehicle type doesn't match our dropdown options
                 // Set to null so user can select from dropdown
                 selectedVehicleType = null;
-                print(
+                AppLogger.d(
                   "⚠️ License vehicle type '$licenseVehicleType' not in valid list. User needs to select manually.",
                 );
               }
@@ -197,15 +198,15 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
           SnackBarHelper.success(
             "Driver license details fetched successfully!",
           );
-          print("👤 Driver License Details Fetched:");
-          print("👤 Name: ${licenseDetails.detailsOfDrivingLicence.name}");
-          print(
+          AppLogger.d("👤 Driver License Details Fetched:");
+          AppLogger.d("👤 Name: ${licenseDetails.detailsOfDrivingLicence.name}");
+          AppLogger.d(
             "👤 Father Name: ${licenseDetails.detailsOfDrivingLicence.fatherOrHusbandName}",
           );
-          print(
+          AppLogger.d(
             "👤 Vehicle Classes: ${licenseDetails.badgeDetails.isNotEmpty ? licenseDetails.badgeDetails.first.classOfVehicle : 'None'}",
           );
-          print(
+          AppLogger.d(
             "👤 Address: ${licenseDetails.detailsOfDrivingLicence.address}",
           );
         } else {
@@ -215,7 +216,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
         SnackBarHelper.error("Failed to fetch driver license details");
       }
     } catch (e) {
-      print("❌ Error fetching driver license details: $e");
+      AppLogger.d("❌ Error fetching driver license details: $e");
       SnackBarHelper.error("Error fetching driver license details: $e");
     } finally {
       setState(() {
@@ -241,8 +242,8 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
       return;
     }
 
-    print("👉 Using Token: $token");
-    print("👉 Using UserId: $userId");
+    AppLogger.d("👉 Using Token: $token");
+    AppLogger.d("👉 Using UserId: $userId");
 
     final File? imageFile = _pickedImage != null && !kIsWeb
         ? File(_pickedImage!.path)
@@ -286,7 +287,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
           await fleetController.fetchDrivers(refreshUserId, refreshToken);
         }
       } catch (e) {
-        print("⚠️ Could not refresh fleet data: $e");
+        AppLogger.d("⚠️ Could not refresh fleet data: $e");
       }
 
       Navigator.of(context).pop();
@@ -595,7 +596,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                       ),
                     ),
                     child: DropdownButtonFormField<String>(
-                      value: selectedVehicleType,
+                      initialValue: selectedVehicleType,
                       items: const [
                         DropdownMenuItem(
                           value: "Shipment",
@@ -672,7 +673,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                         value: isDeclarationAccepted,
                         onChanged: (value) =>
                             setState(() => isDeclarationAccepted = value),
-                        activeColor: const Color(0xFFF25C5C),
+                        activeThumbColor: const Color(0xFFF25C5C),
                       ),
                     ],
                   ),

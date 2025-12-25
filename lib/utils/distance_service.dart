@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
+import '../utils/app_logger.dart';
 
 /// Distance calculation result model
 class DistanceResult {
@@ -64,12 +64,12 @@ class DistanceService {
           '&language=en'
           '&key=$apiKey';
 
-      debugPrint('Distance API URL: $url');
+      AppLogger.d('Distance API URL: $url');
 
       final response = await client.get(Uri.parse(url));
 
       if (response.statusCode != 200) {
-        debugPrint('Distance API Error: ${response.statusCode}');
+        AppLogger.d('Distance API Error: ${response.statusCode}');
         return DistanceResult.empty();
       }
 
@@ -77,8 +77,8 @@ class DistanceService {
       final status = data['status'] as String?;
 
       if (status != 'OK') {
-        debugPrint('Distance API Status: $status');
-        debugPrint('Error: ${data['error_message']}');
+        AppLogger.d('Distance API Status: $status');
+        AppLogger.d('Error: ${data['error_message']}');
         return DistanceResult.empty();
       }
 
@@ -96,7 +96,7 @@ class DistanceService {
       final elementStatus = element['status'] as String?;
 
       if (elementStatus != 'OK') {
-        debugPrint('Element Status: $elementStatus');
+        AppLogger.d('Element Status: $elementStatus');
         return DistanceResult.empty();
       }
 
@@ -128,7 +128,7 @@ class DistanceService {
         truckDurationText: truckDurationText,
       );
     } catch (e) {
-      debugPrint('Distance calculation error: $e');
+      AppLogger.d('Distance calculation error: $e');
       return DistanceResult.empty();
     }
   }

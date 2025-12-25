@@ -6,6 +6,7 @@ import '../utils/constants.dart';
 import '../utils/session_manager.dart';
 import '../utils/error_handler.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/app_logger.dart';
 
 class SignupController extends GetxController {
   var isLoading = false.obs;
@@ -14,7 +15,7 @@ class SignupController extends GetxController {
 
   Future<bool> registerCompany(CompanySignUpModel model) async {
     if (isLoading.value) {
-      print("⚠️ registerCompany called while a request is already in progress");
+      AppLogger.d("⚠️ registerCompany called while a request is already in progress");
       SnackBarHelper.error("Registration already in progress. Please wait.");
       return false;
     }
@@ -24,13 +25,13 @@ class SignupController extends GetxController {
     try {
       // 🔍 DEBUG: Log what we're sending
       final requestData = model.toJson();
-      print("=================================");
-      print("📤 Signup Request Data:");
-      print("📱 Mobile: ${requestData['mobileNo']}");
-      print("🏢 Company: ${requestData['companyName']}");
-      print("📧 Email: ${requestData['email']}");
-      print("📂 Category: ${requestData['businessCategory']}");
-      print("=================================");
+      AppLogger.d("=================================");
+      AppLogger.d("📤 Signup Request Data:");
+      AppLogger.d("📱 Mobile: ${requestData['mobileNo']}");
+      AppLogger.d("🏢 Company: ${requestData['companyName']}");
+      AppLogger.d("📧 Email: ${requestData['email']}");
+      AppLogger.d("📂 Category: ${requestData['businessCategory']}");
+      AppLogger.d("=================================");
 
       final response = await HttpHelper.postData(
         endpoint: API.companySignUp,
@@ -38,11 +39,11 @@ class SignupController extends GetxController {
       );
 
       // 🔍 DEBUG: Log response
-      print("=================================");
-      print("📥 Signup Response:");
-      print("Status: ${response.statusCode}");
-      print("Body: ${response.body}");
-      print("=================================");
+      AppLogger.d("=================================");
+      AppLogger.d("📥 Signup Response:");
+      AppLogger.d("Status: ${response.statusCode}");
+      AppLogger.d("Body: ${response.body}");
+      AppLogger.d("=================================");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
@@ -61,11 +62,11 @@ class SignupController extends GetxController {
         if (token != null && token.isNotEmpty) {
           final sessionManager = SessionManager();
           await sessionManager.saveString("authToken", token);
-          print(
+          AppLogger.d(
             "✅ Token stored from registration: ${token.substring(0, 20)}...",
           );
         } else {
-          print(
+          AppLogger.d(
             "⚠️ No token in registration response - user will need to login",
           );
         }
@@ -75,9 +76,9 @@ class SignupController extends GetxController {
         return true; // ✅ Success
       } else {
         // 🔍 Show exact backend error
-        print("❌ Registration failed!");
-        print("❌ Status Code: ${response.statusCode}");
-        print("❌ Error Body: ${response.body}");
+        AppLogger.d("❌ Registration failed!");
+        AppLogger.d("❌ Status Code: ${response.statusCode}");
+        AppLogger.d("❌ Error Body: ${response.body}");
 
         final errorMessage = ErrorHandler.parseError(
           response.body,
@@ -85,7 +86,7 @@ class SignupController extends GetxController {
         );
 
         // Also show the phone number that failed
-        print("❌ Failed for mobile: ${requestData['mobileNo']}");
+        AppLogger.d("❌ Failed for mobile: ${requestData['mobileNo']}");
 
         SnackBarHelper.error(errorMessage);
         return false; // ❌ Failed

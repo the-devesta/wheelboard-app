@@ -632,7 +632,7 @@ class _TimelineRow extends StatelessWidget {
     final isActive = step.status == StepStatus.active;
     final isTodo = step.status == StepStatus.todo;
 
-    return Container(
+    return SizedBox(
       height: 56,
       child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,

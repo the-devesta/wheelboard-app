@@ -12,6 +12,7 @@ import '../../models/assigned_trip_model.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
 import '../../services/auth_service.dart';
+import '../../utils/app_logger.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final bool isProfessional;
@@ -64,25 +65,25 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.initState();
 
     // 🔍 DEBUG: Check user type and controller selection
-    print("🔍 ========================================");
-    print("🔍 ADD EXPENSE SCREEN INITIALIZATION");
-    print("🔍 ========================================");
-    print("🔍 isProfessional flag: $isProfessional");
-    print(
+    AppLogger.d("🔍 ========================================");
+    AppLogger.d("🔍 ADD EXPENSE SCREEN INITIALIZATION");
+    AppLogger.d("🔍 ========================================");
+    AppLogger.d("🔍 isProfessional flag: $isProfessional");
+    AppLogger.d(
       "🔍 User Type: ${isProfessional ? 'Professional/Driver' : 'Transport Company'}",
     );
 
     // Initialize appropriate controller based on user type
     if (isProfessional) {
-      print("🔍 Using: AssignedTripController");
-      print("🔍 API: api/Trip/assign-trip-list/{userId}");
+      AppLogger.d("🔍 Using: AssignedTripController");
+      AppLogger.d("🔍 API: api/Trip/assign-trip-list/{userId}");
       tripController = Get.put(AssignedTripController());
     } else {
-      print("🔍 Using: TripController");
-      print("🔍 API: api/Trip/trip-list/{userId}");
+      AppLogger.d("🔍 Using: TripController");
+      AppLogger.d("🔍 API: api/Trip/trip-list/{userId}");
       tripController = Get.put(TripController());
     }
-    print("🔍 ========================================");
+    AppLogger.d("🔍 ========================================");
 
     _selectedDate = DateTime.now();
     _dateController.text = _formatDate(_selectedDate!);
@@ -256,7 +257,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     ),
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         );
@@ -277,17 +278,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               tripController as AssignedTripController;
 
           // 🔍 DEBUG: Log loading state and trip count
-          print("🔍 === PROFESSIONAL TRIP SELECTION DEBUG ===");
-          print("🔍 Is Loading: ${assignedTripController.isLoading.value}");
-          print(
+          AppLogger.d("🔍 === PROFESSIONAL TRIP SELECTION DEBUG ===");
+          AppLogger.d("🔍 Is Loading: ${assignedTripController.isLoading.value}");
+          AppLogger.d(
             "🔍 Trip Count: ${assignedTripController.assignedTrips.length}",
           );
           if (assignedTripController.assignedTrips.isNotEmpty) {
-            print(
+            AppLogger.d(
               "🔍 First Trip: ${assignedTripController.assignedTrips.first.pickupLocation} → ${assignedTripController.assignedTrips.first.deliveryLocation}",
             );
           }
-          print("🔍 ========================================");
+          AppLogger.d("🔍 ========================================");
 
           if (assignedTripController.isLoading.value) {
             return const CustomLoader.small(message: "Loading trips...");
@@ -377,7 +378,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                 setState(() {
                                   _selectedTrip = trip;
                                 });
-                                print(
+                                AppLogger.d(
                                   "✅ Selected trip: ${trip.pickupLocation} → ${trip.deliveryLocation}",
                                 );
                                 Navigator.pop(context);
@@ -418,7 +419,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                         ),
                                         Flexible(
                                           child: Text(
-                                            'Trip ID: ${(trip.bidId ?? trip.tripId).length > 12 ? (trip.bidId ?? trip.tripId).substring(0, 12) + '...' : (trip.bidId ?? trip.tripId)}',
+                                            'Trip ID: ${(trip.bidId ?? trip.tripId).length > 12 ? '${(trip.bidId ?? trip.tripId).substring(0, 12)}...' : (trip.bidId ?? trip.tripId)}',
                                             style: GoogleFonts.inter(
                                               fontSize: 12,
                                               color: Colors.grey,
@@ -451,15 +452,15 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           final tripControllerTyped = tripController as TripController;
 
           // 🔍 DEBUG: Log loading state and trip count for Transport
-          print("🔍 === TRANSPORT TRIP SELECTION DEBUG ===");
-          print("🔍 Is Loading: ${tripControllerTyped.isTripsLoading.value}");
-          print("🔍 Trip Count: ${tripControllerTyped.trips.length}");
+          AppLogger.d("🔍 === TRANSPORT TRIP SELECTION DEBUG ===");
+          AppLogger.d("🔍 Is Loading: ${tripControllerTyped.isTripsLoading.value}");
+          AppLogger.d("🔍 Trip Count: ${tripControllerTyped.trips.length}");
           if (tripControllerTyped.trips.isNotEmpty) {
-            print(
+            AppLogger.d(
               "🔍 First Trip: ${tripControllerTyped.trips.first.pickupLocation} → ${tripControllerTyped.trips.first.deliveryLocation}",
             );
           }
-          print("🔍 ========================================");
+          AppLogger.d("🔍 ========================================");
 
           if (tripControllerTyped.isTripsLoading.value) {
             return const Center(child: CircularProgressIndicator());
@@ -548,7 +549,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                 setState(() {
                                   _selectedTrip = trip;
                                 });
-                                print(
+                                AppLogger.d(
                                   "✅ Selected trip: ${trip.pickupLocation} → ${trip.deliveryLocation}",
                                 );
                                 Navigator.pop(context);
@@ -589,7 +590,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                         ),
                                         Flexible(
                                           child: Text(
-                                            'Trip ID: ${trip.tripId.length > 12 ? trip.tripId.substring(0, 12) + '...' : trip.tripId}',
+                                            'Trip ID: ${trip.tripId.length > 12 ? '${trip.tripId.substring(0, 12)}...' : trip.tripId}',
                                             style: GoogleFonts.inter(
                                               fontSize: 12,
                                               color: Colors.grey,

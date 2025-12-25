@@ -57,7 +57,10 @@ dependencies:
   # Location services
   geolocator: ^10.1.0
   geocoding: ^2.1.1
+  # Logging
+  logger: ^2.0.2
 
+  http_parser: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

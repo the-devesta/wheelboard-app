@@ -198,7 +198,7 @@ class FeedCardWidget extends StatelessWidget {
                 // Share Button
                 GestureDetector(
                   onTap: onShareTap,
-                  child: Container(
+                  child: SizedBox(
                     width: 20,
                     height: 20,
                     child: SvgPicture.asset(
@@ -216,7 +216,7 @@ class FeedCardWidget extends StatelessWidget {
                 // Eye Button
                 GestureDetector(
                   onTap: onEyeTap,
-                  child: Container(
+                  child: SizedBox(
                     width: 20,
                     height: 20,
                     child: SvgPicture.asset(

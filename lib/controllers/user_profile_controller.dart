@@ -5,6 +5,7 @@ import '../models/user_profile_model.dart';
 import '../utils/constants.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/app_logger.dart';
 
 class UserProfileController extends GetxController {
   final Rx<UserProfileModel?> userProfile = Rx<UserProfileModel?>(null);
@@ -17,10 +18,10 @@ class UserProfileController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
       
-      print("==================================");
-      print("📡 Fetching User Profile");
-      print("👉 UserId: $userId");
-      print("==================================");
+      AppLogger.d("==================================");
+      AppLogger.d("📡 Fetching User Profile");
+      AppLogger.d("👉 UserId: $userId");
+      AppLogger.d("==================================");
 
       // Get auth token
       final authService = AuthService.to;
@@ -38,30 +39,30 @@ class UserProfileController extends GetxController {
         },
       );
 
-      print("📥 Response Status: ${response.statusCode}");
-      print("📥 Response Body: ${response.body}");
+      AppLogger.d("📥 Response Status: ${response.statusCode}");
+      AppLogger.d("📥 Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         userProfile.value = UserProfileModel.fromJson(data);
         
-        print("✅ Profile loaded successfully");
-        print("👉 User Type: ${userProfile.value?.userType}");
-        print("👉 Display Name: ${userProfile.value?.displayName}");
-        print("==================================");
+        AppLogger.d("✅ Profile loaded successfully");
+        AppLogger.d("👉 User Type: ${userProfile.value?.userType}");
+        AppLogger.d("👉 Display Name: ${userProfile.value?.displayName}");
+        AppLogger.d("==================================");
         
         return true;
       } else {
         final errorMsg = "Failed to load profile: ${response.statusCode}";
         errorMessage.value = errorMsg;
-        print("❌ $errorMsg");
+        AppLogger.d("❌ $errorMsg");
         SnackBarHelper.error("Failed to load profile");
         return false;
       }
     } catch (e) {
       final errorMsg = "Error loading profile: ${e.toString()}";
       errorMessage.value = errorMsg;
-      print("❌ $errorMsg");
+      AppLogger.d("❌ $errorMsg");
       SnackBarHelper.error("Error loading profile");
       return false;
     } finally {

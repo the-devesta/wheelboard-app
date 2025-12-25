@@ -256,9 +256,9 @@ class VerifyEmailScreen extends StatefulWidget {
   final String email;
 
   const VerifyEmailScreen({
-    Key? key,
+    super.key,
     required this.email,
-  }) : super(key: key);
+  });
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();

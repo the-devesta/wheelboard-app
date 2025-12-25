@@ -21,7 +21,7 @@ class LiveMapScreen extends StatelessWidget {
             Stack(
               children: [
                 // Map Background
-                Container(
+                SizedBox(
                   width: double.infinity,
                   height: double.infinity,
                   child: Image.network(

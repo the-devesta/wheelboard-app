@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/driver_details_controller.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_loader.dart';
+import '../../utils/app_logger.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   final String driverId;
@@ -570,7 +571,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
       );
-      print('Phone call error: $e');
+      AppLogger.d('Phone call error: $e');
     }
   }
 
@@ -603,7 +604,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
       );
-      print('Email error: $e');
+      AppLogger.d('Email error: $e');
     }
   }
 

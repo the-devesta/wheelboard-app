@@ -11,7 +11,6 @@ import '../widgets/job_card_widget.dart';
 import '../Calendar/CalendarScreen.dart';
 
 import '../EarningSummary/EarningSummaryScreen.dart';
-import '../../CompanyTransport/add_expense_screen.dart';
 import '../MyLearning/MyLearningScreen.dart';
 import '../SOS/SOSScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
@@ -307,7 +306,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(40.0),
-                  child: const CustomLoader(message: "Loading jobs..."),
+                  child: CustomLoader(message: "Loading jobs..."),
                 ),
               );
             }

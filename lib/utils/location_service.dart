@@ -1,5 +1,6 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import '../utils/app_logger.dart';
 
 /// Reusable Location Service for getting current location
 class LocationService {
@@ -9,7 +10,7 @@ class LocationService {
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('❌ Location services are disabled');
+        AppLogger.d('❌ Location services are disabled');
         return null;
       }
 
@@ -18,13 +19,13 @@ class LocationService {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          print('❌ Location permissions are denied');
+          AppLogger.d('❌ Location permissions are denied');
           return null;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print('❌ Location permissions are permanently denied');
+        AppLogger.d('❌ Location permissions are permanently denied');
         return null;
       }
 
@@ -33,10 +34,10 @@ class LocationService {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      print('✅ Current Location: ${position.latitude}, ${position.longitude}');
+      AppLogger.d('✅ Current Location: ${position.latitude}, ${position.longitude}');
       return position;
     } catch (e) {
-      print('❌ Error getting current location: $e');
+      AppLogger.d('❌ Error getting current location: $e');
       return null;
     }
   }
@@ -84,13 +85,13 @@ class LocationService {
         }
 
         String address = addressParts.join(', ');
-        print('✅ Address: $address');
+        AppLogger.d('✅ Address: $address');
         return address.isNotEmpty ? address : null;
       }
 
       return null;
     } catch (e) {
-      print('❌ Error getting address: $e');
+      AppLogger.d('❌ Error getting address: $e');
       return null;
     }
   }

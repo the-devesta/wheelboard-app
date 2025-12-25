@@ -17,7 +17,7 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
   final PostController postController = Get.put(PostController());
   final TextEditingController _contentController = TextEditingController();
   String? _selectedCategory;
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
 
   @override

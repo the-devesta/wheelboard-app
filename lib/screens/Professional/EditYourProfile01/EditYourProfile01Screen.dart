@@ -424,7 +424,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: const CustomLoader.small(
+                            child: CustomLoader.small(
                               color: Colors.white,
                             ),
                           )

@@ -5,6 +5,7 @@ import '../controllers/main_wrapper_controller.dart';
 import '../screens/Professional/main_wrapper.dart';
 import '../screens/CompanyTransport/main_wrapper.dart';
 import '../screens/CompanyServiceProvider/main_wrapper.dart';
+import '../utils/app_logger.dart';
 
 /// Helper class to navigate to appropriate wrapper based on user type
 class NavigationHelper {
@@ -13,7 +14,7 @@ class NavigationHelper {
     final authService = AuthService.to;
     final userType = authService.currentUserType;
     
-    print("🧭 Navigation Helper - User Type: $userType");
+    AppLogger.d("🧭 Navigation Helper - User Type: $userType");
     
     // Navigate based on user type
     if (userType == "Professional" || userType == "professional") {

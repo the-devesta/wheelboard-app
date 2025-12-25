@@ -109,7 +109,7 @@ class Signup extends StatelessWidget {
           // Back button
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: Container(
+            child: SizedBox(
               width: 24,
               height: 24,
               child: const Icon(

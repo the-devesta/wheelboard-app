@@ -147,7 +147,7 @@ class JobProgressScreen extends StatelessWidget {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(40.0),
-                        child: const CustomLoader.small(),
+                        child: CustomLoader.small(),
                       ),
                     );
                   }

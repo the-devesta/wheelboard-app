@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import '../utils/app_logger.dart';
 
 typedef PaymentSuccessHandler = void Function(
   PaymentSuccessResponse response,
@@ -119,9 +120,9 @@ class RazorpayService {
     }
 
     if (kDebugMode) {
-      debugPrint(buffer.toString());
+      AppLogger.d(buffer.toString());
       if (stackTrace != null) {
-        debugPrint(stackTrace.toString());
+        AppLogger.d(stackTrace.toString());
       }
     } else {
       developer.log(

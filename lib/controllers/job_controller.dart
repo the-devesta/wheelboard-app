@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../models/job_model.dart';
 import '../models/job_application_model.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/app_logger.dart';
 
 class JobController extends GetxController {
   var isLoading = false.obs;
@@ -36,11 +37,11 @@ class JobController extends GetxController {
       final token = authService.currentToken;
 
       if (userId.isEmpty) {
-        print("⚠️ User not logged in, cannot fetch jobs");
+        AppLogger.d("⚠️ User not logged in, cannot fetch jobs");
         return;
       }
 
-      print("💼 Fetching jobs for userId: $userId");
+      AppLogger.d("💼 Fetching jobs for userId: $userId");
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getJobList}$userId',
@@ -50,22 +51,22 @@ class JobController extends GetxController {
         },
       );
 
-      print("💼 Jobs response status: ${response.statusCode}");
-      print("💼 Jobs response body: ${response.body}");
+      AppLogger.d("💼 Jobs response status: ${response.statusCode}");
+      AppLogger.d("💼 Jobs response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         jobs.value = data.map((e) => JobModel.fromJson(e)).toList();
-        print("✅ Fetched ${jobs.length} jobs");
+        AppLogger.d("✅ Fetched ${jobs.length} jobs");
 
         // Fetch application counts for each job
         _fetchApplicationCounts();
       } else {
-        print("❌ Failed to fetch jobs: ${response.statusCode}");
+        AppLogger.d("❌ Failed to fetch jobs: ${response.statusCode}");
         SnackBarHelper.error("Failed to load jobs");
       }
     } catch (e) {
-      print("❌ Error fetching jobs: $e");
+      AppLogger.d("❌ Error fetching jobs: $e");
       SnackBarHelper.error("Failed to load jobs: ${e.toString()}");
     } finally {
       isLoading.value = false;
@@ -99,10 +100,10 @@ class JobController extends GetxController {
         return false;
       }
 
-      print("💼 Adding new job...");
-      print("💼 UserId: $userId");
-      print("💼 Role: $role");
-      print("💼 Images: ${images.length}");
+      AppLogger.d("💼 Adding new job...");
+      AppLogger.d("💼 UserId: $userId");
+      AppLogger.d("💼 Role: $role");
+      AppLogger.d("💼 Images: ${images.length}");
 
       // Prepare fields for multipart
       final fields = <String, String?>{
@@ -125,19 +126,19 @@ class JobController extends GetxController {
         headers: {'Accept': '*/*'},
       );
 
-      print("💼 Add job response status: ${streamedResponse.statusCode}");
+      AppLogger.d("💼 Add job response status: ${streamedResponse.statusCode}");
 
       final responseBody = await streamedResponse.stream.bytesToString();
-      print("💼 Add job response body: $responseBody");
+      AppLogger.d("💼 Add job response body: $responseBody");
 
       if (streamedResponse.statusCode == 200 ||
           streamedResponse.statusCode == 201) {
-        print("✅ Successfully added job");
+        AppLogger.d("✅ Successfully added job");
         SnackBarHelper.success("Job posted successfully!");
         await fetchJobs(); // Refresh jobs list
         return true;
       } else {
-        print("❌ Failed to add job: ${streamedResponse.statusCode}");
+        AppLogger.d("❌ Failed to add job: ${streamedResponse.statusCode}");
         try {
           final errorData = json.decode(responseBody);
           final errorMessage =
@@ -151,7 +152,7 @@ class JobController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("❌ Error adding job: $e");
+      AppLogger.d("❌ Error adding job: $e");
       SnackBarHelper.error("Failed to post job: ${e.toString()}");
       return false;
     } finally {
@@ -182,8 +183,8 @@ class JobController extends GetxController {
         return false;
       }
 
-      print("💼 Updating job: $jobId");
-      print("💼 UserId: $userId");
+      AppLogger.d("💼 Updating job: $jobId");
+      AppLogger.d("💼 UserId: $userId");
 
       // Prepare fields for multipart
       final fields = <String, String?>{
@@ -211,20 +212,20 @@ class JobController extends GetxController {
         method: 'POST',
       );
 
-      print("💼 Update job response status: ${streamedResponse.statusCode}");
+      AppLogger.d("💼 Update job response status: ${streamedResponse.statusCode}");
 
       final responseBody = await streamedResponse.stream.bytesToString();
-      print("💼 Update job response body: $responseBody");
+      AppLogger.d("💼 Update job response body: $responseBody");
 
       if (streamedResponse.statusCode == 200 ||
           streamedResponse.statusCode == 201) {
-        print("✅ Successfully updated job");
+        AppLogger.d("✅ Successfully updated job");
         SnackBarHelper.success("Job updated successfully!");
         await fetchJobs(); // Refresh jobs list
         return true;
       } else {
-        print("❌ Failed to update job: ${streamedResponse.statusCode}");
-        print("❌ Response body: $responseBody");
+        AppLogger.d("❌ Failed to update job: ${streamedResponse.statusCode}");
+        AppLogger.d("❌ Response body: $responseBody");
 
         // Better error message
         String errorMsg = "Failed to update job";
@@ -240,7 +241,7 @@ class JobController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("❌ Error updating job: $e");
+      AppLogger.d("❌ Error updating job: $e");
       SnackBarHelper.error("Failed to update job: ${e.toString()}");
       return false;
     } finally {
@@ -265,8 +266,8 @@ class JobController extends GetxController {
         return false;
       }
 
-      print("👍 Toggling like for job: $jobId");
-      print("👍 User ID: $userId");
+      AppLogger.d("👍 Toggling like for job: $jobId");
+      AppLogger.d("👍 User ID: $userId");
 
       // 🔧 FIX: Send jobId and userId as query parameters (not body)
       final endpoint = '${API.toggleJobLike}?jobId=$jobId&userId=$userId';
@@ -281,8 +282,8 @@ class JobController extends GetxController {
         },
       );
 
-      print("👍 Toggle like response status: ${response.statusCode}");
-      print("👍 Toggle like response body: ${response.body}");
+      AppLogger.d("👍 Toggle like response status: ${response.statusCode}");
+      AppLogger.d("👍 Toggle like response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Parse new response format
@@ -307,7 +308,7 @@ class JobController extends GetxController {
           final message =
               responseData['message'] ??
               (isLiked ? 'Job liked' : 'Job unliked');
-          print("✅ $message");
+          AppLogger.d("✅ $message");
         }
 
         // 🔧 FIX: Refresh jobs list to get updated isLiked from backend
@@ -316,7 +317,7 @@ class JobController extends GetxController {
 
         return true;
       } else {
-        print("❌ Failed to toggle like: ${response.statusCode}");
+        AppLogger.d("❌ Failed to toggle like: ${response.statusCode}");
         try {
           final errorData = json.decode(response.body);
           final errorMessage =
@@ -330,7 +331,7 @@ class JobController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("❌ Error toggling like: $e");
+      AppLogger.d("❌ Error toggling like: $e");
       SnackBarHelper.error("Failed to toggle like: ${e.toString()}");
       return false;
     }
@@ -344,7 +345,7 @@ class JobController extends GetxController {
       final authService = AuthService.to;
       final token = authService.currentToken;
 
-      print("📋 Fetching applications for jobId: $jobId");
+      AppLogger.d("📋 Fetching applications for jobId: $jobId");
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getJobApplications}$jobId',
@@ -354,8 +355,8 @@ class JobController extends GetxController {
         },
       );
 
-      print("📋 Applications response status: ${response.statusCode}");
-      print("📋 Applications response body: ${response.body}");
+      AppLogger.d("📋 Applications response status: ${response.statusCode}");
+      AppLogger.d("📋 Applications response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
@@ -365,15 +366,15 @@ class JobController extends GetxController {
 
         allApplications.value = fetchedApplications;
         applications.value = fetchedApplications;
-        print("✅ Fetched ${applications.length} applications");
+        AppLogger.d("✅ Fetched ${applications.length} applications");
       } else {
-        print("❌ Failed to fetch applications: ${response.statusCode}");
+        AppLogger.d("❌ Failed to fetch applications: ${response.statusCode}");
         SnackBarHelper.error("Failed to load applications");
         allApplications.value = [];
         applications.value = [];
       }
     } catch (e) {
-      print("❌ Error fetching applications: $e");
+      AppLogger.d("❌ Error fetching applications: $e");
       SnackBarHelper.error("Failed to load applications: ${e.toString()}");
       allApplications.value = [];
       applications.value = [];
@@ -400,7 +401,7 @@ class JobController extends GetxController {
         return;
       }
 
-      print("📋 Fetching applications for all ${jobs.length} jobs");
+      AppLogger.d("📋 Fetching applications for all ${jobs.length} jobs");
 
       final List<JobApplicationModel> allApps = [];
 
@@ -421,25 +422,25 @@ class JobController extends GetxController {
                 .map((e) => JobApplicationModel.fromJson(e))
                 .toList();
             allApps.addAll(fetchedApplications);
-            print(
+            AppLogger.d(
               "✅ Fetched ${fetchedApplications.length} applications for job: ${job.role}",
             );
           } else {
-            print(
+            AppLogger.d(
               "⚠️ Failed to fetch applications for job ${job.jobId}: ${response.statusCode}",
             );
           }
         } catch (e) {
-          print("⚠️ Error fetching applications for job ${job.jobId}: $e");
+          AppLogger.d("⚠️ Error fetching applications for job ${job.jobId}: $e");
           // Continue with other jobs even if one fails
         }
       }
 
       allApplications.value = allApps;
       applications.value = allApps;
-      print("✅ Fetched total ${allApps.length} applications from all jobs");
+      AppLogger.d("✅ Fetched total ${allApps.length} applications from all jobs");
     } catch (e) {
-      print("❌ Error fetching all applications: $e");
+      AppLogger.d("❌ Error fetching all applications: $e");
       SnackBarHelper.error("Failed to load applications: ${e.toString()}");
       allApplications.value = [];
       applications.value = [];
@@ -463,8 +464,8 @@ class JobController extends GetxController {
         return false;
       }
 
-      print("📋 Updating application status: $applicationId to $status");
-      print("📋 User ID: $userId");
+      AppLogger.d("📋 Updating application status: $applicationId to $status");
+      AppLogger.d("📋 User ID: $userId");
 
       final response = await HttpHelper.postData(
         endpoint: API.updateJobStatus,
@@ -480,8 +481,8 @@ class JobController extends GetxController {
         },
       );
 
-      print("📋 Update status response: ${response.statusCode}");
-      print("📋 Update status body: ${response.body}");
+      AppLogger.d("📋 Update status response: ${response.statusCode}");
+      AppLogger.d("📋 Update status body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Update local state
@@ -514,7 +515,7 @@ class JobController extends GetxController {
         );
         return true;
       } else {
-        print("❌ Failed to update status: ${response.statusCode}");
+        AppLogger.d("❌ Failed to update status: ${response.statusCode}");
         try {
           final errorData = json.decode(response.body);
           final errorMessage =
@@ -528,7 +529,7 @@ class JobController extends GetxController {
         return false;
       }
     } catch (e) {
-      print("❌ Error updating application status: $e");
+      AppLogger.d("❌ Error updating application status: $e");
       SnackBarHelper.error("Failed to update status: ${e.toString()}");
       return false;
     }
@@ -584,15 +585,15 @@ class JobController extends GetxController {
             counts[job.jobId] = 0;
           }
         } catch (e) {
-          print("⚠️ Error fetching count for job ${job.jobId}: $e");
+          AppLogger.d("⚠️ Error fetching count for job ${job.jobId}: $e");
           counts[job.jobId] = 0;
         }
       }
 
       applicationCounts.value = counts;
-      print("✅ Fetched application counts: $counts");
+      AppLogger.d("✅ Fetched application counts: $counts");
     } catch (e) {
-      print("❌ Error fetching application counts: $e");
+      AppLogger.d("❌ Error fetching application counts: $e");
     }
   }
 

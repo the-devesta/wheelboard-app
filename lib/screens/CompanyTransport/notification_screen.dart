@@ -40,7 +40,7 @@ class NotificationScreen extends StatelessWidget {
       body: Obx(() {
         if (controller.isLoading.value && controller.notifications.isEmpty) {
           return const Center(
-            child: const CustomLoader(
+            child: CustomLoader(
               message: "Loading notifications...",
             ),
           );

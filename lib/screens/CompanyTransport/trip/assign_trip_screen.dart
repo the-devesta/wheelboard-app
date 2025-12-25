@@ -11,6 +11,7 @@ import '../../../utils/session_manager.dart';
 import '../../../widgets/custom_snackbar.dart';
 import '../../../widgets/custom_loader.dart';
 import 'trip_accepted.dart';
+import '../../../utils/app_logger.dart';
 
 class AssignTripScreen extends StatefulWidget {
   final String tripId;
@@ -849,13 +850,13 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
         throw Exception('User information is missing. Please log in again.');
       }
 
-      debugPrint(
+      AppLogger.d(
         '[AssignTrip] Creating backend order for trip=${widget.tripId} bid=${bid.bidId} amount=$payableAmount',
       );
       final order = await _tripPaymentService.createOrder(
         totalAmount: payableAmount,
       );
-      debugPrint(
+      AppLogger.d(
         '[AssignTrip] Order created successfully orderId=${order.orderId}',
       );
 
@@ -897,7 +898,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
     if (mounted) {
       setState(() => _isPaymentProcessing = true);
     }
-    debugPrint(
+    AppLogger.d(
       '[AssignTrip] Razorpay success paymentId=${response.paymentId} orderId=${response.orderId}',
     );
     final bid = _bidInPayment;
@@ -907,7 +908,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
 
     try {
       if (verificationPayload != null) {
-        debugPrint(
+        AppLogger.d(
           '[AssignTrip] Verifying payment on server orderId=${verificationPayload.orderId}',
         );
         final enrichedPayload = verificationPayload.copyWith(
@@ -918,13 +919,13 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
         await _tripPaymentService.verifyPayment(enrichedPayload);
 
         // ✅ Fetch trip confirmation after payment verification
-        debugPrint(
+        AppLogger.d(
           '[AssignTrip] Fetching trip confirmation for tripId=${verificationPayload.tripId}',
         );
         final confirmation = await _tripPaymentService.getTripConfirmation(
           verificationPayload.tripId,
         );
-        debugPrint('[AssignTrip] Confirmation received: ${confirmation.tripCode}');
+        AppLogger.d('[AssignTrip] Confirmation received: ${confirmation.tripCode}');
 
         SnackBarHelper.success(
           'Payment successful (Ref: ${response.paymentId ?? 'N/A'})',
@@ -942,7 +943,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
         }
       }
     } catch (e) {
-      debugPrint('[AssignTrip] Verification/Confirmation failed: $e');
+      AppLogger.d('[AssignTrip] Verification/Confirmation failed: $e');
       SnackBarHelper.error('Payment verification failed: $e');
       // Still navigate even if confirmation fails
       if (bid != null) {
