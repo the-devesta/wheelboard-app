@@ -1,32 +1,13 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:wheelboard/controllers/Professional/add_referral_controller.dart';
 import '../NewReferral/newreferralscreen.dart';
 
 class AddReferralScreen extends StatelessWidget {
-  const AddReferralScreen({super.key});
-
+  AddReferralScreen({super.key});
+  AddReferralController controller = Get.put(AddReferralController());
   @override
   Widget build(BuildContext context) {
-    final referrals = [
-      {
-        "name": "Ajay Verma",
-        "role": "Driver",
-        "date": "22 May 2025",
-        "status": "Accepted",
-        "points": "+25 PTS",
-        "isAccepted": true,
-      },
-      {
-        "name": "Sonia Malik",
-        "role": "Tyre Fitter",
-        "date": "20 May 2025",
-        "status": "Pending",
-        "points": "",
-        "isAccepted": false,
-      },
-    ];
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -226,10 +207,10 @@ class AddReferralScreen extends StatelessWidget {
               height: 150,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: referrals.length,
+                itemCount: controller.referrals.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
-                  final r = referrals[index];
+                  final r = controller.referrals[index];
                   return Container(
                     width: 220,
                     padding: const EdgeInsets.all(14),
@@ -379,13 +360,14 @@ class AddReferralScreen extends StatelessWidget {
                   onPressed: () {
                     Get.to(() => NewReferralScreen());
                   },
-                  icon: const Icon(Icons.person_add, color: Colors.white, size: 18),
+                  icon: const Icon(
+                    Icons.person_add,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   label: const Text(
                     "NEW REFERRAL",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF5E5E),
