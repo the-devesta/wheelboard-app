@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/CompanyTransport/dashboard.dart';
@@ -76,6 +77,10 @@ class HomeScreen extends StatelessWidget {
       appBar: null,
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: BouncingScrollPhysics(),
+          hitTestBehavior: HitTestBehavior.translucent,
+          dragStartBehavior: DragStartBehavior.down,
+
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
