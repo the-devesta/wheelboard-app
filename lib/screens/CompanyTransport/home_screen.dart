@@ -250,7 +250,7 @@ class HomeScreen extends StatelessWidget {
                             }
                             if (index == 2) {
                               // Expenses - Navigate to Transaction Summary Screen
-                              Get.to(const TransactionSummaryScreen());
+                              Get.to(() => TransactionSummaryScreen());
                             }
                             if (index == 3) {
                               // Hire - Navigate to Post Job Screen

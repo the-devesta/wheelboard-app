@@ -212,7 +212,9 @@ class JobController extends GetxController {
         method: 'POST',
       );
 
-      AppLogger.d("💼 Update job response status: ${streamedResponse.statusCode}");
+      AppLogger.d(
+        "💼 Update job response status: ${streamedResponse.statusCode}",
+      );
 
       final responseBody = await streamedResponse.stream.bytesToString();
       AppLogger.d("💼 Update job response body: $responseBody");
@@ -431,14 +433,18 @@ class JobController extends GetxController {
             );
           }
         } catch (e) {
-          AppLogger.d("⚠️ Error fetching applications for job ${job.jobId}: $e");
+          AppLogger.d(
+            "⚠️ Error fetching applications for job ${job.jobId}: $e",
+          );
           // Continue with other jobs even if one fails
         }
       }
 
       allApplications.value = allApps;
       applications.value = allApps;
-      AppLogger.d("✅ Fetched total ${allApps.length} applications from all jobs");
+      AppLogger.d(
+        "✅ Fetched total ${allApps.length} applications from all jobs",
+      );
     } catch (e) {
       AppLogger.d("❌ Error fetching all applications: $e");
       SnackBarHelper.error("Failed to load applications: ${e.toString()}");
