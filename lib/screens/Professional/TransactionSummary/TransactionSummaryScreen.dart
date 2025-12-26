@@ -1,28 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/controllers/transaction_summary_controller.dart';
+import 'package:wheelboard/models/trip_expense_detail_model.dart';
 import 'dart:math' as math;
 import '../../CompanyTransport/add_expense_screen.dart';
 import '../../../services/auth_service.dart';
 import '../../../utils/app_logger.dart';
 
-class TransactionSummaryScreen extends StatefulWidget {
-  const TransactionSummaryScreen({super.key});
-
-  @override
-  State<TransactionSummaryScreen> createState() =>
-      _TransactionSummaryScreenState();
-}
-
-class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
+class TransactionSummaryScreen extends StatelessWidget {
+  TransactionSummaryScreen({super.key});
+  TransactionSummaryController controller = Get.put(
+    TransactionSummaryController(),
+  );
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,7 +93,7 @@ class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: TextField(
-                                controller: _searchController,
+                                controller: controller.searchController,
                                 decoration: InputDecoration(
                                   hintText: 'Search transactions...',
                                   hintStyle: GoogleFonts.inter(
@@ -173,36 +164,69 @@ class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
                     const SizedBox(height: 12),
 
                     // Transaction Items
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          _buildTransactionItem(
-                            date: '06.05.2025',
-                            tripId: 'TRIP-1029',
-                            category: 'Vehicle Repair',
-                            description: 'Brake Service',
-                            amount: '₹1,500',
-                          ),
-                          const SizedBox(height: 10),
-                          _buildTransactionItem(
-                            date: '04.05.2025',
-                            tripId: 'TRIP-1025',
-                            category: 'Fuel',
-                            description: 'Diesel',
-                            amount: '₹2,300',
-                          ),
-                          const SizedBox(height: 10),
-                          _buildTransactionItem(
-                            date: '03.05.2025',
-                            tripId: 'TRIP-1019',
-                            category: 'Food',
-                            description: 'Lunch Stop',
-                            amount: '₹450',
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Padding(
+                    //   padding: const EdgeInsets.symmetric(horizontal: 16),
+                    //   child: Column(
+                    //     children: [
+                    //       _buildTransactionItem(
+                    //         date: '06.05.2025',
+                    //         tripId: 'TRIP-1029',
+                    //         category: 'Vehicle Repair',
+                    //         description: 'Brake Service',
+                    //         amount: '₹1,500',
+                    //       ),
+                    //       const SizedBox(height: 10),
+                    //       _buildTransactionItem(
+                    //         date: '04.05.2025',
+                    //         tripId: 'TRIP-1025',
+                    //         category: 'Fuel',
+                    //         description: 'Diesel',
+                    //         amount: '₹2,300',
+                    //       ),
+                    //       const SizedBox(height: 10),
+                    //       _buildTransactionItem(
+                    //         date: '03.05.2025',
+                    //         tripId: 'TRIP-1019',
+                    //         category: 'Food',
+                    //         description: 'Lunch Stop',
+                    //         amount: '₹450',
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    Obx(() {
+                      if (controller.isLoading.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (controller.filteredExpenses.isEmpty) {
+                        return const Center(
+                          child: Text('No transactions found'),
+                        );
+                      }
+
+                      return Column(
+                        children: controller.filteredExpenses.map((e) {
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: 12,
+                              left: 16,
+                              right: 16,
+                            ),
+                            child: _buildTransactionItem(
+                              date: HttpHelper.formatDate(
+                                e.dateEntered,
+                                format: 'dd.MM.yy',
+                              ),
+                              tripId: 'TRIP',
+                              category: e.expenseType,
+                              description: e.expenseType,
+                              amount: '₹${e.amount}',
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    }),
 
                     const SizedBox(height: 24),
 
@@ -234,97 +258,105 @@ class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
                           const SizedBox(height: 20),
 
                           // Pie Chart with Legend
-                          Row(
-                            children: [
-                              // Pie Chart
-                              Expanded(
-                                flex: 3,
-                                child: SizedBox(
-                                  height: 180,
-                                  child: CustomPaint(
-                                    painter: PieChartPainter(),
-                                    child: Center(
-                                      child: Text(
-                                        '12340',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF3D5A73),
+                          Obx(() {
+                            return Row(
+                              children: [
+                                // Pie Chart
+                                Expanded(
+                                  flex: 3,
+                                  child: SizedBox(
+                                    height: 180,
+                                    child: CustomPaint(
+                                      painter: PieChartPainter(
+                                        data: controller.pieData,
+                                      ),
+
+                                      child: Center(
+                                        child: Text(
+                                          HttpHelper.formatAmount(
+                                            controller.totalExpenses.value,
+                                          ),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF3D5A73),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              // Legend
-                              Expanded(
-                                flex: 2,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _buildLegendItem(
-                                      const Color(0xFF2D9CDB),
-                                      'Advance',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildLegendItem(
-                                      const Color(0xFF27AE60),
-                                      'Fuel',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildLegendItem(
-                                      const Color(0xFFF2994A),
-                                      'Challan',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildLegendItem(
-                                      const Color(0xFFEB5757),
-                                      'Food',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildLegendItem(
-                                      const Color(0xFF9B51E0),
-                                      'Salary',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildLegendItem(
-                                      const Color(0xFFF2C94C),
-                                      'Enroute',
-                                    ),
-                                  ],
+                                const SizedBox(width: 16),
+                                // Legend
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildLegendItem(
+                                        const Color(0xFF2D9CDB),
+                                        'Advance',
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _buildLegendItem(
+                                        const Color(0xFF27AE60),
+                                        'Fuel',
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _buildLegendItem(
+                                        const Color(0xFFF2994A),
+                                        'Challan',
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _buildLegendItem(
+                                        const Color(0xFFEB5757),
+                                        'Food',
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _buildLegendItem(
+                                        const Color(0xFF9B51E0),
+                                        'Salary',
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _buildLegendItem(
+                                        const Color(0xFFF2C94C),
+                                        'Enroute',
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            );
+                          }),
 
                           const SizedBox(height: 20),
 
                           // Bottom Category Legend
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _buildCategoryDot(
-                                const Color(0xFF2D9CDB),
-                                'Fuel',
-                              ),
-                              _buildCategoryDot(
-                                const Color(0xFF27AE60),
-                                'Food',
-                              ),
-                              _buildCategoryDot(
-                                const Color(0xFFF2994A),
-                                'Enroute',
-                              ),
-                              _buildCategoryDot(
-                                const Color(0xFFEB5757),
-                                'Misc',
-                              ),
-                            ],
-                          ),
+                          // Row(
+                          //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          //   children: [
+                          //     _buildCategoryDot(
+                          //       const Color(0xFF2D9CDB),
+                          //       'Fuel',
+                          //     ),
+                          //     _buildCategoryDot(
+                          //       const Color(0xFF27AE60),
+                          //       'Food',
+                          //     ),
+                          //     _buildCategoryDot(
+                          //       const Color(0xFFF2994A),
+                          //       'Enroute',
+                          //     ),
+                          //     _buildCategoryDot(
+                          //       const Color(0xFFEB5757),
+                          //       'Misc',
+                          //     ),
+                          //   ],
+                          // ),
 
-                          const SizedBox(height: 16),
+                          // const SizedBox(height: 16),
 
                           // Top 3 Section
                           Container(
@@ -346,14 +378,36 @@ class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
                                   ),
                                 ),
                                 Expanded(
-                                  child: Text(
-                                    'Fuel (₹2,300), Vehicle Repair (₹1,500), Food (₹450)',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w400,
-                                      color: const Color(0xFF6B7280),
-                                    ),
-                                  ),
+                                  child: Obx(() {
+                                    if (controller.pieData.isEmpty)
+                                      return const SizedBox();
+
+                                    // Sort by amount descending and take top 3
+                                    final top3 =
+                                        controller.pieData
+                                            .toList() // convert RxList to regular list
+                                          ..sort(
+                                            (a, b) =>
+                                                b.amount.compareTo(a.amount),
+                                          );
+
+                                    final display = top3
+                                        .take(3)
+                                        .map(
+                                          (e) =>
+                                              '${e.expenseType} (₹${e.amount.toInt()})',
+                                        )
+                                        .join(', ');
+
+                                    return Text(
+                                      display,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        color: const Color(0xFF6B7280),
+                                      ),
+                                    );
+                                  }),
                                 ),
                               ],
                             ),
@@ -590,32 +644,97 @@ class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
 }
 
 // Custom Pie Chart Painter (No external URL needed)
+// class PieChartPainter extends CustomPainter {
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final center = Offset(size.width / 2, size.height / 2);
+//     final radius = math.min(size.width, size.height) / 2 - 10;
+//     final innerRadius = radius * 0.55;
+
+//     // Pie chart segments with colors and percentages
+//     final segments = [
+//       {'color': const Color(0xFF2D9CDB), 'percent': 0.25}, // Advance - Blue
+//       {'color': const Color(0xFF27AE60), 'percent': 0.20}, // Fuel - Green
+//       {'color': const Color(0xFFF2994A), 'percent': 0.15}, // Challan - Orange
+//       {'color': const Color(0xFFEB5757), 'percent': 0.15}, // Food - Red
+//       {'color': const Color(0xFF9B51E0), 'percent': 0.15}, // Salary - Purple
+//       {'color': const Color(0xFFF2C94C), 'percent': 0.10}, // Enroute - Yellow
+//     ];
+
+//     double startAngle = -math.pi / 2; // Start from top
+
+//     for (var segment in segments) {
+//       final sweepAngle = 2 * math.pi * (segment['percent'] as double);
+//       final paint = Paint()
+//         ..color = segment['color'] as Color
+//         ..style = PaintingStyle.fill;
+
+//       // Draw arc
+//       canvas.drawArc(
+//         Rect.fromCircle(center: center, radius: radius),
+//         startAngle,
+//         sweepAngle,
+//         true,
+//         paint,
+//       );
+
+//       startAngle += sweepAngle;
+//     }
+
+//     // Draw inner circle (donut hole)
+//     final innerPaint = Paint()
+//       ..color = Colors.white
+//       ..style = PaintingStyle.fill;
+//     canvas.drawCircle(center, innerRadius, innerPaint);
+
+//     // Draw thin white borders between segments
+//     startAngle = -math.pi / 2;
+//     final borderPaint = Paint()
+//       ..color = Colors.white
+//       ..style = PaintingStyle.stroke
+//       ..strokeWidth = 2;
+
+//     for (var segment in segments) {
+//       final sweepAngle = 2 * math.pi * (segment['percent'] as double);
+//       canvas.drawArc(
+//         Rect.fromCircle(center: center, radius: radius),
+//         startAngle,
+//         sweepAngle,
+//         true,
+//         borderPaint,
+//       );
+//       startAngle += sweepAngle;
+//     }
+//   }
+
+//   @override
+//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+// }
+
 class PieChartPainter extends CustomPainter {
+  final List<ExpenseDistribution> data;
+
+  PieChartPainter({required this.data});
+
   @override
   void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 10;
     final innerRadius = radius * 0.55;
 
-    // Pie chart segments with colors and percentages
-    final segments = [
-      {'color': const Color(0xFF2D9CDB), 'percent': 0.25}, // Advance - Blue
-      {'color': const Color(0xFF27AE60), 'percent': 0.20}, // Fuel - Green
-      {'color': const Color(0xFFF2994A), 'percent': 0.15}, // Challan - Orange
-      {'color': const Color(0xFFEB5757), 'percent': 0.15}, // Food - Red
-      {'color': const Color(0xFF9B51E0), 'percent': 0.15}, // Salary - Purple
-      {'color': const Color(0xFFF2C94C), 'percent': 0.10}, // Enroute - Yellow
-    ];
+    double startAngle = -math.pi / 2;
 
-    double startAngle = -math.pi / 2; // Start from top
+    for (int i = 0; i < data.length; i++) {
+      final item = data[i];
 
-    for (var segment in segments) {
-      final sweepAngle = 2 * math.pi * (segment['percent'] as double);
+      final sweepAngle = 2 * math.pi * (item.percentage / 100);
+
       final paint = Paint()
-        ..color = segment['color'] as Color
+        ..color = _getColor(i)
         ..style = PaintingStyle.fill;
 
-      // Draw arc
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         startAngle,
@@ -627,32 +746,28 @@ class PieChartPainter extends CustomPainter {
       startAngle += sweepAngle;
     }
 
-    // Draw inner circle (donut hole)
+    // Donut hole
     final innerPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
+
     canvas.drawCircle(center, innerRadius, innerPaint);
+  }
 
-    // Draw thin white borders between segments
-    startAngle = -math.pi / 2;
-    final borderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+  /// Auto color assign
+  Color _getColor(int index) {
+    const colors = [
+      Color(0xFF2D9CDB), // Blue
+      Color(0xFF27AE60), // Green
+      Color(0xFFF2994A), // Orange
+      Color(0xFFEB5757), // Red
+      Color(0xFF9B51E0), // Purple
+      Color(0xFFF2C94C), // Yellow
+    ];
 
-    for (var segment in segments) {
-      final sweepAngle = 2 * math.pi * (segment['percent'] as double);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        borderPaint,
-      );
-      startAngle += sweepAngle;
-    }
+    return colors[index % colors.length];
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

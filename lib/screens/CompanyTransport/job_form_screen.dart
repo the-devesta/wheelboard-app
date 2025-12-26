@@ -188,11 +188,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildLabel("Openeing"),
+                              _buildLabel("Opening"),
                               const SizedBox(height: 2),
                               _buildTextField(
                                 "No. of Openings",
                                 controller: openingController,
+                                keyboardType: TextInputType.number,
                               ),
                             ],
                           ),
@@ -207,6 +208,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                               _buildTextField(
                                 "Salary",
                                 controller: salaryController,
+                                keyboardType: TextInputType.number,
                               ),
                             ],
                           ),
@@ -586,7 +588,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
     );
   }
 
-  Widget _buildTextField(String hint, {TextEditingController? controller}) {
+  Widget _buildTextField(
+    String hint, {
+    TextEditingController? controller,
+    TextInputType keyboardType = TextInputType.text, // default
+  }) {
     return Container(
       height: 46,
       decoration: BoxDecoration(
@@ -596,6 +602,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
       ),
       child: TextField(
         controller: controller,
+        keyboardType: keyboardType,
         style: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w400,

@@ -423,8 +423,7 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     _sectionTitle("Recent Transactions"),
                     TextButton(
-                      onPressed: () =>
-                          Get.to(() => const TransactionSummaryScreen()),
+                      onPressed: () => Get.to(() => TransactionSummaryScreen()),
                       child: const Text("View All"),
                     ),
                   ],
@@ -494,7 +493,7 @@ class DashboardScreen extends StatelessWidget {
                 _addButtonWithAction(
                   "+ Add Expense",
                   const Color(0xFF1A73E8),
-                  () => Get.to(() => const TransactionSummaryScreen()),
+                  () => Get.to(() => TransactionSummaryScreen()),
                 ),
 
                 const SizedBox(height: 24),

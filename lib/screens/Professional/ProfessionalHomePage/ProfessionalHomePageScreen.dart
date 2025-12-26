@@ -260,7 +260,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
           child: QuickActionButtonWidget(
             icon: Icons.add_circle_outline,
             title: "Add\nExpenses",
-            onTap: () => Get.to(const TransactionSummaryScreen()),
+            onTap: () => Get.to(() => TransactionSummaryScreen()),
           ),
         ),
         SizedBox(width: buttonSpacing),

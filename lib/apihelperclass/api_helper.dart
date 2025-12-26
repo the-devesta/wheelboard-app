@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 // import '../controllers/apihelperclass/...';
 import '../utils/constants.dart';
 import '../utils/app_logger.dart';
+import 'package:intl/intl.dart';
 
 class HttpHelper {
   static String get baseUrl => ApiConstants.baseUrl;
@@ -18,6 +21,7 @@ class HttpHelper {
     Uri uri = Uri.parse(
       baseUrl + endpoint,
     ).replace(queryParameters: queryParams);
+    debugPrint('requested urlll===> $uri');
     return await http.get(uri, headers: headers);
   }
 
@@ -27,36 +31,44 @@ class HttpHelper {
     Map<String, String>? headers,
   }) async {
     Uri uri = Uri.parse(baseUrl + endpoint);
-    
+
     // Debug logging for release mode
     AppLogger.d("🌐 API Request:");
     AppLogger.d("🌐 URL: $uri");
-    AppLogger.d("🌐 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
+    AppLogger.d(
+      "🌐 Headers: ${headers ?? {'Content-Type': 'application/json'}}",
+    );
     AppLogger.d("🌐 Data: ${jsonEncode(data)}");
-    
+
     try {
       final response = await http.post(
         uri,
         headers: headers ?? {'Content-Type': 'application/json'},
         body: jsonEncode(data),
       );
-      
+
       AppLogger.d("🌐 Response Status: ${response.statusCode}");
       AppLogger.d("🌐 Response Body: ${response.body}");
-      
+
       // Check for specific error cases
       if (response.statusCode == 0) {
-        throw Exception("Network connection failed. Please check your internet connection.");
+        throw Exception(
+          "Network connection failed. Please check your internet connection.",
+        );
       }
-      
+
       return response;
     } catch (e) {
       AppLogger.d("🌐 API Error: $e");
-      if (e.toString().contains('HandshakeException') || 
+      if (e.toString().contains('HandshakeException') ||
           e.toString().contains('CertificateException')) {
-        throw Exception("SSL Certificate error. Please check your network configuration.");
+        throw Exception(
+          "SSL Certificate error. Please check your network configuration.",
+        );
       } else if (e.toString().contains('SocketException')) {
-        throw Exception("Network connection failed. Please check your internet connection.");
+        throw Exception(
+          "Network connection failed. Please check your internet connection.",
+        );
       }
       rethrow;
     }
@@ -127,7 +139,8 @@ class HttpHelper {
 
       request.files.add(multipartFile);
       AppLogger.d(
-          "📂 Attached File: $fileName as $fieldKey with Content-Type: ${mediaType?.toString() ?? 'unknown'}");
+        "📂 Attached File: $fileName as $fieldKey with Content-Type: ${mediaType?.toString() ?? 'unknown'}",
+      );
     }
 
     // 🔍 Debug logging
@@ -150,14 +163,16 @@ class HttpHelper {
     Map<String, String>? headers,
   }) async {
     Uri uri = Uri.parse(baseUrl + API.getVehicleDetails);
-    
+
     final requestBody = {"vehicleNumber": vehicleNumber};
-    
+
     AppLogger.d("🚗 Vehicle API Request:");
     AppLogger.d("🚗 URL: $uri");
     AppLogger.d("🚗 Body: ${jsonEncode(requestBody)}");
-    AppLogger.d("🚗 Headers: ${headers ?? {'Content-Type': 'application/json'}}");
-    
+    AppLogger.d(
+      "🚗 Headers: ${headers ?? {'Content-Type': 'application/json'}}",
+    );
+
     return await http.post(
       uri,
       headers: headers ?? {'Content-Type': 'application/json'},
@@ -185,16 +200,48 @@ class HttpHelper {
     Map<String, String>? headers,
   }) async {
     // Remove trailing slash from baseUrl if present, then add endpoint
-    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-    Uri uri = Uri.parse('$cleanBaseUrl/api/Transport/drivers-details/$driverId');
-    
+    final cleanBaseUrl = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    Uri uri = Uri.parse(
+      '$cleanBaseUrl/api/Transport/drivers-details/$driverId',
+    );
+
     AppLogger.d("👤 Driver Details API Request:");
     AppLogger.d("👤 URL: $uri");
     AppLogger.d("👤 Headers: ${headers ?? {'accept': '*/*'}}");
-    
-    return await http.get(
-      uri,
-      headers: headers ?? {'accept': '*/*'},
-    );
+
+    return await http.get(uri, headers: headers ?? {'accept': '*/*'});
+  }
+
+  //date format common fucntion
+  static String formatDate(
+    dynamic date, {
+    String format = 'dd MMM yyyy, hh:mm a',
+  }) {
+    if (date == null) return '';
+
+    try {
+      DateTime dateTime;
+
+      if (date is DateTime) {
+        dateTime = date;
+      } else if (date is String) {
+        dateTime = DateTime.parse(date).toLocal();
+      } else {
+        return '';
+      }
+
+      return DateFormat(format).format(dateTime);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  static String formatAmount(num? amount, {String symbol = '₹'}) {
+    if (amount == null) return '${symbol}0';
+
+    final formatter = NumberFormat('#,##0', 'en_IN');
+    return '$symbol${formatter.format(amount)}';
   }
 }
