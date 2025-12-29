@@ -371,8 +371,8 @@ class SOSScreen extends StatelessWidget {
                     buttonText == 'Call'
                         ? Icons.phone
                         : buttonText == 'View Route'
-                            ? Icons.route
-                            : Icons.navigation,
+                        ? Icons.route
+                        : Icons.navigation,
                     size: 12,
                     color: Colors.white,
                   ),
@@ -497,4 +497,3 @@ class SOSScreen extends StatelessWidget {
     );
   }
 }
-

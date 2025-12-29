@@ -19,15 +19,14 @@ class AssignTripController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: '${API.assignTrip}$tripId',
-        headers: {
-          'accept': '*/*',
-        },
+        headers: {'accept': '*/*'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        assignBids.value =
-            data.map((item) => AssignTripBid.fromJson(item)).toList();
+        assignBids.value = data
+            .map((item) => AssignTripBid.fromJson(item))
+            .toList();
       } else {
         errorMessage.value =
             'Failed to load assignment details (${response.statusCode})';
@@ -49,5 +48,3 @@ class AssignTripController extends GetxController {
     }
   }
 }
-
-

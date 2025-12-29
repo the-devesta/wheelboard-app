@@ -279,7 +279,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
           // 🔍 DEBUG: Log loading state and trip count
           AppLogger.d("🔍 === PROFESSIONAL TRIP SELECTION DEBUG ===");
-          AppLogger.d("🔍 Is Loading: ${assignedTripController.isLoading.value}");
+          AppLogger.d(
+            "🔍 Is Loading: ${assignedTripController.isLoading.value}",
+          );
           AppLogger.d(
             "🔍 Trip Count: ${assignedTripController.assignedTrips.length}",
           );
@@ -453,7 +455,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
           // 🔍 DEBUG: Log loading state and trip count for Transport
           AppLogger.d("🔍 === TRANSPORT TRIP SELECTION DEBUG ===");
-          AppLogger.d("🔍 Is Loading: ${tripControllerTyped.isTripsLoading.value}");
+          AppLogger.d(
+            "🔍 Is Loading: ${tripControllerTyped.isTripsLoading.value}",
+          );
           AppLogger.d("🔍 Trip Count: ${tripControllerTyped.trips.length}");
           if (tripControllerTyped.trips.isNotEmpty) {
             AppLogger.d(

@@ -173,7 +173,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                                 backgroundImage: NetworkImage(logoPath),
                                 onBackgroundImageError:
                                     (exception, stackTrace) {
-                                      AppLogger.d("❌ Error loading logo: $exception");
+                                      AppLogger.d(
+                                        "❌ Error loading logo: $exception",
+                                      );
                                     },
                               )
                             : const CircleAvatar(

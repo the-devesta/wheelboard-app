@@ -17,7 +17,7 @@ class UserProfileController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
-      
+
       AppLogger.d("==================================");
       AppLogger.d("📡 Fetching User Profile");
       AppLogger.d("👉 UserId: $userId");
@@ -26,10 +26,10 @@ class UserProfileController extends GetxController {
       // Get auth token
       final authService = AuthService.to;
       final token = authService.currentToken;
-      
+
       // Build endpoint URL
       final endpoint = API.userProfile.replaceAll('{userId}', userId);
-      
+
       // Make API call
       final response = await HttpHelper.getData(
         endpoint: endpoint,
@@ -45,12 +45,12 @@ class UserProfileController extends GetxController {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         userProfile.value = UserProfileModel.fromJson(data);
-        
+
         AppLogger.d("✅ Profile loaded successfully");
         AppLogger.d("👉 User Type: ${userProfile.value?.userType}");
         AppLogger.d("👉 Display Name: ${userProfile.value?.displayName}");
         AppLogger.d("==================================");
-        
+
         return true;
       } else {
         final errorMsg = "Failed to load profile: ${response.statusCode}";
@@ -74,13 +74,13 @@ class UserProfileController extends GetxController {
   Future<bool> fetchCurrentUserProfile() async {
     final authService = AuthService.to;
     final userId = authService.currentUserId;
-    
+
     if (userId.isEmpty) {
       errorMessage.value = "User not logged in";
       SnackBarHelper.error("Please login to view profile");
       return false;
     }
-    
+
     return await fetchUserProfile(userId);
   }
 
@@ -97,4 +97,3 @@ class UserProfileController extends GetxController {
     errorMessage.value = '';
   }
 }
-

@@ -31,18 +31,13 @@ class NotificationScreen extends StatelessWidget {
         ),
         centerTitle: true,
         shape: const Border(
-          bottom: BorderSide(
-            color: Color(0xFFFCD2D2),
-            width: 1,
-          ),
+          bottom: BorderSide(color: Color(0xFFFCD2D2), width: 1),
         ),
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.notifications.isEmpty) {
           return const Center(
-            child: CustomLoader(
-              message: "Loading notifications...",
-            ),
+            child: CustomLoader(message: "Loading notifications..."),
           );
         }
 
@@ -104,10 +99,7 @@ class NotificationScreen extends StatelessWidget {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(
-                  bottom: BorderSide(
-                    color: Color(0xFFF3F4F6),
-                    width: 1,
-                  ),
+                  bottom: BorderSide(color: Color(0xFFF3F4F6), width: 1),
                 ),
               ),
               child: Row(
@@ -184,7 +176,7 @@ class NotificationScreen extends StatelessWidget {
     required NotificationController controller,
   }) {
     final isUnread = !notification.isRead;
-    
+
     return GestureDetector(
       onTap: () async {
         if (isUnread) {
@@ -197,7 +189,7 @@ class NotificationScreen extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isUnread 
+            color: isUnread
                 ? const Color(0xFFFF6B6B).withOpacity(0.3)
                 : const Color(0xFFF3F4F6),
             width: isUnread ? 1.5 : 1,
@@ -236,7 +228,7 @@ class NotificationScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              
+
               // Content
               Expanded(
                 child: Column(
@@ -323,11 +315,13 @@ class NotificationScreen extends StatelessWidget {
     final lowerTitle = title.toLowerCase();
     if (lowerTitle.contains('like') || lowerTitle.contains('liked')) {
       return Icons.favorite;
-    } else if (lowerTitle.contains('application') || lowerTitle.contains('apply')) {
+    } else if (lowerTitle.contains('application') ||
+        lowerTitle.contains('apply')) {
       return Icons.work;
     } else if (lowerTitle.contains('job')) {
       return Icons.business_center;
-    } else if (lowerTitle.contains('message') || lowerTitle.contains('comment')) {
+    } else if (lowerTitle.contains('message') ||
+        lowerTitle.contains('comment')) {
       return Icons.message;
     } else if (lowerTitle.contains('trip') || lowerTitle.contains('bid')) {
       return Icons.directions_car;
@@ -336,4 +330,3 @@ class NotificationScreen extends StatelessWidget {
     }
   }
 }
-

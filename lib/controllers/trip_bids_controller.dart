@@ -19,9 +19,7 @@ class TripBidsController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getTripBids}$tripId',
-        headers: {
-          'Accept': '*/*',
-        },
+        headers: {'Accept': '*/*'},
       );
 
       AppLogger.d("💰 Trip bids response status: ${response.statusCode}");
@@ -48,4 +46,3 @@ class TripBidsController extends GetxController {
     await fetchTripBids(tripId);
   }
 }
-

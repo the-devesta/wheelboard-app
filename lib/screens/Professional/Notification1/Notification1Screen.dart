@@ -204,10 +204,7 @@ class _Notification1ScreenState extends State<Notification1Screen> {
           const SizedBox(height: 8),
           Text(
             "You're all caught up!",
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -264,11 +261,7 @@ class _Notification1ScreenState extends State<Notification1Screen> {
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.mark_email_read,
-            color: Colors.white,
-            size: 24,
-          ),
+          Icon(Icons.mark_email_read, color: Colors.white, size: 24),
           SizedBox(height: 4),
           Text(
             'Read',
@@ -295,11 +288,7 @@ class _Notification1ScreenState extends State<Notification1Screen> {
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.archive_outlined,
-            color: Colors.white,
-            size: 24,
-          ),
+          Icon(Icons.archive_outlined, color: Colors.white, size: 24),
           SizedBox(height: 4),
           Text(
             'Archive',
@@ -327,7 +316,9 @@ class NotificationCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: const Color(0xFFDADADA)), // Exact Figma border color
+        border: Border.all(
+          color: const Color(0xFFDADADA),
+        ), // Exact Figma border color
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -366,14 +357,13 @@ class NotificationCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     // Subject Line
-                    Expanded(
-                      child: _buildSubjectLine(),
-                    ),
+                    Expanded(child: _buildSubjectLine()),
                     const SizedBox(width: 20),
                   ],
                 ),
                 // Comment/Attachment Content
-                if (item.kind == NotificationKind.comment && item.comment != null) ...[
+                if (item.kind == NotificationKind.comment &&
+                    item.comment != null) ...[
                   const SizedBox(height: 8),
                   _buildQuotedText(item.comment!),
                 ],
@@ -439,9 +429,7 @@ class NotificationCard extends StatelessWidget {
             const TextSpan(text: ' '),
             TextSpan(
               text: lastName,
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w500,
-              ),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
             ),
           ],
           TextSpan(
@@ -579,16 +567,15 @@ class NotificationItem {
     required String? comment,
     required String time,
     bool isRead = false,
-  }) =>
-      NotificationItem._(
-        id: _genId(),
-        kind: NotificationKind.comment,
-        user: user,
-        docTitle: docTitle,
-        comment: comment,
-        time: time,
-        isRead: isRead,
-      );
+  }) => NotificationItem._(
+    id: _genId(),
+    kind: NotificationKind.comment,
+    user: user,
+    docTitle: docTitle,
+    comment: comment,
+    time: time,
+    isRead: isRead,
+  );
 
   factory NotificationItem.attachment({
     required User user,
@@ -597,17 +584,16 @@ class NotificationItem {
     required String size,
     required String time,
     bool isRead = false,
-  }) =>
-      NotificationItem._(
-        id: _genId(),
-        kind: NotificationKind.attachment,
-        user: user,
-        docTitle: docTitle,
-        filename: filename,
-        size: size,
-        time: time,
-        isRead: isRead,
-      );
+  }) => NotificationItem._(
+    id: _genId(),
+    kind: NotificationKind.attachment,
+    user: user,
+    docTitle: docTitle,
+    filename: filename,
+    size: size,
+    time: time,
+    isRead: isRead,
+  );
 
   static String _genId() =>
       "${DateTime.now().microsecondsSinceEpoch}_${UniqueKey()}";

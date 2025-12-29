@@ -28,9 +28,7 @@ class ServiceController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: API.serviceList,
-        headers: const {
-          'Accept': '*/*',
-        },
+        headers: const {'Accept': '*/*'},
       );
 
       if (response.statusCode == 200) {
@@ -59,9 +57,7 @@ class ServiceController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: '${API.serviceDetail}$serviceId',
-        headers: const {
-          'Accept': '*/*',
-        },
+        headers: const {'Accept': '*/*'},
       );
 
       if (response.statusCode == 200) {
@@ -71,8 +67,9 @@ class ServiceController extends GetxController {
           final detail = ServiceModel.fromJson(data);
 
           // Merge detail into existing list item if present
-          final index =
-              services.indexWhere((element) => element.serviceId == serviceId);
+          final index = services.indexWhere(
+            (element) => element.serviceId == serviceId,
+          );
           if (index != -1) {
             final updated = services[index].copyWith(detail);
             services[index] = updated;
@@ -126,10 +123,7 @@ class ServiceController extends GetxController {
       final response = await HttpHelper.postData(
         endpoint: API.assignService,
         data: payload,
-        headers: const {
-          'Accept': '*/*',
-          'Content-Type': 'application/json',
-        },
+        headers: const {'Accept': '*/*', 'Content-Type': 'application/json'},
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -137,8 +131,7 @@ class ServiceController extends GetxController {
             ? jsonDecode(response.body) as Map<String, dynamic>?
             : null;
         final successValue = body?['success'];
-        final responseSuccess =
-            successValue is bool ? successValue : true;
+        final responseSuccess = successValue is bool ? successValue : true;
 
         if (responseSuccess) {
           final message =
@@ -167,11 +160,9 @@ class ServiceController extends GetxController {
 
   ServiceModel? getServiceById(String serviceId) {
     try {
-      return services
-          .firstWhere((element) => element.serviceId == serviceId);
+      return services.firstWhere((element) => element.serviceId == serviceId);
     } catch (_) {
       return null;
     }
   }
 }
-

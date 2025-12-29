@@ -67,4 +67,3 @@ class UpdateServiceModel {
     return newImages ?? [];
   }
 }
-

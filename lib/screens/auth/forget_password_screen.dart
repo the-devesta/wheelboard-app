@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'verify_email.dart';
 import '../../widgets/custom_snackbar.dart';
 
-
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -37,13 +36,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       SnackBarHelper.error("Please enter your email");
       return;
     }
-    
+
     // Verify Email screen par navigate karein
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => VerifyEmailScreen(email: email),
-      ),
+      MaterialPageRoute(builder: (context) => VerifyEmailScreen(email: email)),
     );
   }
 
@@ -153,8 +150,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: ElevatedButton(
                   onPressed: _resetPassword,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _hasEmailInput 
-                        ? const Color(0xFFF46E6E) 
+                    backgroundColor: _hasEmailInput
+                        ? const Color(0xFFF46E6E)
                         : const Color(0xFFB8C5E8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

@@ -47,7 +47,10 @@ class MyRewardsScreen extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border.all(color: const Color(0xFFEDF1F3)),
@@ -181,10 +184,7 @@ class MyRewardsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const Text(
-                '🏆',
-                style: TextStyle(fontSize: 30),
-              ),
+              const Text('🏆', style: TextStyle(fontSize: 30)),
             ],
           ),
           const SizedBox(height: 16),
@@ -395,10 +395,7 @@ class MyRewardsScreen extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Center(
-              child: Text(
-                reward.emoji,
-                style: const TextStyle(fontSize: 18),
-              ),
+              child: Text(reward.emoji, style: const TextStyle(fontSize: 18)),
             ),
           ),
           const SizedBox(width: 12),
@@ -476,4 +473,3 @@ class _RewardItem {
     required this.iconColor,
   });
 }
-

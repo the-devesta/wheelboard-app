@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/get_driver_model.dart';
 import '../models/get_vehicle_model.dart';
@@ -44,10 +45,17 @@ class DriverController extends GetxController {
         final List data = jsonDecode(response.body);
         drivers.value = data.map((e) => Driver.fromJson(e)).toList();
       } else {
-        Get.snackbar("Error", "Failed to load drivers: ${response.statusCode}");
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.snackbar(
+            "Error",
+            "Failed to load drivers: ${response.statusCode}",
+          );
+        });
       }
     } catch (e) {
-      Get.snackbar("Error", "Exception: $e");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar("Error", "Exception: $e");
+      });
     } finally {
       isLoading.value = false;
     }
@@ -120,14 +128,18 @@ class DriverController extends GetxController {
         vehicles.value = data.map((e) => Vehicle.fromJson(e)).toList();
         //  AppLogger.d("✅ Vehicles loaded: ${vehicles.length}");
       } else {
-        Get.snackbar(
-          "Error",
-          "Failed to load vehicles: ${response.statusCode}",
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.snackbar(
+            "Error",
+            "Failed to load vehicles: ${response.statusCode}",
+          );
+        });
       }
     } catch (e) {
       //  AppLogger.d("❌ Exception in fetchVehicles: $e");
-      Get.snackbar("Error", "Exception: $e");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar("Error", "Exception: $e");
+      });
     } finally {
       isVehicleLoading.value = false;
     }
@@ -152,10 +164,7 @@ class DriverController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: url,
-        headers: {
-          "Authorization": "Bearer $token",
-          "accept": "*/*",
-        },
+        headers: {"Authorization": "Bearer $token", "accept": "*/*"},
       );
 
       AppLogger.d("==================================");
@@ -169,14 +178,18 @@ class DriverController extends GetxController {
         vehicleDetails.value = VehicleDetailResponseModel.fromJson(data);
         AppLogger.d("✅ Vehicle details loaded successfully");
       } else {
-        Get.snackbar(
-          "Error",
-          "Failed to load vehicle details: ${response.statusCode}",
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.snackbar(
+            "Error",
+            "Failed to load vehicle details: ${response.statusCode}",
+          );
+        });
       }
     } catch (e) {
       AppLogger.d("❌ Exception in fetchVehicleDetails: $e");
-      Get.snackbar("Error", "Exception: $e");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar("Error", "Exception: $e");
+      });
     } finally {
       isVehicleDetailsLoading.value = false;
     }

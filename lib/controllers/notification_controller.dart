@@ -97,7 +97,9 @@ class NotificationController extends GetxController {
         }
         return true;
       } else {
-        AppLogger.d("❌ Failed to mark notification as read: ${response.statusCode}");
+        AppLogger.d(
+          "❌ Failed to mark notification as read: ${response.statusCode}",
+        );
         return false;
       }
     } catch (e) {
@@ -116,4 +118,3 @@ class NotificationController extends GetxController {
     await fetchNotifications();
   }
 }
-

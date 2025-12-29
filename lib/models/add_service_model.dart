@@ -17,7 +17,6 @@ class AddServiceModel {
   final String createdBy;
   final String serviceCategory;
   final List<File> images;
-  
 
   AddServiceModel({
     required this.userId,
@@ -65,4 +64,3 @@ class AddServiceModel {
     return images;
   }
 }
-

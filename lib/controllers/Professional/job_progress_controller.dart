@@ -104,4 +104,3 @@ class JobProgressController extends GetxController {
     selectedFilter.value = filter;
   }
 }
-

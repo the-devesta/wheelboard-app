@@ -29,7 +29,8 @@ class EarningSummaryScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const PaymentVerificationScreen(),
+                            builder: (context) =>
+                                const PaymentVerificationScreen(),
                           ),
                         );
                       },
@@ -45,10 +46,7 @@ class EarningSummaryScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            const Text(
-                              '⚠️',
-                              style: TextStyle(fontSize: 18),
-                            ),
+                            const Text('⚠️', style: TextStyle(fontSize: 18)),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -313,4 +311,3 @@ class EarningSummaryScreen extends StatelessWidget {
     );
   }
 }
-

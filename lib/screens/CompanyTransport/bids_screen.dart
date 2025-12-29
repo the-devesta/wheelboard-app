@@ -8,10 +8,7 @@ import '../../models/trip_bid_model.dart';
 class BidsScreen extends StatefulWidget {
   final String tripId;
 
-  const BidsScreen({
-    super.key,
-    required this.tripId,
-  });
+  const BidsScreen({super.key, required this.tripId});
 
   @override
   State<BidsScreen> createState() => _BidsScreenState();
@@ -134,9 +131,7 @@ class _BidsScreenState extends State<BidsScreen> {
           Expanded(
             child: Obx(() {
               if (bidsController.isLoading.value) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
               }
 
               if (bidsController.bids.isEmpty) {
@@ -175,7 +170,8 @@ class _BidsScreenState extends State<BidsScreen> {
                         driverName: bid.name,
                         driverImage: _getDriverImage(bid),
                         bidAmount: '₹${bid.bidAmount.toStringAsFixed(0)}',
-                        rating: 4, // Default rating, can be updated if API provides
+                        rating:
+                            4, // Default rating, can be updated if API provides
                         platform: 'WheelBoard',
                         isVerified: true,
                         onViewProfile: () {
@@ -273,7 +269,7 @@ class _BidsScreenState extends State<BidsScreen> {
                           child: CircularProgressIndicator(
                             value: loadingProgress.expectedTotalBytes != null
                                 ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
+                                      loadingProgress.expectedTotalBytes!
                                 : null,
                           ),
                         ),
@@ -306,11 +302,7 @@ class _BidsScreenState extends State<BidsScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.verified,
-                          size: 14,
-                          color: Colors.white,
-                        ),
+                        Icon(Icons.verified, size: 14, color: Colors.white),
                         SizedBox(width: 4),
                         Text(
                           'Verified',
@@ -415,7 +407,9 @@ class _BidsScreenState extends State<BidsScreen> {
                             Row(
                               children: List.generate(5, (index) {
                                 return Icon(
-                                  index < rating ? Icons.star : Icons.star_border,
+                                  index < rating
+                                      ? Icons.star
+                                      : Icons.star_border,
                                   size: 20,
                                   color: const Color(0xFFFF5E5E),
                                 );
@@ -467,7 +461,10 @@ class _BidsScreenState extends State<BidsScreen> {
                       child: OutlinedButton(
                         onPressed: onViewProfile,
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFF36363), width: 1),
+                          side: const BorderSide(
+                            color: Color(0xFFF36363),
+                            width: 1,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5),
                           ),
@@ -489,7 +486,10 @@ class _BidsScreenState extends State<BidsScreen> {
                       child: OutlinedButton(
                         onPressed: onAssignTrip,
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFF36363), width: 1),
+                          side: const BorderSide(
+                            color: Color(0xFFF36363),
+                            width: 1,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5),
                           ),
@@ -519,8 +519,12 @@ class _BidsScreenState extends State<BidsScreen> {
   // Get driver image from different source
   String _getDriverImage(TripBid bid) {
     // Use UI Avatars service with driver name initials
-    final nameInitials = bid.name.isNotEmpty 
-        ? bid.name.split(' ').map((n) => n.isNotEmpty ? n[0] : '').take(2).join()
+    final nameInitials = bid.name.isNotEmpty
+        ? bid.name
+              .split(' ')
+              .map((n) => n.isNotEmpty ? n[0] : '')
+              .take(2)
+              .join()
         : 'DR';
     // Use a different placeholder service - UI Avatars
     return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(nameInitials)}&size=200&background=random&color=fff&bold=true';

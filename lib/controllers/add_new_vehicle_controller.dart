@@ -95,7 +95,9 @@ class AddVehicleController extends GetxController {
       AppLogger.d("🚗 - Manufacturing Year: ${vehicleModel.manufacturingYear}");
       AppLogger.d("🚗 - Ownership Type: ${vehicleModel.ownershipType}");
       AppLogger.d("🚗 - Description: ${vehicleModel.description}");
-      AppLogger.d("🚗 - Is Declaration Accepted: ${vehicleModel.isDeclarationAccepted}");
+      AppLogger.d(
+        "🚗 - Is Declaration Accepted: ${vehicleModel.isDeclarationAccepted}",
+      );
       AppLogger.d("🚗 - Images Count: ${files.length}");
 
       // 🔹 Debug logs before sending
@@ -103,11 +105,13 @@ class AddVehicleController extends GetxController {
       AppLogger.d("🚗 SENDING MULTIPART REQUEST");
       AppLogger.d("🚗 ==================================");
       AppLogger.d("🚗 Full URL: ${ApiConstants.baseUrl}${API.addVehicle}");
-      AppLogger.d("🚗 Token: ${token.isNotEmpty ? 'Present (${token.length} chars)' : 'EMPTY OR NULL'}");
+      AppLogger.d(
+        "🚗 Token: ${token.isNotEmpty ? 'Present (${token.length} chars)' : 'EMPTY OR NULL'}",
+      );
       AppLogger.d("🚗 Headers: {Authorization: Bearer $token}");
       AppLogger.d("🚗 Fields: $fields");
       AppLogger.d("🚗 Files attached: ${files.length}");
-      
+
       if (files.isNotEmpty) {
         for (int i = 0; i < files.length; i++) {
           AppLogger.d("🚗 File $i: ${files[i].path}");
@@ -185,17 +189,21 @@ class AddVehicleController extends GetxController {
       AppLogger.d("🚗 - Manufacturing Year: ${vehicleModel.manufacturingYear}");
       AppLogger.d("🚗 - Ownership Type: ${vehicleModel.ownershipType}");
       AppLogger.d("🚗 - Description: ${vehicleModel.description}");
-      AppLogger.d("🚗 - Is Declaration Accepted: ${vehicleModel.isDeclarationAccepted}");
+      AppLogger.d(
+        "🚗 - Is Declaration Accepted: ${vehicleModel.isDeclarationAccepted}",
+      );
       AppLogger.d("🚗 - Images Count: ${files.length}");
-      
+
       // Check if VehicleId is valid
       if (vehicleModel.vehicleId == null || vehicleModel.vehicleId!.isEmpty) {
         AppLogger.d("🚗 ⚠️ WARNING: VehicleId is NULL or EMPTY!");
-        AppLogger.d("🚗 This might cause 403 error - vehicle ownership cannot be verified");
+        AppLogger.d(
+          "🚗 This might cause 403 error - vehicle ownership cannot be verified",
+        );
       } else {
         AppLogger.d("🚗 ✅ VehicleId is present: ${vehicleModel.vehicleId}");
       }
-      
+
       // Check if UserId matches
       if (vehicleModel.userId == null || vehicleModel.userId!.isEmpty) {
         AppLogger.d("🚗 ⚠️ WARNING: UserId is NULL or EMPTY!");

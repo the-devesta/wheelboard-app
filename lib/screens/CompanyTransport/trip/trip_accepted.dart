@@ -33,7 +33,7 @@ class TripAccepted extends StatelessWidget {
                 // Logo
                 const CommonHeaderWidget(),
                 const SizedBox(height: 30),
-                
+
                 // Success Image
                 Center(
                   child: Container(
@@ -50,9 +50,9 @@ class TripAccepted extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Congratulations Text
                 const Text(
                   'Congratulations!',
@@ -63,9 +63,9 @@ class TripAccepted extends StatelessWidget {
                     color: Color(0xFF545454),
                   ),
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Success Message
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -80,9 +80,9 @@ class TripAccepted extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Trip Details Card
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -104,7 +104,7 @@ class TripAccepted extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Vehicle
                       _buildDetailRow(
                         icon: Icons.directions_bus,
@@ -112,7 +112,7 @@ class TripAccepted extends StatelessWidget {
                         value: vehicleType,
                       ),
                       const SizedBox(height: 12),
-                      
+
                       // Driver
                       _buildDetailRow(
                         icon: Icons.person,
@@ -120,7 +120,7 @@ class TripAccepted extends StatelessWidget {
                         value: driverName,
                       ),
                       const SizedBox(height: 12),
-                      
+
                       // Date
                       _buildDetailRow(
                         icon: Icons.calendar_today,
@@ -128,7 +128,7 @@ class TripAccepted extends StatelessWidget {
                         value: date,
                       ),
                       const SizedBox(height: 12),
-                      
+
                       // Time
                       _buildDetailRow(
                         icon: Icons.access_time,
@@ -136,7 +136,7 @@ class TripAccepted extends StatelessWidget {
                         value: time,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Trip ID in same row
                       Row(
                         children: [
@@ -159,7 +159,9 @@ class TripAccepted extends StatelessWidget {
                           Expanded(
                             child: Container(
                               height: 32,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
                                   colors: [
@@ -197,12 +199,12 @@ class TripAccepted extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
               ],
             ),
           ),
-          
+
           // OK Button at Bottom
           Positioned(
             bottom: 28,
@@ -251,11 +253,7 @@ class TripAccepted extends StatelessWidget {
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 11,
-          color: const Color(0xFF575757),
-        ),
+        Icon(icon, size: 11, color: const Color(0xFF575757)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -272,4 +270,3 @@ class TripAccepted extends StatelessWidget {
     );
   }
 }
-

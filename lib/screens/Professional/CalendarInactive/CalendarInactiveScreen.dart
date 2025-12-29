@@ -8,7 +8,7 @@ import '../../../widgets/custom_loader.dart';
 
 class CalendarInactiveScreen extends StatefulWidget {
   final DateTime? initialDate;
-  
+
   const CalendarInactiveScreen({super.key, this.initialDate});
 
   @override
@@ -106,7 +106,9 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                           ),
                           Expanded(
                             child: SingleChildScrollView(
-                              padding: const EdgeInsets.symmetric(horizontal: 15),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -138,10 +140,11 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                           color: Color(0xFFEDF1F7),
                                         ),
                                       ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 15,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 15,
+                                          ),
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -155,12 +158,15 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                           onTap: () async {
                                             final time = await showTimePicker(
                                               context: context,
-                                              initialTime: _selectedStartTime ?? TimeOfDay.now(),
+                                              initialTime:
+                                                  _selectedStartTime ??
+                                                  TimeOfDay.now(),
                                             );
                                             if (time != null) {
                                               setState(() {
                                                 _selectedStartTime = time;
-                                                _startTimeController.text = time.format(context);
+                                                _startTimeController.text = time
+                                                    .format(context);
                                               });
                                             }
                                           },
@@ -176,27 +182,31 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                               color: Color(0xFF8F9BB3),
                                             ),
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 15,
-                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 15,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -208,12 +218,15 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                           onTap: () async {
                                             final time = await showTimePicker(
                                               context: context,
-                                              initialTime: _selectedEndTime ?? TimeOfDay.now(),
+                                              initialTime:
+                                                  _selectedEndTime ??
+                                                  TimeOfDay.now(),
                                             );
                                             if (time != null) {
                                               setState(() {
                                                 _selectedEndTime = time;
-                                                _endTimeController.text = time.format(context);
+                                                _endTimeController.text = time
+                                                    .format(context);
                                               });
                                             }
                                           },
@@ -229,27 +242,31 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                               color: Color(0xFF8F9BB3),
                                             ),
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFFEDF1F7),
                                               ),
                                             ),
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 15,
-                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 15,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -311,18 +328,24 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                             height: 44,
                                             decoration: BoxDecoration(
                                               color: _selectedCategory == 'Trip'
-                                                  ? const Color(0xFF735BF2).withOpacity(0.07)
+                                                  ? const Color(
+                                                      0xFF735BF2,
+                                                    ).withOpacity(0.07)
                                                   : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(11),
+                                              borderRadius:
+                                                  BorderRadius.circular(11),
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 Container(
                                                   width: 8,
                                                   height: 8,
                                                   decoration: BoxDecoration(
-                                                    color: const Color(0xFF735BF2),
+                                                    color: const Color(
+                                                      0xFF735BF2,
+                                                    ),
                                                     shape: BoxShape.circle,
                                                   ),
                                                 ),
@@ -332,7 +355,9 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                                   style: GoogleFonts.poppins(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.w500,
-                                                    color: const Color(0xFF222B45),
+                                                    color: const Color(
+                                                      0xFF222B45,
+                                                    ),
                                                     letterSpacing: 0.875,
                                                   ),
                                                 ),
@@ -353,18 +378,24 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                             height: 44,
                                             decoration: BoxDecoration(
                                               color: _selectedCategory == 'Job'
-                                                  ? const Color(0xFF735BF2).withOpacity(0.07)
+                                                  ? const Color(
+                                                      0xFF735BF2,
+                                                    ).withOpacity(0.07)
                                                   : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(11),
+                                              borderRadius:
+                                                  BorderRadius.circular(11),
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 Container(
                                                   width: 8,
                                                   height: 8,
                                                   decoration: BoxDecoration(
-                                                    color: const Color(0xFF735BF2),
+                                                    color: const Color(
+                                                      0xFF735BF2,
+                                                    ),
                                                     shape: BoxShape.circle,
                                                   ),
                                                 ),
@@ -374,7 +405,9 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                                   style: GoogleFonts.poppins(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.w500,
-                                                    color: const Color(0xFF222B45),
+                                                    color: const Color(
+                                                      0xFF222B45,
+                                                    ),
                                                     letterSpacing: 0.875,
                                                   ),
                                                 ),
@@ -388,7 +421,8 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                   const SizedBox(height: 24),
                                   // Mark the date As
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         'Mark the date As:',
@@ -421,13 +455,18 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                               decoration: BoxDecoration(
                                                 color: _isActive
                                                     ? const Color(0xFF34C759)
-                                                    : const Color(0xFF787880).withOpacity(0.16),
-                                                borderRadius: BorderRadius.circular(100),
+                                                    : const Color(
+                                                        0xFF787880,
+                                                      ).withOpacity(0.16),
+                                                borderRadius:
+                                                    BorderRadius.circular(100),
                                               ),
                                               child: Stack(
                                                 children: [
                                                   AnimatedPositioned(
-                                                    duration: const Duration(milliseconds: 200),
+                                                    duration: const Duration(
+                                                      milliseconds: 200,
+                                                    ),
                                                     curve: Curves.easeInOut,
                                                     left: _isActive ? 24 : 2,
                                                     right: _isActive ? 2 : 24,
@@ -436,12 +475,20 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                                     child: Container(
                                                       decoration: BoxDecoration(
                                                         color: Colors.white,
-                                                        borderRadius: BorderRadius.circular(100),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              100,
+                                                            ),
                                                         boxShadow: const [
                                                           BoxShadow(
-                                                            color: Color(0x0A000000),
+                                                            color: Color(
+                                                              0x0A000000,
+                                                            ),
                                                             blurRadius: 3,
-                                                            offset: Offset(0, 3),
+                                                            offset: Offset(
+                                                              0,
+                                                              3,
+                                                            ),
                                                           ),
                                                         ],
                                                       ),
@@ -457,86 +504,115 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                   ),
                                   const SizedBox(height: 32),
                                   // Mark the Date Button
-                                  Obx(
-                                    () {
-                                      return SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton(
-                                        onPressed: calendarController.isLoading.value ? null : () async {
-                                          // Validate form
-                                          if (_eventNameController.text.trim().isEmpty) {
-                                            Get.snackbar("Error", "Please enter event name");
-                                            return;
-                                          }
-                                          
-                                          if (_selectedStartTime == null) {
-                                            Get.snackbar("Error", "Please select start time");
-                                            return;
-                                          }
-                                          
-                                          if (_selectedEndTime == null) {
-                                            Get.snackbar("Error", "Please select end time");
-                                            return;
-                                          }
+                                  Obx(() {
+                                    return SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed:
+                                            calendarController.isLoading.value
+                                            ? null
+                                            : () async {
+                                                // Validate form
+                                                if (_eventNameController.text
+                                                    .trim()
+                                                    .isEmpty) {
+                                                  Get.snackbar(
+                                                    "Error",
+                                                    "Please enter event name",
+                                                  );
+                                                  return;
+                                                }
 
-                                          // Combine selected date with selected times
-                                          final startDateTime = DateTime(
-                                            _selectedDate.year,
-                                            _selectedDate.month,
-                                            _selectedDate.day,
-                                            _selectedStartTime!.hour,
-                                            _selectedStartTime!.minute,
-                                          );
-                                          
-                                          final endDateTime = DateTime(
-                                            _selectedDate.year,
-                                            _selectedDate.month,
-                                            _selectedDate.day,
-                                            _selectedEndTime!.hour,
-                                            _selectedEndTime!.minute,
-                                          );
+                                                if (_selectedStartTime ==
+                                                    null) {
+                                                  Get.snackbar(
+                                                    "Error",
+                                                    "Please select start time",
+                                                  );
+                                                  return;
+                                                }
 
-                                          // Save event
-                                          final success = await calendarController.saveEvent(
-                                            eventName: _eventNameController.text.trim(),
-                                            startTime: startDateTime,
-                                            endTime: endDateTime,
-                                            note: _noteController.text.trim(),
-                                            category: _selectedCategory,
-                                            isActive: _isActive,
-                                          );
+                                                if (_selectedEndTime == null) {
+                                                  Get.snackbar(
+                                                    "Error",
+                                                    "Please select end time",
+                                                  );
+                                                  return;
+                                                }
 
-                                          if (success) {
-                                            Navigator.pop(context);
-                                          }
-                                        },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFF36969),
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(7),
-                                        ),
-                                      ),
-                                      child: calendarController.isLoading.value
-                                          ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CustomLoader.small(
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : Text(
-                                              'Mark the Date',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
+                                                // Combine selected date with selected times
+                                                final startDateTime = DateTime(
+                                                  _selectedDate.year,
+                                                  _selectedDate.month,
+                                                  _selectedDate.day,
+                                                  _selectedStartTime!.hour,
+                                                  _selectedStartTime!.minute,
+                                                );
+
+                                                final endDateTime = DateTime(
+                                                  _selectedDate.year,
+                                                  _selectedDate.month,
+                                                  _selectedDate.day,
+                                                  _selectedEndTime!.hour,
+                                                  _selectedEndTime!.minute,
+                                                );
+
+                                                // Save event
+                                                final success =
+                                                    await calendarController
+                                                        .saveEvent(
+                                                          eventName:
+                                                              _eventNameController
+                                                                  .text
+                                                                  .trim(),
+                                                          startTime:
+                                                              startDateTime,
+                                                          endTime: endDateTime,
+                                                          note: _noteController
+                                                              .text
+                                                              .trim(),
+                                                          category:
+                                                              _selectedCategory,
+                                                          isActive: _isActive,
+                                                        );
+
+                                                if (success) {
+                                                  Navigator.pop(context);
+                                                }
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFFF36969,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              7,
                                             ),
+                                          ),
+                                        ),
+                                        child:
+                                            calendarController.isLoading.value
+                                            ? const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child: CustomLoader.small(
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : Text(
+                                                'Mark the Date',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                       ),
                                     );
-                                  },
-                                ),
+                                  }),
                                   const SizedBox(height: 32),
                                 ],
                               ),
@@ -555,4 +631,3 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
     );
   }
 }
-

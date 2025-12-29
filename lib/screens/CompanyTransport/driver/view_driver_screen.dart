@@ -138,10 +138,10 @@ class ViewDriverScreen extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Get.to(() => AssignTripScreen(
-                                tripId: tripId!,
-                                bidId: bidId,
-                              ));
+                          Get.to(
+                            () =>
+                                AssignTripScreen(tripId: tripId!, bidId: bidId),
+                          );
                         },
                         icon: const Icon(Icons.directions_car, size: 20),
                         label: const Text(
@@ -432,7 +432,8 @@ class ViewDriverScreen extends StatelessWidget {
                     location: 'Mesa, AZ',
                     platform: 'Google',
                     rating: 5,
-                    review: 'Deepak is always prompt and professional. He made our urgent delivery with no issues. Definitely recommended!',
+                    review:
+                        'Deepak is always prompt and professional. He made our urgent delivery with no issues. Definitely recommended!',
                   ),
                   const SizedBox(height: 12),
                   _buildReviewCard(
@@ -442,7 +443,8 @@ class ViewDriverScreen extends StatelessWidget {
                     location: 'Orlando, FL',
                     platform: 'BBB',
                     rating: 4,
-                    review: 'Courteous and quick to respond. Would book again for sure. Vehicle was clean and comfortable.',
+                    review:
+                        'Courteous and quick to respond. Would book again for sure. Vehicle was clean and comfortable.',
                   ),
                   const SizedBox(height: 12),
                   _buildReviewCard(
@@ -452,7 +454,8 @@ class ViewDriverScreen extends StatelessWidget {
                     location: 'Houston, TX',
                     platform: 'Dispatch',
                     rating: 5,
-                    review: 'Punctual and efficient. All updates were timely. No complaints from the client!',
+                    review:
+                        'Punctual and efficient. All updates were timely. No complaints from the client!',
                   ),
                   const SizedBox(height: 16),
                   Center(
@@ -768,11 +771,7 @@ class ViewDriverScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 8),
-              const Icon(
-                Icons.share,
-                color: Color(0xFF00B894),
-                size: 18,
-              ),
+              const Icon(Icons.share, color: Color(0xFF00B894), size: 18),
             ],
           ),
           const SizedBox(height: 12),
@@ -790,4 +789,3 @@ class ViewDriverScreen extends StatelessWidget {
     );
   }
 }
-

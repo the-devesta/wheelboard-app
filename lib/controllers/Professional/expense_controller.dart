@@ -32,8 +32,9 @@ class ExpenseController extends GetxController {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        expensePurposes.value =
-            data.map((json) => ExpensePurpose.fromJson(json)).toList();
+        expensePurposes.value = data
+            .map((json) => ExpensePurpose.fromJson(json))
+            .toList();
       } else {
         SnackBarHelper.error('Failed to load expense purposes');
       }
@@ -69,7 +70,9 @@ class ExpenseController extends GetxController {
         'Description': description,
         'CreatedBy': userId,
         'ExpenseId': expenseId ?? '', // Always send, empty if creating new
-        'ReceiptPath': receiptPath ?? 'string', // Always send, default to 'string' if not provided
+        'ReceiptPath':
+            receiptPath ??
+            'string', // Always send, default to 'string' if not provided
       };
 
       final files = <File>[];
@@ -92,9 +95,7 @@ class ExpenseController extends GetxController {
         fields: fields,
         files: files,
         fieldKey: 'ReceiptFile',
-        headers: {
-          'accept': '*/*',
-        },
+        headers: {'accept': '*/*'},
       );
 
       final response = await http.Response.fromStream(streamedResponse);
@@ -106,8 +107,9 @@ class ExpenseController extends GetxController {
         try {
           final responseBody = jsonDecode(response.body);
           final success = responseBody['success'] ?? false;
-          final message = responseBody['message'] ?? 'Expense saved successfully';
-          
+          final message =
+              responseBody['message'] ?? 'Expense saved successfully';
+
           if (success) {
             SnackBarHelper.success(message);
             return true;
@@ -123,13 +125,16 @@ class ExpenseController extends GetxController {
       } else {
         try {
           final errorBody = jsonDecode(response.body);
-          final errorMessage = errorBody['message'] ?? 
-                              errorBody['title'] ?? 
-                              errorBody['error'] ?? 
-                              'Failed to save expense';
+          final errorMessage =
+              errorBody['message'] ??
+              errorBody['title'] ??
+              errorBody['error'] ??
+              'Failed to save expense';
           SnackBarHelper.error(errorMessage);
         } catch (_) {
-          SnackBarHelper.error('Failed to save expense (${response.statusCode})');
+          SnackBarHelper.error(
+            'Failed to save expense (${response.statusCode})',
+          );
         }
         return false;
       }
@@ -142,4 +147,3 @@ class ExpenseController extends GetxController {
     }
   }
 }
-

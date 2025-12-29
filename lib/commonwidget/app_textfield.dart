@@ -52,7 +52,9 @@ class AppTextField extends StatelessWidget {
       onChanged: onChanged,
       readOnly: readOnly,
       onTap: onTap,
-      maxLines: obscureText ? 1 : maxLines, // Ensure password fields are single line
+      maxLines: obscureText
+          ? 1
+          : maxLines, // Ensure password fields are single line
       minLines: minLines,
       textAlign: textAlign,
       focusNode: focusNode,
@@ -96,8 +98,18 @@ class AppTextField extends StatelessWidget {
           borderSide: BorderSide(color: Colors.red, width: 2.0),
         ),
         contentPadding: EdgeInsets.symmetric(
-          vertical: ResponsiveUtils.getResponsiveSpacing(context, small: 12, medium: 14, large: 16),
-          horizontal: ResponsiveUtils.getResponsiveSpacing(context, small: 12, medium: 14, large: 16),
+          vertical: ResponsiveUtils.getResponsiveSpacing(
+            context,
+            small: 12,
+            medium: 14,
+            large: 16,
+          ),
+          horizontal: ResponsiveUtils.getResponsiveSpacing(
+            context,
+            small: 12,
+            medium: 14,
+            large: 16,
+          ),
         ),
         filled: true,
         fillColor: AppColors.background,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/add_new_trip_model.dart';
-import 'schedulescreen.dart';
+import 'edit_trip_screen.dart';
 
 class TripDetailsScreen extends StatelessWidget {
   final Trip trip;
@@ -176,7 +176,7 @@ class TripDetailsScreen extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          Get.to(() => const ScheduleTripScreen());
+                          Get.to(() => EditTripScreen(trip: trip));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF36969),

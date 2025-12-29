@@ -52,9 +52,7 @@ class LeaseDetailsScreen extends StatelessWidget {
       height: 65,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
       ),
       child: SafeArea(
         bottom: false,
@@ -263,61 +261,73 @@ class LeaseDetailsScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _buildDetailItem(
-              iconBg: const Color(0xFFEFF6FF),
-              icon: Icons.local_shipping,
-              iconColor: const Color(0xFF2563EB),
-              label: 'Vehicle Type',
-              value: 'Mini Truck',
-            )),
+            Expanded(
+              child: _buildDetailItem(
+                iconBg: const Color(0xFFEFF6FF),
+                icon: Icons.local_shipping,
+                iconColor: const Color(0xFF2563EB),
+                label: 'Vehicle Type',
+                value: 'Mini Truck',
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildDetailItem(
-              iconBg: const Color(0xFFFAF5FF),
-              icon: Icons.calendar_today,
-              iconColor: const Color(0xFF9333EA),
-              label: 'Year',
-              value: '2022',
-            )),
+            Expanded(
+              child: _buildDetailItem(
+                iconBg: const Color(0xFFFAF5FF),
+                icon: Icons.calendar_today,
+                iconColor: const Color(0xFF9333EA),
+                label: 'Year',
+                value: '2022',
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildDetailItem(
-              iconBg: const Color(0xFFFFF7ED),
-              icon: Icons.speed,
-              iconColor: const Color(0xFFF59E0B),
-              label: 'Odometer',
-              value: '45,230 km',
-            )),
+            Expanded(
+              child: _buildDetailItem(
+                iconBg: const Color(0xFFFFF7ED),
+                icon: Icons.speed,
+                iconColor: const Color(0xFFF59E0B),
+                label: 'Odometer',
+                value: '45,230 km',
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildDetailItem(
-              iconBg: const Color(0xFFF0FDF4),
-              icon: Icons.local_gas_station,
-              iconColor: const Color(0xFF16A34A),
-              label: 'Fuel Type',
-              value: 'Diesel',
-            )),
+            Expanded(
+              child: _buildDetailItem(
+                iconBg: const Color(0xFFF0FDF4),
+                icon: Icons.local_gas_station,
+                iconColor: const Color(0xFF16A34A),
+                label: 'Fuel Type',
+                value: 'Diesel',
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildDetailItem(
-              iconBg: const Color(0xFFEEF2FF),
-              icon: Icons.trending_up,
-              iconColor: const Color(0xFF6366F1),
-              label: 'Avg Monthly Run',
-              value: '2,500 km',
-            )),
+            Expanded(
+              child: _buildDetailItem(
+                iconBg: const Color(0xFFEEF2FF),
+                icon: Icons.trending_up,
+                iconColor: const Color(0xFF6366F1),
+                label: 'Avg Monthly Run',
+                value: '2,500 km',
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildDetailItem(
-              iconBg: const Color(0xFFFDF2F8),
-              icon: Icons.access_time,
-              iconColor: const Color(0xFFEC4899),
-              label: 'Lease Duration',
-              value: '6-12 months',
-            )),
+            Expanded(
+              child: _buildDetailItem(
+                iconBg: const Color(0xFFFDF2F8),
+                icon: Icons.access_time,
+                iconColor: const Color(0xFFEC4899),
+                label: 'Lease Duration',
+                value: '6-12 months',
+              ),
+            ),
           ],
         ),
       ],
@@ -457,17 +467,11 @@ class LeaseDetailsScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _buildRateCard(
-                  label: 'Daily Rate',
-                  value: '₹1,200',
-                ),
+                child: _buildRateCard(label: 'Daily Rate', value: '₹1,200'),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildRateCard(
-                  label: 'Rate per KM',
-                  value: '₹8',
-                ),
+                child: _buildRateCard(label: 'Rate per KM', value: '₹8'),
               ),
             ],
           ),
@@ -551,14 +555,17 @@ class LeaseDetailsScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: const Color(0xFF4B5563),
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+              color: const Color(0xFF4B5563),
+            ),
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           value,
           style: GoogleFonts.inter(
@@ -620,13 +627,9 @@ class LeaseDetailsScreen extends StatelessWidget {
           // Dates
           Row(
             children: [
-              Expanded(
-                child: _buildDateCard('Start Date', '15 Jan 2025'),
-              ),
+              Expanded(child: _buildDateCard('Start Date', '15 Jan 2025')),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildDateCard('End Date', '15 Jul 2025'),
-              ),
+              Expanded(child: _buildDateCard('End Date', '15 Jul 2025')),
             ],
           ),
           const SizedBox(height: 16),
@@ -693,30 +696,35 @@ class LeaseDetailsScreen extends StatelessWidget {
   Widget _buildBusinessDays() {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final selectedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    
-    return Row(
-      children: days.map((day) {
-        final isSelected = selectedDays.contains(day);
-        return Container(
-          margin: EdgeInsets.only(right: day != 'Sun' ? 8 : 0),
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: Text(
-              day,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF9CA3AF),
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: days.map((day) {
+          final isSelected = selectedDays.contains(day);
+          return Container(
+            margin: EdgeInsets.only(right: day != 'Sun' ? 8 : 0),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xFF2563EB)
+                  : const Color(0xFFE5E7EB),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                day,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : const Color(0xFF9CA3AF),
+                ),
               ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -870,12 +878,16 @@ class LeaseDetailsScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          'Rajesh Kumar',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF111827),
+                        Expanded(
+                          child: Text(
+                            'Rajesh Kumar',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF111827),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -913,11 +925,14 @@ class LeaseDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        ...List.generate(4, (index) => const Icon(
-                          Icons.star,
-                          size: 12,
-                          color: Color(0xFFFBBF24),
-                        )),
+                        ...List.generate(
+                          4,
+                          (index) => const Icon(
+                            Icons.star,
+                            size: 12,
+                            color: Color(0xFFFBBF24),
+                          ),
+                        ),
                         const Icon(
                           Icons.star_half,
                           size: 12,
@@ -1215,11 +1230,7 @@ class LeaseDetailsScreen extends StatelessWidget {
   Widget _buildCapabilityItem(String text) {
     return Row(
       children: [
-        const Icon(
-          Icons.check_circle,
-          size: 12,
-          color: Color(0xFF16A34A),
-        ),
+        const Icon(Icons.check_circle, size: 12, color: Color(0xFF16A34A)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -1238,11 +1249,7 @@ class LeaseDetailsScreen extends StatelessWidget {
   Widget _buildDocumentItem(String text) {
     return Row(
       children: [
-        const Icon(
-          Icons.description,
-          size: 9,
-          color: Color(0xFF374151),
-        ),
+        const Icon(Icons.description, size: 9, color: Color(0xFF374151)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -1264,9 +1271,7 @@ class LeaseDetailsScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFE5E7EB), width: 1),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -1296,11 +1301,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(
-                Icons.arrow_forward,
-                size: 14,
-                color: Colors.white,
-              ),
+              const Icon(Icons.arrow_forward, size: 14, color: Colors.white),
             ],
           ),
         ),

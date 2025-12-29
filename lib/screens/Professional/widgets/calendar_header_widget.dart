@@ -6,10 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 class CalendarHeaderWidget extends StatelessWidget {
   final String? title;
 
-  const CalendarHeaderWidget({
-    super.key,
-    this.title,
-  });
+  const CalendarHeaderWidget({super.key, this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -61,4 +58,3 @@ class CalendarHeaderWidget extends StatelessWidget {
     );
   }
 }
-

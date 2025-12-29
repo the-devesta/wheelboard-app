@@ -43,7 +43,8 @@ class ServiceProviderModel {
       "City": city,
       "PhoneNumber": phoneNumber,
       "Email": email,
-      if (whatsappNumber != null && whatsappNumber!.isNotEmpty) "WhatsAppNumber": whatsappNumber!,
+      if (whatsappNumber != null && whatsappNumber!.isNotEmpty)
+        "WhatsAppNumber": whatsappNumber!,
       "Description": description,
     };
   }

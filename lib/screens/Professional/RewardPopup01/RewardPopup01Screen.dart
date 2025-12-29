@@ -34,9 +34,7 @@ class RewardPopup01Screen extends StatelessWidget {
                   child: Container(
                     width: 16,
                     height: 16,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: BoxDecoration(shape: BoxShape.circle),
                     child: const Icon(
                       Icons.close,
                       size: 16,
@@ -69,10 +67,7 @@ class RewardPopup01Screen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Text(
-                    '🎉',
-                    style: TextStyle(fontSize: 48),
-                  ),
+                  const Text('🎉', style: TextStyle(fontSize: 48)),
                 ],
               ),
               const SizedBox(height: 28),
@@ -244,4 +239,3 @@ class RewardPopup01Screen extends StatelessWidget {
     );
   }
 }
-

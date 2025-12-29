@@ -98,7 +98,11 @@ class ShareSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: const Padding(
                     padding: EdgeInsets.all(4.0),
-                    child: Icon(Icons.close, size: 22, color: Color(0xFF535353)),
+                    child: Icon(
+                      Icons.close,
+                      size: 22,
+                      color: Color(0xFF535353),
+                    ),
                   ),
                 ),
               ],
@@ -113,10 +117,7 @@ class ShareSheet extends StatelessWidget {
             ),
             if (linkText != null) ...[
               const SizedBox(height: 16),
-              _LinkCopyRow(
-                linkText: linkText!,
-                onCopy: onCopyLink,
-              ),
+              _LinkCopyRow(linkText: linkText!, onCopy: onCopyLink),
             ],
           ],
         ),
@@ -241,10 +242,7 @@ class DefaultSocialIcons {
     ),
   );
 
-  static Widget reddit = Text(
-    '👽',
-    style: GoogleFonts.poppins(fontSize: 24),
-  );
+  static Widget reddit = Text('👽', style: GoogleFonts.poppins(fontSize: 24));
 
   static Widget whatsapp = Text(
     'wa',
@@ -255,4 +253,3 @@ class DefaultSocialIcons {
     ),
   );
 }
-

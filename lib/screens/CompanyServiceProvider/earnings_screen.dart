@@ -59,9 +59,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
   Widget _buildHeader() {
     return Container(
       height: 60,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
+      decoration: const BoxDecoration(color: Colors.white),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
@@ -223,11 +221,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                   color: const Color(0xFFF36969).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: Colors.grey[700],
-                ),
+                child: Icon(icon, size: 18, color: Colors.grey[700]),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -253,11 +247,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right,
-                color: Colors.grey,
-                size: 20,
-              ),
+              const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
             ],
           ),
           const SizedBox(height: 12),
@@ -434,15 +424,9 @@ class _EarningsScreenState extends State<EarningsScreen> {
         },
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Color(0xFFF36969), width: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        icon: const Icon(
-          Icons.download,
-          color: Color(0xFFF36969),
-          size: 16,
-        ),
+        icon: const Icon(Icons.download, color: Color(0xFFF36969), size: 16),
         label: Text(
           'Export as PDF',
           style: GoogleFonts.poppins(
@@ -465,9 +449,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFF36969),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
           'Register New Payment',
@@ -488,7 +470,17 @@ class EarningsChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // Data points for earnings (scaled to fit the chart)
     final dataPoints = [800, 950, 1100, 1050, 1230, 1000, 1150, 1080, 1200];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+    ];
     final maxValue = 1500.0;
     final spacing = size.width / (dataPoints.length - 1);
     final chartHeight = size.height - 40; // Space for labels
@@ -500,11 +492,7 @@ class EarningsChartPainter extends CustomPainter {
 
     for (int i = 0; i <= 4; i++) {
       final y = (chartHeight / 4) * i;
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
     // Draw chart line
@@ -557,12 +545,7 @@ class EarningsChartPainter extends CustomPainter {
             ..strokeCap = StrokeCap.round,
         );
         // Draw tooltip
-        final tooltipRect = Rect.fromLTWH(
-          x - 35,
-          y - 30,
-          70,
-          25,
-        );
+        final tooltipRect = Rect.fromLTWH(x - 35, y - 30, 70, 25);
         canvas.drawRRect(
           RRect.fromRectAndRadius(tooltipRect, const Radius.circular(4)),
           Paint()..color = Colors.white,
@@ -586,10 +569,7 @@ class EarningsChartPainter extends CustomPainter {
           textDirection: TextDirection.ltr,
         );
         textPainter.layout();
-        textPainter.paint(
-          canvas,
-          Offset(x - textPainter.width / 2, y - 22),
-        );
+        textPainter.paint(canvas, Offset(x - textPainter.width / 2, y - 22));
       } else {
         canvas.drawCircle(
           Offset(x, y),
@@ -643,4 +623,3 @@ class EarningsChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

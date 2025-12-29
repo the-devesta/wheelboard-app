@@ -60,12 +60,3 @@ class AssignTripBid {
     );
   }
 }
-
-
-
-
-
-
-
-
-

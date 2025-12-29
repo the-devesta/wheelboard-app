@@ -44,7 +44,12 @@ class ResponsiveUtils {
   }
 
   /// Get responsive spacing
-  static double getResponsiveSpacing(BuildContext context, {double? small, double? medium, double? large}) {
+  static double getResponsiveSpacing(
+    BuildContext context, {
+    double? small,
+    double? medium,
+    double? large,
+  }) {
     final width = MediaQuery.of(context).size.width;
     if (width > desktopBreakpoint) {
       return large ?? 24;
@@ -56,7 +61,12 @@ class ResponsiveUtils {
   }
 
   /// Get responsive font size
-  static double getResponsiveFontSize(BuildContext context, {double? small, double? medium, double? large}) {
+  static double getResponsiveFontSize(
+    BuildContext context, {
+    double? small,
+    double? medium,
+    double? large,
+  }) {
     final width = MediaQuery.of(context).size.width;
     if (width > desktopBreakpoint) {
       return large ?? 18;
@@ -68,7 +78,12 @@ class ResponsiveUtils {
   }
 
   /// Get responsive icon size
-  static double getResponsiveIconSize(BuildContext context, {double? small, double? medium, double? large}) {
+  static double getResponsiveIconSize(
+    BuildContext context, {
+    double? small,
+    double? medium,
+    double? large,
+  }) {
     final width = MediaQuery.of(context).size.width;
     if (width > desktopBreakpoint) {
       return large ?? 32;
@@ -80,7 +95,12 @@ class ResponsiveUtils {
   }
 
   /// Get responsive grid cross axis count
-  static int getResponsiveGridCount(BuildContext context, {int? small, int? medium, int? large}) {
+  static int getResponsiveGridCount(
+    BuildContext context, {
+    int? small,
+    int? medium,
+    int? large,
+  }) {
     final width = MediaQuery.of(context).size.width;
     if (width > desktopBreakpoint) {
       return large ?? 4;
@@ -132,7 +152,12 @@ class ResponsiveUtils {
   }
 
   /// Get responsive border radius
-  static double getResponsiveBorderRadius(BuildContext context, {double? small, double? medium, double? large}) {
+  static double getResponsiveBorderRadius(
+    BuildContext context, {
+    double? small,
+    double? medium,
+    double? large,
+  }) {
     final width = MediaQuery.of(context).size.width;
     if (width > desktopBreakpoint) {
       return large ?? 16;

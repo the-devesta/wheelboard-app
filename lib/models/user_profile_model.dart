@@ -3,10 +3,10 @@
 class UserProfileModel {
   final String userId;
   final String userType; // 'Company', 'Professional', 'ServiceProvider'
-  
+
   // Common fields
   final String? mobileNo;
-  
+
   // Company/Transport fields
   final String? companyName;
   final String? gstNumber;
@@ -15,7 +15,7 @@ class UserProfileModel {
   final String? fullName;
   final String? address;
   final String? fleetSize;
-  
+
   // Professional fields
   final String? name;
   final String? fatherName;
@@ -25,7 +25,7 @@ class UserProfileModel {
   final String? city;
   final String? professionalType;
   final String? profileImagePath;
-  
+
   // Service Provider fields
   final String? businessName;
   final String? businessType;
@@ -66,12 +66,12 @@ class UserProfileModel {
   /// Factory constructor to create from JSON
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
     final userType = json['userType'] as String? ?? '';
-    
+
     return UserProfileModel(
       userId: json['userId'] as String? ?? '',
       userType: userType,
       mobileNo: json['mobileNo'] as String?,
-      
+
       // Company/Transport fields
       companyName: json['companyName'] as String?,
       gstNumber: json['gstNumber'] as String?,
@@ -80,7 +80,7 @@ class UserProfileModel {
       fullName: json['fullName'] as String?,
       address: json['address'] as String?,
       fleetSize: json['fleetSize'] as String?,
-      
+
       // Professional fields
       name: json['name'] as String?,
       fatherName: json['fatherName'] as String?,
@@ -132,16 +132,18 @@ class UserProfileModel {
   }
 
   /// Check if user is Company/Transport
-  bool get isCompany => userType.toLowerCase() == 'company' || 
-                        userType.toLowerCase() == 'transport';
-  
+  bool get isCompany =>
+      userType.toLowerCase() == 'company' ||
+      userType.toLowerCase() == 'transport';
+
   /// Check if user is Professional
   bool get isProfessional => userType.toLowerCase() == 'professional';
-  
+
   /// Check if user is Service Provider
-  bool get isServiceProvider => userType.toLowerCase() == 'serviceprovider' ||
-                                userType.toLowerCase() == 'service provider';
-  
+  bool get isServiceProvider =>
+      userType.toLowerCase() == 'serviceprovider' ||
+      userType.toLowerCase() == 'service provider';
+
   /// Get display name based on user type
   String get displayName {
     if (isCompany) {
@@ -153,7 +155,7 @@ class UserProfileModel {
     }
     return 'N/A';
   }
-  
+
   /// Get profile image path based on user type
   String? get profileImage {
     if (isCompany) {
@@ -166,4 +168,3 @@ class UserProfileModel {
     return null;
   }
 }
-

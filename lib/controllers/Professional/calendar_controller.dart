@@ -41,10 +41,7 @@ class CalendarController extends GetxController {
 
       final response = await HttpHelper.getData(
         endpoint: '${API.getEventsByUserId}$userId',
-        headers: {
-          'UserId': userId,
-          'Accept': '*/*',
-        },
+        headers: {'UserId': userId, 'Accept': '*/*'},
       );
 
       AppLogger.d("📅 Events response status: ${response.statusCode}");
@@ -64,7 +61,9 @@ class CalendarController extends GetxController {
         }
       } else {
         // Silently handle error - just show empty calendar
-        AppLogger.d("⚠️ Failed to fetch events: ${response.statusCode} - Handling silently");
+        AppLogger.d(
+          "⚠️ Failed to fetch events: ${response.statusCode} - Handling silently",
+        );
         events.value = [];
         hasError.value = true;
         errorMessage.value = 'Unable to load events';
@@ -139,7 +138,8 @@ class CalendarController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
           final responseData = json.decode(response.body);
-          if (responseData['message'] != null || responseData['success'] == true) {
+          if (responseData['message'] != null ||
+              responseData['success'] == true) {
             SnackBarHelper.success("Event saved successfully!");
             await fetchEvents(); // Refresh events
             return true;
@@ -154,9 +154,12 @@ class CalendarController extends GetxController {
         String errorMessage = "Failed to save event";
         try {
           final errorData = json.decode(response.body);
-          errorMessage = errorData['message'] ?? errorData['error'] ?? response.body;
+          errorMessage =
+              errorData['message'] ?? errorData['error'] ?? response.body;
         } catch (e) {
-          errorMessage = response.body.isNotEmpty ? response.body : "Failed: ${response.statusCode}";
+          errorMessage = response.body.isNotEmpty
+              ? response.body
+              : "Failed: ${response.statusCode}";
         }
         SnackBarHelper.error(errorMessage);
         return false;
@@ -168,7 +171,7 @@ class CalendarController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-    
+
     return false;
   }
 
@@ -176,24 +179,24 @@ class CalendarController extends GetxController {
   String _generateEventId() {
     final random = Random();
     final timestamp = DateTime.now().microsecondsSinceEpoch;
-    
+
     // Generate UUID v4 format: 8-4-4-4-12 (hexadecimal)
     // Part 1: 8 hex digits
     final part1 = _generateHexSegment(8, random, timestamp);
-    
+
     // Part 2: 4 hex digits
     final part2 = _generateHexSegment(4, random, timestamp);
-    
+
     // Part 3: 4 hex digits starting with '4' (version 4)
     final part3 = '4${_generateHexSegment(3, random, timestamp)}';
-    
+
     // Part 4: 4 hex digits with variant bits (8, 9, a, or b)
     final variant = ['8', '9', 'a', 'b'][random.nextInt(4)];
     final part4 = '$variant${_generateHexSegment(3, random, timestamp)}';
-    
+
     // Part 5: 12 hex digits
     final part5 = _generateHexSegment(12, random, timestamp);
-    
+
     return '$part1-$part2-$part3-$part4-$part5';
   }
 
@@ -209,7 +212,11 @@ class CalendarController extends GetxController {
   /// Get events for a specific date
   List<CalendarEvent> getEventsForDate(DateTime date) {
     return events.where((event) {
-      final eventDate = DateTime(event.startTime.year, event.startTime.month, event.startTime.day);
+      final eventDate = DateTime(
+        event.startTime.year,
+        event.startTime.month,
+        event.startTime.day,
+      );
       final targetDate = DateTime(date.year, date.month, date.day);
       return eventDate.isAtSameMomentAs(targetDate);
     }).toList();
@@ -218,7 +225,11 @@ class CalendarController extends GetxController {
   /// Get event dates for calendar highlighting
   List<DateTime> getEventDates() {
     return events.map((event) {
-      return DateTime(event.startTime.year, event.startTime.month, event.startTime.day);
+      return DateTime(
+        event.startTime.year,
+        event.startTime.month,
+        event.startTime.day,
+      );
     }).toList();
   }
 
@@ -227,4 +238,3 @@ class CalendarController extends GetxController {
     await fetchEvents();
   }
 }
-

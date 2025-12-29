@@ -45,9 +45,7 @@ class PaymentVerificationScreen extends StatelessWidget {
                   Container(
                     width: 20,
                     height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: BoxDecoration(shape: BoxShape.circle),
                     child: const Icon(
                       Icons.more_vert,
                       size: 20,
@@ -183,19 +181,12 @@ class PaymentVerificationScreen extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        Text(
-          value,
-          style: valueStyle,
-        ),
+        Text(value, style: valueStyle),
         if (trailingIcon != null) ...[
           const SizedBox(width: 8),
           GestureDetector(
             onTap: onTrailingTap,
-            child: Icon(
-              trailingIcon,
-              size: 16,
-              color: const Color(0xFF6B7280),
-            ),
+            child: Icon(trailingIcon, size: 16, color: const Color(0xFF6B7280)),
           ),
         ],
       ],
@@ -219,11 +210,7 @@ class PaymentVerificationScreen extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.support_agent,
-              size: 18,
-              color: Colors.white,
-            ),
+            const Icon(Icons.support_agent, size: 18, color: Colors.white),
             const SizedBox(width: 8),
             Text(
               'Contact Support',
@@ -240,4 +227,3 @@ class PaymentVerificationScreen extends StatelessWidget {
     );
   }
 }
-

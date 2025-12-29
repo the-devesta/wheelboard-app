@@ -82,16 +82,11 @@ class TripPaymentVerificationPayload {
 }
 
 class TripPaymentService {
-  Future<TripOrderResponse> createOrder({
-    required double totalAmount,
-  }) async {
+  Future<TripOrderResponse> createOrder({required double totalAmount}) async {
     final response = await HttpHelper.postData(
       endpoint: API.createTripOrder,
       data: {'totalAmount': _currencyToInt(totalAmount)},
-      headers: const {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-      },
+      headers: const {'accept': '*/*', 'Content-Type': 'application/json'},
     );
 
     if (response.statusCode != 200) {
@@ -121,23 +116,19 @@ class TripPaymentService {
     );
   }
 
-  Future<void> verifyPayment(
-    TripPaymentVerificationPayload payload,
-  ) async {
+  Future<void> verifyPayment(TripPaymentVerificationPayload payload) async {
     final response = await HttpHelper.postData(
       endpoint: API.verifyTripPayment,
       data: payload.toJson(),
-      headers: const {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-      },
+      headers: const {'accept': '*/*', 'Content-Type': 'application/json'},
     );
 
     final bodyText = response.body;
 
     if (response.statusCode != 200) {
-      final message =
-          bodyText.isNotEmpty ? bodyText : 'Payment verification failed';
+      final message = bodyText.isNotEmpty
+          ? bodyText
+          : 'Payment verification failed';
       throw Exception(
         'Payment verification failed (${response.statusCode}): $message',
       );
@@ -197,9 +188,7 @@ class TripPaymentService {
   Future<TripConfirmationModel> getTripConfirmation(String tripId) async {
     final response = await HttpHelper.getData(
       endpoint: '${API.getTripConfirmation}$tripId',
-      headers: const {
-        'accept': '*/*',
-      },
+      headers: const {'accept': '*/*'},
     );
 
     if (response.statusCode != 200) {
@@ -208,8 +197,8 @@ class TripPaymentService {
       );
     }
 
-    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> body =
+        jsonDecode(response.body) as Map<String, dynamic>;
     return TripConfirmationModel.fromJson(body);
   }
 }
-

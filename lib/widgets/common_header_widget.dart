@@ -12,20 +12,12 @@ class CommonHeaderWidget extends StatelessWidget {
       height: 91,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: Color(0xFFFCD2D2),
-            width: 1,
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFFCD2D2), width: 1)),
       ),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Padding(
-          padding: const EdgeInsets.only(
-            left: 16,
-            top: 42,
-          ),
+          padding: const EdgeInsets.only(left: 16, top: 42),
           child: Image.asset(
             'assets/logo-bg 3.png',
             width: 211,
@@ -51,4 +43,3 @@ class CommonHeaderWidget extends StatelessWidget {
     );
   }
 }
-

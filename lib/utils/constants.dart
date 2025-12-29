@@ -21,6 +21,7 @@ class API {
   static const String updateVehicle = 'api/Transport/update-vehicle';
   static const String getVehicles = 'api/Transport/vehicle';
   static const String addTrip = 'api/Trip/add-trip';
+  static const String updateTrip = 'api/Trip/update-trip';
   static const String getTripList = 'api/Trip/trip-list/';
   static const String getUnassignedTripList = 'api/Trip/unassign-trip-list';
   static const String getUnassignedTripDetails =

@@ -21,12 +21,23 @@ class CalendarWidget extends StatefulWidget {
 
 class _CalendarWidgetState extends State<CalendarWidget> {
   late DateTime _currentMonth;
-  final List<String> _weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  final List<String> _weekDays = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _currentMonth = DateTime(widget.selectedDate.year, widget.selectedDate.month);
+    _currentMonth = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+    );
   }
 
   List<DateTime> _getDaysInMonth() {
@@ -34,33 +45,35 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
     // Convert weekday (1=Monday, 7=Sunday) to grid index (0=Monday, 6=Sunday)
     final firstWeekday = firstDay.weekday == 7 ? 0 : firstDay.weekday - 1;
-    
+
     List<DateTime> days = [];
-    
+
     // Add previous month's trailing days
     for (int i = firstWeekday - 1; i >= 0; i--) {
       days.add(firstDay.subtract(Duration(days: i + 1)));
     }
-    
+
     // Add current month's days
     for (int i = 1; i <= lastDay.day; i++) {
       days.add(DateTime(_currentMonth.year, _currentMonth.month, i));
     }
-    
+
     // Add next month's leading days
     final remainingDays = 42 - days.length;
     for (int i = 1; i <= remainingDays; i++) {
       days.add(DateTime(_currentMonth.year, _currentMonth.month + 1, i));
     }
-    
+
     return days;
   }
 
   bool _hasEvents(DateTime date) {
-    return widget.eventDates.any((eventDate) =>
-        eventDate.year == date.year &&
-        eventDate.month == date.month &&
-        eventDate.day == date.day);
+    return widget.eventDates.any(
+      (eventDate) =>
+          eventDate.year == date.year &&
+          eventDate.month == date.month &&
+          eventDate.day == date.day,
+    );
   }
 
   bool _isCurrentMonth(DateTime date) {
@@ -89,8 +102,18 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   Widget build(BuildContext context) {
     final days = _getDaysInMonth();
     final monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
 
     return Container(
@@ -204,12 +227,14 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                             '${date.day}',
                             style: GoogleFonts.poppins(
                               fontSize: 15,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               color: isSelected
                                   ? Colors.white
                                   : isCurrentMonth
-                                      ? const Color(0xFF222B45)
-                                      : const Color(0xFF8F9BB3),
+                                  ? const Color(0xFF222B45)
+                                  : const Color(0xFF8F9BB3),
                             ),
                           ),
                           if (hasEvents && !isSelected)
@@ -239,4 +264,3 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     );
   }
 }
-

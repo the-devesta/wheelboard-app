@@ -51,7 +51,12 @@ class _BannerCarouselState extends State<BannerCarousel> {
       children: [
         /// Carousel
         SizedBox(
-          height: ResponsiveUtils.getResponsiveSpacing(context, small: 100, medium: 120, large: 140),
+          height: ResponsiveUtils.getResponsiveSpacing(
+            context,
+            small: 100,
+            medium: 120,
+            large: 140,
+          ),
           child: PageView.builder(
             controller: _pageController,
             itemCount: images.length,
@@ -60,10 +65,17 @@ class _BannerCarouselState extends State<BannerCarousel> {
             },
             itemBuilder: (context, index) {
               return Padding(
-                padding: ResponsiveUtils.getResponsiveHorizontalPadding(context),
+                padding: ResponsiveUtils.getResponsiveHorizontalPadding(
+                  context,
+                ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(
-                    ResponsiveUtils.getResponsiveBorderRadius(context, small: 16, medium: 18, large: 20),
+                    ResponsiveUtils.getResponsiveBorderRadius(
+                      context,
+                      small: 16,
+                      medium: 18,
+                      large: 20,
+                    ),
                   ),
                   child: Image.asset(
                     images[index],
@@ -76,7 +88,14 @@ class _BannerCarouselState extends State<BannerCarousel> {
           ),
         ),
 
-        SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, small: 6, medium: 8, large: 10)),
+        SizedBox(
+          height: ResponsiveUtils.getResponsiveSpacing(
+            context,
+            small: 6,
+            medium: 8,
+            large: 10,
+          ),
+        ),
 
         /// Pagination dots
         Row(
@@ -85,12 +104,32 @@ class _BannerCarouselState extends State<BannerCarousel> {
             return AnimatedContainer(
               duration: Duration(milliseconds: 300),
               margin: EdgeInsets.symmetric(
-                horizontal: ResponsiveUtils.getResponsiveSpacing(context, small: 3, medium: 4, large: 5),
+                horizontal: ResponsiveUtils.getResponsiveSpacing(
+                  context,
+                  small: 3,
+                  medium: 4,
+                  large: 5,
+                ),
               ),
-              width: _currentPage == index 
-                  ? ResponsiveUtils.getResponsiveSpacing(context, small: 12, medium: 14, large: 16)
-                  : ResponsiveUtils.getResponsiveSpacing(context, small: 6, medium: 8, large: 10),
-              height: ResponsiveUtils.getResponsiveSpacing(context, small: 6, medium: 8, large: 10),
+              width: _currentPage == index
+                  ? ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      small: 12,
+                      medium: 14,
+                      large: 16,
+                    )
+                  : ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      small: 6,
+                      medium: 8,
+                      large: 10,
+                    ),
+              height: ResponsiveUtils.getResponsiveSpacing(
+                context,
+                small: 6,
+                medium: 8,
+                large: 10,
+              ),
               decoration: BoxDecoration(
                 color: _currentPage == index
                     ? Colors.teal

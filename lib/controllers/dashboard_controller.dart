@@ -47,7 +47,8 @@ class DashboardController extends GetxController {
         final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
         dashboardData.value = DashboardModel.fromJson(jsonData);
       } else {
-        errorMessage.value = 'Failed to load dashboard data (${response.statusCode})';
+        errorMessage.value =
+            'Failed to load dashboard data (${response.statusCode})';
         SnackBarHelper.error(errorMessage.value);
       }
     } catch (e) {
@@ -58,4 +59,3 @@ class DashboardController extends GetxController {
     }
   }
 }
-

@@ -76,4 +76,3 @@ class TransactionItemWidget extends StatelessWidget {
     );
   }
 }
-

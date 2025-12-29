@@ -76,4 +76,3 @@ class _KycFaqItemWidgetState extends State<KycFaqItemWidget> {
     );
   }
 }
-

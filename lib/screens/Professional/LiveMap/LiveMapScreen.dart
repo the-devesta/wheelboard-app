@@ -7,10 +7,14 @@ class LiveMapScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Asset URLs from Figma
-    const String mapImageUrl = 'https://www.figma.com/api/mcp/asset/609f42f8-f799-4c0d-9d47-db02bcad37d1';
-    const String vehicleMarkerUrl = 'https://www.figma.com/api/mcp/asset/7179e743-f7a9-4b7a-8d1d-69d543db0b1e';
-    const String destinationMarkerUrl = 'https://www.figma.com/api/mcp/asset/d1998470-12ca-41e7-81ef-b42adf75ab0e';
-    const String locationIconUrl = 'https://www.figma.com/api/mcp/asset/4f5396fa-3f78-4047-b476-68c1b15580b4';
+    const String mapImageUrl =
+        'https://www.figma.com/api/mcp/asset/609f42f8-f799-4c0d-9d47-db02bcad37d1';
+    const String vehicleMarkerUrl =
+        'https://www.figma.com/api/mcp/asset/7179e743-f7a9-4b7a-8d1d-69d543db0b1e';
+    const String destinationMarkerUrl =
+        'https://www.figma.com/api/mcp/asset/d1998470-12ca-41e7-81ef-b42adf75ab0e';
+    const String locationIconUrl =
+        'https://www.figma.com/api/mcp/asset/4f5396fa-3f78-4047-b476-68c1b15580b4';
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAFBFC),
@@ -98,7 +102,11 @@ class LiveMapScreen extends StatelessWidget {
                           color: Colors.green,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.directions_car, color: Colors.white, size: 40),
+                        child: const Icon(
+                          Icons.directions_car,
+                          color: Colors.white,
+                          size: 40,
+                        ),
                       );
                     },
                   ),
@@ -119,7 +127,11 @@ class LiveMapScreen extends StatelessWidget {
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.place, color: Colors.white, size: 30),
+                        child: const Icon(
+                          Icons.place,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                       );
                     },
                   ),
@@ -252,16 +264,21 @@ class LiveMapScreen extends StatelessWidget {
                                         height: 12,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFE5E7EB),
-                                          borderRadius: BorderRadius.circular(999),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
                                         ),
                                       ),
                                       FractionallySizedBox(
-                                        widthFactor: 0.78, // 254.266 / 326 ≈ 78%
+                                        widthFactor:
+                                            0.78, // 254.266 / 326 ≈ 78%
                                         child: Container(
                                           height: 12,
                                           decoration: BoxDecoration(
                                             color: const Color(0xFF3B82F6),
-                                            borderRadius: BorderRadius.circular(999),
+                                            borderRadius: BorderRadius.circular(
+                                              999,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -269,7 +286,8 @@ class LiveMapScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 16),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         '0 mi',
@@ -312,7 +330,10 @@ class LiveMapScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const Divider(height: 40, color: Color(0xFFE5E7EB)),
+                              const Divider(
+                                height: 40,
+                                color: Color(0xFFE5E7EB),
+                              ),
                               // Driver and Status
                               Row(
                                 children: [
@@ -334,7 +355,10 @@ class LiveMapScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const Divider(height: 40, color: Color(0xFFE5E7EB)),
+                              const Divider(
+                                height: 40,
+                                color: Color(0xFFE5E7EB),
+                              ),
                               // Distance Left and Trip Started
                               Row(
                                 children: [
@@ -365,7 +389,9 @@ class LiveMapScreen extends StatelessWidget {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFF36969),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(999),
                                     ),
@@ -488,4 +514,3 @@ class RouteLinePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

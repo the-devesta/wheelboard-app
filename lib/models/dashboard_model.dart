@@ -41,29 +41,40 @@ class DashboardModel {
       vehiclesOnLease: json['vehiclesOnLease'] != null
           ? VehiclesOnLease.fromJson(json['vehiclesOnLease'])
           : null,
-      tripCompletionTrend: (json['tripCompletionTrend'] as List<dynamic>?)
-              ?.map((e) => TripCompletionTrend.fromJson(e as Map<String, dynamic>))
+      tripCompletionTrend:
+          (json['tripCompletionTrend'] as List<dynamic>?)
+              ?.map(
+                (e) => TripCompletionTrend.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           [],
-      vehicleAvailability:
-          VehicleAvailability.fromJson(json['vehicleAvailability'] ?? {}),
-      topProfessionals: (json['topProfessionals'] as List<dynamic>?)
+      vehicleAvailability: VehicleAvailability.fromJson(
+        json['vehicleAvailability'] ?? {},
+      ),
+      topProfessionals:
+          (json['topProfessionals'] as List<dynamic>?)
               ?.map((e) => TopProfessional.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      jobList: (json['jobList'] as List<dynamic>?)
+      jobList:
+          (json['jobList'] as List<dynamic>?)
               ?.map((e) => JobItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      recentTransactions: (json['recentTransactions'] as List<dynamic>?)
-              ?.map((e) => RecentTransaction.fromJson(e as Map<String, dynamic>))
+      recentTransactions:
+          (json['recentTransactions'] as List<dynamic>?)
+              ?.map(
+                (e) => RecentTransaction.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           [],
-      assignedServices: (json['assignedServices'] as List<dynamic>?)
+      assignedServices:
+          (json['assignedServices'] as List<dynamic>?)
               ?.map((e) => AssignedService.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      upcomingTrips: (json['upcomingTrips'] as List<dynamic>?)
+      upcomingTrips:
+          (json['upcomingTrips'] as List<dynamic>?)
               ?.map((e) => UpcomingTrip.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -75,10 +86,7 @@ class TripSummary {
   final int totalTrips;
   final int scheduledToday;
 
-  TripSummary({
-    required this.totalTrips,
-    required this.scheduledToday,
-  });
+  TripSummary({required this.totalTrips, required this.scheduledToday});
 
   factory TripSummary.fromJson(Map<String, dynamic> json) {
     return TripSummary(
@@ -92,10 +100,7 @@ class ActiveVehicles {
   final int activeVehicles;
   final int inMaintenance;
 
-  ActiveVehicles({
-    required this.activeVehicles,
-    required this.inMaintenance,
-  });
+  ActiveVehicles({required this.activeVehicles, required this.inMaintenance});
 
   factory ActiveVehicles.fromJson(Map<String, dynamic> json) {
     return ActiveVehicles(
@@ -126,10 +131,7 @@ class JobsSummary {
   final int activeJobs;
   final int unfilledJobs;
 
-  JobsSummary({
-    required this.activeJobs,
-    required this.unfilledJobs,
-  });
+  JobsSummary({required this.activeJobs, required this.unfilledJobs});
 
   factory JobsSummary.fromJson(Map<String, dynamic> json) {
     return JobsSummary(
@@ -143,10 +145,7 @@ class TripEfficiency {
   final double? avgCostPerKm;
   final double? totalKmPerMonth;
 
-  TripEfficiency({
-    this.avgCostPerKm,
-    this.totalKmPerMonth,
-  });
+  TripEfficiency({this.avgCostPerKm, this.totalKmPerMonth});
 
   factory TripEfficiency.fromJson(Map<String, dynamic> json) {
     return TripEfficiency(
@@ -160,10 +159,7 @@ class VehiclesOnLease {
   final int total;
   final int leasedThisWeek;
 
-  VehiclesOnLease({
-    required this.total,
-    required this.leasedThisWeek,
-  });
+  VehiclesOnLease({required this.total, required this.leasedThisWeek});
 
   factory VehiclesOnLease.fromJson(Map<String, dynamic> json) {
     return VehiclesOnLease(
@@ -177,10 +173,7 @@ class TripCompletionTrend {
   final String? date;
   final int? completedTrips;
 
-  TripCompletionTrend({
-    this.date,
-    this.completedTrips,
-  });
+  TripCompletionTrend({this.date, this.completedTrips});
 
   factory TripCompletionTrend.fromJson(Map<String, dynamic> json) {
     return TripCompletionTrend(
@@ -279,11 +272,7 @@ class RecentTransaction {
   final String? dateEntered;
   final double? amount;
 
-  RecentTransaction({
-    this.expenseType,
-    this.dateEntered,
-    this.amount,
-  });
+  RecentTransaction({this.expenseType, this.dateEntered, this.amount});
 
   factory RecentTransaction.fromJson(Map<String, dynamic> json) {
     return RecentTransaction(
@@ -323,12 +312,7 @@ class UpcomingTrip {
   final String? time;
   final String? driver;
 
-  UpcomingTrip({
-    this.id,
-    this.route,
-    this.time,
-    this.driver,
-  });
+  UpcomingTrip({this.id, this.route, this.time, this.driver});
 
   factory UpcomingTrip.fromJson(Map<String, dynamic> json) {
     return UpcomingTrip(
@@ -339,4 +323,3 @@ class UpcomingTrip {
     );
   }
 }
-

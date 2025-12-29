@@ -527,13 +527,15 @@ class _ProfessionalRegisterScreenState
                 letterSpacing: -0.14,
                 fontFamily: 'Inter',
               ),
-              suffixIcon: suffixIcon ?? (suffixIconData != null
-                        ? Icon(
-                            suffixIconData,
-                            size: 16,
-                            color: const Color(0xFFACB5BB),
-                          )
-                        : null),
+              suffixIcon:
+                  suffixIcon ??
+                  (suffixIconData != null
+                      ? Icon(
+                          suffixIconData,
+                          size: 16,
+                          color: const Color(0xFFACB5BB),
+                        )
+                      : null),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
