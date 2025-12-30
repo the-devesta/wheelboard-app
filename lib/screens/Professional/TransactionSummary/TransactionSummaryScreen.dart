@@ -220,7 +220,7 @@ class TransactionSummaryScreen extends StatelessWidget {
                               ),
                               tripId: 'TRIP',
                               category: e.expenseType,
-                              description: e.expenseType,
+                              // description: e.expenseType,
                               amount: '₹${e.amount}',
                             ),
                           );
@@ -493,7 +493,7 @@ class TransactionSummaryScreen extends StatelessWidget {
     required String date,
     required String tripId,
     required String category,
-    required String description,
+    // required String description,
     required String amount,
   }) {
     return Container(
@@ -554,15 +554,15 @@ class TransactionSummaryScreen extends StatelessWidget {
                       color: const Color(0xFF374151),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF9CA3AF),
-                    ),
-                  ),
+                  // const SizedBox(height: 2),
+                  // Text(
+                  //   description,
+                  //   style: GoogleFonts.inter(
+                  //     fontSize: 12,
+                  //     fontWeight: FontWeight.w400,
+                  //     color: const Color(0xFF9CA3AF),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
