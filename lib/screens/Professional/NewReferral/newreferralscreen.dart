@@ -479,7 +479,7 @@ class NewReferralScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Obx(() {
                   return ElevatedButton(
-                    onPressed: () => controller.saveReferal(),
+                    onPressed: () => controller.saveReferal(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: controller.isFormValid
                           ? Colors.redAccent
