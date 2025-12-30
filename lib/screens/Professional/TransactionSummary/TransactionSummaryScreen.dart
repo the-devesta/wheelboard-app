@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/controllers/transaction_summary_controller.dart';
+import 'package:wheelboard/models/expense_purpose_model.dart';
 import 'package:wheelboard/models/trip_expense_detail_model.dart';
 import 'dart:math' as math;
 import '../../CompanyTransport/add_expense_screen.dart';
@@ -116,33 +117,42 @@ class TransactionSummaryScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                           // Filter Button
-                          Container(
-                            height: 48,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(
-                                color: const Color(0xFFE0E0E0),
+                          InkWell(
+                            onTap: () {
+                              Get.dialog(
+                                ExpenseFilterDialog(controller: controller),
+                              );
+                            },
+                            child: Container(
+                              height: 48,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
                               ),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.filter_list,
-                                  size: 18,
-                                  color: Color(0xFF2F80ED),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: const Color(0xFFE0E0E0),
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Filter',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: const Color(0xFF2F80ED),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.filter_list,
+                                    size: 18,
+                                    color: Color(0xFF2F80ED),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Filter',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF2F80ED),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -770,4 +780,110 @@ class PieChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class ExpenseFilterDialog extends StatelessWidget {
+  final TransactionSummaryController controller;
+
+  const ExpenseFilterDialog({Key? key, required this.controller})
+    : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.85,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Obx(() {
+            if (controller.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Filter by",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.red,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Get.back(),
+                      child: const Icon(Icons.close, color: Colors.red),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: controller.expensePurposes.map((purpose) {
+                    final bool isSelected =
+                        controller.selectedPurposeId.value ==
+                        purpose.expensePurposeId;
+
+                    return ChoiceChip(
+                      label: Text(purpose.purposeName),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        if (isSelected) {
+                          controller.getTransactionData();
+                        } else {
+                          controller.getTransactionData(
+                            purposeId: purpose.expensePurposeId,
+                          );
+                        }
+                        Get.back();
+                      },
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      selectedColor: Colors.red,
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.red),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 20),
+
+                Center(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      controller.getTransactionData();
+                      Get.back();
+                    },
+                    child: const Text(
+                      "Clear Filter",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+      ),
+    );
+  }
 }

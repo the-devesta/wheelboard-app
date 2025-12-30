@@ -4,15 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/models/expense_purpose_model.dart';
 import 'package:wheelboard/models/trip_expense_detail_model.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import 'package:wheelboard/utils/app_logger.dart';
 import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/widgets/custom_snackbar.dart';
 
 class TransactionSummaryController extends GetxController {
   RxBool isLoading = false.obs;
   final TextEditingController searchController = TextEditingController();
   final AuthService _authService = Get.find<AuthService>();
+  var expensePurposes = <ExpensePurpose>[].obs;
+  RxnInt selectedPurposeId = RxnInt();
 
   /// API DATA
   RxDouble totalExpenses = 0.0.obs;
@@ -23,21 +27,24 @@ class TransactionSummaryController extends GetxController {
   @override
   void onInit() {
     getTransactionData();
-
+    fetchExpensePurposes();
     // search listener
     searchController.addListener(filterExpenses);
     super.onInit();
   }
 
-  Future<void> getTransactionData() async {
+  Future<void> getTransactionData({int? purposeId}) async {
     try {
       isLoading.value = true;
-
+      selectedPurposeId?.value = purposeId;
       final userId = _authService.userId;
 
       final response = await HttpHelper.getData(
         endpoint: API.tripExpenseDetail,
-        queryParams: {'userId': userId.toLowerCase()},
+        queryParams: {
+          'userId': userId.toLowerCase(),
+          if (purposeId != null) 'expensePurposeId': purposeId.toString(),
+        },
         headers: {"Content-Type": "application/json"},
       );
       debugPrint('here==>> ${response.statusCode}');
@@ -86,5 +93,28 @@ class TransactionSummaryController extends GetxController {
 
     final formatter = NumberFormat('#,##0', 'en_IN');
     return '$symbol${formatter.format(amount)}';
+  }
+
+  Future<void> fetchExpensePurposes() async {
+    try {
+      isLoading.value = true;
+      final response = await HttpHelper.getData(
+        endpoint: API.getExpensePurposes,
+        headers: {'accept': '*/*'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        expensePurposes.value = data
+            .map((json) => ExpensePurpose.fromJson(json))
+            .toList();
+      } else {
+        SnackBarHelper.error('Failed to load expense purposes');
+      }
+    } catch (e) {
+      SnackBarHelper.error('Error loading expense purposes: $e');
+    } finally {
+      isLoading.value = false;
+    }
   }
 }
