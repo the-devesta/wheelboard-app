@@ -16,14 +16,12 @@ class ProfessionalBottomNavWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
+
     return Container(
       height: 76 + bottomPadding, // Responsive height with safe area padding
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFE0E0E0), width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 0.5)),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(18),
           topRight: Radius.circular(18),
@@ -86,7 +84,9 @@ class ProfessionalBottomNavWidget extends StatelessWidget {
     return GestureDetector(
       onTap: () => onTap(index),
       child: Container(
-        width: screenWidth * 0.2, // Responsive width (20% of screen width for 5 items)
+        width:
+            screenWidth *
+            0.2, // Responsive width (20% of screen width for 5 items)
         constraints: const BoxConstraints(
           minHeight: 46,
           maxHeight: 50, // Allow slight flexibility
@@ -97,17 +97,27 @@ class ProfessionalBottomNavWidget extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: screenWidth * 0.05, // Responsive icon size (5% of screen width)
-              color: isActive ? const Color(0xFFFF5E5E) : const Color(0xFF535353),
+              size:
+                  screenWidth *
+                  0.05, // Responsive icon size (5% of screen width)
+              color: isActive
+                  ? const Color(0xFFFF5E5E)
+                  : const Color(0xFF535353),
             ),
-            SizedBox(height: screenWidth * 0.006), // Reduced spacing to prevent overflow
+            SizedBox(
+              height: screenWidth * 0.006,
+            ), // Reduced spacing to prevent overflow
             Flexible(
               child: Text(
                 label,
                 style: GoogleFonts.poppins(
-                  fontSize: screenWidth * 0.03, // Responsive font size (3% of screen width)
+                  fontSize:
+                      screenWidth *
+                      0.03, // Responsive font size (3% of screen width)
                   fontWeight: FontWeight.w500,
-                  color: isActive ? const Color(0xFFFF5E5E) : const Color(0xFF535353),
+                  color: isActive
+                      ? const Color(0xFFFF5E5E)
+                      : const Color(0xFF535353),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -115,8 +125,11 @@ class ProfessionalBottomNavWidget extends StatelessWidget {
             ),
             if (isActive)
               Container(
-                margin: EdgeInsets.only(top: screenWidth * 0.001), // Reduced margin
-                width: screenWidth * 0.07, // Responsive width (7% of screen width)
+                margin: EdgeInsets.only(
+                  top: screenWidth * 0.001,
+                ), // Reduced margin
+                width:
+                    screenWidth * 0.07, // Responsive width (7% of screen width)
                 height: 4,
                 decoration: BoxDecoration(
                   color: const Color(0xFFFF5E5E),
@@ -129,4 +142,3 @@ class ProfessionalBottomNavWidget extends StatelessWidget {
     );
   }
 }
-

@@ -325,9 +325,7 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CustomLoader.small(
-                                color: Colors.white,
-                              ),
+                              child: CustomLoader.small(color: Colors.white),
                             )
                           : const Icon(Icons.send, size: 18),
                       label: Text(

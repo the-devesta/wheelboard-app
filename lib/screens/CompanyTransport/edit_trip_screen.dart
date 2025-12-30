@@ -7,17 +7,18 @@ import '../../utils/session_manager.dart';
 import '../../utils/distance_service.dart';
 import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
-import 'dart:math';
 import '../../utils/app_logger.dart';
 
-class ScheduleTripScreen extends StatefulWidget {
-  const ScheduleTripScreen({super.key});
+class EditTripScreen extends StatefulWidget {
+  final Trip trip;
+
+  const EditTripScreen({super.key, required this.trip});
 
   @override
-  State<ScheduleTripScreen> createState() => _ScheduleTripScreenState();
+  State<EditTripScreen> createState() => _EditTripScreenState();
 }
 
-class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
+class _EditTripScreenState extends State<EditTripScreen> {
   final TripController tripController = Get.put(TripController());
 
   DateTime? selectedDate;
@@ -46,6 +47,44 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     super.initState();
     _FetchDrivers();
     _FetchVehicles();
+    _prefillTripData();
+  }
+
+  /// Prefill the form with existing trip data
+  void _prefillTripData() {
+    final trip = widget.trip;
+
+    pickupController.text = trip.pickupLocation;
+    deliveryController.text = trip.deliveryLocation;
+    specialInstructionsController.text = trip.specialInstructions;
+    payRangeController.text = trip.payRange;
+
+    // Set the date
+    if (trip.pickupDate != null) {
+      selectedDate = trip.pickupDate;
+    }
+
+    // Parse and set the time
+    if (trip.pickupTime.isNotEmpty) {
+      final timeParts = trip.pickupTime.split(':');
+      if (timeParts.length >= 2) {
+        final hour = int.tryParse(timeParts[0]) ?? 0;
+        final minute = int.tryParse(timeParts[1]) ?? 0;
+        selectedTime = TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+
+    // Pre-select vehicle
+    if (trip.vehicleId.isNotEmpty) {
+      tripController.selectedVehicle.value = trip.vehicleId;
+    }
+
+    // Pre-select driver
+    if (trip.driverId.isNotEmpty) {
+      tripController.selectedDriver.value = trip.driverId;
+    }
+
+    setState(() {});
   }
 
   Future<void> _FetchDrivers() async {
@@ -53,7 +92,11 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     final userId = await sessionManager.getString("userId");
 
     if (userId != null && userId.isNotEmpty) {
-      tripController.fetchDrivers(userId);
+      await tripController.fetchDrivers(userId);
+      // Set the selected driver after fetching
+      if (widget.trip.driverId.isNotEmpty) {
+        tripController.selectedDriver.value = widget.trip.driverId;
+      }
     } else {
       AppLogger.d("UserId is null or empty");
     }
@@ -64,7 +107,11 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     final userId = await sessionManager.getString("userId");
 
     if (userId != null && userId.isNotEmpty) {
-      tripController.fetchVehicles(userId);
+      await tripController.fetchVehicles(userId);
+      // Set the selected vehicle after fetching
+      if (widget.trip.vehicleId.isNotEmpty) {
+        tripController.selectedVehicle.value = widget.trip.vehicleId;
+      }
     } else {
       AppLogger.d("UserId is null or empty");
     }
@@ -78,7 +125,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Schedule Your Trip',
+          'Edit Trip',
           style: TextStyle(
             color: Color(0xFF1E1E1E),
             fontSize: 14,
@@ -110,7 +157,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 20),
                     child: Text(
-                      "Trip Details",
+                      "Edit Trip Details",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -142,121 +189,128 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                 const SizedBox(height: 17),
 
                 _buildTimePicker(context),
+                const SizedBox(height: 17),
+
+                // Special Instructions Field
+                _buildSpecialInstructionsField(),
+                const SizedBox(height: 17),
+
+                // Pay Range Field
+                _buildPayRangeField(),
                 const SizedBox(height: 24),
 
                 Center(
                   child: SizedBox(
                     width: 295,
                     height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final userId = await SessionManager().getString(
-                          "userId",
-                        );
+                    child: Obx(
+                      () => ElevatedButton(
+                        onPressed: tripController.isLoading.value
+                            ? null
+                            : () async {
+                                final userId = await SessionManager().getString(
+                                  "userId",
+                                );
 
-                        if (userId == null || userId.isEmpty) {
-                          Get.snackbar("Error", "User not logged in");
-                          return;
-                        }
+                                if (userId == null || userId.isEmpty) {
+                                  Get.snackbar("Error", "User not logged in");
+                                  return;
+                                }
 
-                        // 🔍 DEBUG: Log selected values before creating trip
-                        AppLogger.d("=================================");
-                        AppLogger.d("🚚 SCHEDULE TRIP - DEBUG INFO");
-                        AppLogger.d("=================================");
-                        AppLogger.d("👤 User ID: $userId");
-                        AppLogger.d(
-                          "🚗 Selected Vehicle ID: ${tripController.selectedVehicle.value ?? 'NOT SELECTED'}",
-                        );
-                        AppLogger.d(
-                          "👨‍✈️ Selected Driver ID: ${tripController.selectedDriver.value ?? 'NOT SELECTED'}",
-                        );
-                        AppLogger.d(
-                          "📍 Pickup Location: ${pickupController.text}",
-                        );
-                        AppLogger.d(
-                          "📍 Delivery Location: ${deliveryController.text}",
-                        );
-                        AppLogger.d("📅 Pickup Date: $selectedDate");
-                        AppLogger.d(
-                          "⏰ Pickup Time: ${selectedTime != null ? _formatTimeOfDay(selectedTime!) : '00:00:00'}",
-                        );
-                        AppLogger.d(
-                          "📝 Special Instructions: ${specialInstructionsController.text.trim()}",
-                        );
-                        AppLogger.d(
-                          "💰 Pay Range: ${payRangeController.text.trim()}",
-                        );
-                        AppLogger.d("=================================");
+                                // 🔍 DEBUG: Log values before updating trip
+                                AppLogger.d(
+                                  "=================================",
+                                );
+                                AppLogger.d("🚚 EDIT TRIP - DEBUG INFO");
+                                AppLogger.d(
+                                  "=================================",
+                                );
+                                AppLogger.d("👤 User ID: $userId");
+                                AppLogger.d(
+                                  "🎫 Trip ID: ${widget.trip.tripId}",
+                                );
+                                AppLogger.d(
+                                  "🚗 Selected Vehicle ID: ${tripController.selectedVehicle.value ?? 'NOT SELECTED'}",
+                                );
+                                AppLogger.d(
+                                  "👨‍✈️ Selected Driver ID: ${tripController.selectedDriver.value ?? 'NOT SELECTED'}",
+                                );
+                                AppLogger.d(
+                                  "📍 Pickup Location: ${pickupController.text}",
+                                );
+                                AppLogger.d(
+                                  "📍 Delivery Location: ${deliveryController.text}",
+                                );
+                                AppLogger.d("📅 Pickup Date: $selectedDate");
+                                AppLogger.d(
+                                  "⏰ Pickup Time: ${selectedTime != null ? _formatTimeOfDay(selectedTime!) : '00:00:00'}",
+                                );
+                                AppLogger.d(
+                                  "📝 Special Instructions: ${specialInstructionsController.text.trim()}",
+                                );
+                                AppLogger.d(
+                                  "💰 Pay Range: ${payRangeController.text.trim()}",
+                                );
+                                AppLogger.d(
+                                  "=================================",
+                                );
 
-                        // ✅ Build Trip object (TripId not needed - backend will generate)
-                        final trip = Trip(
-                          tripId: "", // Empty - backend will generate TripId
-                          userId: userId,
-                          vehicleId: tripController.selectedVehicle.value ?? "",
-                          driverId: tripController.selectedDriver.value ?? "",
-                          pickupLocation: pickupController.text,
-                          deliveryLocation: deliveryController.text,
-                          pickupDate: selectedDate,
-                          pickupTime: selectedTime != null
-                              ? _formatTimeOfDay(selectedTime!)
-                              : "00:00:00",
-                          specialInstructions: specialInstructionsController
-                              .text
-                              .trim(),
-                          payRange: payRangeController.text.trim(),
-                          tripCode:
-                              "TRIP-${DateTime.now().millisecondsSinceEpoch}",
-                          tripStatus: "Pending",
-                          isScheduledTrip:
-                              true, // ✅ This is a scheduled trip with driver selection
-                        );
+                                // ✅ Build updated Trip object
+                                final updatedTrip = Trip(
+                                  tripId: widget.trip.tripId,
+                                  userId: userId,
+                                  vehicleId:
+                                      tripController.selectedVehicle.value ??
+                                      widget.trip.vehicleId,
+                                  driverId:
+                                      tripController.selectedDriver.value ??
+                                      widget.trip.driverId,
+                                  pickupLocation: pickupController.text,
+                                  deliveryLocation: deliveryController.text,
+                                  pickupDate: selectedDate,
+                                  pickupTime: selectedTime != null
+                                      ? _formatTimeOfDay(selectedTime!)
+                                      : widget.trip.pickupTime,
+                                  specialInstructions:
+                                      specialInstructionsController.text.trim(),
+                                  payRange: payRangeController.text.trim(),
+                                  tripCode: widget.trip.tripCode,
+                                  tripStatus: widget.trip.tripStatus,
+                                  isScheduledTrip: true,
+                                );
 
-                        // 🔍 DEBUG: Log Trip object after creation
-                        AppLogger.d("=================================");
-                        AppLogger.d("📦 TRIP OBJECT CREATED");
-                        AppLogger.d("=================================");
-                        AppLogger.d("Trip ID: ${trip.tripId}");
-                        AppLogger.d("User ID: ${trip.userId}");
-                        AppLogger.d("Vehicle ID: ${trip.vehicleId}");
-                        AppLogger.d(
-                          "👨‍✈️ Driver ID: ${trip.driverId} ${trip.driverId.isEmpty ? '❌ EMPTY!' : '✅ HAS VALUE'}",
-                        );
-                        AppLogger.d("Pickup Location: ${trip.pickupLocation}");
-                        AppLogger.d(
-                          "Delivery Location: ${trip.deliveryLocation}",
-                        );
-                        AppLogger.d("Pickup Date: ${trip.pickupDate}");
-                        AppLogger.d("Pickup Time: ${trip.pickupTime}");
-                        AppLogger.d(
-                          "Special Instructions: ${trip.specialInstructions}",
-                        );
-                        AppLogger.d("Pay Range: ${trip.payRange}");
-                        AppLogger.d("Trip Code: ${trip.tripCode}");
-                        AppLogger.d("Trip Status: ${trip.tripStatus}");
-                        AppLogger.d("=================================");
-
-                        // ✅ Send API call (userId-based auth, no token needed)
-                        await tripController.addTrip(trip);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF25C5C),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 24,
+                                // ✅ Call update API
+                                await tripController.updateTrip(updatedTrip);
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF25C5C),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 24,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        "Schedule Now",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontFamily: 'Poppins',
-                          letterSpacing: -0.14,
-                        ),
+                        child: tripController.isLoading.value
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                "Update Trip",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontFamily: 'Poppins',
+                                  letterSpacing: -0.14,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -291,7 +345,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
             return const Text("No vehicles available");
           }
           return DropdownButtonFormField<String>(
-            initialValue: tripController.selectedVehicle.value,
+            value: tripController.selectedVehicle.value,
             hint: Text(
               "Select Vehicle",
               style: TextStyle(
@@ -347,7 +401,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
             return const Text("No drivers available");
           }
           return DropdownButtonFormField<String>(
-            initialValue: tripController.selectedDriver.value,
+            value: tripController.selectedDriver.value,
             hint: Text(
               "Select Driver",
               style: TextStyle(
@@ -640,10 +694,19 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
         TextFormField(
           readOnly: true,
           onTap: () async {
+            // For editing existing trips, allow selecting the original date even if it's in the past
+            final now = DateTime.now();
+            final initialDate = selectedDate ?? now;
+            // Use the earlier of selectedDate or now as firstDate to avoid assertion error
+            final firstDate =
+                selectedDate != null && selectedDate!.isBefore(now)
+                ? selectedDate!
+                : now;
+
             final date = await showDatePicker(
               context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime.now(),
+              initialDate: initialDate,
+              firstDate: firstDate,
               lastDate: DateTime(2100),
             );
             if (date != null) {
@@ -693,7 +756,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
           onTap: () async {
             final time = await showTimePicker(
               context: context,
-              initialTime: TimeOfDay.now(),
+              initialTime: selectedTime ?? TimeOfDay.now(),
             );
             if (time != null) {
               setState(() => selectedTime = time);
@@ -714,6 +777,72 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
           style: TextStyle(
             fontSize: 14,
             fontFamily: 'Inter',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpecialInstructionsField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Special Instructions",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Poppins',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.24,
+          ),
+        ),
+        const SizedBox(height: 2),
+        TextFormField(
+          controller: specialInstructionsController,
+          maxLines: 3,
+          decoration: _inputDecoration(
+            hint: "Enter any special instructions...",
+            borderColor: const Color(0xFFEDF1F3),
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Poppins',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPayRangeField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Pay Range",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Poppins',
+            color: const Color(0xFF6C7278),
+            letterSpacing: -0.24,
+          ),
+        ),
+        const SizedBox(height: 2),
+        TextFormField(
+          controller: payRangeController,
+          decoration: _inputDecoration(
+            hint: "Enter pay range (e.g., ₹500 - ₹1000)",
+            borderColor: const Color(0xFFEDF1F3),
+            height: 46,
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Poppins',
             color: const Color(0xFF6C7278),
             letterSpacing: -0.14,
           ),
@@ -798,79 +927,28 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.only(left: 28),
-            child: Text(
-              _isCalculatingDistance
-                  ? "Calculating..."
-                  : _distanceResult != null && _distanceResult!.distanceKm > 0
-                  ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
-                  : hasLocations
-                  ? "Tap to calculate distance"
-                  : "Enter both locations to calculate",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color:
-                    _distanceResult != null && _distanceResult!.distanceKm > 0
-                    ? const Color(0xFFF57C00)
-                    : Colors.grey,
-              ),
-            ),
-          ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(
-                Icons.local_shipping,
-                color: Color(0xFF0288D1),
-                size: 18,
+          if (_distanceResult != null)
+            Text(
+              "${_distanceResult!.distanceText} (${_distanceResult!.durationText})",
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFF57C00),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _distanceResult != null &&
-                          _distanceResult!.durationMinutes > 0
-                      ? "Estimated truck travel time: ${_distanceResult!.truckDurationText}"
-                      : "Estimated travel time will appear here",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color:
-                        _distanceResult != null &&
-                            _distanceResult!.durationMinutes > 0
-                        ? const Color(0xFF0288D1)
-                        : Colors.grey,
-                  ),
-                ),
+            )
+          else if (hasLocations && !_isCalculatingDistance)
+            TextButton(
+              onPressed: _calculateDistance,
+              child: const Text(
+                "Calculate Distance",
+                style: TextStyle(color: Color(0xFF006FFD)),
               ),
-            ],
-          ),
-          if (hasLocations &&
-              (_distanceResult == null || _distanceResult!.distanceKm == 0))
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: GestureDetector(
-                onTap: _calculateDistance,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF57C00),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    "Calculate Distance",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
+            )
+          else
+            const Text(
+              "Enter both locations to calculate distance",
+              style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
             ),
         ],
       ),
@@ -879,6 +957,11 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
 
   Future<void> _calculateDistance() async {
     if (pickupController.text.isEmpty || deliveryController.text.isEmpty) {
+      Get.snackbar(
+        "Error",
+        "Please enter both pickup and delivery locations",
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
@@ -897,24 +980,19 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     } catch (e) {
       setState(() => _isCalculatingDistance = false);
       Get.snackbar(
-        'Error',
-        'Failed to calculate distance',
+        "Error",
+        "Failed to calculate distance: $e",
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
       );
     }
   }
 
   /// Auto-calculate distance when both locations are selected
   void _autoCalculateDistance() {
-    // Add small delay to ensure state is updated
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (pickupController.text.isNotEmpty &&
-          deliveryController.text.isNotEmpty) {
-        _calculateDistance();
-      }
-    });
+    if (pickupController.text.isNotEmpty &&
+        deliveryController.text.isNotEmpty) {
+      _calculateDistance();
+    }
   }
 }
 
@@ -922,151 +1000,81 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
 class Suggestion {
   final String placeId;
   final String description;
-  final String sector;
-  final String city;
-  final String state;
-  final String country;
   final String subTitle;
 
   Suggestion({
     required this.placeId,
     required this.description,
-    required this.sector,
-    required this.city,
-    required this.state,
-    required this.country,
     required this.subTitle,
   });
 
-  factory Suggestion.fromPrediction(Map<String, dynamic> p) {
-    final terms = (p['terms'] as List<dynamic>?) ?? [];
-    final sector = _getTerm(terms, 4);
-    final city = _getTerm(terms, 3);
-    final state = _getTerm(terms, 2);
-    final country = _getTerm(terms, 1);
-
-    final parts = [
-      if (sector.isNotEmpty) sector,
-      if (city.isNotEmpty) city,
-      if (state.isNotEmpty) state,
-    ];
-    final subTitle =
-        (parts.join(', ') + (country.isNotEmpty ? ', $country' : '')).trim();
-
+  factory Suggestion.fromJson(Map<String, dynamic> json) {
+    final terms = json['terms'] as List<dynamic>? ?? [];
     return Suggestion(
-      placeId: p['place_id'] as String? ?? '',
-      description: (p['description'] as String? ?? '').trim(),
-      sector: sector,
-      city: city,
-      state: state,
-      country: country,
-      subTitle: subTitle,
+      placeId: json['place_id'] ?? '',
+      description: json['description'] ?? '',
+      subTitle: _getTerm(terms, 1),
     );
   }
 
   static String _getTerm(List<dynamic> terms, int indexFromEnd) {
-    final index = terms.length - indexFromEnd;
-    if (index >= 0 && index < terms.length) {
-      final val = terms[index];
-      if (val is Map && val['value'] != null) return val['value'] as String;
-    }
-    return '';
+    if (terms.isEmpty) return '';
+    final index = terms.length - 1 - indexFromEnd;
+    if (index < 0 || index >= terms.length) return '';
+    return terms[index]['value'] ?? '';
   }
 }
 
 // Google Places Service
 class PlacesService {
   final String apiKey;
-  final http.Client client;
 
-  PlacesService({required this.apiKey, http.Client? client})
-    : client = client ?? http.Client();
+  PlacesService({required this.apiKey});
 
   Future<List<Suggestion>> fetchSuggestions(String input) async {
-    final encoded = Uri.encodeQueryComponent(input);
+    if (input.isEmpty) return [];
+
     final url =
         'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-        '?input=$encoded'
-        '&types=establishment|geocode'
-        '&language=en'
+        '?input=$input'
         '&components=country:in'
         '&key=$apiKey';
 
-    final resp = await client.get(Uri.parse(url));
-    if (resp.statusCode != 200) {
-      throw Exception('Failed: ${resp.statusCode}');
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final predictions = data['predictions'] as List<dynamic>? ?? [];
+        return predictions.map((p) => Suggestion.fromJson(p)).toList();
+      }
+    } catch (e) {
+      AppLogger.d("Places API error: $e");
     }
-
-    final result = json.decode(resp.body) as Map<String, dynamic>;
-    final status = result['status'] as String? ?? 'UNKNOWN';
-
-    if (status == 'OK') {
-      final preds = result['predictions'] as List<dynamic>;
-      return preds
-          .map((p) => Suggestion.fromPrediction(p as Map<String, dynamic>))
-          .toList();
-    } else if (status == 'ZERO_RESULTS') {
-      return [];
-    } else {
-      throw Exception(result['error_message'] ?? 'Places API error: $status');
-    }
+    return [];
   }
 
-  Future<Map<String, double>> fetchPlaceLocation(String placeId) async {
+  Future<Map<String, double>?> fetchPlaceLocation(String placeId) async {
     final url =
         'https://maps.googleapis.com/maps/api/place/details/json'
-        '?place_id=${Uri.encodeQueryComponent(placeId)}'
+        '?place_id=$placeId'
         '&fields=geometry'
         '&key=$apiKey';
 
-    final resp = await client.get(Uri.parse(url));
-    if (resp.statusCode != 200) throw Exception('HTTP ${resp.statusCode}');
-    final body = json.decode(resp.body) as Map<String, dynamic>;
-    final status = body['status'] as String?;
-    if (status == 'OK') {
-      final loc =
-          body['result']['geometry']['location'] as Map<String, dynamic>;
-      return {
-        'lat': (loc['lat'] as num).toDouble(),
-        'lng': (loc['lng'] as num).toDouble(),
-      };
-    } else {
-      throw Exception(body['error_message'] ?? 'Details error: $status');
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final location = data['result']?['geometry']?['location'];
+        if (location != null) {
+          return {
+            'lat': location['lat']?.toDouble() ?? 0.0,
+            'lng': location['lng']?.toDouble() ?? 0.0,
+          };
+        }
+      }
+    } catch (e) {
+      AppLogger.d("Place Details API error: $e");
     }
+    return null;
   }
-}
-
-/// Generate proper UUID v4 format (GUID) for TripId
-/// Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-String generateTripId() {
-  final random = Random();
-  final timestamp = DateTime.now().microsecondsSinceEpoch;
-
-  // Generate UUID v4 format: 8-4-4-4-12 (hexadecimal)
-  String generateHexSegment(int length, Random rng, int seed) {
-    final hex = '0123456789abcdef';
-    final buffer = StringBuffer();
-    for (int i = 0; i < length; i++) {
-      buffer.write(hex[rng.nextInt(16)]);
-    }
-    return buffer.toString();
-  }
-
-  // Part 1: 8 hex digits
-  final part1 = generateHexSegment(8, random, timestamp);
-
-  // Part 2: 4 hex digits
-  final part2 = generateHexSegment(4, random, timestamp);
-
-  // Part 3: 4 hex digits starting with '4' (version 4)
-  final part3 = '4${generateHexSegment(3, random, timestamp)}';
-
-  // Part 4: 4 hex digits with variant bits (8, 9, a, or b)
-  final variant = ['8', '9', 'a', 'b'][random.nextInt(4)];
-  final part4 = '$variant${generateHexSegment(3, random, timestamp)}';
-
-  // Part 5: 12 hex digits
-  final part5 = generateHexSegment(12, random, timestamp);
-
-  return '$part1-$part2-$part3-$part4-$part5';
 }

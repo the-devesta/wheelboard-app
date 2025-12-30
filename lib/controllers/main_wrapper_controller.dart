@@ -11,4 +11,3 @@ class MainWrapperController extends GetxController {
     switchToTab(2); // Trips tab is at index 2
   }
 }
-

@@ -80,11 +80,7 @@ class KycDocumentCardWidget extends StatelessWidget {
               color: iconBackgroundColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: statusColor,
-            ),
+            child: Icon(icon, size: 20, color: statusColor),
           ),
           const SizedBox(width: 14),
           // Document Name
@@ -103,7 +99,10 @@ class KycDocumentCardWidget extends StatelessWidget {
             children: [
               if (status == 'Pending' || status == 'Not Uploaded') ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusBgColor,
                     borderRadius: BorderRadius.circular(999),
@@ -111,11 +110,7 @@ class KycDocumentCardWidget extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        statusIcon,
-                        size: 12,
-                        color: statusColor,
-                      ),
+                      Icon(statusIcon, size: 12, color: statusColor),
                       const SizedBox(width: 4),
                       Text(
                         status,
@@ -132,7 +127,10 @@ class KycDocumentCardWidget extends StatelessWidget {
                 GestureDetector(
                   onTap: onUpload,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: status == 'Pending'
                           ? const Color(0xFFE3F2FD)
@@ -153,7 +151,10 @@ class KycDocumentCardWidget extends StatelessWidget {
                 ),
               ] else ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusBgColor,
                     borderRadius: BorderRadius.circular(999),
@@ -161,11 +162,7 @@ class KycDocumentCardWidget extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        statusIcon,
-                        size: 12,
-                        color: statusColor,
-                      ),
+                      Icon(statusIcon, size: 12, color: statusColor),
                       const SizedBox(width: 4),
                       Text(
                         status,
@@ -186,4 +183,3 @@ class KycDocumentCardWidget extends StatelessWidget {
     );
   }
 }
-

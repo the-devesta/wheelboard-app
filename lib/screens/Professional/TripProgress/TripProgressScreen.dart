@@ -9,7 +9,8 @@ class TripProgressScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const String heroImageUrl = 'https://www.figma.com/api/mcp/asset/22622ffa-9dbe-41df-928c-a69296a3502e';
+    const String heroImageUrl =
+        'https://www.figma.com/api/mcp/asset/22622ffa-9dbe-41df-928c-a69296a3502e';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -59,10 +60,7 @@ class TripProgressScreen extends StatelessWidget {
               ),
             ),
           ),
-          _circleIconButton(
-            icon: Icons.refresh_outlined,
-            onTap: () {},
-          ),
+          _circleIconButton(icon: Icons.refresh_outlined, onTap: () {}),
         ],
       ),
     );
@@ -84,7 +82,11 @@ class TripProgressScreen extends StatelessWidget {
                 errorBuilder: (_, __, ___) => Container(
                   color: Colors.grey[200],
                   child: const Center(
-                    child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               ),
@@ -108,7 +110,10 @@ class TripProgressScreen extends StatelessWidget {
               onPressed: () => Get.to(() => const LiveMapScreen()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF5E5E),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -238,7 +243,10 @@ class TripProgressScreen extends StatelessWidget {
               onPressed: () => Get.to(() => const LiveMapScreen()),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF2F80ED),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: const BorderSide(color: Color(0xFF2F80ED)),
@@ -319,10 +327,7 @@ class TripProgressScreen extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 8),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF34D399),
-                  Color(0xFF2F80ED),
-                ],
+                colors: [Color(0xFF34D399), Color(0xFF2F80ED)],
               ),
             ),
           ),
@@ -337,9 +342,7 @@ class TripProgressScreen extends StatelessWidget {
           child: Container(
             height: 4,
             margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFE5E7EB),
-            ),
+            decoration: const BoxDecoration(color: Color(0xFFE5E7EB)),
           ),
         ),
         _buildTimelineStep(
@@ -383,6 +386,7 @@ class TripProgressScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildLocationCard({
     required String label,
     required String address1,
@@ -529,11 +533,7 @@ class TripProgressScreen extends StatelessWidget {
             color: backgroundColor,
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            displayIcon,
-            size: 16,
-            color: iconColor,
-          ),
+          child: Icon(displayIcon, size: 16, color: iconColor),
         ),
         const SizedBox(height: 8),
         Text(
@@ -600,4 +600,3 @@ class _StatusBadge extends StatelessWidget {
     );
   }
 }
-

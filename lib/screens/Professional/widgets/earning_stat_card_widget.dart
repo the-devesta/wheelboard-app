@@ -32,14 +32,12 @@ class EarningStatCardWidget extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: iconBackgroundColor ?? const Color(0xFF2F80ED).withOpacity(0.1),
+              color:
+                  iconBackgroundColor ??
+                  const Color(0xFF2F80ED).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: const Color(0xFF2F80ED),
-            ),
+            child: Icon(icon, size: 18, color: const Color(0xFF2F80ED)),
           ),
           const SizedBox(height: 8),
           Text(
@@ -64,4 +62,3 @@ class EarningStatCardWidget extends StatelessWidget {
     );
   }
 }
-

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/screens/CompanyTransport/driver_profile.dart';
 
+import 'package:wheelboard/screens/CompanyTransport/Lease/leased_vehicles_screen.dart';
 import 'add_vehicle.dart';
 import 'add_new_driver.dart';
 import 'vehicle_detail_screen.dart';
@@ -424,6 +425,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
+          // Filter Button (Left)
           GestureDetector(
             onTap: () => _showFilterDialog(),
             child: Container(
@@ -442,6 +444,38 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                     "Filter",
                     style: TextStyle(
                       color: Color(0xFF636E72),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(), // ✅ Pushes Lease button to the right
+          // Lease Button (Right)
+          GestureDetector(
+            onTap: () => Get.to(() => const LeasedVehiclesScreen()),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white, // White background matching filter
+                border: Border.all(color: const Color(0xFFE4E8EB)),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.local_shipping_outlined,
+                    size: 16,
+                    color: Color(0xFFF36767), // Reddish icon
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    "Lease",
+                    style: TextStyle(
+                      color: Color(0xFF636E72), // Grey text
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
                     ),

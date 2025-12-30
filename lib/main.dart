@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 
-
 import './services/auth_service.dart';
 import './utils/navigation_helper.dart';
 import 'screens/auth/onboarding_screen.dart';
@@ -16,9 +15,9 @@ class MyHttpOverrides extends HttpOverrides {
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
         // Only allow specific domains for development/testing
         // In production, this should be more restrictive
-        if (host == 'wheelboardapi.addonshareware.com' || 
-            host == 'localhost' || 
-            host == '10.0.2.2' || 
+        if (host == 'wheelboardapi.addonshareware.com' ||
+            host == 'localhost' ||
+            host == '10.0.2.2' ||
             host == '127.0.0.1') {
           return true;
         }
@@ -29,10 +28,10 @@ class MyHttpOverrides extends HttpOverrides {
 
 void main() async {
   HttpOverrides.global = MyHttpOverrides();
-  
+
   // Initialize GetX services
   Get.put(AuthService());
-  
+
   runApp(const MyApp());
 }
 
@@ -67,12 +66,12 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkSession() async {
     // Wait for AuthService to initialize and check login status
     await Future.delayed(const Duration(seconds: 2)); // splash effect
-    
+
     final authService = AuthService.to;
-    
+
     // ✅ Wait for AuthService to finish checking login status
     await authService.refreshLoginStatus();
-    
+
     final loggedIn = authService.isUserLoggedIn;
 
     AppLogger.d("🔐 Splash Screen Check:");
@@ -80,7 +79,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!loggedIn) {
       AppLogger.d("🔐 Navigating to RegisterScreen");
-      Get.offAll(() => const RegisterScreen()); // not logged in → Register/Login
+      Get.offAll(
+        () => const RegisterScreen(),
+      ); // not logged in → Register/Login
     } else {
       AppLogger.d("🔐 Navigating to appropriate wrapper based on user type");
       // Navigate to correct wrapper based on user type

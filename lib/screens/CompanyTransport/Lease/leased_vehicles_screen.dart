@@ -6,6 +6,7 @@ import '../../../models/get_vehicle_model.dart';
 import '../../../controllers/fleet_controller.dart';
 import '../../../services/auth_service.dart';
 import 'lease_details_screen.dart';
+import 'on_lease_vehicles_screen.dart';
 
 /// Leased Vehicles Screen - Shows list of vehicles available for lease or currently leased
 /// Based on Figma Design
@@ -27,7 +28,9 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVehicles();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVehicles();
+    });
   }
 
   Future<void> _loadVehicles() async {
@@ -48,7 +51,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
 
   List<Vehicle> get _filteredVehicles {
     final allVehicles = _fleetController.vehicles;
-    
+
     // Filter by search
     final searchFiltered = _searchController.text.isEmpty
         ? allVehicles
@@ -66,9 +69,11 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
     } else if (_selectedTab == 'bookings') {
       return searchFiltered.where((v) => v.status == 'Booked').toList();
     } else if (_selectedTab == 'Leased') {
-      return searchFiltered.where((v) => v.ownershipType == 'Leased' || v.status == 'Leased').toList();
+      return searchFiltered
+          .where((v) => v.ownershipType == 'Leased' || v.status == 'Leased')
+          .toList();
     }
-    
+
     return searchFiltered;
   }
 
@@ -81,7 +86,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
           _buildAppBar(),
           // Tab Navigation
           _buildTabNavigation(),
-          
+
           // Vehicle List
           Expanded(
             child: Obx(() {
@@ -126,7 +131,6 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
@@ -158,7 +162,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              
+
               // Title
               Expanded(
                 child: Text(
@@ -171,7 +175,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                   textAlign: TextAlign.center,
                 ),
               ),
-              
+
               // Search Icon
               InkWell(
                 onTap: () => _showSearchDialog(),
@@ -187,11 +191,11 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              
+
               // Filter Icon
               InkWell(
                 onTap: () => _showFilterDialog(),
-                child: Container( 
+                child: Container(
                   width: 32,
                   height: 44,
                   alignment: Alignment.center,
@@ -219,18 +223,24 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
         itemBuilder: (context, index) {
           final tab = _tabs[index];
           final isSelected = _selectedTab == tab;
-          
+
           return GestureDetector(
             onTap: () {
-              setState(() {
-                _selectedTab = tab;
-              });
+              if (tab == 'Leased') {
+                Get.to(() => const OnLeaseVehiclesScreen());
+              } else {
+                setState(() {
+                  _selectedTab = tab;
+                });
+              }
             },
             child: Container(
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFE5E5E5) : Colors.transparent,
+                color: isSelected
+                    ? const Color(0xFFE5E5E5)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
@@ -239,7 +249,9 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: isSelected ? const Color(0xFF2A2A2A) : const Color(0xFF6B7280),
+                    color: isSelected
+                        ? const Color(0xFF2A2A2A)
+                        : const Color(0xFF6B7280),
                   ),
                 ),
               ),
@@ -255,11 +267,11 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
     final vehicleImage = vehicle.imageUrls.isNotEmpty
         ? vehicle.imageUrls.first
         : 'assets/truckImg.png';
-    
+
     // Determine status and color
     final status = _getVehicleStatus(vehicle);
-    final statusColor = status == 'Available' 
-        ? const Color(0xFF28C76F) 
+    final statusColor = status == 'Available'
+        ? const Color(0xFF28C76F)
         : const Color(0xFFFFB020);
 
     return Container(
@@ -298,20 +310,28 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                           vehicleImage,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.local_shipping, size: 40, color: Colors.grey);
+                            return const Icon(
+                              Icons.local_shipping,
+                              size: 40,
+                              color: Colors.grey,
+                            );
                           },
                         )
                       : Image.asset(
                           vehicleImage,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.local_shipping, size: 40, color: Colors.grey);
+                            return const Icon(
+                              Icons.local_shipping,
+                              size: 40,
+                              color: Colors.grey,
+                            );
                           },
                         ),
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               // Vehicle Info
               Expanded(
                 child: Column(
@@ -358,21 +378,21 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // Lease Period
                     _buildLeaseInfo(
                       Icons.calendar_today_outlined,
                       'Jan 15 → Jun 15, 2024', // Mock data - replace with actual lease period
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Monthly KM Limit
                     _buildLeaseInfo(
                       Icons.directions_car_outlined,
                       '2,500 km/month', // Mock data
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Current Total KM
                     _buildLeaseInfo(
                       Icons.speed_outlined,
@@ -384,13 +404,16 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Status and View Details
           Row(
             children: [
               // Status Button
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor,
                   borderRadius: BorderRadius.circular(20),
@@ -405,7 +428,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                 ),
               ),
               const Spacer(),
-              
+
               // View Details Link
               InkWell(
                 onTap: () {
@@ -462,51 +485,6 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
     } else {
       return vehicle.status;
     }
-  }
-
-  Widget _buildBottomNavigation() {
-    return Container(
-      height: 70,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(width: 1, color: Color(0xFFE0E0E0))),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(Icons.home_outlined, 'Home', false, () {}),
-          _buildNavItem(Icons.local_shipping, 'Fleet', true, () {}),
-          _buildNavItem(Icons.alt_route_outlined, 'Trips', false, () {}),
-          _buildNavItem(Icons.article_outlined, 'Feeds', false, () {}),
-          _buildNavItem(Icons.work_outline, 'Jobs', false, () {}),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isSelected, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? AppColors.buttonBg : Colors.grey[600],
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: isSelected ? AppColors.buttonBg : Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showSearchDialog() {

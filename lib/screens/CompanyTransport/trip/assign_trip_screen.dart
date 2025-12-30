@@ -804,8 +804,9 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed:
-                    _isPaymentProcessing ? null : () => _startPayment(bid),
+                onPressed: _isPaymentProcessing
+                    ? null
+                    : () => _startPayment(bid),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF36969),
                   foregroundColor: Colors.white,
@@ -925,7 +926,9 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
         final confirmation = await _tripPaymentService.getTripConfirmation(
           verificationPayload.tripId,
         );
-        AppLogger.d('[AssignTrip] Confirmation received: ${confirmation.tripCode}');
+        AppLogger.d(
+          '[AssignTrip] Confirmation received: ${confirmation.tripCode}',
+        );
 
         SnackBarHelper.success(
           'Payment successful (Ref: ${response.paymentId ?? 'N/A'})',
@@ -1202,8 +1205,9 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
   String _buildReceiptId(AssignTripBid bid) {
     final tripPart = _sanitizeIdPart(widget.tripId);
     final bidPart = _sanitizeIdPart(bid.bidId);
-    final timestampPart =
-        DateTime.now().millisecondsSinceEpoch.toRadixString(36);
+    final timestampPart = DateTime.now().millisecondsSinceEpoch.toRadixString(
+      36,
+    );
     var receipt = 'trip_${tripPart}_${bidPart}_$timestampPart';
     if (receipt.length > 40) {
       receipt = receipt.substring(0, 40);
@@ -1212,8 +1216,9 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
   }
 
   String _sanitizeIdPart(String value, {int maxLength = 8}) {
-    final sanitized =
-        value.replaceAll(RegExp('[^a-zA-Z0-9]'), '').toLowerCase();
+    final sanitized = value
+        .replaceAll(RegExp('[^a-zA-Z0-9]'), '')
+        .toLowerCase();
     if (sanitized.isEmpty) {
       return 'id';
     }

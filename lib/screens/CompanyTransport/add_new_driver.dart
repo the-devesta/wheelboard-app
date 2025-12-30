@@ -199,7 +199,9 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
             "Driver license details fetched successfully!",
           );
           AppLogger.d("👤 Driver License Details Fetched:");
-          AppLogger.d("👤 Name: ${licenseDetails.detailsOfDrivingLicence.name}");
+          AppLogger.d(
+            "👤 Name: ${licenseDetails.detailsOfDrivingLicence.name}",
+          );
           AppLogger.d(
             "👤 Father Name: ${licenseDetails.detailsOfDrivingLicence.fatherOrHusbandName}",
           );

@@ -54,7 +54,9 @@ class UnassignedTripsController extends GetxController {
         headers: {'Accept': '*/*'},
       );
 
-      AppLogger.d("🚚 Unassigned trips response status: ${response.statusCode}");
+      AppLogger.d(
+        "🚚 Unassigned trips response status: ${response.statusCode}",
+      );
       AppLogger.d("🚚 Unassigned trips response body: ${response.body}");
 
       if (response.statusCode == 200) {
@@ -64,7 +66,9 @@ class UnassignedTripsController extends GetxController {
             .toList();
         AppLogger.d("✅ Fetched ${unassignedTrips.length} unassigned trips");
       } else {
-        AppLogger.d("❌ Failed to fetch unassigned trips: ${response.statusCode}");
+        AppLogger.d(
+          "❌ Failed to fetch unassigned trips: ${response.statusCode}",
+        );
         SnackBarHelper.error("Failed to load trips");
       }
     } catch (e) {

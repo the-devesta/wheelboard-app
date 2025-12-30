@@ -13,11 +13,13 @@ import 'user_profile_controller.dart';
 import '../utils/app_logger.dart';
 
 class CompanyProfileController extends GetxController {
-  final UserProfileController _profileController = Get.find<UserProfileController>();
+  final UserProfileController _profileController =
+      Get.find<UserProfileController>();
   final TextEditingController companyNameController = TextEditingController();
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController businessCategoryController = TextEditingController();
+  final TextEditingController businessCategoryController =
+      TextEditingController();
   final TextEditingController locationController = TextEditingController();
   final TextEditingController fleetSizeController = TextEditingController();
   final TextEditingController gstController = TextEditingController();
@@ -40,7 +42,9 @@ class CompanyProfileController extends GetxController {
   void onInit() {
     super.onInit();
     // Listen to changes in userProfile and pre-fill the form
-    _profileWorker = ever<UserProfileModel?>(_profileController.userProfile, (profile) {
+    _profileWorker = ever<UserProfileModel?>(_profileController.userProfile, (
+      profile,
+    ) {
       if (profile != null && !isClosed) {
         _applyProfile(profile);
       }
@@ -57,14 +61,15 @@ class CompanyProfileController extends GetxController {
   void _applyProfile(UserProfileModel profile) {
     // Check if controller is still valid before accessing TextEditingControllers
     if (isClosed) return;
-    
+
     try {
       _userId = profile.userId;
       companyNameController.text = profile.companyName ?? '';
       fullNameController.text = profile.fullName ?? profile.name ?? '';
       emailController.text = profile.email ?? '';
       businessCategoryController.text = profile.businessCategory ?? '';
-      locationController.text = profile.address ?? profile.city ?? profile.state ?? '';
+      locationController.text =
+          profile.address ?? profile.city ?? profile.state ?? '';
       fleetSizeController.text = profile.fleetSize ?? '';
       gstController.text = profile.gstNumber ?? '';
       _existingLogoUrl.value = profile.companyLogoPath;
@@ -76,8 +81,10 @@ class CompanyProfileController extends GetxController {
 
   Future<void> pickLogo() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
     if (image != null) {
       _pickedLogo.value = image;
       _existingLogoUrl.value = null;
@@ -87,7 +94,8 @@ class CompanyProfileController extends GetxController {
   Future<void> saveProfile() async {
     if (isSaving.value) return;
 
-    final userId = _userId ?? _profileController.userProfile.value?.userId ?? '';
+    final userId =
+        _userId ?? _profileController.userProfile.value?.userId ?? '';
 
     if (userId.isEmpty) {
       SnackBarHelper.error("User ID not found. Please login again.");
@@ -136,10 +144,13 @@ class CompanyProfileController extends GetxController {
         // Navigation will be handled by screen level listener
         // No need to navigate from controller
       } else {
-        AppLogger.d("❌ Failed to update profile. Status Code: ${resolved.statusCode}");
+        AppLogger.d(
+          "❌ Failed to update profile. Status Code: ${resolved.statusCode}",
+        );
         AppLogger.d("❌ Response Body: ${resolved.body}");
         throw Exception(
-            'Failed to update profile (${resolved.statusCode}): ${resolved.body}');
+          'Failed to update profile (${resolved.statusCode}): ${resolved.body}',
+        );
       }
     } catch (e) {
       AppLogger.d("❌ An error occurred while updating profile: $e");
@@ -153,7 +164,7 @@ class CompanyProfileController extends GetxController {
   void onClose() {
     // Dispose the worker first to prevent callbacks after disposal
     _profileWorker?.dispose();
-    
+
     // Dispose controllers
     companyNameController.dispose();
     fullNameController.dispose();

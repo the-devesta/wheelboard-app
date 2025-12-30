@@ -48,7 +48,10 @@ class ProfessionalListController extends GetxController {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         final items = data
-            .map((json) => ProfessionalProfile.fromJson(json as Map<String, dynamic>))
+            .map(
+              (json) =>
+                  ProfessionalProfile.fromJson(json as Map<String, dynamic>),
+            )
             .toList();
 
         professionals.assignAll(items);
@@ -57,7 +60,9 @@ class ProfessionalListController extends GetxController {
           favoriteStatus.putIfAbsent(professional.driverId, () => false);
         }
       } else {
-        SnackBarHelper.error('Failed to load professionals (${response.statusCode})');
+        SnackBarHelper.error(
+          'Failed to load professionals (${response.statusCode})',
+        );
       }
     } catch (e) {
       SnackBarHelper.error('Unable to load professionals: $e');
@@ -94,7 +99,8 @@ class ProfessionalListController extends GetxController {
 
     return professionals.where((professional) {
       final statusMatch = _matchesFilter(filter, professional);
-      final searchMatch = query.isEmpty ||
+      final searchMatch =
+          query.isEmpty ||
           professional.fullName.toLowerCase().contains(query) ||
           professional.vehicleNumber.toLowerCase().contains(query) ||
           professional.contactNumber.toLowerCase().contains(query);
@@ -129,4 +135,3 @@ class ProfessionalListController extends GetxController {
     favoriteStatus[driverId] = !current;
   }
 }
-

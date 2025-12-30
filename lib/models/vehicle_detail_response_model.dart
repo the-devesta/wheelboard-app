@@ -2,10 +2,7 @@ class VehicleDetailResponseModel {
   final bool status;
   final VehicleDetailData data;
 
-  VehicleDetailResponseModel({
-    required this.status,
-    required this.data,
-  });
+  VehicleDetailResponseModel({required this.status, required this.data});
 
   factory VehicleDetailResponseModel.fromJson(Map<String, dynamic> json) {
     return VehicleDetailResponseModel(
@@ -30,7 +27,8 @@ class VehicleDetailData {
     return VehicleDetailData(
       vehicleInfo: VehicleInfo.fromJson(json['vehicleInfo'] ?? {}),
       driverInfo: DriverInfo.fromJson(json['driverInfo'] ?? {}),
-      recentTrips: (json['recentTrips'] as List<dynamic>?)
+      recentTrips:
+          (json['recentTrips'] as List<dynamic>?)
               ?.map((e) => RecentTrip.fromJson(e))
               .toList() ??
           [],
@@ -122,4 +120,3 @@ class RecentTrip {
     return '$pickup-$delivery';
   }
 }
-

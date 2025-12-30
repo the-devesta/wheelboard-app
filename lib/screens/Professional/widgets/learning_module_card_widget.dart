@@ -40,7 +40,9 @@ class LearningModuleCardWidget extends StatelessWidget {
               ),
               child: Center(
                 child: Icon(
-                  type == 'Video' ? Icons.play_circle_outline : Icons.article_outlined,
+                  type == 'Video'
+                      ? Icons.play_circle_outline
+                      : Icons.article_outlined,
                   size: 24,
                   color: Colors.grey[600],
                 ),
@@ -67,7 +69,9 @@ class LearningModuleCardWidget extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        type == 'Video' ? Icons.play_circle_outline : Icons.article_outlined,
+                        type == 'Video'
+                            ? Icons.play_circle_outline
+                            : Icons.article_outlined,
                         size: 11,
                         color: const Color(0xFF6B7280),
                       ),
@@ -91,4 +95,3 @@ class LearningModuleCardWidget extends StatelessWidget {
     );
   }
 }
-

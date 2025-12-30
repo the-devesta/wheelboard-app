@@ -34,7 +34,9 @@ class LocationService {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      AppLogger.d('✅ Current Location: ${position.latitude}, ${position.longitude}');
+      AppLogger.d(
+        '✅ Current Location: ${position.latitude}, ${position.longitude}',
+      );
       return position;
     } catch (e) {
       AppLogger.d('❌ Error getting current location: $e');
@@ -66,20 +68,20 @@ class LocationService {
             addressParts.add(place.street!);
           }
         }
-        
+
         if (place.subLocality != null && place.subLocality!.isNotEmpty) {
           addressParts.add(place.subLocality!);
         }
-        
+
         if (place.locality != null && place.locality!.isNotEmpty) {
           addressParts.add(place.locality!);
         }
-        
+
         if (place.administrativeArea != null &&
             place.administrativeArea!.isNotEmpty) {
           addressParts.add(place.administrativeArea!);
         }
-        
+
         if (place.postalCode != null && place.postalCode!.isNotEmpty) {
           addressParts.add(place.postalCode!);
         }

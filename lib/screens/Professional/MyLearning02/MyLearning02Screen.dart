@@ -68,7 +68,10 @@ class _MyLearning02ScreenState extends State<MyLearning02Screen> {
                     ),
                     // Video Metadata
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         border: Border(
@@ -77,7 +80,10 @@ class _MyLearning02ScreenState extends State<MyLearning02Screen> {
                       ),
                       child: Row(
                         children: [
-                          _buildMetadataItem(Icons.play_circle_outline, 'Video'),
+                          _buildMetadataItem(
+                            Icons.play_circle_outline,
+                            'Video',
+                          ),
                           const SizedBox(width: 12),
                           _buildMetadataItem(Icons.access_time, '2.5 min'),
                           const SizedBox(width: 12),
@@ -125,9 +131,15 @@ class _MyLearning02ScreenState extends State<MyLearning02Screen> {
                           ),
                           const SizedBox(height: 12),
                           _buildBulletPoint('Check tyre pressure weekly'),
-                          _buildBulletPoint('Inspect for visible damage or uneven wear'),
-                          _buildBulletPoint('Rotate tyres every 8,000-10,000 km'),
-                          _buildBulletPoint('Replace tyres before tread wears to 1.6mm'),
+                          _buildBulletPoint(
+                            'Inspect for visible damage or uneven wear',
+                          ),
+                          _buildBulletPoint(
+                            'Rotate tyres every 8,000-10,000 km',
+                          ),
+                          _buildBulletPoint(
+                            'Replace tyres before tread wears to 1.6mm',
+                          ),
                           const SizedBox(height: 24),
                           // Visual Inspection Guide
                           Text(
@@ -173,7 +185,10 @@ class _MyLearning02ScreenState extends State<MyLearning02Screen> {
                     ),
                     // Mark as Completed
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 19),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 19,
+                      ),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         border: Border(
@@ -275,11 +290,7 @@ class _MyLearning02ScreenState extends State<MyLearning02Screen> {
   Widget _buildMetadataItem(IconData icon, String text) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 12,
-          color: const Color(0xFF6B7280),
-        ),
+        Icon(icon, size: 12, color: const Color(0xFF6B7280)),
         const SizedBox(width: 4),
         Text(
           text,
@@ -324,4 +335,3 @@ class _MyLearning02ScreenState extends State<MyLearning02Screen> {
     );
   }
 }
-

@@ -11,8 +11,10 @@ class KycStepsScreen extends StatefulWidget {
 
 class _KycStepsScreenState extends State<KycStepsScreen> {
   bool _isConfirmed = false;
-  final TextEditingController _accountHolderNameController = TextEditingController();
-  final TextEditingController _accountNumberController = TextEditingController();
+  final TextEditingController _accountHolderNameController =
+      TextEditingController();
+  final TextEditingController _accountNumberController =
+      TextEditingController();
   final TextEditingController _ifscCodeController = TextEditingController();
   final TextEditingController _bankNameController = TextEditingController();
   final TextEditingController _upiIdController = TextEditingController();
@@ -46,8 +48,18 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
                 padding: EdgeInsets.only(
                   left: padding.horizontal,
                   right: padding.horizontal,
-                  top: ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 20, large: 24),
-                  bottom: ResponsiveUtils.getResponsiveSpacing(context, small: 100, medium: 110, large: 120),
+                  top: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    small: 16,
+                    medium: 20,
+                    large: 24,
+                  ),
+                  bottom: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    small: 100,
+                    medium: 110,
+                    large: 120,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +117,12 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
         border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 20, large: 23),
+        horizontal: ResponsiveUtils.getResponsiveSpacing(
+          context,
+          small: 16,
+          medium: 20,
+          large: 23,
+        ),
       ),
       child: Row(
         children: [
@@ -129,7 +146,12 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
               child: Text(
                 'KYC',
                 style: GoogleFonts.poppins(
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 18, medium: 20, large: 22),
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context,
+                    small: 18,
+                    medium: 20,
+                    large: 22,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFF36969),
                   letterSpacing: 0.5,
@@ -208,7 +230,12 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
         Text(
           'Step 1 of 1: Document Upload',
           style: GoogleFonts.poppins(
-            fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 11, medium: 12, large: 13),
+            fontSize: ResponsiveUtils.getResponsiveFontSize(
+              context,
+              small: 11,
+              medium: 12,
+              large: 13,
+            ),
             fontWeight: FontWeight.w400,
             color: const Color(0xFF757575),
           ),
@@ -219,11 +246,23 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
 
   Widget _buildCompletionCard(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 18, large: 20)),
+      padding: EdgeInsets.all(
+        ResponsiveUtils.getResponsiveSpacing(
+          context,
+          small: 16,
+          medium: 18,
+          large: 20,
+        ),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(
-          ResponsiveUtils.getResponsiveBorderRadius(context, small: 10, medium: 12, large: 14),
+          ResponsiveUtils.getResponsiveBorderRadius(
+            context,
+            small: 10,
+            medium: 12,
+            large: 14,
+          ),
         ),
       ),
       child: Column(
@@ -234,7 +273,12 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
               Text(
                 'Your KYC is',
                 style: GoogleFonts.poppins(
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context,
+                    small: 14,
+                    medium: 15,
+                    large: 16,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF1A1A1A),
                 ),
@@ -243,7 +287,12 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
               Text(
                 '40% Complete',
                 style: GoogleFonts.poppins(
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context,
+                    small: 14,
+                    medium: 15,
+                    large: 16,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFF6AA1C),
                 ),
@@ -264,7 +313,11 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
                   width: 130.391,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFF5E5E), Color(0xFFF6AA1C), Color(0xFF39D353)],
+                      colors: [
+                        Color(0xFFFF5E5E),
+                        Color(0xFFF6AA1C),
+                        Color(0xFF39D353),
+                      ],
                       stops: [0.0, 0.5, 1.0],
                     ),
                     borderRadius: BorderRadius.circular(9999),
@@ -314,11 +367,23 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
     required IconData icon,
   }) {
     return Container(
-      padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 18, large: 20)),
+      padding: EdgeInsets.all(
+        ResponsiveUtils.getResponsiveSpacing(
+          context,
+          small: 16,
+          medium: 18,
+          large: 20,
+        ),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(
-          ResponsiveUtils.getResponsiveBorderRadius(context, small: 10, medium: 12, large: 14),
+          ResponsiveUtils.getResponsiveBorderRadius(
+            context,
+            small: 10,
+            medium: 12,
+            large: 14,
+          ),
         ),
       ),
       child: Column(
@@ -331,7 +396,12 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
                 child: Text(
                   title,
                   style: GoogleFonts.poppins(
-                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(
+                      context,
+                      small: 14,
+                      medium: 15,
+                      large: 16,
+                    ),
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF1A1A1A),
                   ),
@@ -343,7 +413,10 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
                   // TODO: Implement file upload
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFF5E5E),
                     borderRadius: BorderRadius.circular(9999),
@@ -369,14 +442,22 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
                 child: Text(
                   'No file uploaded',
                   style: GoogleFonts.poppins(
-                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 11, medium: 12, large: 13),
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(
+                      context,
+                      small: 11,
+                      medium: 12,
+                      large: 13,
+                    ),
                     fontWeight: FontWeight.w400,
                     color: Colors.grey[400],
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(9999),
@@ -410,7 +491,11 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.info_outline, size: 12, color: Color(0xFF2D8CFF)),
+                const Icon(
+                  Icons.info_outline,
+                  size: 12,
+                  color: Color(0xFF2D8CFF),
+                ),
               ],
             ),
           ),
@@ -421,11 +506,23 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
 
   Widget _buildBankAccountDetails(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 18, large: 20)),
+      padding: EdgeInsets.all(
+        ResponsiveUtils.getResponsiveSpacing(
+          context,
+          small: 16,
+          medium: 18,
+          large: 20,
+        ),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(
-          ResponsiveUtils.getResponsiveBorderRadius(context, small: 10, medium: 12, large: 14),
+          ResponsiveUtils.getResponsiveBorderRadius(
+            context,
+            small: 10,
+            medium: 12,
+            large: 14,
+          ),
         ),
       ),
       child: Column(
@@ -437,13 +534,21 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
               Text(
                 'Bank Account Details',
                 style: GoogleFonts.poppins(
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context,
+                    small: 14,
+                    medium: 15,
+                    large: 16,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF1A1A1A),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(9999),
@@ -580,7 +685,10 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
             ),
             filled: true,
             fillColor: const Color(0xFFF5F6FA),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: BorderSide(color: Colors.grey[300]!),
@@ -601,11 +709,23 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
 
   Widget _buildProfilePhotoUpload(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, small: 16, medium: 18, large: 20)),
+      padding: EdgeInsets.all(
+        ResponsiveUtils.getResponsiveSpacing(
+          context,
+          small: 16,
+          medium: 18,
+          large: 20,
+        ),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(
-          ResponsiveUtils.getResponsiveBorderRadius(context, small: 10, medium: 12, large: 14),
+          ResponsiveUtils.getResponsiveBorderRadius(
+            context,
+            small: 10,
+            medium: 12,
+            large: 14,
+          ),
         ),
       ),
       child: Column(
@@ -614,7 +734,12 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
           Text(
             'Upload Profile Photo',
             style: GoogleFonts.poppins(
-              fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+              fontSize: ResponsiveUtils.getResponsiveFontSize(
+                context,
+                small: 14,
+                medium: 15,
+                large: 16,
+              ),
               fontWeight: FontWeight.w600,
               color: const Color(0xFF1A1A1A),
             ),
@@ -704,9 +829,13 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
             width: 20,
             height: 20,
             decoration: BoxDecoration(
-              color: _isConfirmed ? const Color(0xFF0075FF) : Colors.transparent,
+              color: _isConfirmed
+                  ? const Color(0xFF0075FF)
+                  : Colors.transparent,
               border: Border.all(
-                color: _isConfirmed ? const Color(0xFF0075FF) : Colors.grey[400]!,
+                color: _isConfirmed
+                    ? const Color(0xFF0075FF)
+                    : Colors.grey[400]!,
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(1),
@@ -721,7 +850,12 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
           child: Text(
             'I confirm that all uploaded documents are accurate and belong to me',
             style: GoogleFonts.poppins(
-              fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+              fontSize: ResponsiveUtils.getResponsiveFontSize(
+                context,
+                small: 14,
+                medium: 15,
+                large: 16,
+              ),
               fontWeight: FontWeight.w500,
               color: const Color(0xFF424242),
               height: 1.4,
@@ -734,16 +868,13 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
 
   Widget _buildFooter(BuildContext context, double screenWidth) {
     final padding = ResponsiveUtils.getResponsiveHorizontalPadding(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.white,
-            const Color(0xFFF5F6FA).withOpacity(0.5),
-          ],
+          colors: [Colors.white, const Color(0xFFF5F6FA).withOpacity(0.5)],
         ),
       ),
       padding: EdgeInsets.only(
@@ -762,14 +893,24 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFFFF5E5E),
             borderRadius: BorderRadius.circular(
-              ResponsiveUtils.getResponsiveBorderRadius(context, small: 10, medium: 12, large: 14),
+              ResponsiveUtils.getResponsiveBorderRadius(
+                context,
+                small: 10,
+                medium: 12,
+                large: 14,
+              ),
             ),
           ),
           child: Center(
             child: Text(
               'Save and Continue',
               style: GoogleFonts.poppins(
-                fontSize: ResponsiveUtils.getResponsiveFontSize(context, small: 14, medium: 15, large: 16),
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  small: 14,
+                  medium: 15,
+                  large: 16,
+                ),
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),

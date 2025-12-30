@@ -15,13 +15,17 @@ class CompanyTransportMainWrapper extends StatefulWidget {
   const CompanyTransportMainWrapper({super.key, this.initialIndex = 0});
 
   @override
-  State<CompanyTransportMainWrapper> createState() => _CompanyTransportMainWrapperState();
+  State<CompanyTransportMainWrapper> createState() =>
+      _CompanyTransportMainWrapperState();
 }
 
-class _CompanyTransportMainWrapperState extends State<CompanyTransportMainWrapper> {
+class _CompanyTransportMainWrapperState
+    extends State<CompanyTransportMainWrapper> {
   // late int _currentIndex;
-  final MainWrapperController _wrapperController =
-      Get.put(MainWrapperController(), permanent: true);
+  final MainWrapperController _wrapperController = Get.put(
+    MainWrapperController(),
+    permanent: true,
+  );
 
   @override
   void initState() {
@@ -70,10 +74,7 @@ class _CompanyTransportMainWrapperState extends State<CompanyTransportMainWrappe
           selectedItemColor: AppColors.buttonBg,
           unselectedItemColor: Colors.grey,
           items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: "Home",
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
             BottomNavigationBarItem(
               icon: Icon(Icons.local_shipping),
               label: "Fleet",
@@ -82,18 +83,11 @@ class _CompanyTransportMainWrapperState extends State<CompanyTransportMainWrappe
               icon: Icon(Icons.alt_route),
               label: "Trips",
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.article),
-              label: "Feeds",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.work),
-              label: "Jobs",
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.article), label: "Feeds"),
+            BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
           ],
         ),
       ),
     );
   }
 }
-

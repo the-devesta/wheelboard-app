@@ -31,7 +31,10 @@ class UnassignedTrip {
           ? DateTime.tryParse(json['pickupDate'])
           : null,
       pickupTime: json['pickupTime'] ?? '',
-      payRange: json['payRange']?.toString().trim() ?? json['PayRange']?.toString().trim() ?? '',
+      payRange:
+          json['payRange']?.toString().trim() ??
+          json['PayRange']?.toString().trim() ??
+          '',
       tripStatus: json['tripStatus'] ?? '',
       tripType: json['tripType'] ?? '',
     );
@@ -92,7 +95,10 @@ class UnassignedTripDetails {
           : null,
       pickupTime: json['pickupTime'] ?? '',
       specialInstructions: json['specialInstructions'] ?? '',
-      payRange: json['payRange']?.toString().trim() ?? json['PayRange']?.toString().trim() ?? '',
+      payRange:
+          json['payRange']?.toString().trim() ??
+          json['PayRange']?.toString().trim() ??
+          '',
       tripStatus: json['tripStatus'] ?? '',
       vehicleId: json['vehicleId'] ?? '',
       vehicleNumber: json['vehicleNumber'] ?? '',
@@ -107,4 +113,3 @@ class UnassignedTripDetails {
     );
   }
 }
-

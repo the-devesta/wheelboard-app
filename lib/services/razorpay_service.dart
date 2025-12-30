@@ -6,15 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../utils/app_logger.dart';
 
-typedef PaymentSuccessHandler = void Function(
-  PaymentSuccessResponse response,
-);
-typedef PaymentErrorHandler = void Function(
-  PaymentFailureResponse response,
-);
-typedef ExternalWalletHandler = void Function(
-  ExternalWalletResponse response,
-);
+typedef PaymentSuccessHandler = void Function(PaymentSuccessResponse response);
+typedef PaymentErrorHandler = void Function(PaymentFailureResponse response);
+typedef ExternalWalletHandler = void Function(ExternalWalletResponse response);
 
 class RazorpayService {
   RazorpayService({
@@ -58,17 +52,16 @@ class RazorpayService {
     );
 
     final options = <String, dynamic>{
-      'key': keyOverride != null && keyOverride.isNotEmpty ? keyOverride : _keyId,
+      'key': keyOverride != null && keyOverride.isNotEmpty
+          ? keyOverride
+          : _keyId,
       'amount': amountInPaise,
       'currency': currency,
       'name': customerName,
       'description': description,
       'order_id': orderId,
       'timeout': 120,
-      'prefill': {
-        'contact': prefillContact,
-        'email': prefillEmail,
-      },
+      'prefill': {'contact': prefillContact, 'email': prefillEmail},
       'notes': notes ?? {},
       'theme': {'color': '#F36969'},
     };
@@ -142,5 +135,3 @@ class RazorpayService {
     }
   }
 }
-
-

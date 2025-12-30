@@ -20,4 +20,3 @@ class TripPageTabController extends GetxController {
     switchToTab(2);
   }
 }
-

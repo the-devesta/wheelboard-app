@@ -101,18 +101,17 @@ class AppliedJob {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return '${months[appliedDate.month - 1]} ${appliedDate.day}, ${appliedDate.year}';
   }
 
   // Helper method to check if status is accepted
   bool get isAccepted => status.toLowerCase() == 'accepted';
-  
+
   // Helper method to check if status is rejected
   bool get isRejected => status.toLowerCase() == 'rejected';
-  
+
   // Helper method to check if status is pending
   bool get isPending => status.toLowerCase() == 'pending';
 }
-

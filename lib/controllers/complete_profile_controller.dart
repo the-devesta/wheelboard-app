@@ -78,7 +78,9 @@ class CompleteProfileController extends GetxController {
           files.add(model.companyLogo!);
           AppLogger.d("✅ Company Logo file exists: ${model.companyLogo!.path}");
         } else {
-          AppLogger.d("❌ Company Logo file not found: ${model.companyLogo!.path}");
+          AppLogger.d(
+            "❌ Company Logo file not found: ${model.companyLogo!.path}",
+          );
           SnackBarHelper.error(
             "Image file not found. Please select image again.",
           );

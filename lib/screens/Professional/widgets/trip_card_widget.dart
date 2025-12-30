@@ -135,11 +135,7 @@ class TripCardWidget extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: iconColor ?? Colors.black,
-        ),
+        Icon(icon, size: 16, color: iconColor ?? Colors.black),
         const SizedBox(width: 8),
         Text(
           label,
@@ -170,7 +166,7 @@ class TripCardWidget extends StatelessWidget {
     Color backgroundColor = const Color(0xFFF5F5F5);
     Color textColor = const Color(0xFF003366);
     IconData icon = Icons.inventory_2; // Box icon for Cargo
-    
+
     if (tag == "Fragile") {
       backgroundColor = const Color(0xFFFFE5E5);
       textColor = const Color(0xFFFF5E5E);
@@ -194,11 +190,7 @@ class TripCardWidget extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: textColor,
-          ),
+          Icon(icon, size: 14, color: textColor),
           const SizedBox(width: 6),
           Text(
             tag,
@@ -213,4 +205,3 @@ class TripCardWidget extends StatelessWidget {
     );
   }
 }
-

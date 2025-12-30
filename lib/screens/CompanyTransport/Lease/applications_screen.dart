@@ -8,10 +8,7 @@ import '../../../models/get_vehicle_model.dart';
 class ApplicationsScreen extends StatefulWidget {
   final Vehicle? vehicle; // Optional vehicle data
 
-  const ApplicationsScreen({
-    super.key,
-    this.vehicle,
-  });
+  const ApplicationsScreen({super.key, this.vehicle});
 
   @override
   State<ApplicationsScreen> createState() => _ApplicationsScreenState();
@@ -28,11 +25,14 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       applicantName: 'Rajesh Kumar',
       profileImage: '',
       role: 'Driver',
-      appliedDate: DateTime.now().subtract(const Duration(days: 2)).toIso8601String(),
+      appliedDate: DateTime.now()
+          .subtract(const Duration(days: 2))
+          .toIso8601String(),
       leasePeriodStart: '2024-01-15',
       leasePeriodEnd: '2024-07-15',
       proposedPrice: 25000,
-      description: 'Need vehicle for daily office commute, experienced driver with clean record.',
+      description:
+          'Need vehicle for daily office commute, experienced driver with clean record.',
       status: 'Pending',
       vehicleId: 'v1',
       vehicleName: 'Toyota Camry 2022',
@@ -44,11 +44,14 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       applicantName: 'Priya Sharma',
       profileImage: '',
       role: 'Fleet Owner',
-      appliedDate: DateTime.now().subtract(const Duration(days: 5)).toIso8601String(),
+      appliedDate: DateTime.now()
+          .subtract(const Duration(days: 5))
+          .toIso8601String(),
       leasePeriodStart: '2024-02-01',
       leasePeriodEnd: '2024-07-31',
       proposedPrice: 28000,
-      description: 'Looking to expand my fleet for corporate contracts. Willing to pay premium for well-maintained vehicle.',
+      description:
+          'Looking to expand my fleet for corporate contracts. Willing to pay premium for well-maintained vehicle.',
       status: 'Pending',
       vehicleId: 'v1',
       vehicleName: 'Toyota Camry 2022',
@@ -60,11 +63,14 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       applicantName: 'Amit Patel',
       profileImage: '',
       role: 'Agent',
-      appliedDate: DateTime.now().subtract(const Duration(days: 7)).toIso8601String(),
+      appliedDate: DateTime.now()
+          .subtract(const Duration(days: 7))
+          .toIso8601String(),
       leasePeriodStart: '2024-01-20',
       leasePeriodEnd: '2024-06-20',
       proposedPrice: 24500,
-      description: 'Representing multiple clients who need reliable vehicles for business travel.',
+      description:
+          'Representing multiple clients who need reliable vehicles for business travel.',
       status: 'Pending',
       vehicleId: 'v1',
       vehicleName: 'Toyota Camry 2022',
@@ -76,7 +82,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       applicantName: 'Suresh Reddy',
       profileImage: '',
       role: 'Driver',
-      appliedDate: DateTime.now().subtract(const Duration(days: 3)).toIso8601String(),
+      appliedDate: DateTime.now()
+          .subtract(const Duration(days: 3))
+          .toIso8601String(),
       leasePeriodStart: '2024-02-10',
       leasePeriodEnd: '2024-08-10',
       proposedPrice: 26000,
@@ -92,7 +100,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       applicantName: 'Kavita Singh',
       profileImage: '',
       role: 'Fleet Owner',
-      appliedDate: DateTime.now().subtract(const Duration(days: 4)).toIso8601String(),
+      appliedDate: DateTime.now()
+          .subtract(const Duration(days: 4))
+          .toIso8601String(),
       leasePeriodStart: '2024-01-25',
       leasePeriodEnd: '2024-07-25',
       proposedPrice: 27000,
@@ -108,7 +118,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       applicantName: 'Ravi Verma',
       profileImage: '',
       role: 'Driver',
-      appliedDate: DateTime.now().subtract(const Duration(days: 6)).toIso8601String(),
+      appliedDate: DateTime.now()
+          .subtract(const Duration(days: 6))
+          .toIso8601String(),
       leasePeriodStart: '2024-02-05',
       leasePeriodEnd: '2024-08-05',
       proposedPrice: 23000,
@@ -121,29 +133,36 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   ];
 
   List<VehicleLeaseApplicationModel> get _filteredApplications {
-    return _allApplications.where((app) => app.status == _selectedStatus).toList();
+    return _allApplications
+        .where((app) => app.status == _selectedStatus)
+        .toList();
   }
 
-  int get _pendingCount => _allApplications.where((app) => app.status == 'Pending').length;
-  int get _approvedCount => _allApplications.where((app) => app.status == 'Approved').length;
-  int get _rejectedCount => _allApplications.where((app) => app.status == 'Rejected').length;
+  int get _pendingCount =>
+      _allApplications.where((app) => app.status == 'Pending').length;
+  int get _approvedCount =>
+      _allApplications.where((app) => app.status == 'Approved').length;
+  int get _rejectedCount =>
+      _allApplications.where((app) => app.status == 'Rejected').length;
 
   @override
   Widget build(BuildContext context) {
     // Use provided vehicle or default mock data
-    final vehicle = widget.vehicle ?? Vehicle(
-      vehicleId: 'v1',
-      userId: 'user1',
-      vehicleModel: 'Toyota Camry 2022',
-      vehicleNumber: 'TN-07-AB-1234',
-      manufacturingYear: 2022,
-      vehicleType: 'Sedan',
-      status: 'Available',
-      ownershipType: 'Owned',
-      description: '',
-      imageUrls: [],
-      isDeclarationAccepted: true,
-    );
+    final vehicle =
+        widget.vehicle ??
+        Vehicle(
+          vehicleId: 'v1',
+          userId: 'user1',
+          vehicleModel: 'Toyota Camry 2022',
+          vehicleNumber: 'TN-07-AB-1234',
+          manufacturingYear: 2022,
+          vehicleType: 'Sedan',
+          status: 'Available',
+          ownershipType: 'Owned',
+          description: '',
+          imageUrls: [],
+          isDeclarationAccepted: true,
+        );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -168,14 +187,14 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         children: [
           // Vehicle Information Card
           _buildVehicleCard(vehicle),
-          
+
           const SizedBox(height: 16),
-          
+
           // Segmented Control
           _buildSegmentedControl(),
-          
+
           const SizedBox(height: 16),
-          
+
           // Applications List
           Expanded(
             child: _filteredApplications.isEmpty
@@ -201,10 +220,15 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     itemCount: _filteredApplications.length,
                     itemBuilder: (context, index) {
-                      return _buildApplicationCard(_filteredApplications[index]);
+                      return _buildApplicationCard(
+                        _filteredApplications[index],
+                      );
                     },
                   ),
           ),
@@ -249,20 +273,28 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       vehicleImage,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.local_shipping, size: 40, color: Colors.grey);
+                        return const Icon(
+                          Icons.local_shipping,
+                          size: 40,
+                          color: Colors.grey,
+                        );
                       },
                     )
                   : Image.asset(
                       vehicleImage,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.local_shipping, size: 40, color: Colors.grey);
+                        return const Icon(
+                          Icons.local_shipping,
+                          size: 40,
+                          color: Colors.grey,
+                        );
                       },
                     ),
             ),
           ),
           const SizedBox(width: 16),
-          
+
           // Vehicle Info
           Expanded(
             child: Column(
@@ -281,7 +313,10 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE8F5E9),
                         borderRadius: BorderRadius.circular(12),
@@ -300,23 +335,26 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   vehicle.vehicleNumber,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     _buildVehicleSpec(Icons.speed, '45,230 km'),
                     const SizedBox(width: 12),
-                    _buildVehicleSpec(Icons.directions_car, vehicle.vehicleType),
+                    _buildVehicleSpec(
+                      Icons.directions_car,
+                      vehicle.vehicleType,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    _buildVehicleSpec(Icons.calendar_today, '${vehicle.manufacturingYear}'),
+                    _buildVehicleSpec(
+                      Icons.calendar_today,
+                      '${vehicle.manufacturingYear}',
+                    ),
                     const SizedBox(width: 12),
                     _buildVehicleSpec(Icons.route, '2,500 km/mo'),
                   ],
@@ -334,13 +372,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       children: [
         Icon(icon, size: 14, color: Colors.grey[600]),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[700],
-          ),
-        ),
+        Text(text, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
       ],
     );
   }
@@ -381,7 +413,12 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     );
   }
 
-  Widget _buildStatusButton(String label, int count, bool isSelected, VoidCallback onTap) {
+  Widget _buildStatusButton(
+    String label,
+    int count,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -405,7 +442,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withOpacity(0.3) : Colors.grey[300],
+                color: isSelected
+                    ? Colors.white.withOpacity(0.3)
+                    : Colors.grey[300],
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -462,7 +501,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                     : null,
               ),
               const SizedBox(width: 12),
-              
+
               // Name and Role
               Expanded(
                 child: Column(
@@ -470,12 +509,16 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          application.applicantName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                        Expanded(
+                          child: Text(
+                            application.applicantName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -485,37 +528,34 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                   ],
                 ),
               ),
-              
+
               // Application Age
               Text(
                 application.timeAgo,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Lease Details
           _buildLeaseDetail(
             Icons.calendar_today,
             'Lease Period',
             '${_formatDate(application.leasePeriodStart)} → ${_formatDate(application.leasePeriodEnd)}',
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           _buildLeaseDetail(
             Icons.currency_rupee,
             'Proposed Price',
             '₹${application.proposedPrice.toStringAsFixed(0)}/month',
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Description
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,9 +574,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Action Buttons
           if (application.status == 'Pending')
             Row(
@@ -623,20 +663,19 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       children: [
         Icon(icon, size: 16, color: Colors.grey[600]),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey[600],
-          ),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+        Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -646,7 +685,20 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${date.day} ${months[date.month - 1]}';
     } catch (e) {
       return dateString;
@@ -658,7 +710,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Approve Application'),
-        content: Text('Are you sure you want to approve ${application.applicantName}\'s application?'),
+        content: Text(
+          'Are you sure you want to approve ${application.applicantName}\'s application?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -668,9 +722,13 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
             onPressed: () {
               // TODO: Call API to approve application
               setState(() {
-                final index = _allApplications.indexWhere((app) => app.applicationId == application.applicationId);
+                final index = _allApplications.indexWhere(
+                  (app) => app.applicationId == application.applicationId,
+                );
                 if (index != -1) {
-                  _allApplications[index] = application.copyWith(status: 'Approved');
+                  _allApplications[index] = application.copyWith(
+                    status: 'Approved',
+                  );
                 }
               });
               Navigator.pop(context);
@@ -697,7 +755,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reject Application'),
-        content: Text('Are you sure you want to reject ${application.applicantName}\'s application?'),
+        content: Text(
+          'Are you sure you want to reject ${application.applicantName}\'s application?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -707,9 +767,13 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
             onPressed: () {
               // TODO: Call API to reject application
               setState(() {
-                final index = _allApplications.indexWhere((app) => app.applicationId == application.applicationId);
+                final index = _allApplications.indexWhere(
+                  (app) => app.applicationId == application.applicationId,
+                );
                 if (index != -1) {
-                  _allApplications[index] = application.copyWith(status: 'Rejected');
+                  _allApplications[index] = application.copyWith(
+                    status: 'Rejected',
+                  );
                 }
               });
               Navigator.pop(context);

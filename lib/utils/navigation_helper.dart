@@ -13,18 +13,16 @@ class NavigationHelper {
   static void navigateToMainWrapper() {
     final authService = AuthService.to;
     final userType = authService.currentUserType;
-    
+
     AppLogger.d("🧭 Navigation Helper - User Type: $userType");
-    
+
     // Navigate based on user type
     if (userType == "Professional" || userType == "professional") {
- 
       Get.offAll(() => const ProfessionalMainWrapper());
     } else if (userType == "Transport" || userType == "transport") {
-
       Get.offAll(() => const CompanyTransportMainWrapper());
-    } else if (userType == "Service Provider" || userType == "service provider") {
-
+    } else if (userType == "Service Provider" ||
+        userType == "service provider") {
       Get.offAll(() => const CompanyServiceProviderMainWrapper());
     } else {
       // Default fallback - you can change this to your preferred default
@@ -32,29 +30,30 @@ class NavigationHelper {
       Get.offAll(() => const ProfessionalMainWrapper());
     }
   }
-  
+
   /// Get the appropriate wrapper widget based on user type
   static Widget getMainWrapper() {
     final authService = AuthService.to;
     final userType = authService.currentUserType;
-    
+
     if (userType == "Professional" || userType == "professional") {
       return const ProfessionalMainWrapper();
     } else if (userType == "Transport" || userType == "transport") {
       return const CompanyTransportMainWrapper();
-    } else if (userType == "Service Provider" || userType == "service provider") {
+    } else if (userType == "Service Provider" ||
+        userType == "service provider") {
       return const CompanyServiceProviderMainWrapper();
     } else {
       // Default fallback
       return const ProfessionalMainWrapper();
     }
   }
-  
+
   /// Navigate to Trips tab in bottom navigation (index 2)
   static void navigateToTripsTab() {
     final authService = AuthService.to;
     final userType = authService.currentUserType;
-    
+
     if (userType == "Transport" || userType == "transport") {
       // Use GetX controller to switch tabs without navigation
       try {
@@ -67,4 +66,3 @@ class NavigationHelper {
     }
   }
 }
-

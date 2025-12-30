@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../utils/placeservices.dart';
 
 class AddReferral2Screen extends StatefulWidget {
   const AddReferral2Screen({super.key});
@@ -24,6 +25,11 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
 
   String _selectedRole = 'Driver';
   bool _notifyWhenAccepted = true;
+
+  final PlacesService _placesService = PlacesService(
+    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+  );
+  List<Suggestion> _locationSuggestions = [];
 
   @override
   void dispose() {
@@ -177,21 +183,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                             ],
                           ),
                           const SizedBox(height: 24),
-                          // Location Field
-                          Text(
-                            'Location (Optional)',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF4B5563),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildTextField(
-                            controller: _locationController,
-                            label: 'Mumbai',
-                            showLabel: false,
-                          ),
+                          _buildLocationField(),
                           const SizedBox(height: 24),
                           // Notify Checkbox
                           Row(
@@ -485,6 +477,95 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLocationField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Location (Optional)',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF4B5563),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9FAFB),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: _locationController,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF535353),
+            ),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              border: InputBorder.none,
+              hintText: 'Mumbai',
+              hintStyle: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFFADAEBC),
+              ),
+            ),
+            onChanged: (value) async {
+              if (value.isNotEmpty) {
+                try {
+                  final results = await _placesService.fetchSuggestions(value);
+                  setState(() => _locationSuggestions = results);
+                } catch (e) {
+                  // Handle error nicely or ignore
+                  debugPrint('Error fetching suggestions: $e');
+                }
+              } else {
+                setState(() => _locationSuggestions = []);
+              }
+            },
+          ),
+        ),
+        if (_locationSuggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFEDF1F3)),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: _locationSuggestions.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final s = _locationSuggestions[index];
+                return ListTile(
+                  title: Text(
+                    s.description,
+                    style: GoogleFonts.poppins(fontSize: 13),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _locationController.text = s.description;
+                      _locationSuggestions.clear();
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }

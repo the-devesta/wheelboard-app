@@ -3,7 +3,7 @@
 
 // class VerifyEmailScreen extends StatefulWidget {
 //   final String email;
-  
+
 //   const VerifyEmailScreen({
 //     Key? key,
 //     required this.email,
@@ -242,12 +242,6 @@
 //   }
 // }
 
-
-
-
-
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_snackbar.dart';
@@ -255,10 +249,7 @@ import '../../widgets/custom_snackbar.dart';
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
 
-  const VerifyEmailScreen({
-    super.key,
-    required this.email,
-  });
+  const VerifyEmailScreen({super.key, required this.email});
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
@@ -269,10 +260,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     5,
     (index) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(
-    5,
-    (index) => FocusNode(),
-  );
+  final List<FocusNode> _focusNodes = List.generate(5, (index) => FocusNode());
 
   bool _isOTPComplete = false;
 
@@ -293,7 +281,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     }
 
     setState(() {
-      _isOTPComplete = _controllers.every((controller) => controller.text.isNotEmpty);
+      _isOTPComplete = _controllers.every(
+        (controller) => controller.text.isNotEmpty,
+      );
     });
   }
 
@@ -397,9 +387,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
                       ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         counterText: '',
                         filled: true,
@@ -464,10 +452,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               Center(
                 child: RichText(
                   text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
                     children: [
                       const TextSpan(text: "Haven't got the email yet? "),
                       WidgetSpan(

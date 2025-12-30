@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../constants/apps_colors.dart';
 import '../../../controllers/fleet_controller.dart';
 import '../../../services/auth_service.dart';
+import 'applications_screen.dart';
 
 /// ON Lease Vehicles Screen - Shows vehicles that are currently on lease
 /// Based on Figma Design with tabs: ON Lease, Paused, OFF Lease
@@ -67,7 +68,9 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVehicles();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVehicles();
+    });
   }
 
   Future<void> _loadVehicles() async {
@@ -108,7 +111,7 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
           _buildAppBar(),
           // Tab Navigation
           _buildTabNavigation(),
-          
+
           // Vehicle List
           Expanded(
             child: Obx(() {
@@ -153,7 +156,6 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
@@ -185,7 +187,7 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              
+
               // Title
               Expanded(
                 child: Text(
@@ -198,7 +200,7 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
                   textAlign: TextAlign.center,
                 ),
               ),
-              
+
               // Search Icon
               InkWell(
                 onTap: () => _showSearchDialog(),
@@ -214,7 +216,7 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              
+
               // Filter Icon with notification dot
               InkWell(
                 onTap: () => _showFilterDialog(),
@@ -259,7 +261,7 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
       child: Row(
         children: _tabs.map((tab) {
           final isSelected = _selectedTab == tab;
-          
+
           return Expanded(
             child: GestureDetector(
               onTap: () {
@@ -269,7 +271,10 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
               },
               child: Container(
                 margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.buttonBg : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
@@ -280,7 +285,9 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFF6B7280),
                     ),
                   ),
                 ),
@@ -299,287 +306,248 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
     final leaseDuration = leaseData['leaseDuration'] as String;
     final mileage = leaseData['mileage'] as String;
     final status = leaseData['status'] as String;
-    
+
     final vehicleImage = vehicle['image'] as String;
     final isPending = status == 'Pending';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Vehicle Image
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[200],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: vehicleImage.startsWith('http')
-                      ? Image.network(
-                          vehicleImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.local_shipping, size: 40, color: Colors.grey);
-                          },
-                        )
-                      : Image.asset(
-                          vehicleImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.local_shipping, size: 40, color: Colors.grey);
-                          },
-                        ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              
-              // Vehicle Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Model and Status
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            vehicle['model'] as String,
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF2A2A2A),
-                            ),
+    return GestureDetector(
+      onTap: () {
+        Get.to(() => const ApplicationsScreen());
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Vehicle Image
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey[200],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: vehicleImage.startsWith('http')
+                        ? Image.network(
+                            vehicleImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.local_shipping,
+                                size: 40,
+                                color: Colors.grey,
+                              );
+                            },
+                          )
+                        : Image.asset(
+                            vehicleImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.local_shipping,
+                                size: 40,
+                                color: Colors.grey,
+                              );
+                            },
                           ),
-                        ),
-                        if (isPending)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF4E6),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFFFB020),
-                                width: 1,
-                              ),
-                            ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Vehicle Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Model and Status
+                      Row(
+                        children: [
+                          Expanded(
                             child: Text(
-                              'Pending',
+                              vehicle['model'] as String,
                               style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFFFFB020),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF2A2A2A),
                               ),
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    // Lessee/Driver
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline,
-                          size: 16,
-                          color: Color(0xFF6B7280),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          lessee,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF4B5563),
+                          if (isPending)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF4E6),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFFFB020),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                'Pending',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFFFFB020),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Lessee/Driver
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.person_outline,
+                            size: 16,
+                            color: Color(0xFF6B7280),
                           ),
+                          const SizedBox(width: 6),
+                          Text(
+                            lessee,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF4B5563),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Application Date
+                      Text(
+                        'Applied: $applicationDate',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF6B7280),
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Lease Duration
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 14,
+                            color: Color(0xFF6B7280),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            leaseDuration,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF4B5563),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Mileage
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.speed_outlined,
+                            size: 14,
+                            color: Color(0xFF6B7280),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            mileage,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF4B5563),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Action Buttons
+            Row(
+              children: [
+                // Pause Button
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _handlePause(leaseData),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.buttonBg,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
                     ),
-                    const SizedBox(height: 6),
-                    
-                    // Application Date
-                    Text(
-                      'Applied: $applicationDate',
+                    child: Text(
+                      'Pause',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF6B7280),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    
-                    // Lease Duration
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 14,
-                          color: Color(0xFF6B7280),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          leaseDuration,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF4B5563),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    
-                    // Mileage
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.speed_outlined,
-                          size: 14,
-                          color: Color(0xFF6B7280),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          mileage,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF4B5563),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Action Buttons
-          Row(
-            children: [
-              // Pause Button
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => _handlePause(leaseData),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.buttonBg,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Pause',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              
-              // OFF Lease Button
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _handleOffLease(leaseData),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFF44336),
-                    side: const BorderSide(color: Color(0xFFF44336)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    'OFF Lease',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+                const SizedBox(width: 12),
 
-  Widget _buildBottomNavigation() {
-    return Container(
-      height: 70,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(width: 1, color: Color(0xFFE0E0E0))),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(Icons.home_outlined, 'Home', false, () {}),
-          _buildNavItem(Icons.local_shipping, 'Fleet', true, () {}),
-          _buildNavItem(Icons.alt_route_outlined, 'Trips', false, () {}),
-          _buildNavItem(Icons.article_outlined, 'Feeds', false, () {}),
-          _buildNavItem(Icons.work_outline, 'Jobs', false, () {}),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isSelected, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? AppColors.buttonBg : Colors.grey[600],
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: isSelected ? AppColors.buttonBg : Colors.grey[600],
+                // OFF Lease Button
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _handleOffLease(leaseData),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFF44336),
+                      side: const BorderSide(color: Color(0xFFF44336)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'OFF Lease',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          if (isSelected)
-            Container(
-              margin: const EdgeInsets.only(top: 2),
-              width: 4,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.buttonBg,
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -589,7 +557,9 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Pause Lease'),
-        content: Text('Are you sure you want to pause the lease for ${leaseData['vehicle']['model']}?'),
+        content: Text(
+          'Are you sure you want to pause the lease for ${leaseData['vehicle']['model']}?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -622,7 +592,9 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('OFF Lease'),
-        content: Text('Are you sure you want to mark ${leaseData['vehicle']['model']} as OFF Lease?'),
+        content: Text(
+          'Are you sure you want to mark ${leaseData['vehicle']['model']} as OFF Lease?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -643,7 +615,10 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF44336),
             ),
-            child: const Text('OFF Lease', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'OFF Lease',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

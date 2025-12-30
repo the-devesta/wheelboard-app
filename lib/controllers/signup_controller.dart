@@ -15,7 +15,9 @@ class SignupController extends GetxController {
 
   Future<bool> registerCompany(CompanySignUpModel model) async {
     if (isLoading.value) {
-      AppLogger.d("⚠️ registerCompany called while a request is already in progress");
+      AppLogger.d(
+        "⚠️ registerCompany called while a request is already in progress",
+      );
       SnackBarHelper.error("Registration already in progress. Please wait.");
       return false;
     }

@@ -35,7 +35,9 @@ class VehicleLeaseController extends GetxController {
       AppLogger.d("🚛 - Pricing Type: ${leaseModel.pricingType}");
       AppLogger.d("🚛 - Flat Price: ${leaseModel.flatPrice}");
       AppLogger.d("🚛 - Avg Monthly Run: ${leaseModel.avgMonthlyRun}");
-      AppLogger.d("🚛 - Trip Efficiency Rate: ${leaseModel.tripEfficiencyRate}");
+      AppLogger.d(
+        "🚛 - Trip Efficiency Rate: ${leaseModel.tripEfficiencyRate}",
+      );
       AppLogger.d("🚛 - Start Date: ${leaseModel.startDate}");
       AppLogger.d("🚛 - End Date: ${leaseModel.endDate}");
       AppLogger.d("🚛 - Business Days: ${leaseModel.businessDays}");

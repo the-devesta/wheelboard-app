@@ -449,6 +449,241 @@ class TripController extends GetxController {
     }
   }
 
+  /// Update an existing trip
+  Future<void> updateTrip(Trip trip) async {
+    try {
+      isLoading.value = true;
+
+      // ✅ Validate required fields
+      if (trip.tripId.isEmpty) {
+        Get.snackbar(
+          "Error",
+          "Trip ID is missing. Cannot update trip.",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+
+      if (trip.vehicleId.isEmpty) {
+        Get.snackbar(
+          "Error",
+          "Please select a vehicle",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+
+      if (trip.pickupLocation.isEmpty) {
+        Get.snackbar(
+          "Error",
+          "Please enter pickup location",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+
+      if (trip.deliveryLocation.isEmpty) {
+        Get.snackbar(
+          "Error",
+          "Please enter delivery location",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+
+      if (trip.pickupDate == null) {
+        Get.snackbar(
+          "Error",
+          "Please select pickup date",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+
+      if (trip.pickupTime.isEmpty) {
+        Get.snackbar(
+          "Error",
+          "Please select pickup time",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+
+      if (trip.userId.isEmpty) {
+        Get.snackbar(
+          "Error",
+          "User ID is missing. Please login again.",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+
+      // ✅ Get vehicle number from selected vehicle
+      String vehicleNumber = "";
+      if (trip.vehicleId.isNotEmpty) {
+        try {
+          final selectedVehicle = vehicles.firstWhere(
+            (v) => v.vehicleId == trip.vehicleId,
+          );
+          vehicleNumber = selectedVehicle.vehicleNumber;
+        } catch (e) {
+          AppLogger.d("⚠️ Vehicle not found for vehicleId: ${trip.vehicleId}");
+        }
+      }
+
+      // ✅ Prepare JSON body for update - matching the API structure
+      final body = <String, dynamic>{
+        "tripId": trip.tripId,
+        "userId": trip.userId,
+        "vehicleId": trip.vehicleId,
+        "driverId": trip.driverId.isNotEmpty ? trip.driverId : trip.userId,
+        "pickupLocation": trip.pickupLocation,
+        "deliveryLocation": trip.deliveryLocation,
+        "pickupDate": trip.pickupDate != null
+            ? trip.pickupDate!.toIso8601String()
+            : "",
+        "pickupTime": trip.pickupTime.trim(),
+        "specialInstructions": trip.specialInstructions.trim(),
+        "payRange": trip.payRange.trim(),
+        "tripCode": trip.tripCode.trim(),
+        "tripStatus": trip.tripStatus.trim().isNotEmpty
+            ? trip.tripStatus.trim()
+            : "Pending",
+        "vehicleNo": vehicleNumber,
+      };
+
+      // 🔍 Debug: Log request
+      AppLogger.d("==================================");
+      AppLogger.d("📤 TRIP UPDATE REQUEST");
+      AppLogger.d("👉 Endpoint: ${API.updateTrip}");
+      AppLogger.d("👉 Full Body Data: ${json.encode(body)}");
+      AppLogger.d("==================================");
+
+      // ✅ Call API using HttpHelper for consistent URL construction and headers
+      final response = await HttpHelper.postData(
+        endpoint: API.updateTrip,
+        headers: {
+          'Accept': '*/*',
+          'Content-Type': 'application/json',
+          'UserId': trip.userId, // ✅ Added missing UserId header
+        },
+        data: body,
+      );
+
+      // 🔍 Debug response
+      AppLogger.d("==================================");
+      AppLogger.d("📥 Trip Update Response");
+      AppLogger.d("👉 Status Code: ${response.statusCode}");
+      AppLogger.d("👉 Response Body: ${response.body}");
+      AppLogger.d("==================================");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        AppLogger.d("✅ Trip Updated Successfully!");
+
+        Get.snackbar(
+          "Success",
+          "Trip updated successfully!",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+
+        // Navigate back and refresh trips list
+        Future.delayed(const Duration(milliseconds: 500), () {
+          Get.back(result: true); // Return true to indicate success
+        });
+      } else if (response.statusCode == 400) {
+        AppLogger.d("❌ 400 Bad Request - Validation Error!");
+
+        String errorMessage = "Validation Error: ";
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData.containsKey('errors') && errorData['errors'] is Map) {
+            final errors = errorData['errors'] as Map<String, dynamic>;
+            final errorMessages = <String>[];
+
+            errors.forEach((field, messages) {
+              if (messages is List) {
+                for (var msg in messages) {
+                  errorMessages.add("$field: $msg");
+                }
+              } else {
+                errorMessages.add("$field: $messages");
+              }
+            });
+
+            errorMessage = errorMessages.join('\n');
+          } else {
+            errorMessage =
+                errorData['title'] ??
+                errorData['message'] ??
+                errorData.toString();
+          }
+        } catch (e) {
+          errorMessage = response.body.isNotEmpty
+              ? response.body
+              : "Invalid request data";
+        }
+
+        Get.snackbar(
+          "Validation Error",
+          errorMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
+      } else {
+        AppLogger.d("❌ Trip Update Failed!");
+        AppLogger.d("❌ Error Status: ${response.statusCode}");
+        AppLogger.d("❌ Error Body: ${response.body}");
+
+        String errorMessage = "Failed to update trip (${response.statusCode})";
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage =
+              errorData['message'] ??
+              errorData['error'] ??
+              errorData.toString();
+        } catch (e) {
+          if (response.body.isNotEmpty) {
+            errorMessage = response.body.length > 100
+                ? "${response.body.substring(0, 100)}..."
+                : response.body;
+          }
+        }
+
+        Get.snackbar(
+          "Error",
+          errorMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+      }
+    } catch (e) {
+      AppLogger.d("❌ Exception during trip update: $e");
+      Get.snackbar("Error", "Exception: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   /// Fetch trips for current user
   Future<void> fetchTrips(String userId) async {
     try {

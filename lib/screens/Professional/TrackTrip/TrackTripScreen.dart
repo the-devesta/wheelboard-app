@@ -7,9 +7,12 @@ class TrackTripScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Asset URLs from Figma
-    const String mapImageUrl = 'https://www.figma.com/api/mcp/asset/1a7d4319-4d6e-495f-b01f-0734d40eef23';
-    const String vehicleMarkerUrl = 'https://www.figma.com/api/mcp/asset/9e035f3c-9747-40d9-a438-1a01d60d3339';
-    const String destinationMarkerUrl = 'https://www.figma.com/api/mcp/asset/1237482f-b399-4fa4-bb50-8dfe1d9a2989';
+    const String mapImageUrl =
+        'https://www.figma.com/api/mcp/asset/1a7d4319-4d6e-495f-b01f-0734d40eef23';
+    const String vehicleMarkerUrl =
+        'https://www.figma.com/api/mcp/asset/9e035f3c-9747-40d9-a438-1a01d60d3339';
+    const String destinationMarkerUrl =
+        'https://www.figma.com/api/mcp/asset/1237482f-b399-4fa4-bb50-8dfe1d9a2989';
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAFBFC),
@@ -68,9 +71,7 @@ class TrackTripScreen extends StatelessWidget {
                       Container(
                         width: 18,
                         height: 18,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: BoxDecoration(shape: BoxShape.circle),
                         child: const Icon(Icons.more_vert, size: 18),
                       ),
                     ],
@@ -99,7 +100,11 @@ class TrackTripScreen extends StatelessWidget {
                         return Container(
                           color: Colors.grey[300],
                           child: const Center(
-                            child: Icon(Icons.map, size: 64, color: Colors.grey),
+                            child: Icon(
+                              Icons.map,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
                           ),
                         );
                       },
@@ -182,7 +187,11 @@ class TrackTripScreen extends StatelessWidget {
                             color: Colors.red,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.place, color: Colors.white, size: 30),
+                          child: const Icon(
+                            Icons.place,
+                            color: Colors.white,
+                            size: 30,
+                          ),
                         );
                       },
                     ),
@@ -203,7 +212,11 @@ class TrackTripScreen extends StatelessWidget {
                             color: Colors.green,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.directions_car, color: Colors.white, size: 40),
+                          child: const Icon(
+                            Icons.directions_car,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         );
                       },
                     ),
@@ -271,4 +284,3 @@ class RouteLinePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

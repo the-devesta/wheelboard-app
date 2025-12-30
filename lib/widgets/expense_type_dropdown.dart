@@ -99,7 +99,12 @@ class ExpenseTypeDropdown extends StatelessWidget {
             Expanded(
               child: Text(
                 selectedValue != null
-                    ? items.firstWhere((e) => e.value == selectedValue, orElse: () => items.first).label
+                    ? items
+                          .firstWhere(
+                            (e) => e.value == selectedValue,
+                            orElse: () => items.first,
+                          )
+                          .label
                     : "Select expense type",
                 style: TextStyle(
                   fontSize: 16,
@@ -134,4 +139,3 @@ class ExpenseTypeItem {
     required this.color,
   });
 }
-

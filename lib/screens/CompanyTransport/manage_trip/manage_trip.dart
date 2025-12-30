@@ -18,7 +18,7 @@ class ManageTrip extends StatelessWidget {
           children: [
             // Reusable Header (same as Feeds screen)
             const CommonHeaderWidget(),
-            
+
             // Title and Search Bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -39,54 +39,63 @@ class ManageTrip extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Search Bar
                   Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search Trips',
-                            hintStyle: TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Roboto',
-                              color: Colors.grey[600],
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Search Trips',
+                                hintStyle: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Roboto',
+                                  color: Colors.grey[600],
+                                ),
+                                border: InputBorder.none,
+                              ),
                             ),
-                            border: InputBorder.none,
                           ),
                         ),
-                      ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.search,
+                            color: Color(0xFF535353),
+                          ),
+                          onPressed: () {},
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.filter_alt,
+                              color: Color(0xFF535353),
+                            ),
+                            onPressed: () {},
+                          ),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.search, color: Color(0xFF535353)),
-                      onPressed: () {},
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: IconButton(
-                        icon: const Icon(Icons.filter_alt, color: Color(0xFF535353)),
-                        onPressed: () {},
-                      ),
-                    ),
-                  ],
-                ),
                   ),
                 ],
               ),
             ),
-            
+
             // Trip Cards List
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 children: [
                   _buildTripCard(
                     driverName: 'Jon Doe',
@@ -168,7 +177,11 @@ class ManageTrip extends StatelessWidget {
                     return Container(
                       height: 147,
                       color: Colors.grey[300],
-                      child: const Icon(Icons.person, size: 60, color: Colors.grey),
+                      child: const Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Colors.grey,
+                      ),
                     );
                   },
                   loadingBuilder: (context, child, loadingProgress) {
@@ -186,7 +199,10 @@ class ManageTrip extends StatelessWidget {
                 top: 5,
                 left: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF3F8CFF),
                     borderRadius: BorderRadius.circular(4),
@@ -211,7 +227,7 @@ class ManageTrip extends StatelessWidget {
               ),
             ],
           ),
-          
+
           // Trip Details Section
           Padding(
             padding: const EdgeInsets.all(16),
@@ -234,20 +250,25 @@ class ManageTrip extends StatelessWidget {
                 _buildDetailText('Date and Time', dateTime),
                 _buildDetailText('Special Requirements', specialRequirements),
                 const SizedBox(height: 16),
-                
+
                 // Action Buttons
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          Get.to(() => ViewDriverScreen(
-                            driverName: driverName,
-                            driverImage: driverImage,
-                          ));
+                          Get.to(
+                            () => ViewDriverScreen(
+                              driverName: driverName,
+                              driverImage: driverImage,
+                            ),
+                          );
                         },
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFF36363), width: 1),
+                          side: const BorderSide(
+                            color: Color(0xFFF36363),
+                            width: 1,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5),
                           ),
@@ -271,7 +292,10 @@ class ManageTrip extends StatelessWidget {
                           // Handle cancel trip
                         },
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFF36363), width: 1),
+                          side: const BorderSide(
+                            color: Color(0xFFF36363),
+                            width: 1,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5),
                           ),
@@ -320,6 +344,4 @@ class ManageTrip extends StatelessWidget {
       ),
     );
   }
-
 }
-

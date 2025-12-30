@@ -180,7 +180,9 @@ class PostController extends GetxController {
         },
       );
 
-      AppLogger.d("👍 Toggle post like response status: ${response.statusCode}");
+      AppLogger.d(
+        "👍 Toggle post like response status: ${response.statusCode}",
+      );
       AppLogger.d("👍 Toggle post like response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {

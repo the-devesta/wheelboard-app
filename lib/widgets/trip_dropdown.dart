@@ -16,9 +16,7 @@ class TripDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       offset: const Offset(0, 50),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       itemBuilder: (context) {
         return [
           PopupMenuItem<String>(
@@ -230,7 +228,9 @@ class TripDropdown extends StatelessWidget {
                 builder: (context) {
                   if (selectedValue != null && items.isNotEmpty) {
                     try {
-                      final trip = items.firstWhere((t) => t.tripId == selectedValue);
+                      final trip = items.firstWhere(
+                        (t) => t.tripId == selectedValue,
+                      );
                       return Text(
                         "${trip.origin} → ${trip.destination}",
                         style: TextStyle(
@@ -291,4 +291,3 @@ class TripItem {
     required this.date,
   });
 }
-

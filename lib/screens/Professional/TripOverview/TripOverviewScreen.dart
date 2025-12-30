@@ -22,7 +22,8 @@ import '../BidSubmit/BidSubmitScreen.dart';
 import '../../../models/unassigned_trip_model.dart';
 
 class TripOverviewPopup {
-  static void show(BuildContext context, {
+  static void show(
+    BuildContext context, {
     required String tripId,
     required UnassignedTripDetails tripDetails,
   }) {
@@ -32,10 +33,8 @@ class TripOverviewPopup {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => TripOverviewSheet(
-        tripId: tripId,
-        tripDetails: tripDetails,
-      ),
+      builder: (context) =>
+          TripOverviewSheet(tripId: tripId, tripDetails: tripDetails),
     );
   }
 }
@@ -43,7 +42,7 @@ class TripOverviewPopup {
 class TripOverviewSheet extends StatelessWidget {
   final String tripId;
   final UnassignedTripDetails tripDetails;
-  
+
   const TripOverviewSheet({
     super.key,
     required this.tripId,
@@ -52,8 +51,22 @@ class TripOverviewSheet extends StatelessWidget {
 
   String _formatDate(DateTime? date, String time) {
     if (date == null) return time;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final dateStr = '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final dateStr =
+        '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
     final timeStr = time.isNotEmpty
         ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
         : '';
@@ -169,7 +182,9 @@ class TripOverviewSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text("${tripDetails.vehicleModel} (${tripDetails.vehicleNumber})"),
+                  Text(
+                    "${tripDetails.vehicleModel} (${tripDetails.vehicleNumber})",
+                  ),
 
                   const SizedBox(height: 10),
 
@@ -205,7 +220,9 @@ class TripOverviewSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(_formatDate(tripDetails.pickupDate, tripDetails.pickupTime)),
+                  Text(
+                    _formatDate(tripDetails.pickupDate, tripDetails.pickupTime),
+                  ),
 
                   if (tripDetails.specialInstructions.isNotEmpty) ...[
                     const SizedBox(height: 10),
@@ -241,10 +258,12 @@ class TripOverviewSheet extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Get.to(() => BidSubmissionScreen(
-                    tripId: tripId,
-                    tripDetails: tripDetails,
-                  ));
+                  Get.to(
+                    () => BidSubmissionScreen(
+                      tripId: tripId,
+                      tripDetails: tripDetails,
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,

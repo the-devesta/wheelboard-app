@@ -36,10 +36,11 @@ class ServiceAssignmentSummary {
   }
 
   String get formattedTime {
-    final hour = scheduledTime.hourOfPeriod == 0 ? 12 : scheduledTime.hourOfPeriod;
+    final hour = scheduledTime.hourOfPeriod == 0
+        ? 12
+        : scheduledTime.hourOfPeriod;
     final minute = scheduledTime.minute.toString().padLeft(2, '0');
     final period = scheduledTime.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
   }
 }
-

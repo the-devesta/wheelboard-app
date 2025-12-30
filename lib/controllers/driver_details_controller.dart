@@ -19,7 +19,7 @@ class DriverDetailsController extends GetxController {
       // Get auth token if available
       final sessionManager = SessionManager();
       final token = await sessionManager.getString("authToken");
-      
+
       Map<String, String> headers = {'accept': '*/*'};
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
@@ -36,7 +36,7 @@ class DriverDetailsController extends GetxController {
 
       if (response.statusCode == 200) {
         final responseBody = response.body.trim();
-        
+
         if (responseBody.isEmpty) {
           AppLogger.d("❌ Empty response body");
           SnackBarHelper.error("Driver details not found");
@@ -45,20 +45,24 @@ class DriverDetailsController extends GetxController {
 
         try {
           final data = json.decode(responseBody);
-          
+
           // Check if response has nested structure
           if (data is Map<String, dynamic>) {
             // If data is directly the driver object
             if (data.containsKey('driverId')) {
               driverDetails.value = DriverDetailsModel.fromJson(data);
-              AppLogger.d("✅ Driver details loaded successfully: ${driverDetails.value?.fullName}");
-            } 
+              AppLogger.d(
+                "✅ Driver details loaded successfully: ${driverDetails.value?.fullName}",
+              );
+            }
             // If data is wrapped in a result/response object
             else if (data.containsKey('result')) {
               final result = data['result'];
               if (result is Map<String, dynamic>) {
                 driverDetails.value = DriverDetailsModel.fromJson(result);
-                AppLogger.d("✅ Driver details loaded successfully: ${driverDetails.value?.fullName}");
+                AppLogger.d(
+                  "✅ Driver details loaded successfully: ${driverDetails.value?.fullName}",
+                );
               } else {
                 SnackBarHelper.error("Invalid driver data format");
               }
@@ -77,7 +81,9 @@ class DriverDetailsController extends GetxController {
         SnackBarHelper.warning("Driver details not found. Please try again.");
       } else {
         AppLogger.d("❌ Failed to load driver details: ${response.statusCode}");
-        SnackBarHelper.error("Failed to load driver details (Status: ${response.statusCode})");
+        SnackBarHelper.error(
+          "Failed to load driver details (Status: ${response.statusCode})",
+        );
       }
     } catch (e) {
       AppLogger.d("❌ Error fetching driver details: $e");
@@ -87,4 +93,3 @@ class DriverDetailsController extends GetxController {
     }
   }
 }
-

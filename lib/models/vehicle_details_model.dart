@@ -111,12 +111,12 @@ class VehicleDetailsModel {
     if (result == null) {
       throw Exception('Result field is null in API response');
     }
-    
+
     final data = result['data'];
     if (data == null) {
       throw Exception('Data field is null in API response');
     }
-    
+
     return VehicleDetailsModel(
       regNo: data['regNo'] ?? '',
       chassis: data['chassis'] ?? '',
@@ -135,7 +135,8 @@ class VehicleDetailsModel {
       statusAsOn: data['statusAsOn'] ?? '',
       regAuthority: data['regAuthority'] ?? '',
       regDate: data['regDate'] ?? '',
-      vehicleManufacturingMonthYear: data['vehicleManufacturingMonthYear'] ?? '',
+      vehicleManufacturingMonthYear:
+          data['vehicleManufacturingMonthYear'] ?? '',
       rcExpiryDate: data['rcExpiryDate'] ?? '',
       vehicleTaxUpto: data['vehicleTaxUpto'] ?? '',
       vehicleInsuranceCompanyName: data['vehicleInsuranceCompanyName'] ?? '',

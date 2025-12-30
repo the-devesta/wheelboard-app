@@ -16,7 +16,6 @@ class AuthService extends GetxService {
   final RxBool isKYCCompleted = false.obs; // KYC completion status
   final RxBool isHired = false.obs; // Professional hired status
 
-
   /// Check if user is already logged in
   Future<void> _checkLoginStatus() async {
     try {

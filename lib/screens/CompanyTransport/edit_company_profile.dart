@@ -8,17 +8,19 @@ class EditCompanyProfileScreen extends StatefulWidget {
   const EditCompanyProfileScreen({super.key});
 
   @override
-  State<EditCompanyProfileScreen> createState() => _EditCompanyProfileScreenState();
+  State<EditCompanyProfileScreen> createState() =>
+      _EditCompanyProfileScreenState();
 }
 
 class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
-  final CompanyProfileController controller =
-      Get.put(CompanyProfileController());
-  
+  final CompanyProfileController controller = Get.put(
+    CompanyProfileController(),
+  );
+
   final PlacesService placesService = PlacesService(
     apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
   );
-  
+
   List<Suggestion> locationSuggestions = [];
   final FocusNode _locationFocusNode = FocusNode();
   Worker? _savingWorker;
@@ -33,7 +35,7 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
         });
       }
     });
-    
+
     // Listen to isSaving to detect when save completes successfully
     _savingWorker = ever(controller.isSaving, (bool saving) async {
       if (!saving) {
@@ -65,7 +67,6 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4E3E3),
       appBar: AppBar(
@@ -104,10 +105,7 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 24),
           child: Column(
-            children: [
-              const SizedBox(height: 12),
-              _buildFormCard(controller),
-            ],
+            children: [const SizedBox(height: 12), _buildFormCard(controller)],
           ),
         ),
       ),
@@ -186,10 +184,7 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFFFF8B8B),
-                Color(0xFFF25C5C),
-              ],
+              colors: [Color(0xFFFF8B8B), Color(0xFFF25C5C)],
             ),
           ),
           child: Center(
@@ -268,7 +263,11 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
                     color: const Color(0xFFF36969),
                     border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 16,
+                  ),
                 ),
               ),
             ),
@@ -432,7 +431,9 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
               child: ListView.separated(
                 shrinkWrap: true,
                 physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: locationSuggestions.length > 5 ? 5 : locationSuggestions.length,
+                itemCount: locationSuggestions.length > 5
+                    ? 5
+                    : locationSuggestions.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final suggestion = locationSuggestions[index];
@@ -461,7 +462,8 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
                         : null,
                     onTap: () {
                       setState(() {
-                        controller.locationController.text = suggestion.description;
+                        controller.locationController.text =
+                            suggestion.description;
                         locationSuggestions = [];
                       });
                       // Hide keyboard and remove focus

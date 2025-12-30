@@ -219,9 +219,7 @@ class KYCScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Color(0xFFE0E0E0)),
-                ),
+                border: Border(top: BorderSide(color: Color(0xFFE0E0E0))),
               ),
               child: SizedBox(
                 width: double.infinity,
@@ -272,7 +270,10 @@ class KYCScreen extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFBBDEFB),
                   borderRadius: BorderRadius.circular(8),
@@ -406,4 +407,3 @@ class KYCScreen extends StatelessWidget {
     );
   }
 }
-

@@ -18,12 +18,15 @@ class DriverLicenseModel {
     return DriverLicenseModel(
       dlNumber: result['dlNumber'] ?? '',
       dob: result['dob'] ?? '',
-      badgeDetails: (result['badgeDetails'] as List?)
-          ?.map((e) => BadgeDetail.fromJson(e))
-          .toList() ?? [],
+      badgeDetails:
+          (result['badgeDetails'] as List?)
+              ?.map((e) => BadgeDetail.fromJson(e))
+              .toList() ??
+          [],
       dlValidity: DlValidity.fromJson(result['dlValidity'] ?? {}),
       detailsOfDrivingLicence: DetailsOfDrivingLicence.fromJson(
-          result['detailsOfDrivingLicence'] ?? {}),
+        result['detailsOfDrivingLicence'] ?? {},
+      ),
     );
   }
 }
@@ -43,9 +46,11 @@ class BadgeDetail {
     return BadgeDetail(
       badgeIssueDate: json['badgeIssueDate'] ?? '',
       badgeNo: json['badgeNo'] ?? '',
-      classOfVehicle: (json['classOfVehicle'] as List?)
-          ?.map((e) => e.toString())
-          .toList() ?? [],
+      classOfVehicle:
+          (json['classOfVehicle'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 }
@@ -77,16 +82,10 @@ class ValidityPeriod {
   final String from;
   final String to;
 
-  ValidityPeriod({
-    required this.from,
-    required this.to,
-  });
+  ValidityPeriod({required this.from, required this.to});
 
   factory ValidityPeriod.fromJson(Map<String, dynamic> json) {
-    return ValidityPeriod(
-      from: json['from'] ?? '',
-      to: json['to'] ?? '',
-    );
+    return ValidityPeriod(from: json['from'] ?? '', to: json['to'] ?? '');
   }
 }
 
@@ -125,9 +124,11 @@ class DetailsOfDrivingLicence {
       lastTransactedAt: json['lastTransactedAt'] ?? '',
       name: json['name'] ?? '',
       fatherOrHusbandName: json['fatherOrHusbandName'] ?? '',
-      addressList: (json['addressList'] as List?)
-          ?.map((e) => AddressList.fromJson(e))
-          .toList() ?? [],
+      addressList:
+          (json['addressList'] as List?)
+              ?.map((e) => AddressList.fromJson(e))
+              .toList() ??
+          [],
       address: json['address'] ?? '',
       photo: json['photo'] ?? '',
       splitAddress: SplitAddress.fromJson(json['splitAddress'] ?? {}),
@@ -175,19 +176,17 @@ class SplitAddress {
 
   factory SplitAddress.fromJson(Map<String, dynamic> json) {
     return SplitAddress(
-      district: (json['district'] as List?)
-          ?.map((e) => e.toString())
-          .toList() ?? [],
-      state: (json['state'] as List?)
-          ?.map((e) => (e as List).map((item) => item.toString()).toList())
-          .toList() ?? [],
-      city: (json['city'] as List?)
-          ?.map((e) => e.toString())
-          .toList() ?? [],
+      district:
+          (json['district'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      state:
+          (json['state'] as List?)
+              ?.map((e) => (e as List).map((item) => item.toString()).toList())
+              .toList() ??
+          [],
+      city: (json['city'] as List?)?.map((e) => e.toString()).toList() ?? [],
       pincode: json['pincode'] ?? '',
-      country: (json['country'] as List?)
-          ?.map((e) => e.toString())
-          .toList() ?? [],
+      country:
+          (json['country'] as List?)?.map((e) => e.toString()).toList() ?? [],
       addressLine: json['addressLine'] ?? '',
     );
   }
