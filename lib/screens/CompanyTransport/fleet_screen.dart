@@ -30,6 +30,8 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
 
   // Search and filter state
   String _searchQuery = '';
+  String _selectedVehicleFilter = 'All Vehicles';
+  String _selectedDriverFilter = 'All Drivers';
   final Set<String> _likedDrivers = {};
   final Set<String> _likedVehicles = {};
 
@@ -54,7 +56,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     }
   }
 
-  Future<void> _FetchVehicles() async {
+  Future<void> _fetchVehicles() async {
     final sessionManager = SessionManager();
     final token = await sessionManager.getString("authToken");
     final userId = await sessionManager.getString("userId");
@@ -71,27 +73,81 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
 
   // Filter lists based on search query
   List<Vehicle> get _filteredVehicles {
-    if (_searchQuery.isEmpty) return driverController.vehicles;
-    return driverController.vehicles.where((vehicle) {
-      return vehicle.vehicleNumber.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          vehicle.vehicleModel.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          );
-    }).toList();
+    var vehicles = List<Vehicle>.from(driverController.vehicles);
+
+    // 1. Filter by Status/Ownership
+    if (_selectedVehicleFilter != 'All Vehicles') {
+      vehicles = vehicles.where((v) {
+        final status = v.status.toLowerCase();
+        final ownership = v.ownershipType.toLowerCase();
+
+        switch (_selectedVehicleFilter) {
+          case 'Available':
+            return status == 'available';
+          case 'In-Transit':
+            return status == 'in-transit' || status == 'in transit';
+          case 'Assigned':
+            return status == 'assigned';
+          case 'Owned':
+            return ownership == 'owned';
+          case 'Leased':
+            return ownership == 'leased';
+          default:
+            return true;
+        }
+      }).toList();
+    }
+
+    // 2. Filter by Search Query
+    if (_searchQuery.isNotEmpty) {
+      vehicles = vehicles.where((vehicle) {
+        return vehicle.vehicleNumber.toLowerCase().contains(
+              _searchQuery.toLowerCase(),
+            ) ||
+            vehicle.vehicleModel.toLowerCase().contains(
+              _searchQuery.toLowerCase(),
+            );
+      }).toList();
+    }
+
+    return vehicles;
   }
 
   List<Driver> get _filteredDrivers {
-    if (_searchQuery.isEmpty) return driverController.drivers;
-    return driverController.drivers.where((driver) {
-      return driver.fullName.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          driver.vehicleNumber.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          );
-    }).toList();
+    var drivers = List<Driver>.from(driverController.drivers);
+
+    // 1. Filter by Category
+    if (_selectedDriverFilter != 'All Drivers') {
+      drivers = drivers.where((d) {
+        switch (_selectedDriverFilter) {
+          case 'Hired':
+            // Using isDeclarationAccepted as a proxy for Verified/Hired
+            return d.isDeclarationAccepted;
+          case 'Wheelboard':
+            return d.description.toLowerCase().contains('wheelboard');
+          case 'Available':
+            return d.vehicleNumber.isEmpty || d.vehicleNumber == 'N/A';
+          case 'On Trip':
+            return d.vehicleNumber.isNotEmpty && d.vehicleNumber != 'N/A';
+          default:
+            return true;
+        }
+      }).toList();
+    }
+
+    // 2. Filter by Search Query
+    if (_searchQuery.isNotEmpty) {
+      drivers = drivers.where((driver) {
+        return driver.fullName.toLowerCase().contains(
+              _searchQuery.toLowerCase(),
+            ) ||
+            driver.vehicleNumber.toLowerCase().contains(
+              _searchQuery.toLowerCase(),
+            );
+      }).toList();
+    }
+
+    return drivers;
   }
 
   @override
@@ -102,54 +158,6 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
         // Background
         Positioned.fill(
           child: SvgPicture.asset('assets/bgDesign.svg', fit: BoxFit.cover),
-        ),
-
-        // Header
-        Positioned(
-          top: screenHeight * 0.08,
-          left: 0,
-          right: 0,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              height: 60,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Center(
-                    child: Text(
-                      "Fleet",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      width: 53,
-                      height: 53,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      padding: const EdgeInsets.all(6),
-                      child: Image.asset('assets/logobg.png'),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      onPressed: () => _showSearchDialog(),
-                      icon: const Icon(Icons.search, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
 
         // Body
@@ -362,11 +370,65 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                   ),
                 ),
         ),
+        _buildHeader(screenHeight),
       ],
     );
   }
 
   // --- Widgets ---
+
+  // Header Widget (Moved out of Stack to be reusable or just method)
+  // Actually, we are inserting it into the Stack children list.
+
+  Widget _buildHeader(double screenHeight) {
+    return Positioned(
+      top: screenHeight * 0.08,
+      left: 0,
+      right: 0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: SizedBox(
+          height: 60,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Center(
+                child: Text(
+                  "Fleet",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  width: 53,
+                  height: 53,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(6),
+                  child: Image.asset('assets/logobg.png'),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  onPressed: () => _showSearchDialog(),
+                  icon: const Icon(Icons.search, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _tabBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
@@ -385,7 +447,7 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
             }),
             _segmentedTabItem("Vehicles", isVehicleSelected, () {
               setState(() => isVehicleSelected = true);
-              _FetchVehicles();
+              _fetchVehicles();
             }),
           ],
         ),
@@ -857,49 +919,80 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Filter Options',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            if (isVehicleSelected) ...[
-              // Vehicle filters
-              _filterOption('All Vehicles', Icons.local_shipping),
-              _filterOption(
-                'Available',
-                Icons.check_circle,
-                color: Colors.green,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Filter Options',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  if ((isVehicleSelected &&
+                          _selectedVehicleFilter != 'All Vehicles') ||
+                      (!isVehicleSelected &&
+                          _selectedDriverFilter != 'All Drivers'))
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          if (isVehicleSelected) {
+                            _selectedVehicleFilter = 'All Vehicles';
+                          } else {
+                            _selectedDriverFilter = 'All Drivers';
+                          }
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        'Clear',
+                        style: TextStyle(color: Color(0xFFF36969)),
+                      ),
+                    ),
+                ],
               ),
-              _filterOption(
-                'In-Transit',
-                Icons.directions_car,
-                color: Colors.blue,
-              ),
-              _filterOption('Assigned', Icons.assignment, color: Colors.orange),
-              _filterOption('Owned', Icons.home, color: Colors.purple),
-              _filterOption('Leased', Icons.handshake, color: Colors.teal),
-            ] else ...[
-              // Driver filters
-              _filterOption('All Drivers', Icons.people),
-              _filterOption('Hired', Icons.verified, color: Colors.green),
-              _filterOption('Wheelboard', Icons.circle, color: Colors.blue),
-              _filterOption(
-                'Available',
-                Icons.check_circle,
-                color: Colors.green,
-              ),
-              _filterOption(
-                'On Trip',
-                Icons.directions_car,
-                color: Colors.orange,
-              ),
+              const SizedBox(height: 16),
+              if (isVehicleSelected) ...[
+                // Vehicle filters
+                _filterOption('All Vehicles', Icons.local_shipping),
+                _filterOption(
+                  'Available',
+                  Icons.check_circle,
+                  color: Colors.green,
+                ),
+                _filterOption(
+                  'In-Transit',
+                  Icons.directions_car,
+                  color: Colors.blue,
+                ),
+                _filterOption(
+                  'Assigned',
+                  Icons.assignment,
+                  color: Colors.orange,
+                ),
+                _filterOption('Owned', Icons.home, color: Colors.purple),
+                _filterOption('Leased', Icons.handshake, color: Colors.teal),
+              ] else ...[
+                // Driver filters
+                _filterOption('All Drivers', Icons.people),
+                _filterOption('Hired', Icons.verified, color: Colors.green),
+                _filterOption('Wheelboard', Icons.circle, color: Colors.blue),
+                _filterOption(
+                  'Available',
+                  Icons.check_circle,
+                  color: Colors.green,
+                ),
+                _filterOption(
+                  'On Trip',
+                  Icons.directions_car,
+                  color: Colors.orange,
+                ),
+              ],
+              const SizedBox(height: 16),
             ],
-            const SizedBox(height: 16),
-          ],
+          ),
         ),
       ),
     );
@@ -910,19 +1003,39 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
     IconData icon, {
     Color color = Colors.grey,
   }) {
+    final isSelected = isVehicleSelected
+        ? _selectedVehicleFilter == label
+        : _selectedDriverFilter == label;
+
     return ListTile(
       leading: Icon(icon, color: color),
-      title: Text(label),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? const Color(0xFFF36969) : Colors.black,
+        ),
+      ),
+      trailing: isSelected
+          ? const Icon(Icons.check, color: Color(0xFFF36969))
+          : null,
       onTap: () {
+        setState(() {
+          if (isVehicleSelected) {
+            _selectedVehicleFilter = label;
+          } else {
+            _selectedDriverFilter = label;
+          }
+        });
         Navigator.pop(context);
-        Get.snackbar(
-          'Filter Applied',
-          'Showing: $label',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFFF36969),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
-        );
+        // Get.snackbar(
+        //   'Filter Applied',
+        //   'Showing: $label',
+        //   snackPosition: SnackPosition.BOTTOM,
+        //   backgroundColor: const Color(0xFFF36969),
+        //   colorText: Colors.white,
+        //   duration: const Duration(seconds: 2),
+        // );
       },
     );
   }

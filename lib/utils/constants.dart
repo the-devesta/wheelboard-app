@@ -129,6 +129,14 @@ class API {
   static const String updateLeaseApplicationStatus =
       'api/Transport/update-lease-application-status';
 
+  // Service Provider APIs
+  static const String serviceTogglePublishUnpublish =
+      'api/Service/service-toggle-publish-unpublish';
+
+  static const String deleteVehicle = 'api/Transport';
+  static const String deleteDriver = 'api/Transport/driver';
+  static const String deleteVehicleSuffix = '/delete';
+
   // KYC Verification APIs
   static const String verifyDrivingLicence = 'api/User/VerifyDrivingLicenceKYC';
 }

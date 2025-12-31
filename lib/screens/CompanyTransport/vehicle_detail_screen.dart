@@ -313,7 +313,25 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                             ),
                             // Delete Vehicle Button
                             GestureDetector(
-                              onTap: () {
+                              onTap: () async {
+                                final sessionManager = SessionManager();
+                                final userId = await sessionManager.getString(
+                                  "userId",
+                                );
+                                final token = await sessionManager.getString(
+                                  "authToken",
+                                );
+
+                                if (userId == null ||
+                                    token == null ||
+                                    userId.isEmpty) {
+                                  Get.snackbar(
+                                    "Error",
+                                    "User not found, please login again",
+                                  );
+                                  return;
+                                }
+
                                 Get.dialog(
                                   AlertDialog(
                                     title: const Text('Delete Vehicle'),
@@ -326,9 +344,32 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                         child: const Text('Cancel'),
                                       ),
                                       TextButton(
-                                        onPressed: () {
-                                          Get.back();
-                                          Get.back();
+                                        onPressed: () async {
+                                          Get.back(); // close dialog
+                                          // show loading
+                                          Get.dialog(
+                                            const Center(
+                                              child: CustomLoader.small(),
+                                            ),
+                                            barrierDismissible: false,
+                                          );
+
+                                          final success = await _fleetController
+                                              .deleteVehicle(
+                                                widget.vehicle.vehicleId,
+                                                userId,
+                                                token,
+                                              );
+
+                                          Get.back(); // close loading
+
+                                          if (success) {
+                                            Get.back(); // close screen
+                                            _fleetController.fetchVehicles(
+                                              userId,
+                                              token,
+                                            ); // refresh list
+                                          }
                                         },
                                         child: const Text(
                                           'Delete',
@@ -475,31 +516,43 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                     ],
                                   ),
                                 ),
-                                // Change Driver Button
-                                Container(
-                                  height: 28,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF00B894),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.white.withOpacity(0.5),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Center(
-                                    child: Text(
-                                      'Change Driver',
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                        color: Colors.white,
+                                // Contact Driver Button
+                                InkWell(
+                                  onTap: () {
+                                    final wrapperController =
+                                        Get.find<MainWrapperController>();
+                                    wrapperController.currentTabIndex.value =
+                                        1; // Navigate to Fleet tab
+                                    Navigator.popUntil(
+                                      context,
+                                      (route) => route.isFirst,
+                                    );
+                                  },
+                                  child: Container(
+                                    height: 28,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00B894),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.white.withOpacity(0.5),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'Contact Driver',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -703,7 +756,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                             Expanded(
                               child: _buildStatCard(
                                 'Avg. Run',
-                                '15,002 KM',
+                                '${vehicleDetails?.data.monthlyUsageKM ?? 0} KM',
                                 const Color(0xFF00B894),
                                 Icons.speed,
                               ),
@@ -712,7 +765,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                             Expanded(
                               child: _buildStatCard(
                                 'Trip Efficiency',
-                                'Rs. 3 / KM',
+                                'Rs. ${vehicleDetails?.data.costPerKM ?? 0} / KM',
                                 const Color(0xFFFF6B6B),
                                 Icons.trending_up,
                               ),
@@ -774,19 +827,6 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                     fontWeight: FontWeight.w600,
                                     fontSize: 18,
                                     color: Color(0xFF2D3436),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    // Navigate to trips screen
-                                  },
-                                  child: const Text(
-                                    'View More',
-                                    style: TextStyle(
-                                      fontFamily: 'Roboto',
-                                      fontSize: 14,
-                                      color: Color(0xFF0984E3),
-                                    ),
                                   ),
                                 ),
                               ],

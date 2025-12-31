@@ -16,11 +16,15 @@ class VehicleDetailData {
   final VehicleInfo vehicleInfo;
   final DriverInfo driverInfo;
   final List<RecentTrip> recentTrips;
+  final num monthlyUsageKM;
+  final num costPerKM;
 
   VehicleDetailData({
     required this.vehicleInfo,
     required this.driverInfo,
     required this.recentTrips,
+    required this.monthlyUsageKM,
+    required this.costPerKM,
   });
 
   factory VehicleDetailData.fromJson(Map<String, dynamic> json) {
@@ -32,6 +36,8 @@ class VehicleDetailData {
               ?.map((e) => RecentTrip.fromJson(e))
               .toList() ??
           [],
+      monthlyUsageKM: json['monthlyUsageKM'] ?? 0,
+      costPerKM: json['costPerKM'] ?? 0,
     );
   }
 }

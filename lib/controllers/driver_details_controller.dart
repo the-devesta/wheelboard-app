@@ -5,6 +5,7 @@ import '../models/driver_details_model.dart';
 import '../widgets/custom_snackbar.dart';
 import '../utils/session_manager.dart';
 import '../utils/app_logger.dart';
+import '../utils/constants.dart';
 
 class DriverDetailsController extends GetxController {
   var isLoading = false.obs;
@@ -90,6 +91,43 @@ class DriverDetailsController extends GetxController {
       SnackBarHelper.error("Error fetching driver details: ${e.toString()}");
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<bool> deleteDriver(
+    String driverId,
+    String userId,
+    String token,
+  ) async {
+    try {
+      final url =
+          "${API.deleteDriver}/$driverId${API.deleteVehicleSuffix}?modifiedBy=$userId";
+
+      AppLogger.d("==================================");
+      AppLogger.d("📡 Deleting Driver");
+      AppLogger.d("👉 URL: $url");
+      AppLogger.d("==================================");
+
+      final response = await HttpHelper.postData(
+        endpoint: url,
+        data: {},
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+          "accept": "*/*",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        SnackBarHelper.error("Failed to delete driver");
+        return false;
+      }
+    } catch (e) {
+      AppLogger.d("❌ Exception in deleteDriver: $e");
+      SnackBarHelper.error("Exception: $e");
+      return false;
     }
   }
 }

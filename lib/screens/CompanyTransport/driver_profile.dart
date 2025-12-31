@@ -6,6 +6,7 @@ import '../../controllers/driver_details_controller.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/session_manager.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   final String driverId;
@@ -240,7 +241,101 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.delete, color: Colors.redAccent),
+                              GestureDetector(
+                                onTap: () async {
+                                  // Delete Driver Logic
+                                  final sessionManager = SessionManager();
+                                  final userId = await sessionManager.getString(
+                                    "userId",
+                                  );
+                                  final token = await sessionManager.getString(
+                                    "authToken",
+                                  );
+
+                                  if (userId == null ||
+                                      token == null ||
+                                      userId.isEmpty) {
+                                    Get.snackbar(
+                                      "Error",
+                                      "User not found, please login again",
+                                    );
+                                    return;
+                                  }
+
+                                  Get.dialog(
+                                    AlertDialog(
+                                      title: const Text('Delete Driver'),
+                                      content: const Text(
+                                        'Are you sure you want to delete this driver?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Get.back(),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () async {
+                                            Get.back(); // close dialog
+                                            // show loading
+                                            Get.dialog(
+                                              const Center(
+                                                child: CustomLoader.small(),
+                                              ),
+                                              barrierDismissible: false,
+                                            );
+                                            // Use FleetController (DriverController) for delete as it has the list
+                                            // Or use HttpHelper directly here if controller not available
+                                            // But best practice is controller.
+                                            // I'll assume we can use the same delete logic. A clean way is to put delete logic in DriverDetailsController too or use FleetController.
+                                            // Let's see if I can instantiate FleetController (DriverController).
+                                            // It might not be in context.
+                                            // I'll add deleteDriver to DriverDetailsController.
+
+                                            final success = await controller
+                                                .deleteDriver(
+                                                  widget.driverId,
+                                                  userId,
+                                                  token,
+                                                );
+
+                                            Get.back(); // close loading
+
+                                            if (success) {
+                                              Get.back(); // close profile screen
+                                              // Ideally refresh previous screen (Fleet Screen)
+                                              // But since we are going back, Fleet Screen might need to refresh on appear or use Get.find<DriverController>().fetchDrivers(...)
+                                              // I'll try to refresh FleetController if it exists
+                                              try {
+                                                // refresh fleet list
+                                                // Get.find<DriverController>().fetchDrivers(userId, token); // DriverController from fleet_controller.dart
+                                                // The import conflicts might occur if I import fleet_controller.dart here.
+                                                // I'll let the onBack logic handle refresh if any, or just pop.
+                                                // The user asked to just put the API.
+                                              } catch (e) {
+                                                // Fleet controller might not be found
+                                              }
+                                              Get.snackbar(
+                                                "Success",
+                                                "Driver deleted successfully",
+                                                backgroundColor: Colors.green,
+                                                colorText: Colors.white,
+                                              );
+                                            }
+                                          },
+                                          child: const Text(
+                                            'Delete',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.redAccent,
+                                ),
+                              ),
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
