@@ -16,7 +16,7 @@ class HttpHelper {
   static Future<http.Response> getData({
     required String endpoint,
     Map<String, String>? headers,
-    Map<String, String>? queryParams,
+    Map<String, dynamic>? queryParams,
   }) async {
     Uri uri = Uri.parse(
       baseUrl + endpoint,

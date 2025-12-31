@@ -1,12 +1,18 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/controllers/Professional/add_referral_controller.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/utils/error_handler.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
 class NewReferralController extends GetxController {
+  final AddReferralController addReferralController =
+      Get.find<AddReferralController>();
   final nameController = TextEditingController();
   final mobileController = TextEditingController();
   final emailController = TextEditingController();
@@ -57,48 +63,86 @@ class NewReferralController extends GetxController {
     super.onClose();
   }
 
-  Future<void> saveReferal() async {
+  Future<void> saveReferal(BuildContext context) async {
     final userId = authService.currentUserId;
 
     AppLogger.d('User ID: $userId');
+
     if (!isFormValid) {
       SnackBarHelper.error('Please fill required input');
       return;
     }
 
+    debugPrint('hereeeee111====>>');
     isLoading.value = true;
 
-    // try {
-    final requestData = {
-      "referralId": "",
-      "createdBy": "",
-      "partnerId": 0,
-      "userId": userId,
-      "fullName": nameController.text.toString(),
-      "mobileNumber": mobileController.text.toString(),
-      "email": emailController.text.toString(),
-      "role": selectedRole,
-      "location": locationController.text.toString(),
-      "notifyOnAcceptance": notify,
-      "referralStatus": "",
-    };
+    try {
+      final Map<String, dynamic> requestData = {
+        "referralId": userId,
+        "createdBy": userId,
+        "partnerId": 0,
+        "userId": userId,
+        "fullName": nameController.text.trim(),
+        "mobileNumber": mobileController.text.trim(),
+        "email": emailController.text.trim().isEmpty
+            ? ""
+            : emailController.text.trim(),
+        "role": selectedRole.toString(),
+        "location": locationController.text.trim().isEmpty
+            ? ""
+            : locationController.text.trim(),
+        "notifyOnAcceptance": notify.value,
+        "referralStatus": "pending",
+        "referralDate": DateTime.now().toIso8601String(),
+      };
 
-    AppLogger.d(requestData.toString());
+      debugPrint('data===>>>${requestData}');
+      AppLogger.d(requestData.toString());
 
-    final response = await HttpHelper.postData(
-      endpoint: API.saveReferal,
-      data: requestData,
-    );
-    AppLogger.d('$response data===>>');
-    if (response.statusCode == 200) {
-      SnackBarHelper.success('Referral added successfully');
+      debugPrint('hereeeee22====>>');
+
+      final response = await HttpHelper.postData(
+        endpoint: API.saveReferal,
+        data: requestData,
+      );
+
+      debugPrint('Response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        addReferralController.getReferrals();
+
+        debugPrint('hereeeee33====>>');
+
+        try {
+          final responseData = jsonDecode(response.body);
+          if (responseData['success'] == true) {
+            SnackBarHelper.success('Referral added successfully');
+
+            Future.delayed(Duration(seconds: 2), () {
+              debugPrint('Going back...');
+              Navigator.of(context).pop();
+            });
+            return;
+          }
+        } catch (e) {
+          SnackBarHelper.success('Referral added successfully');
+          Future.delayed(Duration(seconds: 2), () {
+            Navigator.of(context).pop();
+          });
+          return;
+        }
+      } else {
+        debugPrint('hereeeee44====>>');
+        SnackBarHelper.error('Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('hereeeee44====>> Error: $e');
+      AppLogger.d(e.toString());
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMessage);
+    } finally {
+      debugPrint('hereeeee55====>>');
+      isLoading.value = false;
     }
-    // } catch (e) {
-    //   AppLogger.d(e.toString());
-    //   // final errorMessage = ErrorHandler.handleNetworkError(e);
-    //   // SnackBarHelper.error(errorMessage);
-    // } finally {
-    //   isLoading.value = false;
-    // }
   }
 }

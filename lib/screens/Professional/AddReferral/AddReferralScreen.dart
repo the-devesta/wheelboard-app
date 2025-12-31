@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/controllers/Professional/add_referral_controller.dart';
+import 'package:wheelboard/utils/constants.dart';
 import '../NewReferral/newreferralscreen.dart';
 
 class AddReferralScreen extends StatelessWidget {
@@ -249,41 +250,31 @@ class AddReferralScreen extends StatelessWidget {
                                   fontSize: 14,
                                 ),
                               ),
-                              r.isAccepted
-                                  ? Row(
-                                      children: [
-                                        Text(
-                                          r.referralStatus,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.green,
-                                          ),
-                                        ),
-                                        SizedBox(width: 6),
-                                        const Icon(
-                                          Icons.check_circle,
-                                          size: 12,
-                                          color: Colors.green,
-                                        ),
-                                      ],
-                                    )
-                                  : Row(
-                                      children: [
-                                        Text(
-                                          r.referralStatus.toLowerCase(),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.orange,
-                                          ),
-                                        ),
-                                        SizedBox(width: 6),
-                                        const Icon(
-                                          Icons.access_time,
-                                          size: 12,
-                                          color: Colors.orange,
-                                        ),
-                                      ],
+                              Row(
+                                children: [
+                                  Text(
+                                    r.referralStatus.toLowerCase(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          r.referralStatus.toLowerCase() ==
+                                              "accepted"
+                                          ? Colors.green
+                                          : Colors.orange,
                                     ),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Icon(
+                                    Icons.check_circle,
+                                    size: 12,
+                                    color:
+                                        r.referralStatus.toLowerCase() ==
+                                            "accepted"
+                                        ? Colors.green
+                                        : Colors.orange,
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                           const SizedBox(height: 6),
@@ -296,14 +287,17 @@ class AddReferralScreen extends StatelessWidget {
                             ),
                           ),
 
-                          const Spacer(),
+                          const SizedBox(height: 6),
 
                           Text(
-                            r.referralStatus,
+                            formatDateShort(r.createdDate).toString(),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: r.isAccepted ? Colors.green : Colors.amber,
+                              color:
+                                  r.referralStatus.toLowerCase() == "accepted"
+                                  ? Colors.green
+                                  : Colors.orange,
                             ),
                           ),
                         ],
@@ -317,37 +311,36 @@ class AddReferralScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             /// 📊 Stats section
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.08),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: const [
-                  Icon(
-                    Icons.bar_chart_rounded,
-                    color: Colors.blueAccent,
-                    size: 20,
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    "Your Referral Stats",
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                  ),
-                  Spacer(),
-                  Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
-                ],
-              ),
-            ),
-
+            // Container(
+            //   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            //   decoration: BoxDecoration(
+            //     color: Colors.white,
+            //     borderRadius: BorderRadius.circular(14),
+            //     boxShadow: [
+            //       BoxShadow(
+            //         color: Colors.grey.withOpacity(0.08),
+            //         blurRadius: 6,
+            //         offset: const Offset(0, 3),
+            //       ),
+            //     ],
+            //   ),
+            //   child: Row(
+            //     children: const [
+            //       Icon(
+            //         Icons.bar_chart_rounded,
+            //         color: Colors.blueAccent,
+            //         size: 20,
+            //       ),
+            //       SizedBox(width: 10),
+            //       Text(
+            //         "Your Referral Stats",
+            //         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            //       ),
+            //       Spacer(),
+            //       Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+            //     ],
+            //   ),
+            // ),
             const SizedBox(height: 20),
             // New Referral Button (moved inside scrollview)
             Container(

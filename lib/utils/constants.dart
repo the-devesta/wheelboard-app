@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class ApiConstants {
   static const String baseUrl = 'https://wheelboardapi.addonshareware.com/';
 }
@@ -129,4 +131,37 @@ class API {
 
   // KYC Verification APIs
   static const String verifyDrivingLicence = 'api/User/VerifyDrivingLicenceKYC';
+}
+
+String formatDateShort(String? dateString) {
+  if (dateString == null || dateString.isEmpty) {
+    return "-";
+  }
+
+  try {
+    final dateTime = DateTime.parse(dateString);
+    return "${dateTime.day} ${_getMonthName(dateTime.month)} ${dateTime.year}";
+  } catch (e) {
+    debugPrint('Invalid date: $dateString');
+    return dateString;
+  }
+}
+
+String _getMonthName(int month) {
+  const months = [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return months[month];
 }

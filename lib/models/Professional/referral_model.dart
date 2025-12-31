@@ -3,7 +3,7 @@ class ReferralModel {
   final String fullName;
   final String role;
   final String referralStatus;
-  final String createdDate; // optional if backend gives later
+  final String createdDate;
 
   ReferralModel({
     required this.referralId,
@@ -19,9 +19,7 @@ class ReferralModel {
       fullName: json['fullName'] ?? '',
       role: json['role'] ?? '',
       referralStatus: json['referralStatus'] ?? '',
-      createdDate: '', // backend se aaye to map kar lena
+      createdDate: json['referralDate'] ?? '',
     );
   }
-
-  bool get isAccepted => referralStatus == "ACCEPTED";
 }

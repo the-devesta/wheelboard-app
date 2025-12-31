@@ -899,7 +899,7 @@ class YourProfileScreen extends StatelessWidget {
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  Get.to(AddReferralScreen());
+                  Get.to(() => AddReferralScreen());
                 },
                 child: Container(
                   height: 88,
