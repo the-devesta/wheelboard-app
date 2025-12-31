@@ -238,6 +238,28 @@ class HttpHelper {
     }
   }
 
+  static Future<http.Response> startTrip(
+    String tripId, {
+    Map<String, String>? headers,
+  }) async {
+    return await postData(
+      endpoint: API.startTrip,
+      data: {'tripId': tripId},
+      headers: headers,
+    );
+  }
+
+  static Future<http.Response> endTrip(
+    String tripId, {
+    Map<String, String>? headers,
+  }) async {
+    return await postData(
+      endpoint: API.endTrip,
+      data: {'tripId': tripId},
+      headers: headers,
+    );
+  }
+
   static String formatAmount(num? amount, {String symbol = '₹'}) {
     if (amount == null) return '${symbol}0';
 

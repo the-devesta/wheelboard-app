@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../TransactionSummary/TransactionSummaryScreen.dart';
-import '../TripProgress/TripProgressScreen.dart';
+import '../TrackTrip/TrackTripScreen.dart';
 import '../widgets/professional_header_widget.dart';
 import '../widgets/banner_header_widget.dart';
 import '../widgets/quick_action_button_widget.dart';
@@ -95,7 +95,10 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                         left: screenWidth * 0.025, // Responsive left padding
                         right: screenWidth * 0.025, // Responsive right padding
                         height: screenHeight * 0.11, // Responsive height
-                        child: _buildQuickActions(context),
+                        child: _buildQuickActions(
+                          context,
+                          assignedTripController,
+                        ),
                       ),
                       // Next Scheduled Trip Card - Overlapping on banner - Responsive
                       Positioned(
@@ -224,7 +227,10 @@ class ProfessionalHomePageScreen extends StatelessWidget {
   }
 
   /// Quick Actions Row - Responsive
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(
+    BuildContext context,
+    AssignedTripController assignedTripController,
+  ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonSpacing =
         screenWidth * 0.02; // Responsive spacing between buttons
@@ -244,7 +250,29 @@ class ProfessionalHomePageScreen extends StatelessWidget {
           child: QuickActionButtonWidget(
             icon: Icons.my_location,
             title: "Track\nMy Trip",
-            onTap: () => Get.to(const TripProgressScreen()),
+            onTap: () {
+              // Find the first active trip to track
+              if (assignedTripController.assignedTrips.isNotEmpty) {
+                final activeTrip = assignedTripController.assignedTrips
+                    .firstWhere(
+                      (t) => [
+                        'active',
+                        'in progress',
+                        'ongoing',
+                      ].contains(t.tripStatus.toLowerCase()),
+                      orElse: () => assignedTripController.assignedTrips.first,
+                    );
+                Get.to(() => TrackTripScreen(tripId: activeTrip.tripId));
+              } else {
+                Get.snackbar(
+                  'No Active Trip',
+                  'You have no assigned trips to track at the moment.',
+                  backgroundColor: Colors.redAccent,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              }
+            },
           ),
         ),
         SizedBox(width: buttonSpacing),

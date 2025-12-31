@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../constants/apps_colors.dart';
-import '../../../models/get_vehicle_model.dart';
-import '../../../controllers/fleet_controller.dart';
-import '../../../services/auth_service.dart';
+import '../../../controllers/Transport/lease_controller.dart';
+import '../../../models/transport/lease_models.dart';
+import '../../../utils/constants.dart';
 import 'lease_details_screen.dart';
+import 'add_vehicle_lease_screen.dart';
 import 'on_lease_vehicles_screen.dart';
 
 /// Leased Vehicles Screen - Shows list of vehicles available for lease or currently leased
@@ -18,29 +19,29 @@ class LeasedVehiclesScreen extends StatefulWidget {
 }
 
 class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
-  final DriverController _fleetController = Get.find<DriverController>();
+  final LeaseController _leaseController = Get.put(LeaseController());
   String _selectedTab = 'All';
   final TextEditingController _searchController = TextEditingController();
-  final Set<String> _favoriteVehicles = {};
+  final Set<String> _favoriteLeases = {};
 
-  final List<String> _tabs = ['All', 'Available', 'bookings', 'Leased'];
+  final List<String> _tabs = ['All', 'Available', 'Booked', 'On Lease'];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadVehicles();
+      _loadLeases();
     });
   }
 
-  Future<void> _loadVehicles() async {
-    final authService = AuthService.to;
-    final userId = authService.currentUserId;
-    final token = authService.currentToken;
-
-    if (userId.isNotEmpty && token.isNotEmpty) {
-      await _fleetController.fetchVehicles(userId, token);
-    }
+  Future<void> _loadLeases() async {
+    // Assuming this screen shows "My Leases" (Leases created by me, the transport company)
+    await _leaseController.fetchMyLeases();
+    // Also fetch booked leases if needed for the booked tab?
+    // User response for booked leases is separate API: my-booked-lease-list-by-userId
+    // But this screen might combine them or mostly focus on 'My Posted Leases'.
+    // If 'Booked' tab means "Leases I booked", then I should fetch that too.
+    await _leaseController.fetchMyBookedLeases();
   }
 
   @override
@@ -49,31 +50,42 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
     super.dispose();
   }
 
-  List<Vehicle> get _filteredVehicles {
-    final allVehicles = _fleetController.vehicles;
+  List<LeaseListItem> get _filteredLeases {
+    List<LeaseListItem> allLeases;
+    if (_selectedTab == 'Booked') {
+      allLeases = _leaseController.myBookedLeases;
+    } else {
+      allLeases = _leaseController.leaseList;
+    }
 
     // Filter by search
     final searchFiltered = _searchController.text.isEmpty
-        ? allVehicles
-        : allVehicles.where((vehicle) {
+        ? allLeases
+        : allLeases.where((lease) {
             final query = _searchController.text.toLowerCase();
-            return vehicle.vehicleModel.toLowerCase().contains(query) ||
-                vehicle.vehicleNumber.toLowerCase().contains(query);
+            return (lease.vehicleTitle?.toLowerCase().contains(query) ??
+                    false) ||
+                (lease.vehicleNumber?.toLowerCase().contains(query) ?? false);
           }).toList();
 
-    // Filter by tab
-    if (_selectedTab == 'All') {
-      return searchFiltered;
-    } else if (_selectedTab == 'Available') {
-      return searchFiltered.where((v) => v.status == 'Available').toList();
-    } else if (_selectedTab == 'bookings') {
-      return searchFiltered.where((v) => v.status == 'Booked').toList();
-    } else if (_selectedTab == 'Leased') {
+    // Filter by tab status
+    if (_selectedTab == 'Available') {
+      return searchFiltered.where((l) => l.status == 'Available').toList();
+    } else if (_selectedTab == 'On Lease') {
+      // Show leases that are Active, Booked (by others), or Paused
+      // Adjust logic based on exact API status values
       return searchFiltered
-          .where((v) => v.ownershipType == 'Leased' || v.status == 'Leased')
+          .where(
+            (l) =>
+                l.status == 'Booked' ||
+                l.status == 'Active' ||
+                l.status == 'Paused' ||
+                l.leaseStatus == 'Paused',
+          )
           .toList();
     }
 
+    // For 'All' and 'Booked', return as is (Booked logic handled by different list source above)
     return searchFiltered;
   }
 
@@ -90,13 +102,13 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
           // Vehicle List
           Expanded(
             child: Obx(() {
-              if (_fleetController.isVehicleLoading.value) {
+              if (_leaseController.isLoading.value) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final vehicles = _filteredVehicles;
+              final leases = _filteredLeases;
 
-              if (vehicles.isEmpty) {
+              if (leases.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -108,7 +120,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No vehicles found',
+                        'No leases found',
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           color: Colors.grey[600],
@@ -122,14 +134,23 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
 
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: vehicles.length,
+                itemCount: leases.length,
                 itemBuilder: (context, index) {
-                  return _buildVehicleCard(vehicles[index]);
+                  return _buildLeaseCard(leases[index]);
                 },
               );
             }),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Get.to(
+            () => const AddVehicleLeaseScreen(),
+          )?.then((_) => _loadLeases());
+        },
+        backgroundColor: AppColors.buttonBg,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -226,7 +247,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
 
           return GestureDetector(
             onTap: () {
-              if (tab == 'Leased') {
+              if (tab == 'On Lease') {
                 Get.to(() => const OnLeaseVehiclesScreen());
               } else {
                 setState(() {
@@ -262,17 +283,26 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
     );
   }
 
-  Widget _buildVehicleCard(Vehicle vehicle) {
-    final isFavorite = _favoriteVehicles.contains(vehicle.vehicleId);
-    final vehicleImage = vehicle.imageUrls.isNotEmpty
-        ? vehicle.imageUrls.first
+  Widget _buildLeaseCard(LeaseListItem lease) {
+    final isFavorite = _favoriteLeases.contains(lease.leaseId);
+    final vehicleImage = lease.imageUrl != null && lease.imageUrl!.isNotEmpty
+        ? lease.imageUrl!
         : 'assets/truckImg.png';
 
     // Determine status and color
-    final status = _getVehicleStatus(vehicle);
+    final status = lease.status ?? 'Unknown';
     final statusColor = status == 'Available'
         ? const Color(0xFF28C76F)
         : const Color(0xFFFFB020);
+
+    // Parse dates
+    String dateRange = "";
+    if (lease.startDate != null) {
+      dateRange += _formatDate(lease.startDate!);
+    }
+    if (lease.endDate != null) {
+      dateRange += " → ${_formatDate(lease.endDate!)}";
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -305,9 +335,13 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: vehicleImage.startsWith('http')
+                  child:
+                      vehicleImage.startsWith('http') ||
+                          vehicleImage.contains('uploads/')
                       ? Image.network(
-                          vehicleImage,
+                          vehicleImage.startsWith('http')
+                              ? vehicleImage
+                              : '${ApiConstants.baseUrl}$vehicleImage',
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return const Icon(
@@ -341,7 +375,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            vehicle.vehicleModel,
+                            lease.vehicleTitle ?? 'Unknown Vehicle',
                             style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -353,10 +387,12 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                         InkWell(
                           onTap: () {
                             setState(() {
-                              if (isFavorite) {
-                                _favoriteVehicles.remove(vehicle.vehicleId);
-                              } else {
-                                _favoriteVehicles.add(vehicle.vehicleId);
+                              if (lease.leaseId != null) {
+                                if (isFavorite) {
+                                  _favoriteLeases.remove(lease.leaseId!);
+                                } else {
+                                  _favoriteLeases.add(lease.leaseId!);
+                                }
                               }
                             });
                           },
@@ -370,7 +406,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      vehicle.vehicleNumber,
+                      lease.vehicleNumber ?? '',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
@@ -382,21 +418,21 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
                     // Lease Period
                     _buildLeaseInfo(
                       Icons.calendar_today_outlined,
-                      'Jan 15 → Jun 15, 2024', // Mock data - replace with actual lease period
+                      dateRange.isNotEmpty ? dateRange : 'N/A',
                     ),
                     const SizedBox(height: 8),
 
-                    // Monthly KM Limit
+                    // Flat Price
                     _buildLeaseInfo(
-                      Icons.directions_car_outlined,
-                      '2,500 km/month', // Mock data
+                      Icons.currency_rupee,
+                      '${lease.flatPrice ?? 0}/day',
                     ),
                     const SizedBox(height: 8),
 
-                    // Current Total KM
+                    // Odometer
                     _buildLeaseInfo(
                       Icons.speed_outlined,
-                      '45,230 km', // Mock data - use actual odometer reading
+                      '${lease.odometerStartReading ?? 0} km',
                     ),
                   ],
                 ),
@@ -432,7 +468,9 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
               // View Details Link
               InkWell(
                 onTap: () {
-                  Get.to(() => LeaseDetailsScreen());
+                  if (lease.leaseId != null) {
+                    Get.to(() => LeaseDetailsScreen(leaseId: lease.leaseId!));
+                  }
                 },
                 child: Row(
                   children: [
@@ -455,6 +493,140 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
               ),
             ],
           ),
+          _buildActionButtons(lease),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(LeaseListItem lease) {
+    if (_selectedTab != 'On Lease') return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            // Pause/Resume Button
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () => _handlePauseResume(lease),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      (lease.leaseStatus == 'Paused' ||
+                          lease.status == 'Paused')
+                      ? Colors.green
+                      : AppColors.buttonBg,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  (lease.leaseStatus == 'Paused' || lease.status == 'Paused')
+                      ? 'Resume'
+                      : 'Pause',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // OFF Lease Button
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => _handleOffLease(lease),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFF44336),
+                  side: const BorderSide(color: Color(0xFFF44336)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'OFF Lease',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handlePauseResume(LeaseListItem lease) async {
+    if (lease.leaseId == null) return;
+    String action = (lease.leaseStatus == 'Paused' || lease.status == 'Paused')
+        ? 'Resume'
+        : 'Pause';
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$action Lease'),
+        content: Text(
+          'Are you sure you want to $action the lease for ${lease.vehicleTitle}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _leaseController.togglePauseResume(lease.leaseId!);
+              _loadLeases(); // Refresh list
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonBg,
+            ),
+            child: Text(action, style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleOffLease(LeaseListItem lease) async {
+    if (lease.leaseId == null) return;
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('OFF Lease'),
+        content: Text(
+          'Are you sure you want to mark ${lease.vehicleTitle} as OFF Lease?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _leaseController.offLease(lease.leaseId!);
+              _loadLeases(); // Refresh list
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF44336),
+            ),
+            child: const Text(
+              'OFF Lease',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
         ],
       ),
     );
@@ -465,25 +637,42 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
       children: [
         Icon(icon, size: 16, color: const Color(0xFF6B7280)),
         const SizedBox(width: 8),
-        Text(
-          text,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF4B5563),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF4B5563),
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       ],
     );
   }
 
-  String _getVehicleStatus(Vehicle vehicle) {
-    if (vehicle.status == 'Available') {
-      return 'Available';
-    } else if (vehicle.status == 'Booked' || vehicle.status == 'On Trip') {
-      return 'Booked';
-    } else {
-      return vehicle.status;
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } catch (e) {
+      return dateStr;
     }
   }
 

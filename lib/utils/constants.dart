@@ -22,6 +22,8 @@ class API {
   static const String getVehicles = 'api/Transport/vehicle';
   static const String addTrip = 'api/Trip/add-trip';
   static const String updateTrip = 'api/Trip/update-trip';
+  static const String startTrip = 'api/Trip/start-trip';
+  static const String endTrip = 'api/Trip/end-trip';
   static const String getTripList = 'api/Trip/trip-list/';
   static const String getUnassignedTripList = 'api/Trip/unassign-trip-list';
   static const String getUnassignedTripDetails =
@@ -111,6 +113,19 @@ class API {
 
   // Vehicle Lease APIs
   static const String addVehicleLease = 'api/Transport/AddVehicleLease';
+  static const String leaseList = 'api/Transport/lease-list';
+  static const String leaseListByUserId = 'api/Transport/lease-list-by-userId';
+  static const String myBookedLeaseListByUserId =
+      'api/Transport/my-booked-lease-list-by-userId';
+  static const String leaseDetails = 'api/Transport/lease-details/';
+  static const String applyForLease = 'api/Transport/apply-for-lease';
+  static const String getLeaseApplicationList =
+      'api/Transport/get-lease-application-list';
+  static const String leaseTogglePauseResume =
+      'api/Transport/lease-toggle-pause-resume';
+  static const String offLeases = 'api/Transport/off-leases';
+  static const String updateLeaseApplicationStatus =
+      'api/Transport/update-lease-application-status';
 
   // KYC Verification APIs
   static const String verifyDrivingLicence = 'api/User/VerifyDrivingLicenceKYC';

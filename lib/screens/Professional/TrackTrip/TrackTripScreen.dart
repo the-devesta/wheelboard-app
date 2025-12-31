@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:get/get.dart';
+import '../../../controllers/Professional/track_trip_controller.dart';
+
 class TrackTripScreen extends StatelessWidget {
-  const TrackTripScreen({super.key});
+  final String tripId;
+  const TrackTripScreen({super.key, required this.tripId});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(TrackTripController());
+
     // Asset URLs from Figma
     const String mapImageUrl =
         'https://www.figma.com/api/mcp/asset/1a7d4319-4d6e-495f-b01f-0734d40eef23';
@@ -58,7 +64,7 @@ class TrackTripScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Trip ID: ST0624ADI2024',
+                              'Trip ID: ${tripId.substring(0, tripId.length > 8 ? 8 : tripId.length).toUpperCase()}',
                               style: GoogleFonts.poppins(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -71,7 +77,7 @@ class TrackTripScreen extends StatelessWidget {
                       Container(
                         width: 18,
                         height: 18,
-                        decoration: BoxDecoration(shape: BoxShape.circle),
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
                         child: const Icon(Icons.more_vert, size: 18),
                       ),
                     ],
@@ -132,8 +138,8 @@ class TrackTripScreen extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3F5F8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF3F5F8),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -183,7 +189,7 @@ class TrackTripScreen extends StatelessWidget {
                         return Container(
                           width: 50,
                           height: 50,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: Colors.red,
                             shape: BoxShape.circle,
                           ),
@@ -208,7 +214,7 @@ class TrackTripScreen extends StatelessWidget {
                         return Container(
                           width: 74,
                           height: 74,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: Colors.green,
                             shape: BoxShape.circle,
                           ),
@@ -230,18 +236,87 @@ class TrackTripScreen extends StatelessWidget {
                       painter: RouteLinePainter(),
                     ),
                   ),
-                  // Bottom Sheet Handle
+                  // Buttons
                   Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 4,
-                      margin: const EdgeInsets.symmetric(horizontal: 50),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE9EBED),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
+                    bottom: 30,
+                    left: 20,
+                    right: 20,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Obx(
+                            () => ElevatedButton(
+                              onPressed: controller.isLoading.value
+                                  ? null
+                                  : () => controller.startTrip(tripId),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF27AE60),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 5,
+                              ),
+                              child: controller.isLoading.value
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Start Trip',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Obx(
+                            () => ElevatedButton(
+                              onPressed: controller.isLoading.value
+                                  ? null
+                                  : () => controller.endTrip(tripId),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFEB5757),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 5,
+                              ),
+                              child: controller.isLoading.value
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      'End Trip',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

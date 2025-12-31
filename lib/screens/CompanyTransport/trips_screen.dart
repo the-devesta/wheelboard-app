@@ -8,7 +8,7 @@ import 'package:wheelboard/screens/CompanyTransport/trip_details_screen.dart';
 import 'package:wheelboard/controllers/add_trip_controller.dart';
 import 'package:wheelboard/controllers/trip_page_controller.dart';
 import 'package:wheelboard/utils/session_manager.dart';
-import 'package:wheelboard/utils/navigation_helper.dart';
+
 import 'package:wheelboard/models/add_new_trip_model.dart';
 import '../../widgets/custom_loader.dart';
 
@@ -442,36 +442,6 @@ class _TripPageState extends State<TripPage>
                   side: const BorderSide(color: Color(0xFFDFF5EB), width: 2),
                 ),
                 elevation: 0,
-              ),
-            ),
-          ),
-          // Manage Trips Button
-          ElevatedButton(
-            onPressed: () {
-              // Check if TripPage is already in the navigation stack
-              final tabController = Get.find<TripPageTabController>();
-              tabController
-                  .switchToUpcoming(); // Switch to Upcoming tab (index 2)
-
-              // Navigate to trips tab in bottom nav if not already there
-              NavigationHelper.navigateToTripsTab();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF26868),
-              foregroundColor: Colors.white,
-              minimumSize: const Size(117, 42),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: Color(0xFFDFF5EB), width: 2),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              "Manage Trips",
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Poppins',
               ),
             ),
           ),

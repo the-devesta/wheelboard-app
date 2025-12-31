@@ -1,47 +1,85 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import '../../../controllers/Transport/lease_controller.dart';
+import '../../../models/transport/lease_models.dart';
+import '../../../utils/constants.dart';
+import '../../../constants/apps_colors.dart';
 
-/// Lease Details Screen - Viewing lease information (matches Figma design)
-class LeaseDetailsScreen extends StatelessWidget {
-  const LeaseDetailsScreen({super.key});
+/// Lease Details Screen - Viewing lease information
+class LeaseDetailsScreen extends StatefulWidget {
+  final String leaseId;
+
+  const LeaseDetailsScreen({super.key, required this.leaseId});
+
+  @override
+  State<LeaseDetailsScreen> createState() => _LeaseDetailsScreenState();
+}
+
+class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
+  final LeaseController _leaseController = Get.find<LeaseController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _leaseController.fetchLeaseDetails(widget.leaseId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Column(
-        children: [
-          // Header
-          _buildHeader(),
-          // Scrollable Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  // Vehicle Information Section
-                  _buildVehicleInfoSection(),
-                  const SizedBox(height: 16),
-                  // Lease Pricing & Terms Section
-                  _buildPricingTermsSection(),
-                  const SizedBox(height: 16),
-                  // Availability Window Section
-                  _buildAvailabilitySection(),
-                  const SizedBox(height: 16),
-                  // Owner Information Section
-                  _buildOwnerInfoSection(),
-                  const SizedBox(height: 16),
-                  // Additional Information Section
-                  _buildAdditionalInfoSection(),
-                  const SizedBox(height: 100),
-                ],
+      body: Obx(() {
+        if (_leaseController.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final lease = _leaseController.leaseDetails.value;
+
+        if (lease == null) {
+          return Center(
+            child: Text(
+              "Failed to load lease details",
+              style: GoogleFonts.inter(color: Colors.red),
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            // Header
+            _buildHeader(),
+            // Scrollable Content
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    // Vehicle Information Section
+                    _buildVehicleInfoSection(lease),
+                    const SizedBox(height: 16),
+                    // Lease Pricing & Terms Section
+                    _buildPricingTermsSection(lease),
+                    const SizedBox(height: 16),
+                    // Availability Window Section
+                    _buildAvailabilitySection(lease),
+                    const SizedBox(height: 16),
+                    // Owner Information Section
+                    _buildOwnerInfoSection(lease),
+                    const SizedBox(height: 16),
+                    // Additional Information Section
+                    _buildAdditionalInfoSection(lease),
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
       // Footer with Apply Now Button
       bottomNavigationBar: _buildFooter(),
     );
@@ -66,7 +104,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                 child: Container(
                   width: 40,
                   height: 40,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.transparent,
                   ),
@@ -96,7 +134,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                 child: Container(
                   width: 40,
                   height: 40,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.transparent,
                   ),
@@ -114,7 +152,17 @@ class LeaseDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVehicleInfoSection() {
+  Widget _buildVehicleInfoSection(LeaseDetails lease) {
+    final vehicleImage =
+        lease.vehicleImage != null && lease.vehicleImage!.isNotEmpty
+        ? (lease.vehicleImage!.startsWith('http') ||
+                  lease.vehicleImage!.contains('uploads/')
+              ? (lease.vehicleImage!.startsWith('http')
+                    ? lease.vehicleImage!
+                    : '${ApiConstants.baseUrl}${lease.vehicleImage}')
+              : lease.vehicleImage!)
+        : 'assets/truckImg.png';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -135,9 +183,9 @@ class LeaseDetailsScreen extends StatelessWidget {
           Container(
             height: 192,
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: const BorderRadius.only(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
@@ -147,20 +195,35 @@ class LeaseDetailsScreen extends StatelessWidget {
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
-              child: Image.network(
-                'https://via.placeholder.com/343x192',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFFF3F4F6),
-                    child: const Icon(
-                      Icons.local_shipping,
-                      size: 64,
-                      color: Color(0xFF9CA3AF),
+              child: vehicleImage.startsWith('http')
+                  ? Image.network(
+                      vehicleImage,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: const Color(0xFFF3F4F6),
+                          child: const Icon(
+                            Icons.local_shipping,
+                            size: 64,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                        );
+                      },
+                    )
+                  : Image.asset(
+                      vehicleImage,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: const Color(0xFFF3F4F6),
+                          child: const Icon(
+                            Icons.local_shipping,
+                            size: 64,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ),
           Padding(
@@ -176,7 +239,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Tata Ace Gold',
+                            lease.vehicleTitle ?? 'Unknown Vehicle',
                             style: GoogleFonts.inter(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -185,7 +248,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'DL 8C AX 1234',
+                            lease.vehicleNumber ?? '',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.normal,
@@ -195,22 +258,26 @@ class LeaseDetailsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Available Badge
+                    // Status Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
+                        color: lease.status == 'Available'
+                            ? const Color(0xFFDCFCE7)
+                            : const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(9999),
                       ),
                       child: Text(
-                        'Available',
+                        lease.status ?? 'Unknown',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF15803D),
+                          color: lease.status == 'Available'
+                              ? const Color(0xFF15803D)
+                              : const Color(0xFFC2410C),
                         ),
                       ),
                     ),
@@ -221,33 +288,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                 const Divider(color: Color(0xFFF3F4F6), height: 1),
                 const SizedBox(height: 12),
                 // Vehicle Details Grid
-                _buildVehicleDetailsGrid(),
-                const SizedBox(height: 12),
-                // Divider
-                const Divider(color: Color(0xFFF3F4F6), height: 1),
-                const SizedBox(height: 12),
-                // Past Usage
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Past Usage',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.normal,
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                    Text(
-                      'E-commerce Deliveries',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF374151),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildVehicleDetailsGrid(lease),
               ],
             ),
           ),
@@ -256,7 +297,7 @@ class LeaseDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVehicleDetailsGrid() {
+  Widget _buildVehicleDetailsGrid(LeaseDetails lease) {
     return Column(
       children: [
         Row(
@@ -267,7 +308,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                 icon: Icons.local_shipping,
                 iconColor: const Color(0xFF2563EB),
                 label: 'Vehicle Type',
-                value: 'Mini Truck',
+                value: lease.vehicleType ?? 'N/A',
               ),
             ),
             const SizedBox(width: 12),
@@ -277,7 +318,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                 icon: Icons.calendar_today,
                 iconColor: const Color(0xFF9333EA),
                 label: 'Year',
-                value: '2022',
+                value: '${lease.modelYear ?? "N/A"}',
               ),
             ),
           ],
@@ -291,17 +332,17 @@ class LeaseDetailsScreen extends StatelessWidget {
                 icon: Icons.speed,
                 iconColor: const Color(0xFFF59E0B),
                 label: 'Odometer',
-                value: '45,230 km',
+                value: '${lease.odometerStartReading ?? 0} km',
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _buildDetailItem(
                 iconBg: const Color(0xFFF0FDF4),
-                icon: Icons.local_gas_station,
+                icon: Icons.trending_up,
                 iconColor: const Color(0xFF16A34A),
-                label: 'Fuel Type',
-                value: 'Diesel',
+                label: 'Trip Efficiency',
+                value: '${lease.tripEfficiencyRate ?? 0}%',
               ),
             ),
           ],
@@ -315,17 +356,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                 icon: Icons.trending_up,
                 iconColor: const Color(0xFF6366F1),
                 label: 'Avg Monthly Run',
-                value: '2,500 km',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildDetailItem(
-                iconBg: const Color(0xFFFDF2F8),
-                icon: Icons.access_time,
-                iconColor: const Color(0xFFEC4899),
-                label: 'Lease Duration',
-                value: '6-12 months',
+                value: '${lease.avgMonthlyRun ?? 0} km',
               ),
             ),
           ],
@@ -381,7 +412,11 @@ class LeaseDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPricingTermsSection() {
+  Widget _buildPricingTermsSection(LeaseDetails lease) {
+    String pricingType = 'Flat Price'; // Default
+    if (lease.pricingType == '1') pricingType = 'Per KM';
+    if (lease.pricingType == '2') pricingType = 'Per Trip';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -452,7 +487,7 @@ class LeaseDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Flat Price per Day',
+                  pricingType,
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -467,53 +502,46 @@ class LeaseDetailsScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _buildRateCard(label: 'Daily Rate', value: '₹1,200'),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildRateCard(label: 'Rate per KM', value: '₹8'),
+                child: _buildRateCard(
+                  label: 'Flat Rate',
+                  value: '₹${lease.flatPrice ?? 0}',
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          // Other Details
-          _buildPricingDetailRow('Est. Monthly Run', '2,500 km'),
-          const SizedBox(height: 12),
-          _buildPricingDetailRow('Transport Charges', '₹500 (One-time)'),
-          const SizedBox(height: 12),
-          _buildPricingDetailRow('Security Deposit', '₹15,000'),
-          const SizedBox(height: 16),
-          // Terms Note
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFBEB),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFDE68A)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  size: 14,
-                  color: Color(0xFF78350F),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Insurance and maintenance included. Fuel costs are borne by lessee. Minimum lease period: 6 months.',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.normal,
-                      color: const Color(0xFF78350F),
-                      height: 1.5,
+          // Instructions
+          if (lease.instructions != null && lease.instructions!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: Color(0xFF78350F),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      lease.instructions!,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                        color: const Color(0xFF78350F),
+                        height: 1.5,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -551,34 +579,7 @@ class LeaseDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPricingDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF4B5563),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF111827),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAvailabilitySection() {
+  Widget _buildAvailabilitySection(LeaseDetails lease) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -627,9 +628,16 @@ class LeaseDetailsScreen extends StatelessWidget {
           // Dates
           Row(
             children: [
-              Expanded(child: _buildDateCard('Start Date', '15 Jan 2025')),
+              Expanded(
+                child: _buildDateCard(
+                  'Start Date',
+                  _formatDate(lease.startDate),
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildDateCard('End Date', '15 Jul 2025')),
+              Expanded(
+                child: _buildDateCard('End Date', _formatDate(lease.endDate)),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -643,7 +651,7 @@ class LeaseDetailsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _buildBusinessDays(),
+          _buildBusinessDays(lease.businessDays),
           const SizedBox(height: 16),
           // Business Hours
           Text(
@@ -655,7 +663,7 @@ class LeaseDetailsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _buildBusinessHours(),
+          _buildBusinessHours(lease.startTime, lease.endTime),
         ],
       ),
     );
@@ -693,15 +701,16 @@ class LeaseDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBusinessDays() {
+  Widget _buildBusinessDays(String? daysString) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final selectedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    final selectedDays =
+        daysString?.split(', ').map((e) => e.trim()).toList() ?? [];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: days.map((day) {
-          final isSelected = selectedDays.contains(day);
+          final isSelected = selectedDays.any((d) => d.startsWith(day));
           return Container(
             margin: EdgeInsets.only(right: day != 'Sun' ? 8 : 0),
             width: 40,
@@ -728,7 +737,7 @@ class LeaseDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBusinessHours() {
+  Widget _buildBusinessHours(String? start, String? end) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -750,7 +759,7 @@ class LeaseDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '06:00 AM',
+                start ?? '--:--',
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -762,7 +771,7 @@ class LeaseDetailsScreen extends StatelessWidget {
           Container(
             width: 32,
             height: 32,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
@@ -784,7 +793,7 @@ class LeaseDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '10:00 PM',
+                end ?? '--:--',
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -798,7 +807,10 @@ class LeaseDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOwnerInfoSection() {
+  Widget _buildOwnerInfoSection(LeaseDetails lease) {
+    if (lease.ownerName == null || lease.ownerName!.isEmpty)
+      return const SizedBox.shrink();
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -816,496 +828,154 @@ class LeaseDetailsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFAF5FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: Color(0xFF9333EA),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Owner Information',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF111827),
-                ),
-              ),
-            ],
+          Text(
+            'Owner Details',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF111827),
+            ),
           ),
-          const SizedBox(height: 16),
-          // Owner Profile
+          const SizedBox(height: 12),
           Row(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFF3F4F6), width: 2),
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    'https://via.placeholder.com/56',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: const Color(0xFFF3F4F6),
-                        child: const Icon(
-                          Icons.person,
-                          size: 28,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+              CircleAvatar(
+                backgroundImage:
+                    lease.profileImage != null && lease.profileImage!.isNotEmpty
+                    ? NetworkImage(lease.profileImage!)
+                    : null,
+                child: lease.profileImage == null || lease.profileImage!.isEmpty
+                    ? Text(lease.ownerName![0])
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Rajesh Kumar',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF111827),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDBEAFE),
-                            borderRadius: BorderRadius.circular(9999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.verified,
-                                size: 12,
-                                color: Color(0xFF1D4ED8),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Verified',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1D4ED8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        ...List.generate(
-                          4,
-                          (index) => const Icon(
-                            Icons.star,
-                            size: 12,
-                            color: Color(0xFFFBBF24),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.star_half,
-                          size: 12,
-                          color: Color(0xFFFBBF24),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '(4.5)',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.normal,
-                            color: const Color(0xFF4B5563),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Contact Info
-          _buildContactInfo(
-            icon: Icons.phone,
-            label: 'Phone Number',
-            value: '+91 98765 43210',
-          ),
-          const SizedBox(height: 12),
-          _buildContactInfo(
-            icon: Icons.email,
-            label: 'Email Address',
-            value: 'rajesh.k@fleetowner.com',
-          ),
-          const SizedBox(height: 12),
-          _buildContactInfo(
-            icon: Icons.location_on,
-            label: 'Service Region',
-            value: 'Delhi NCR & North India',
-          ),
-          const SizedBox(height: 16),
-          // Reliability Score
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFBBF7D0)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.shield,
-                      size: 14,
-                      color: Color(0xFF14532D),
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Reliability Score',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF14532D),
-                      ),
+                      lease.ownerName!,
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      lease.email ?? "",
+                      style: GoogleFonts.inter(color: Colors.grey),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ),
-                Text(
-                  '95/100',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF15803D),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContactInfo({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 14, color: const Color(0xFF2563EB)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.normal,
-                    color: const Color(0xFF6B7280),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdditionalInfoSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section Header
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.info_outline,
-                  color: Color(0xFF6366F1),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Additional Information',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF111827),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Description
-          Text(
-            'Description',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF111827),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'This well-maintained Tata Ace Gold is perfect for intra-city logistics and last-mile deliveries. The vehicle has been regularly serviced and is in excellent condition. Ideal for e-commerce businesses, courier services, or small-scale transport operations.',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF4B5563),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: Color(0xFFF3F4F6), height: 1),
-          const SizedBox(height: 16),
-          // Vehicle Capabilities
-          Text(
-            'Vehicle Capabilities',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF111827),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildCapabilityItem('Payload capacity: 750 kg'),
-          const SizedBox(height: 8),
-          _buildCapabilityItem('GPS tracking enabled'),
-          const SizedBox(height: 8),
-          _buildCapabilityItem('Air conditioning available'),
-          const SizedBox(height: 8),
-          _buildCapabilityItem('Power steering for easy handling'),
-          const SizedBox(height: 16),
-          const Divider(color: Color(0xFFF3F4F6), height: 1),
-          const SizedBox(height: 16),
-          // Required Documents
-          Text(
-            'Required Documents',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF111827),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildDocumentItem('Valid driving license'),
-          const SizedBox(height: 8),
-          _buildDocumentItem('Aadhaar card & PAN card'),
-          const SizedBox(height: 8),
-          _buildDocumentItem('Business registration proof'),
-          const SizedBox(height: 8),
-          _buildDocumentItem('Security deposit cheque'),
-          const SizedBox(height: 16),
-          // Terms & Conditions
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFECACA)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
-                  size: 14,
-                  color: Color(0xFF7F1D1D),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Terms & Conditions',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF7F1D1D),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Any damage to the vehicle during the lease period will be charged to the lessee. Late payment will incur penalty charges of ₹200 per day. Vehicle must be returned in the same condition as received.',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.normal,
-                          color: const Color(0xFF991B1B),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildCapabilityItem(String text) {
-    return Row(
-      children: [
-        const Icon(Icons.check_circle, size: 12, color: Color(0xFF16A34A)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF374151),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDocumentItem(String text) {
-    return Row(
-      children: [
-        const Icon(Icons.description, size: 9, color: Color(0xFF374151)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF374151),
-            ),
-          ),
-        ),
-      ],
-    );
+  Widget _buildAdditionalInfoSection(LeaseDetails lease) {
+    // Placeholder if more info needed
+    return const SizedBox.shrink();
   }
 
   Widget _buildFooter() {
     return Container(
-      height: 81,
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton(
-          onPressed: () {
-            // Handle Apply Now
-            Get.snackbar('Success', 'Application submitted');
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2563EB),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 4,
-            shadowColor: Colors.black.withOpacity(0.1),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Apply Now',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+      child: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () {
+              _showApplyDialog();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.buttonBg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward, size: 14, color: Colors.white),
-            ],
+              elevation: 0,
+            ),
+            child: Text(
+              'Apply for Lease',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _showApplyDialog() {
+    final TextEditingController notesController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Apply for Lease'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Add some notes for your application:'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Notes...',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _leaseController.applyForLease(
+                widget.leaseId,
+                notesController.text,
+              );
+            },
+            child: const Text('Apply'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return "N/A";
+    try {
+      final date = DateTime.parse(dateStr);
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } catch (e) {
+      return dateStr;
+    }
   }
 }

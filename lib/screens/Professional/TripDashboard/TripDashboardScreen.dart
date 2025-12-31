@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../models/assigned_trip_model.dart';
 import '../TripDetails/TripDetailsScreen.dart';
+import '../TrackTrip/TrackTripScreen.dart';
 import '../../../widgets/custom_loader.dart';
 
 class TripDashboardScreen extends StatefulWidget {
@@ -760,20 +761,39 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: trip != null
-                    ? () {
-                        Get.to(() => TripDetailsScreen(trip: trip));
-                      }
-                    : null,
-                child: Text(
-                  'View Details',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF375DFB),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: trip != null
+                        ? () {
+                            Get.to(() => TrackTripScreen(tripId: trip.tripId));
+                          }
+                        : null,
+                    child: Text(
+                      'Track',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF27AE60),
+                      ),
+                    ),
                   ),
-                ),
+                  TextButton(
+                    onPressed: trip != null
+                        ? () {
+                            Get.to(() => TripDetailsScreen(trip: trip));
+                          }
+                        : null,
+                    child: Text(
+                      'View Details',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF375DFB),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
