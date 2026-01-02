@@ -18,6 +18,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../BidSubmit/BidSubmitScreen.dart';
 import '../../../models/unassigned_trip_model.dart';
 
@@ -288,47 +289,76 @@ class TripOverviewSheet extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundImage: NetworkImage(
-                      'https://i.pravatar.cc/100?img=12',
-                    ), // demo image
-                    radius: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Fleet Owner",
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                      Text(
-                        "ABC Logistics",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.call, size: 16),
-                    label: const Text("Call"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      textStyle: const TextStyle(fontSize: 13),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.business,
+                      color: Colors.redAccent,
+                      size: 20,
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Fleet Owner",
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                        Text(
+                          tripDetails.companyName.isNotEmpty
+                              ? tripDetails.companyName
+                              : "N/A",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (tripDetails.companyMobileNo.isNotEmpty)
+                          Text(
+                            tripDetails.companyMobileNo,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (tripDetails.companyMobileNo.isNotEmpty)
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final Uri phoneUri = Uri(
+                          scheme: 'tel',
+                          path: tripDetails.companyMobileNo,
+                        );
+                        if (await canLaunchUrl(phoneUri)) {
+                          await launchUrl(phoneUri);
+                        }
+                      },
+                      icon: const Icon(Icons.call, size: 16),
+                      label: const Text("Call"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        textStyle: const TextStyle(fontSize: 13),
+                      ),
+                    ),
                 ],
               ),
             ),

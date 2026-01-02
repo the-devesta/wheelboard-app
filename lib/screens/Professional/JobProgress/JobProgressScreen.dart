@@ -54,12 +54,6 @@ class JobProgressScreen extends StatelessWidget {
           elevation: 0.5,
           automaticallyImplyLeading: false,
           leading: const SizedBox.shrink(),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.grey),
-              onPressed: () {},
-            ),
-          ],
         ),
         body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

@@ -61,6 +61,8 @@ class UnassignedTripDetails {
   final String driverName;
   final String driverContact;
   final String driverImagePath;
+  final String companyName;
+  final String companyMobileNo;
 
   UnassignedTripDetails({
     required this.tripId,
@@ -82,6 +84,8 @@ class UnassignedTripDetails {
     required this.driverName,
     required this.driverContact,
     required this.driverImagePath,
+    required this.companyName,
+    required this.companyMobileNo,
   });
 
   factory UnassignedTripDetails.fromJson(Map<String, dynamic> json) {
@@ -110,6 +114,8 @@ class UnassignedTripDetails {
       driverName: json['driverName'] ?? '',
       driverContact: json['driverContact'] ?? '',
       driverImagePath: json['driverImagePath'] ?? '',
+      companyName: json['companyName'] ?? '',
+      companyMobileNo: json['companyMobileNo'] ?? '',
     );
   }
 }

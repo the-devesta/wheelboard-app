@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:wheelboard/screens/CompanyTransport/notification_screen.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
@@ -89,9 +90,18 @@ class _JobBoardScreenState extends State<JobBoardScreen>
           centerTitle: true,
           automaticallyImplyLeading: false,
           leading: const SizedBox.shrink(),
-          actions: const [
-            Icon(Icons.notifications_none_rounded, color: Colors.black87),
-            SizedBox(width: 16),
+          actions: [
+            IconButton(
+              icon: const Icon(
+                Icons.notifications_none_rounded,
+                color: Colors.black87,
+              ),
+              onPressed: () {
+                // Navigate to notification screen
+                Get.to(() => const NotificationScreen());
+              },
+            ),
+            const SizedBox(width: 8),
           ],
           elevation: 0,
           backgroundColor: Colors.white,

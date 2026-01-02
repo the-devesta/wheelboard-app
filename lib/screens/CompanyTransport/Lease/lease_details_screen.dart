@@ -5,6 +5,7 @@ import '../../../controllers/Transport/lease_controller.dart';
 import '../../../models/transport/lease_models.dart';
 import '../../../utils/constants.dart';
 import '../../../constants/apps_colors.dart';
+import '../../../utils/session_manager.dart';
 
 /// Lease Details Screen - Viewing lease information
 class LeaseDetailsScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class LeaseDetailsScreen extends StatefulWidget {
 
 class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
   final LeaseController _leaseController = Get.find<LeaseController>();
+  final SessionManager _sessionManager = SessionManager();
 
   @override
   void initState() {
@@ -509,39 +511,6 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Instructions
-          if (lease.instructions != null && lease.instructions!.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFDE68A)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.info_outline,
-                    size: 14,
-                    color: Color(0xFF78350F),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      lease.instructions!,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.normal,
-                        color: const Color(0xFF78350F),
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -879,39 +848,61 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
   }
 
   Widget _buildFooter() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: () {
-              _showApplyDialog();
+    return Obx(() {
+      final lease = _leaseController.leaseDetails.value;
+
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+        ),
+        child: SafeArea(
+          child: FutureBuilder<String?>(
+            future: _sessionManager.getString('userId'),
+            builder: (context, snapshot) {
+              final currentUserId = snapshot.data;
+              final isOwnVehicle =
+                  lease?.userId != null &&
+                  currentUserId != null &&
+                  lease!.userId == currentUserId;
+
+              return SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: isOwnVehicle
+                      ? null
+                      : () {
+                          _showApplyDialog();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isOwnVehicle
+                        ? Colors.grey.shade300
+                        : AppColors.buttonBg,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                  ),
+                  child: Text(
+                    isOwnVehicle
+                        ? 'Cannot Apply (Your Vehicle)'
+                        : 'Apply for Lease',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isOwnVehicle ? Colors.grey.shade600 : Colors.white,
+                    ),
+                  ),
+                ),
+              );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.buttonBg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Apply for Lease',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   void _showApplyDialog() {

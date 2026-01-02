@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 
 import 'package:wheelboard/services/auth_service.dart';
@@ -79,7 +80,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                     children: [
                       _buildProfileHeader(profile),
                       const SizedBox(height: 16),
-                      _buildKycBanner(),
+                      // _buildKycBanner(),
                       const SizedBox(height: 16),
                       _buildPersonalDetailsCard(profile),
                       const SizedBox(height: 16),
@@ -305,33 +306,33 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     );
   }
 
-  Widget _buildKycBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.lock_outline, size: 18, color: Color(0xFF424242)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Complete your KYC to unlock full access',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF424242),
-              ),
-            ),
-          ),
-          const Icon(Icons.chevron_right, size: 16),
-        ],
-      ),
-    );
-  }
+  // Widget _buildKycBanner() {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(999),
+  //       border: Border.all(color: const Color(0xFFE0E0E0)),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         const Icon(Icons.lock_outline, size: 18, color: Color(0xFF424242)),
+  //         const SizedBox(width: 12),
+  //         Expanded(
+  //           child: Text(
+  //             'Complete your KYC to unlock full access',
+  //             style: GoogleFonts.poppins(
+  //               fontSize: 14,
+  //               fontWeight: FontWeight.w500,
+  //               color: const Color(0xFF424242),
+  //             ),
+  //           ),
+  //         ),
+  //         const Icon(Icons.chevron_right, size: 16),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildPersonalDetailsCard(UserProfileModel? profile) {
     return _buildCard(
@@ -587,7 +588,12 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       children: [
         Row(
           children: [
-            Expanded(child: _buildActionCard(Icons.phone, 'Contact Us')),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _contactUs(),
+                child: _buildActionCard(Icons.phone, 'Contact Us'),
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
@@ -685,54 +691,85 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   }
 
   Widget _buildSupportCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF36969),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Having issues with your profile?',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+    return GestureDetector(
+      onTap: () {
+        SnackBarHelper.info(
+          'Coming Soon! Chat support will be available soon.',
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF36969),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Having issues with your profile?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Our team is here to help',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white,
+                  const SizedBox(height: 8),
+                  Text(
+                    'Our team is here to help',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              'Chat',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
+                ],
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Chat',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3CD),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Soon',
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF856404),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -854,6 +891,25 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         ],
       ),
     );
+  }
+
+  /// Contact support via phone
+  void _contactUs() async {
+    try {
+      final Uri phoneUri = Uri(
+        scheme: 'tel',
+        path: '+919876543210', // Replace with actual support number
+      );
+
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        SnackBarHelper.error('Cannot make phone call');
+      }
+    } catch (e) {
+      AppLogger.d('Error launching phone dialer: $e');
+      SnackBarHelper.error('Failed to open phone dialer');
+    }
   }
 
   void _showLogoutDialog(BuildContext context) {

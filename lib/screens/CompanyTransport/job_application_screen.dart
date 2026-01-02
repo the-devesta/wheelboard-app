@@ -493,7 +493,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Type of Job',
+                    'Job Duration',
                     style: TextStyle(
                       fontSize: 12,
                       fontFamily: 'Inter',
@@ -502,12 +502,18 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    application.jobTitle ?? 'N/A',
-                    style: const TextStyle(
+                    application.jobDuration ??
+                        application.jobTitle ??
+                        'Not specified',
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Inter',
-                      color: Color(0xFF1E1E1E),
+                      color:
+                          (application.jobDuration != null ||
+                              application.jobTitle != null)
+                          ? const Color(0xFF1E1E1E)
+                          : const Color(0xFF9CA3AF),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -546,14 +552,21 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    application.salaryExpectation > 0
-                        ? '₹${application.salaryExpectation.toStringAsFixed(0)}'
-                        : 'N/A',
-                    style: const TextStyle(
+                    (application.salary != null && application.salary! > 0)
+                        ? '₹${application.salary!.toStringAsFixed(0)}'
+                        : (application.salaryExpectation > 0
+                              ? '₹${application.salaryExpectation.toStringAsFixed(0)}'
+                              : 'Not specified'),
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Inter',
-                      color: Color(0xFF1E1E1E),
+                      color:
+                          ((application.salary != null &&
+                                  application.salary! > 0) ||
+                              application.salaryExpectation > 0)
+                          ? const Color(0xFF1E1E1E)
+                          : const Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
