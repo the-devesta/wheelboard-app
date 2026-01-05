@@ -79,10 +79,10 @@ class _ServiceProviderProfileScreenState
                       const SizedBox(height: 20),
                       _buildBusinessInfoCard(profile),
                       const SizedBox(height: 20),
-                      _buildDescriptionCard(),
-                      const SizedBox(height: 20),
-                      _buildSubscriptionPlans(),
-                      const SizedBox(height: 16),
+                      // _buildDescriptionCard(),
+                      // const SizedBox(height: 20),
+                      // _buildSubscriptionPlans(),
+                      // const SizedBox(height: 16),
                       _buildQuickActions(),
                       const SizedBox(height: 16),
                       _buildFooter(),
@@ -352,14 +352,14 @@ class _ServiceProviderProfileScreenState
   Widget _buildServiceButton(String text, {bool isSelected = false}) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          selectedService = text;
-        });
+        // setState(() {
+        //   selectedService = text;
+        // });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF36969) : Colors.transparent,
+          color: Colors.transparent,
           border: Border.all(color: const Color(0xFFF36969), width: 2),
           borderRadius: BorderRadius.circular(9999),
         ),
@@ -368,7 +368,7 @@ class _ServiceProviderProfileScreenState
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : const Color(0xFFF36969),
+            color: const Color(0xFFF36969),
           ),
         ),
       ),

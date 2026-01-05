@@ -1,157 +1,127 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/controllers/service_dashboard_controller.dart';
+import 'package:wheelboard/models/dashboard_model.dart';
+import 'package:wheelboard/models/myassign_sevice_list.dart';
 
 class ServiceDashboardScreen extends StatelessWidget {
-  const ServiceDashboardScreen({super.key});
+  ServiceDashboardScreen({super.key});
+
+  final controller = Get.put(ServiceDashboardController());
 
   @override
   Widget build(BuildContext context) {
-    final services = [
-      const ServiceCardData(
-        title: 'Tyre Replacement',
-        subtitle: 'Professional tyre replacement service for all vehicle types',
-        tag: 'Tyre Repair',
-        tagColor: Color(0xFFDBEAFE),
-        tagTextColor: Color(0xFF1E40AF),
-        meta: 'Updated 2 days ago',
-      ),
-      const ServiceCardData(
-        title: 'Engine Diagnostics',
-        subtitle: 'Complete engine diagnostic and repair services',
-        tag: 'Engine',
-        tagColor: Color(0xFFE9D5FF),
-        tagTextColor: Color(0xFF6B21A8),
-        meta: 'Updated 1 day ago',
-      ),
-      const ServiceCardData(
-        title: 'Oil Change Service',
-        subtitle: 'Quick and efficient oil change for all vehicles',
-        tag: 'Oil',
-        tagColor: Color(0xFFFEF3C7),
-        tagTextColor: Color(0xFF92400E),
-        meta: 'Created 1 week ago',
-      ),
-    ];
-
-    final timeline = <TaskStep>[
-      TaskStep('Service Assigned', '10:00 AM', status: StepStatus.done),
-      TaskStep('Contact Provider', '11:00 AM', status: StepStatus.done),
-      TaskStep('Work Started', '11:15 AM', status: StepStatus.done),
-      TaskStep('Work In Progress', 'Live', status: StepStatus.active),
-      TaskStep('Work Completed', '-', status: StepStatus.todo),
-      TaskStep('Payment', '-', status: StepStatus.todo),
-    ];
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: _DashboardAppBar(
+
+      appBar: const _DashboardAppBar(
         title: 'Service Dashboard',
         subtitle: 'Raise a new request or track your active services',
-        onBack: () => Navigator.maybePop(context),
-        onBell: () {},
       ),
+
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        child: Column(
           children: [
-            // My Assigned Services header
-            Text(
-              'My Assigned Services',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Track your Services here',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF6B7280),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Search + filter row
-            Row(
-              children: [
-                Expanded(
-                  child: _SearchField(
-                    hint: 'Search services...',
-                    onChanged: (_) {},
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'My Assigned Services',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Track your Services here',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SearchField(controller: controller.searchCtrl),
+                      ),
+                      const SizedBox(width: 10),
+                      // const _DropdownPill(value: 'All'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 10),
+
+            Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  itemCount: controller.filteredServices.length,
+                  itemBuilder: (context, index) {
+                    final service = controller.filteredServices[index];
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Obx(() {
+                        final isExpanded =
+                            controller.expandedIndex.value == index;
+
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () => controller.toggleExpand(index),
+                          child: ServiceCard(
+                            data: mapToCard(service),
+                            expanded: isExpanded,
+                            controller: controller,
+                          ),
+                        );
+                      }),
+                    );
+                  },
                 ),
-                const SizedBox(width: 10),
-                _DropdownPill(value: 'All', onTap: () {}),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Assigned services list
-            ...services.map(
-              (s) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ServiceCard(data: s),
-              ),
-            ),
-
-            // In-progress block
-            const SizedBox(height: 12),
-            _InProgressSection(),
-
-            const SizedBox(height: 12),
-
-            // Task Progress section
-            _TimelineCard(steps: timeline),
+              );
+            }),
           ],
-        ),
-      ),
-
-      // Bottom CTA
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: SizedBox(
-          height: 48,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF84FAB6),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            onPressed: () {},
-            child: Text(
-              'Complete Payment!',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-          ),
         ),
       ),
     );
   }
 }
 
-/* ----------------------- AppBar ----------------------- */
+/// ================= MAPPER =================
+
+ServiceCardData mapToCard(AssignedServiceModel s) {
+  return ServiceCardData(
+    title: s.serviceTitle!,
+    subtitle: s.description,
+    tag: s.category,
+    tagColor: s.category == "" ? Colors.white : Colors.cyan.shade200,
+    tagTextColor: Colors.black,
+    meta: "${s.scheduledDate.toLocal().toString().split(' ').first}",
+    status: s.status,
+    assignedId: s.assignmentId,
+  );
+}
+
+/// ================= COMMON WIDGETS =================
 
 class _DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _DashboardAppBar({
-    required this.title,
-    required this.subtitle,
-    this.onBack,
-    this.onBell,
-  });
+  const _DashboardAppBar({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
-  final VoidCallback? onBack;
-  final VoidCallback? onBell;
 
   @override
   Size get preferredSize => const Size.fromHeight(76);
@@ -161,173 +131,76 @@ class _DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      titleSpacing: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 18),
-        onPressed: onBack,
-        padding: const EdgeInsets.all(16),
-      ),
       centerTitle: true,
       title: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             title,
             style: GoogleFonts.poppins(
-              color: const Color(0xFF1F2937),
               fontWeight: FontWeight.w600,
               fontSize: 18,
             ),
           ),
-          const SizedBox(height: 2),
           Text(
             subtitle,
             style: GoogleFonts.poppins(
-              color: const Color(0xFF6B7280),
               fontSize: 12,
-              fontWeight: FontWeight.w400,
+              color: const Color(0xFF6B7280),
             ),
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(
-            Icons.notifications_outlined,
-            color: Colors.black87,
-            size: 18,
-          ),
-          onPressed: onBell,
-          padding: const EdgeInsets.all(16),
-        ),
-      ],
     );
   }
 }
 
-/* ----------------------- Search Row ----------------------- */
-
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.hint, required this.onChanged});
+  const _SearchField({required this.controller});
 
-  final String hint;
-  final ValueChanged<String> onChanged;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 38,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Stack(
-        alignment: Alignment.centerRight,
-        children: [
-          TextField(
-            onChanged: onChanged,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: const Color(0xFF1F2937),
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.poppins(
-                fontSize: 12,
-                color: const Color(0xFFADAEBC),
-              ),
-              prefixIcon: const Icon(
-                Icons.search,
-                size: 14,
-                color: Color(0xFFADAEBC),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 10,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          Positioned(
-            right: 8,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {},
-                borderRadius: BorderRadius.circular(4),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.tune, size: 18, color: Color(0xFFADAEBC)),
-                ),
-              ),
-            ),
-          ),
-        ],
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        hintText: 'Search services...',
+        prefixIcon: const Icon(Icons.search, size: 16),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }
 }
 
 class _DropdownPill extends StatelessWidget {
-  const _DropdownPill({required this.value, this.onTap});
+  const _DropdownPill({required this.value});
   final String value;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.expand_more,
-                  size: 19,
-                  color: Color(0xFF1F2937),
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: Row(
+        children: [
+          Text(value, style: GoogleFonts.inter(fontSize: 12)),
+          const Icon(Icons.expand_more),
+        ],
       ),
     );
   }
 }
 
-/* ----------------------- Cards ----------------------- */
+/// ================= SERVICE CARD =================
 
 class ServiceCardData {
   final String title;
@@ -336,7 +209,9 @@ class ServiceCardData {
   final Color tagColor;
   final Color tagTextColor;
   final String meta;
+  final String status;
   final bool showTrash;
+  final String assignedId;
 
   const ServiceCardData({
     required this.title,
@@ -344,39 +219,40 @@ class ServiceCardData {
     required this.tag,
     required this.tagColor,
     required this.tagTextColor,
+    required this.status,
     required this.meta,
+    required this.assignedId,
     this.showTrash = true,
   });
 }
 
 class ServiceCard extends StatelessWidget {
-  const ServiceCard({super.key, required this.data, this.dense = false});
+  const ServiceCard({
+    super.key,
+    required this.data,
+    required this.expanded,
+    required this.controller,
+  });
+
   final ServiceCardData data;
-  final bool dense;
+  final bool expanded;
+  final ServiceDashboardController controller;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 148,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // title row with chip
+          /// ---------- TOP CONTENT ----------
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
@@ -384,8 +260,6 @@ class ServiceCard extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF111827),
-                    height: 1.5,
                   ),
                 ),
               ),
@@ -397,49 +271,51 @@ class ServiceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Expanded(
-            child: Text(
-              data.subtitle,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF4B5563),
-                height: 1.43,
+          Text(
+            data.subtitle,
+            maxLines: expanded ? 3 : 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+
+          /// ---------- EXPANDABLE TASK PROGRESS ----------
+          AnimatedCrossFade(
+            firstChild: const SizedBox(),
+            secondChild: _TaskProgress(data: data),
+            crossFadeState: expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 250),
+          ),
+
+          const SizedBox(height: 12),
+
+          /// ---------- FOOTER ----------
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Assigned Date: ${HttpHelper.formatDate(data.meta, format: 'dd.MM.yy')}",
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: const Color(0xFF6B7280),
+                ),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              InkWell(
+                onTap: () {
+                  controller.deleteService(data.assignedId);
+                },
+                child: Icon(Icons.delete, color: Colors.red),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentGeometry.bottomRight,
+            child: Icon(
+              expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
             ),
           ),
-          if (data.meta.isNotEmpty)
-            Row(
-              children: [
-                Text(
-                  data.meta,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF6B7280),
-                  ),
-                ),
-                const Spacer(),
-                if (data.showTrash)
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {},
-                      borderRadius: BorderRadius.circular(4),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.delete_outline,
-                          size: 14,
-                          color: Color(0xFFED4C5C),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
         ],
       ),
     );
@@ -455,21 +331,12 @@ class _TagPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(9999),
+        borderRadius: BorderRadius.circular(20),
       ),
-      alignment: Alignment.center,
-      child: Text(
-        text,
-        style: GoogleFonts.poppins(
-          color: fg,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+      child: Text(text, style: GoogleFonts.poppins(fontSize: 12, color: fg)),
     );
   }
 }
@@ -758,6 +625,86 @@ class _TimelineRow extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskProgress extends StatelessWidget {
+  final ServiceCardData data;
+
+  const _TaskProgress({super.key, required this.data});
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(),
+        const SizedBox(height: 8),
+        Text(
+          "Task Progress",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        const SizedBox(height: 12),
+        if (data.status.toLowerCase().contains("assign") ||
+            data.status.toLowerCase().contains("pending") ||
+            data.status.toLowerCase().contains("inprogress") ||
+            data.status.toLowerCase().contains("completed") ||
+            data.status.toLowerCase().contains("start"))
+          _progressItem("Service Assigned", true),
+        if (data.status.toLowerCase().contains("inprogress") ||
+            data.status.toLowerCase().contains("start"))
+          _progressItem("Work In Progress", true),
+        if (data.status.toLowerCase().contains("completed"))
+          _progressItem("Work Completed", true),
+        if (data.status.toLowerCase().contains("payment"))
+          _progressItem("Payment", true),
+        if (data.status.toLowerCase().contains("cancelled"))
+          _progressItem("Cancelled", false),
+        if (data.status.toLowerCase().contains("completed"))
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Container(
+              width: Get.width,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.greenAccent,
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              child: Center(
+                child: Text(
+                  'Complete payment',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _progressItem(String title, bool done) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(
+            done ? Icons.check_circle : Icons.cancel,
+            size: 18,
+            color: done ? Colors.green : Colors.red,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.poppins(fontSize: 13, color: Colors.black),
             ),
           ),
         ],
