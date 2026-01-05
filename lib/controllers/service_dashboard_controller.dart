@@ -7,7 +7,10 @@ import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/models/dashboard_model.dart';
 import 'package:wheelboard/models/myassign_sevice_list.dart';
 import 'package:wheelboard/services/auth_service.dart';
+import 'package:wheelboard/utils/app_logger.dart';
 import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/utils/error_handler.dart';
+import 'package:wheelboard/widgets/custom_snackbar.dart';
 
 class ServiceDashboardController extends GetxController {
   RxBool isLoading = false.obs;
@@ -22,6 +25,12 @@ class ServiceDashboardController extends GetxController {
     getServices();
     searchCtrl.addListener(_applySearch);
     super.onInit();
+  }
+
+  RxInt expandedIndex = (-1).obs;
+
+  void toggleExpand(int index) {
+    expandedIndex.value = expandedIndex.value == index ? -1 : index;
   }
 
   Future<void> getServices() async {
@@ -51,16 +60,54 @@ class ServiceDashboardController extends GetxController {
   }
 
   void _applySearch() {
-    final q = searchCtrl.text.toLowerCase();
+    final q = searchCtrl.text.toLowerCase().trim();
 
     if (q.isEmpty) {
       filteredServices.assignAll(allServices);
     } else {
-      // filteredServices.assignAll(
-      //   allServices.where((s) =>
-      //       s.serviceTitle!.toLowerCase().contains(q) ||
-      //       s.vehicleNumber.toLowerCase().contains(q)),
-      // );
+      filteredServices.assignAll(
+        allServices.where((service) {
+          return service.serviceTitle.toLowerCase().contains(q) ||
+              service.description.toLowerCase().contains(q);
+        }).toList(),
+      );
+    }
+  }
+
+  Future<bool> deleteService(String assignmentId) async {
+    try {
+      isLoading.value = true;
+      final endpoint = '${API.deleteService}/$assignmentId/delete';
+
+      final response = await HttpHelper.postData(
+        endpoint: endpoint,
+        data: {},
+        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
+      );
+
+      AppLogger.d("🗑️ Delete response status: ${response.statusCode}");
+      AppLogger.d("🗑️ Delete response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        SnackBarHelper.success("Service deleted successfully!");
+        getServices();
+        return true;
+      }
+
+      final errorMessage = ErrorHandler.parseError(
+        response.body,
+        statusCode: response.statusCode,
+      );
+
+      SnackBarHelper.error(errorMessage);
+      return false;
+    } catch (e) {
+      AppLogger.d("❌ Error deleting service: $e");
+      final errorMessage = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMessage);
+      return false;
+    } finally {
+      isLoading.value = false;
     }
   }
 }

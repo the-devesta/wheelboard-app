@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/controllers/service_dashboard_controller.dart';
 import 'package:wheelboard/models/dashboard_model.dart';
 import 'package:wheelboard/models/myassign_sevice_list.dart';
@@ -23,7 +25,6 @@ class ServiceDashboardScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            /// 🔒 FIXED HEADER
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Column(
@@ -59,30 +60,39 @@ class ServiceDashboardScreen extends StatelessWidget {
             ),
             SizedBox(height: 10),
 
-            /// 📜 SCROLLABLE LIST ONLY
-            Expanded(
-              child: Obx(() {
-                if (controller.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                if (controller.filteredServices.isEmpty) {
-                  return const Center(child: Text("No services found"));
-                }
-
-                return ListView.builder(
+              return Expanded(
+                child: ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: controller.filteredServices.length,
                   itemBuilder: (context, index) {
                     final service = controller.filteredServices[index];
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: ServiceCard(data: mapToCard(service)),
+                      child: Obx(() {
+                        final isExpanded =
+                            controller.expandedIndex.value == index;
+
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () => controller.toggleExpand(index),
+                          child: ServiceCard(
+                            data: mapToCard(service),
+                            expanded: isExpanded,
+                            controller: controller,
+                          ),
+                        );
+                      }),
                     );
                   },
-                );
-              }),
-            ),
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -93,19 +103,15 @@ class ServiceDashboardScreen extends StatelessWidget {
 /// ================= MAPPER =================
 
 ServiceCardData mapToCard(AssignedServiceModel s) {
-  final isCompleted = s.status == "Completed";
-
   return ServiceCardData(
     title: s.serviceTitle!,
     subtitle: s.description,
-    tag: s.status,
-    tagColor: isCompleted ? const Color(0xFFD1FAE5) : const Color(0xFFFEF3C7),
-    tagTextColor: isCompleted
-        ? const Color(0xFF065F46)
-        : const Color(0xFF92400E),
-    meta:
-        "Vehicle: ${s.vehicleNumber} • ${s.scheduledTime} • ${s.scheduledDate.toLocal().toString().split(' ').first}",
-    showTrash: !isCompleted,
+    tag: s.category,
+    tagColor: s.category == "" ? Colors.white : Colors.cyan.shade200,
+    tagTextColor: Colors.black,
+    meta: "${s.scheduledDate.toLocal().toString().split(' ').first}",
+    status: s.status,
+    assignedId: s.assignmentId,
   );
 }
 
@@ -203,7 +209,9 @@ class ServiceCardData {
   final Color tagColor;
   final Color tagTextColor;
   final String meta;
+  final String status;
   final bool showTrash;
+  final String assignedId;
 
   const ServiceCardData({
     required this.title,
@@ -211,19 +219,29 @@ class ServiceCardData {
     required this.tag,
     required this.tagColor,
     required this.tagTextColor,
+    required this.status,
     required this.meta,
+    required this.assignedId,
     this.showTrash = true,
   });
 }
 
 class ServiceCard extends StatelessWidget {
-  const ServiceCard({super.key, required this.data});
+  const ServiceCard({
+    super.key,
+    required this.data,
+    required this.expanded,
+    required this.controller,
+  });
+
   final ServiceCardData data;
+  final bool expanded;
+  final ServiceDashboardController controller;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 148,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -233,6 +251,7 @@ class ServiceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// ---------- TOP CONTENT ----------
           Row(
             children: [
               Expanded(
@@ -252,18 +271,49 @@ class ServiceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Expanded(
-            child: Text(
-              data.subtitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
           Text(
-            data.meta,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: const Color(0xFF6B7280),
+            data.subtitle,
+            maxLines: expanded ? 3 : 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+
+          /// ---------- EXPANDABLE TASK PROGRESS ----------
+          AnimatedCrossFade(
+            firstChild: const SizedBox(),
+            secondChild: _TaskProgress(data: data),
+            crossFadeState: expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 250),
+          ),
+
+          const SizedBox(height: 12),
+
+          /// ---------- FOOTER ----------
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Assigned Date: ${HttpHelper.formatDate(data.meta, format: 'dd.MM.yy')}",
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  controller.deleteService(data.assignedId);
+                },
+                child: Icon(Icons.delete, color: Colors.red),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentGeometry.bottomRight,
+            child: Icon(
+              expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
             ),
           ),
         ],
@@ -575,6 +625,86 @@ class _TimelineRow extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskProgress extends StatelessWidget {
+  final ServiceCardData data;
+
+  const _TaskProgress({super.key, required this.data});
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(),
+        const SizedBox(height: 8),
+        Text(
+          "Task Progress",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        const SizedBox(height: 12),
+        if (data.status.toLowerCase().contains("assign") ||
+            data.status.toLowerCase().contains("pending") ||
+            data.status.toLowerCase().contains("inprogress") ||
+            data.status.toLowerCase().contains("completed") ||
+            data.status.toLowerCase().contains("start"))
+          _progressItem("Service Assigned", true),
+        if (data.status.toLowerCase().contains("inprogress") ||
+            data.status.toLowerCase().contains("start"))
+          _progressItem("Work In Progress", true),
+        if (data.status.toLowerCase().contains("completed"))
+          _progressItem("Work Completed", true),
+        if (data.status.toLowerCase().contains("payment"))
+          _progressItem("Payment", true),
+        if (data.status.toLowerCase().contains("cancelled"))
+          _progressItem("Cancelled", false),
+        if (data.status.toLowerCase().contains("completed"))
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Container(
+              width: Get.width,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.greenAccent,
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              child: Center(
+                child: Text(
+                  'Complete payment',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _progressItem(String title, bool done) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(
+            done ? Icons.check_circle : Icons.cancel,
+            size: 18,
+            color: done ? Colors.green : Colors.red,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.poppins(fontSize: 13, color: Colors.black),
             ),
           ),
         ],

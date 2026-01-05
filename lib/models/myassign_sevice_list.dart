@@ -6,6 +6,7 @@ class AssignedServiceModel {
   final String vehicleNumber;
   final DateTime scheduledDate;
   final String scheduledTime;
+  final String category;
 
   AssignedServiceModel({
     required this.assignmentId,
@@ -15,6 +16,7 @@ class AssignedServiceModel {
     required this.vehicleNumber,
     required this.scheduledDate,
     required this.scheduledTime,
+    required this.category,
   });
 
   factory AssignedServiceModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class AssignedServiceModel {
       vehicleNumber: json['vehicleNumber'] ?? '',
       scheduledDate: DateTime.parse(json['scheduledDate']),
       scheduledTime: json['scheduledTime'] ?? '',
+      category: json['category'] ?? '',
     );
   }
 }
