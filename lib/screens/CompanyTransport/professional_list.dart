@@ -279,12 +279,9 @@ class _ProfessionalCard extends StatelessWidget {
     final avatarUrl = _resolveImageUrl(professional.driverImagePath);
     final initials = _getInitials(professional.fullName);
 
-    // Placeholder data to match Figma design
-    const rating = 4.9;
-    const location = 'Khuarwas';
-    const experience = '4 yrs';
     final isVerified =
-        professional.fullName.hashCode % 2 == 0; // Random verification
+        professional.fullName.hashCode % 2 ==
+        0; // Keeping for now or remove if requested
 
     return GestureDetector(
       onTap: onTap,
@@ -392,49 +389,26 @@ class _ProfessionalCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Color(0xFFE83B4F),
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              rating.toString(),
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 13,
+                        if (professional.city.isNotEmpty)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: Color(0xFFE83B4F),
+                                size: 16,
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '•',
-                              style: TextStyle(color: Colors.grey.shade700),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              location,
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 13,
+                              const SizedBox(width: 4),
+                              Text(
+                                professional.city == "string"
+                                    ? "Location not specified"
+                                    : professional.city,
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 13,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '•',
-                              style: TextStyle(color: Colors.grey.shade700),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              experience,
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
                       ],
                     ),
                   ),

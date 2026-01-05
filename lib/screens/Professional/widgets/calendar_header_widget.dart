@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 /// White header with back button, title, and menu button
 class CalendarHeaderWidget extends StatelessWidget {
   final String? title;
+  final bool showMenu;
 
-  const CalendarHeaderWidget({super.key, this.title});
+  const CalendarHeaderWidget({super.key, this.title, this.showMenu = true});
 
   @override
   Widget build(BuildContext context) {
@@ -44,15 +45,18 @@ class CalendarHeaderWidget extends StatelessWidget {
               ),
             ),
           ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey.withOpacity(0.1),
-            ),
-            child: const Icon(Icons.more_vert, size: 20),
-          ),
+          if (showMenu)
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.withOpacity(0.1),
+              ),
+              child: const Icon(Icons.more_vert, size: 20),
+            )
+          else
+            const SizedBox(width: 44),
         ],
       ),
     );

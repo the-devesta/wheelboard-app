@@ -139,6 +139,15 @@ class API {
 
   // KYC Verification APIs
   static const String verifyDrivingLicence = 'api/User/VerifyDrivingLicenceKYC';
+
+  // Earnings Dashboard API
+  static const String earningsDashboard = 'api/Trip/earnings-dashboard';
+  static const String tripDashboard = 'api/Trip/trip-dashboard';
+
+  // Service Provider Earnings APIs
+  static const String serviceEarningsDashboard =
+      'api/Service/service-earnings-dashboard';
+  static const String createPayment = 'api/Service/create-payment';
 }
 
 String formatDateShort(String? dateString) {

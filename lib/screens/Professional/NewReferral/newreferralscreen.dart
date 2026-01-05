@@ -339,10 +339,6 @@ class NewReferralScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0.5,
-        actions: const [
-          Icon(Icons.more_vert, color: Colors.grey),
-          SizedBox(width: 8),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -346,7 +346,6 @@ class DashboardScreen extends StatelessWidget {
                             return _professionalTile(
                               professional.fullName,
                               role,
-                              4.5,
                               imageUrl: imageUrl,
                             );
                           }).toList(),
@@ -794,8 +793,7 @@ class DashboardScreen extends StatelessWidget {
 
   static Widget _professionalTile(
     String name,
-    String role,
-    double rating, {
+    String role, {
     String imageUrl = "https://via.placeholder.com/150",
   }) {
     return Container(
@@ -851,27 +849,6 @@ class DashboardScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.star, size: 14, color: Colors.amber),
-                  const SizedBox(width: 4),
-                  Text(
-                    rating.toStringAsFixed(1),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber,
-                    ),
                   ),
                 ],
               ),

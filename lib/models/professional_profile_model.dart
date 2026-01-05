@@ -7,6 +7,7 @@ class ProfessionalProfile {
   final String driverType;
   final String professionalType;
   final String? driverImagePath;
+  final String city;
 
   const ProfessionalProfile({
     required this.driverId,
@@ -17,6 +18,7 @@ class ProfessionalProfile {
     required this.driverType,
     required this.professionalType,
     this.driverImagePath,
+    this.city = '',
   });
 
   factory ProfessionalProfile.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class ProfessionalProfile {
       driverType: json['driverType']?.toString() ?? 'Unknown',
       professionalType: json['professionalType']?.toString() ?? '',
       driverImagePath: json['driverImagePath']?.toString(),
+      city: json['city']?.toString() ?? '',
     );
   }
 
@@ -42,6 +45,7 @@ class ProfessionalProfile {
       'driverType': driverType,
       'professionalType': professionalType,
       'driverImagePath': driverImagePath,
+      'city': city,
     };
   }
 
@@ -54,6 +58,7 @@ class ProfessionalProfile {
     String? driverType,
     String? professionalType,
     String? driverImagePath,
+    String? city,
   }) {
     return ProfessionalProfile(
       driverId: driverId ?? this.driverId,
@@ -64,6 +69,7 @@ class ProfessionalProfile {
       driverType: driverType ?? this.driverType,
       professionalType: professionalType ?? this.professionalType,
       driverImagePath: driverImagePath ?? this.driverImagePath,
+      city: city ?? this.city,
     );
   }
 }
