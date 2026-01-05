@@ -34,6 +34,7 @@ class API {
   static const String getAssignedTrips = 'api/Trip/assign-trip/';
   static const String getTripListByDriver = 'api/Trip/assign-trip-list/';
   static const String getReferralList = 'api/User/GetReferralsByUserId/';
+  static const String getAssingServiceList = 'api/Service/assign-service/';
   static const String tripExpenseDetail = 'api/Trip/trip-expense-details';
 
   static const String createTripOrder = 'api/Trip/create-order';

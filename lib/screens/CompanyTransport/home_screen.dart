@@ -263,7 +263,7 @@ class HomeScreen extends StatelessWidget {
                             }
                             if (index == 4) {
                               // Navigate, show dialog, etc.
-                              Get.to(ServiceDashboardScreen());
+                              Get.to(() => ServiceDashboardScreen());
                             }
 
                             if (index == 5) {
