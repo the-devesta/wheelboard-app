@@ -173,27 +173,6 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.filter_list, color: Color(0xFFE83B4F)),
-              onPressed: () {
-                // TODO: Implement filter functionality
-              },
-            ),
-          ),
         ],
       ),
     );

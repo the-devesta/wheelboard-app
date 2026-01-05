@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../constants/apps_colors.dart';
-import '../../../controllers/fleet_controller.dart';
-import '../../../services/auth_service.dart';
+import '../../../controllers/Transport/lease_controller.dart';
+import '../../../models/transport/lease_models.dart';
+
+import '../../../utils/constants.dart';
 import 'applications_screen.dart';
 
 /// ON Lease Vehicles Screen - Shows vehicles that are currently on lease
@@ -16,71 +18,22 @@ class OnLeaseVehiclesScreen extends StatefulWidget {
 }
 
 class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
-  final DriverController _fleetController = Get.find<DriverController>();
+  final LeaseController _leaseController = Get.find<LeaseController>();
   String _selectedTab = 'ON Lease';
   final TextEditingController _searchController = TextEditingController();
 
   final List<String> _tabs = ['ON Lease', 'Paused', 'OFF Lease'];
 
-  // Mock lease data - Replace with actual API data
-  final List<Map<String, dynamic>> _leaseData = [
-    {
-      'vehicle': {
-        'id': 'v1',
-        'model': 'Toyota Camry 2022',
-        'number': 'DL-01-AB-1234',
-        'image': 'assets/truckImg.png',
-      },
-      'lessee': 'Michael Rodriguez',
-      'applicationDate': 'Dec 8, 2024',
-      'leaseDuration': '6 months',
-      'mileage': '32,500 km',
-      'status': 'Pending',
-    },
-    {
-      'vehicle': {
-        'id': 'v2',
-        'model': 'Honda CR-V 2023',
-        'number': 'MH-12-CD-5678',
-        'image': 'assets/truckImg.png',
-      },
-      'lessee': 'Sarah Johnson',
-      'applicationDate': 'Dec 5, 2024',
-      'leaseDuration': '12 months',
-      'mileage': '28,000 km',
-      'status': 'Active',
-    },
-    {
-      'vehicle': {
-        'id': 'v3',
-        'model': 'Hyundai i20 2022',
-        'number': 'TN-07-EF-9012',
-        'image': 'assets/truckImg.png',
-      },
-      'lessee': 'David Chen',
-      'applicationDate': 'Dec 10, 2024',
-      'leaseDuration': '3 months',
-      'mileage': '15,000 km',
-      'status': 'Pending',
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadVehicles();
+      _loadLeases();
     });
   }
 
-  Future<void> _loadVehicles() async {
-    final authService = AuthService.to;
-    final userId = authService.currentUserId;
-    final token = authService.currentToken;
-
-    if (userId.isNotEmpty && token.isNotEmpty) {
-      await _fleetController.fetchVehicles(userId, token);
-    }
+  Future<void> _loadLeases() async {
+    await _leaseController.fetchMyLeases();
   }
 
   @override
@@ -89,14 +42,25 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get _filteredLeases {
-    return _leaseData.where((lease) {
+  List<LeaseListItem> get _filteredLeases {
+    final allLeases = _leaseController.leaseList;
+
+    // Filter logic based on tab and status
+    // Assuming status strings from API
+    return allLeases.where((lease) {
       if (_selectedTab == 'ON Lease') {
-        return lease['status'] == 'Pending' || lease['status'] == 'Active';
+        // Show Booked or Active leases.
+        // Adjust based on actual API status values. 'Booked' is likely one.
+        return lease.status == 'Booked' || lease.status == 'Active';
       } else if (_selectedTab == 'Paused') {
-        return lease['status'] == 'Paused';
+        return lease.leaseStatus == 'Paused' || lease.status == 'Paused';
       } else if (_selectedTab == 'OFF Lease') {
-        return lease['status'] == 'OFF Lease';
+        // Leases that are terminated? Or maybe 'Closed'?
+        // Or maybe just filter by some other property.
+        // For now assuming a status 'Off' or 'Completed' exists.
+        // Or simply "Available" leases are "OFF Lease" (ready for new lease)?
+        // User prompt mentioned "off-leases" API.
+        return lease.status == 'Off' || lease.status == 'Available';
       }
       return true;
     }).toList();
@@ -115,7 +79,7 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
           // Vehicle List
           Expanded(
             child: Obx(() {
-              if (_fleetController.isVehicleLoading.value) {
+              if (_leaseController.isLoading.value) {
                 return const Center(child: CircularProgressIndicator());
               }
 
@@ -299,20 +263,28 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
     );
   }
 
-  Widget _buildVehicleCard(Map<String, dynamic> leaseData) {
-    final vehicle = leaseData['vehicle'] as Map<String, dynamic>;
-    final lessee = leaseData['lessee'] as String;
-    final applicationDate = leaseData['applicationDate'] as String;
-    final leaseDuration = leaseData['leaseDuration'] as String;
-    final mileage = leaseData['mileage'] as String;
-    final status = leaseData['status'] as String;
+  Widget _buildVehicleCard(LeaseListItem lease) {
+    final vehicleImage = lease.imageUrl != null && lease.imageUrl!.isNotEmpty
+        ? (lease.imageUrl!.startsWith('http') ||
+                  lease.imageUrl!.contains('uploads/')
+              ? (lease.imageUrl!.startsWith('http')
+                    ? lease.imageUrl!
+                    : '${ApiConstants.baseUrl}${lease.imageUrl}')
+              : lease.imageUrl!)
+        : 'assets/truckImg.png';
 
-    final vehicleImage = vehicle['image'] as String;
-    final isPending = status == 'Pending';
+    final isPending = lease.status == 'Pending';
 
     return GestureDetector(
       onTap: () {
-        Get.to(() => const ApplicationsScreen());
+        if (lease.leaseId != null) {
+          Get.to(
+            () => ApplicationsScreen(
+              leaseId: lease.leaseId!,
+              vehicleTitle: lease.vehicleTitle ?? "",
+            ),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -382,7 +354,7 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              vehicle['model'] as String,
+                              lease.vehicleTitle ?? 'Unknown Vehicle',
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -417,78 +389,35 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Lessee/Driver
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.person_outline,
-                            size: 16,
-                            color: Color(0xFF6B7280),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            lessee,
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              color: const Color(0xFF4B5563),
-                            ),
-                          ),
-                        ],
-                      ),
+                      // Lessee Info (If booked)
+                      // API doesn't seem to return Lessee name in list item directly,
+                      // but if it did it would be mapped here.
+                      // For now, placeholder or maybe check API again.
+                      // "ownerName" is in details. List item has minimal info.
+                      // I'll skip lessee name if not available
                       const SizedBox(height: 6),
 
-                      // Application Date
-                      Text(
-                        'Applied: $applicationDate',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF6B7280),
+                      // Lease Status
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          lease.leaseStatus ?? lease.status ?? 'Unknown',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF4B5563),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
 
-                      // Lease Duration
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today_outlined,
-                            size: 14,
-                            color: Color(0xFF6B7280),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            leaseDuration,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: const Color(0xFF4B5563),
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 6),
-
-                      // Mileage
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.speed_outlined,
-                            size: 14,
-                            color: Color(0xFF6B7280),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            mileage,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: const Color(0xFF4B5563),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -497,68 +426,81 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
             const SizedBox(height: 16),
 
             // Action Buttons
-            Row(
-              children: [
-                // Pause Button
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _handlePause(leaseData),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.buttonBg,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            if (_selectedTab != 'OFF Lease') // Don't show if already off
+              Row(
+                children: [
+                  // Pause/Resume Button
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _handlePauseResume(lease),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            (lease.leaseStatus == 'Paused' ||
+                                lease.status == 'Paused')
+                            ? Colors.green
+                            : AppColors.buttonBg,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
                       ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'Pause',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      child: Text(
+                        (lease.leaseStatus == 'Paused' ||
+                                lease.status == 'Paused')
+                            ? 'Resume'
+                            : 'Pause',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
 
-                // OFF Lease Button
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _handleOffLease(leaseData),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFF44336),
-                      side: const BorderSide(color: Color(0xFFF44336)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  // OFF Lease Button
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _handleOffLease(lease),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFF44336),
+                        side: const BorderSide(color: Color(0xFFF44336)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'OFF Lease',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      child: Text(
+                        'OFF Lease',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),
     );
   }
 
-  void _handlePause(Map<String, dynamic> leaseData) {
+  void _handlePauseResume(LeaseListItem lease) {
+    if (lease.leaseId == null) return;
+    String action = (lease.leaseStatus == 'Paused' || lease.status == 'Paused')
+        ? 'Resume'
+        : 'Pause';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pause Lease'),
+        title: Text('$action Lease'),
         content: Text(
-          'Are you sure you want to pause the lease for ${leaseData['vehicle']['model']}?',
+          'Are you sure you want to $action the lease for ${lease.vehicleTitle}?',
         ),
         actions: [
           TextButton(
@@ -566,34 +508,29 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Implement pause lease API call
+            onPressed: () async {
               Navigator.pop(context);
-              Get.snackbar(
-                'Success',
-                'Lease paused successfully',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
-              );
+              await _leaseController.togglePauseResume(lease.leaseId!);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.buttonBg,
             ),
-            child: const Text('Pause', style: TextStyle(color: Colors.white)),
+            child: Text(action, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  void _handleOffLease(Map<String, dynamic> leaseData) {
+  void _handleOffLease(LeaseListItem lease) {
+    if (lease.leaseId == null) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('OFF Lease'),
         content: Text(
-          'Are you sure you want to mark ${leaseData['vehicle']['model']} as OFF Lease?',
+          'Are you sure you want to mark ${lease.vehicleTitle} as OFF Lease?',
         ),
         actions: [
           TextButton(
@@ -601,16 +538,9 @@ class _OnLeaseVehiclesScreenState extends State<OnLeaseVehiclesScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Implement OFF lease API call
+            onPressed: () async {
               Navigator.pop(context);
-              Get.snackbar(
-                'Success',
-                'Vehicle marked as OFF Lease',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
-              );
+              await _leaseController.offLease(lease.leaseId!);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF44336),

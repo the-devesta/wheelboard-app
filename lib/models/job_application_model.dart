@@ -10,6 +10,9 @@ class JobApplicationModel {
   final String remarks;
   final String contactNumber;
   final String userId;
+  final String? jobId;
+  final String? jobDuration;
+  final int? salary;
 
   JobApplicationModel({
     required this.applicationId,
@@ -23,6 +26,9 @@ class JobApplicationModel {
     required this.remarks,
     this.contactNumber = '',
     required this.userId,
+    this.jobId,
+    this.jobDuration,
+    this.salary,
   });
 
   factory JobApplicationModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +47,9 @@ class JobApplicationModel {
           json['phoneNumber'] as String? ??
           '',
       userId: json['userId'] as String? ?? '',
+      jobId: json['jobId'] as String?,
+      jobDuration: json['jobDuration'] as String?,
+      salary: (json['salary'] as num?)?.toInt(),
     );
   }
 
@@ -57,6 +66,9 @@ class JobApplicationModel {
       'remarks': remarks,
       'contactNumber': contactNumber,
       'userId': userId,
+      'jobId': jobId,
+      'jobDuration': jobDuration,
+      'salary': salary,
     };
   }
 
@@ -72,6 +84,9 @@ class JobApplicationModel {
     String? remarks,
     String? contactNumber,
     String? userId,
+    String? jobId,
+    String? jobDuration,
+    int? salary,
   }) {
     return JobApplicationModel(
       applicationId: applicationId ?? this.applicationId,
@@ -85,6 +100,9 @@ class JobApplicationModel {
       remarks: remarks ?? this.remarks,
       contactNumber: contactNumber ?? this.contactNumber,
       userId: userId ?? this.userId,
+      jobId: jobId ?? this.jobId,
+      jobDuration: jobDuration ?? this.jobDuration,
+      salary: salary ?? this.salary,
     );
   }
 }

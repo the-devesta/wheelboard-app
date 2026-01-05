@@ -194,4 +194,115 @@ class DriverController extends GetxController {
       isVehicleDetailsLoading.value = false;
     }
   }
+
+  Future<bool> deleteVehicle(
+    String vehicleId,
+    String userId,
+    String token,
+  ) async {
+    try {
+      final url =
+          "${API.deleteVehicle}/$vehicleId${API.deleteVehicleSuffix}?modifiedBy=$userId";
+
+      AppLogger.d("==================================");
+      AppLogger.d("📡 Deleting Vehicle");
+      AppLogger.d("👉 URL: $url");
+      AppLogger.d("==================================");
+
+      final response = await HttpHelper.postData(
+        endpoint: url,
+        data: {}, // Empty body as params are in URL
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+          "accept": "*/*",
+        },
+      );
+
+      AppLogger.d("==================================");
+      AppLogger.d("📩 Response from Delete Vehicle API");
+      AppLogger.d("🔹 Status Code: ${response.statusCode}");
+      AppLogger.d("==================================");
+
+      if (response.statusCode == 200) {
+        Get.snackbar(
+          "Success",
+          "Vehicle deleted successfully",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        return true;
+      } else {
+        Get.snackbar(
+          "Error",
+          "Failed to delete vehicle",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } catch (e) {
+      AppLogger.d("❌ Exception in deleteVehicle: $e");
+      Get.snackbar(
+        "Error",
+        "Exception: $e",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> deleteDriver(
+    String driverId,
+    String userId,
+    String token,
+  ) async {
+    try {
+      final url =
+          "${API.deleteDriver}/$driverId${API.deleteVehicleSuffix}?modifiedBy=$userId"; // Using same suffix /delete
+
+      AppLogger.d("==================================");
+      AppLogger.d("📡 Deleting Driver");
+      AppLogger.d("👉 URL: $url");
+      AppLogger.d("==================================");
+
+      final response = await HttpHelper.postData(
+        endpoint: url,
+        data: {},
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+          "accept": "*/*",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        Get.snackbar(
+          "Success",
+          "Driver deleted successfully",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        return true;
+      } else {
+        Get.snackbar(
+          "Error",
+          "Failed to delete driver",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } catch (e) {
+      AppLogger.d("❌ Exception in deleteDriver: $e");
+      Get.snackbar(
+        "Error",
+        "Exception: $e",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+  }
 }

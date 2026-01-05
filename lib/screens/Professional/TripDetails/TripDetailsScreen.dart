@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wheelboard/screens/Professional/TrackTrip/TrackTripScreen.dart';
 import '../../../models/assigned_trip_model.dart';
 
 class TripDetailsScreen extends StatelessWidget {
@@ -442,6 +443,34 @@ class TripDetailsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+
+            const SizedBox(height: 24),
+
+            // Track Trip Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Get.to(() => TrackTripScreen(tripId: trip.tripId));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF375DFB),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Track Trip',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
 
             const SizedBox(height: 32),
           ],

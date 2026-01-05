@@ -130,6 +130,54 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     }
   }
 
+  Future<void> _togglePublishStatus(String serviceId) async {
+    setState(() {
+      _isLoadingServices = true;
+    });
+
+    try {
+      final sessionManager = SessionManager();
+      final userId = await sessionManager.getString("userId");
+      if (userId == null || userId.isEmpty) {
+        return;
+      }
+
+      final response = await HttpHelper.postData(
+        endpoint:
+            '${API.serviceTogglePublishUnpublish}?serviceId=$serviceId&userId=$userId',
+        data: {}, // Empty body
+      );
+
+      if (response.statusCode == 200) {
+        Get.snackbar(
+          "Success",
+          "Service status updated",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        await _fetchMyServices(); // Refresh list to get new status
+      } else {
+        Get.snackbar(
+          "Error",
+          "Failed to update status",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        "Error",
+        "An error occurred: $e",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      setState(() {
+        _isLoadingServices = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -701,11 +749,12 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
       description: description.length > 100
           ? '${description.substring(0, 100)}...'
           : description,
+      isPublished: service.isAvailable,
       onEdit: () {
         Get.to(() => AddServiceScreen(service: service));
       },
-      onUnpublish: () {
-        // Handle unpublish action - can be implemented later
+      onTogglePublish: () {
+        _togglePublishStatus(service.serviceId);
       },
     );
   }
@@ -716,8 +765,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     required String title,
     required String tag,
     required String description,
+    required bool isPublished,
     required VoidCallback onEdit,
-    required VoidCallback onUnpublish,
+    required VoidCallback onTogglePublish,
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -873,23 +923,31 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: onUnpublish,
+                  onPressed: onTogglePublish,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    side: const BorderSide(color: Color(0xFF808080)),
+                    side: BorderSide(
+                      color: isPublished
+                          ? const Color(0xFF808080)
+                          : Colors.blue,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  icon: const Icon(
-                    Icons.visibility_off_outlined,
+                  icon: Icon(
+                    isPublished
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     size: 16,
-                    color: Color(0xFF808080),
+                    color: isPublished ? const Color(0xFF808080) : Colors.blue,
                   ),
-                  label: const Text(
-                    'Unpublish',
+                  label: Text(
+                    isPublished ? 'Unpublish' : 'Publish',
                     style: TextStyle(
-                      color: Color(0xFF808080),
+                      color: isPublished
+                          ? const Color(0xFF808080)
+                          : Colors.blue,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),

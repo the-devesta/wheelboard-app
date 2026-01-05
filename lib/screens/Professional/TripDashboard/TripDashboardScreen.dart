@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../models/assigned_trip_model.dart';
 import '../TripDetails/TripDetailsScreen.dart';
+import '../TrackTrip/TrackTripScreen.dart';
 import '../../../widgets/custom_loader.dart';
 
 class TripDashboardScreen extends StatefulWidget {
@@ -58,11 +59,6 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: const Icon(Icons.more_vert, size: 18),
                     ),
                   ],
                 ),
@@ -760,20 +756,39 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: trip != null
-                    ? () {
-                        Get.to(() => TripDetailsScreen(trip: trip));
-                      }
-                    : null,
-                child: Text(
-                  'View Details',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF375DFB),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: trip != null
+                        ? () {
+                            Get.to(() => TrackTripScreen(tripId: trip.tripId));
+                          }
+                        : null,
+                    child: Text(
+                      'Track',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF27AE60),
+                      ),
+                    ),
                   ),
-                ),
+                  TextButton(
+                    onPressed: trip != null
+                        ? () {
+                            Get.to(() => TripDetailsScreen(trip: trip));
+                          }
+                        : null,
+                    child: Text(
+                      'View Details',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF375DFB),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -932,57 +947,263 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             }
           : null,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.location_on, size: 12, color: Color(0xFFF36969)),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                from,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFF36969),
+            // Image with badges
+            Stack(
+              children: [
+                // Background image
+                Container(
+                  height: 140,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    image: DecorationImage(
+                      image: const NetworkImage(
+                        'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&auto=format&fit=crop',
+                      ),
+                      fit: BoxFit.cover,
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withOpacity(0.3),
+                        BlendMode.darken,
+                      ),
+                    ),
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward, size: 16, color: Color(0xFFF36969)),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                to,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFF36969),
+                // Completed badge (top-left)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF27AE60),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Completed',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
+                // Standard badge (top-right)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00BFA5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Standard',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Trip details
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Trip title
+                  Text(
+                    'Trip to ${to.split(',').first}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1E1E1E),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Package Delivery tag
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Package Delivery',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFFFF9800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Destination
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: Color(0xFF6B7280),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Destination: ',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          to,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF1E1E1E),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Departure date
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Color(0xFF6B7280),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Departure: ',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+                      Text(
+                        trip?.pickupDate != null
+                            ? _formatDate(trip!.pickupDate, trip.pickupTime)
+                            : 'N/A',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF1E1E1E),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Vehicle
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.local_shipping,
+                        size: 16,
+                        color: Color(0xFF6B7280),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Vehicle: ',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          trip?.vehicleNumber ?? 'N/A',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF1E1E1E),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Driver
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person,
+                        size: 16,
+                        color: Color(0xFF6B7280),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Driver: ',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          trip?.driverName ?? 'N/A',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF1E1E1E),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const Spacer(),
-            Text(
-              earning,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF27AE60),
-              ),
-            ),
-            if (trip != null) ...[
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: Color(0xFF6B7280),
-              ),
-            ],
           ],
         ),
       ),
