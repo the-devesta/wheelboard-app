@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
+import 'app_logger.dart';
 
 class Suggestion {
   final String placeId;
@@ -23,6 +25,8 @@ class Suggestion {
   /// Create Suggestion from the `prediction` object returned by Places Autocomplete
   factory Suggestion.fromPrediction(Map<String, dynamic> p) {
     final terms = (p['terms'] as List<dynamic>?) ?? [];
+
+    // Improved term extraction
     final sector = _getTerm(terms, 4);
     final city = _getTerm(terms, 3);
     final state = _getTerm(terms, 2);
@@ -64,63 +68,104 @@ class Suggestion {
 class PlacesService {
   final String apiKey;
   final http.Client client;
+  String? _sessionToken;
+  final _uuid = const Uuid();
 
   PlacesService({required this.apiKey, http.Client? client})
     : client = client ?? http.Client();
 
+  /// Start a new session for typing
+  void startNewSession() {
+    _sessionToken = _uuid.v4();
+    AppLogger.d('🗺️ New Places session started: $_sessionToken');
+  }
+
   Future<List<Suggestion>> fetchSuggestions(String input) async {
+    if (input.isEmpty) return [];
+
+    if (_sessionToken == null) startNewSession();
+
     final encoded = Uri.encodeQueryComponent(input);
     final requestUrl =
         'https://maps.googleapis.com/maps/api/place/autocomplete/json'
         '?input=$encoded'
-        '&types=establishment|geocode'
+        '&types=geocode'
         '&language=en'
         '&components=country:in'
+        '&sessiontoken=$_sessionToken'
         '&key=$apiKey';
 
-    final response = await client.get(Uri.parse(requestUrl));
-    if (response.statusCode != 200) {
-      throw Exception('Failed to fetch suggestions: ${response.statusCode}');
-    }
+    try {
+      AppLogger.d('🗺️ Fetching suggestions for: "$input"');
 
-    final Map<String, dynamic> result =
-        json.decode(response.body) as Map<String, dynamic>;
-    final status = result['status'] as String? ?? 'UNKNOWN';
+      final response = await client
+          .get(Uri.parse(requestUrl))
+          .timeout(const Duration(seconds: 10));
 
-    if (status == 'OK') {
-      final preds = result['predictions'] as List<dynamic>;
-      return preds
-          .map((p) => Suggestion.fromPrediction(p as Map<String, dynamic>))
-          .toList();
-    } else if (status == 'ZERO_RESULTS') {
+      if (response.statusCode != 200) {
+        AppLogger.e('❌ Places API HTTP Error: ${response.statusCode}');
+        return [];
+      }
+
+      final Map<String, dynamic> result = json.decode(response.body);
+      final status = result['status'] as String? ?? 'UNKNOWN';
+
+      if (status == 'OK') {
+        final preds = result['predictions'] as List<dynamic>;
+        return preds
+            .map((p) => Suggestion.fromPrediction(p as Map<String, dynamic>))
+            .toList();
+      } else if (status == 'ZERO_RESULTS') {
+        return [];
+      } else {
+        AppLogger.e('❌ Places API Error: ${result['error_message'] ?? status}');
+        return [];
+      }
+    } catch (e) {
+      AppLogger.e('❌ Places API Exception: $e');
       return [];
-    } else {
-      throw Exception(result['error_message'] ?? 'Places API error: $status');
     }
   }
 
   /// Optional: get lat/lng for a placeId using Place Details API
-  Future<Map<String, double>> fetchPlaceLocation(String placeId) async {
+  Future<Map<String, double>?> fetchPlaceLocation(String placeId) async {
     final url =
         'https://maps.googleapis.com/maps/api/place/details/json'
         '?place_id=${Uri.encodeQueryComponent(placeId)}'
         '&fields=geometry'
+        '&sessiontoken=$_sessionToken'
         '&key=$apiKey';
 
-    final resp = await client.get(Uri.parse(url));
-    if (resp.statusCode != 200) throw Exception('HTTP ${resp.statusCode}');
-    final Map<String, dynamic> body =
-        json.decode(resp.body) as Map<String, dynamic>;
-    final status = body['status'] as String?;
-    if (status == 'OK') {
-      final loc =
-          body['result']['geometry']['location'] as Map<String, dynamic>;
-      return {
-        'lat': (loc['lat'] as num).toDouble(),
-        'lng': (loc['lng'] as num).toDouble(),
-      };
-    } else {
-      throw Exception(body['error_message'] ?? 'Place Details error: $status');
+    try {
+      final resp = await client
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 5));
+      if (resp.statusCode != 200) {
+        AppLogger.e('❌ Place Details HTTP Error: ${resp.statusCode}');
+        return null;
+      }
+
+      final Map<String, dynamic> body = json.decode(resp.body);
+      final status = body['status'] as String?;
+
+      if (status == 'OK') {
+        final loc =
+            body['result']['geometry']['location'] as Map<String, dynamic>;
+        // Reset session token after a selection is completed
+        _sessionToken = null;
+        return {
+          'lat': (loc['lat'] as num).toDouble(),
+          'lng': (loc['lng'] as num).toDouble(),
+        };
+      } else {
+        AppLogger.e(
+          '❌ Place Details API Error: ${body['error_message'] ?? status}',
+        );
+        return null;
+      }
+    } catch (e) {
+      AppLogger.e('❌ Place Details Exception: $e');
+      return null;
     }
   }
 }

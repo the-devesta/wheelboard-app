@@ -6,6 +6,7 @@ import '../../../controllers/Professional/trip_dashboard_controller.dart';
 import '../../../models/assigned_trip_model.dart';
 import '../TripDetails/TripDetailsScreen.dart';
 import '../TrackTrip/TrackTripScreen.dart';
+import '../TripProgress/TripProgressScreen.dart';
 import '../../../widgets/custom_loader.dart';
 import '../../../apihelperclass/api_helper.dart';
 
@@ -546,8 +547,20 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
               ),
               if (!isCompleted)
                 ElevatedButton(
-                  onPressed: () =>
-                      Get.to(() => TrackTripScreen(tripId: trip.tripId)),
+                  onPressed: () {
+                    final status = trip.tripStatus.toLowerCase();
+                    final bool isInProgress = [
+                      'in progress',
+                      'active',
+                      'ongoing',
+                    ].contains(status);
+
+                    if (isInProgress) {
+                      Get.to(() => TrackTripScreen(tripId: trip.tripId));
+                    } else {
+                      Get.to(() => TripProgressScreen(trip: trip));
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFEBF4FF),
                     foregroundColor: const Color(0xFF2F80ED),

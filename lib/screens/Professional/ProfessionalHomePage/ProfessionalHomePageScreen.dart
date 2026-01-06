@@ -12,6 +12,8 @@ import '../Calendar/CalendarScreen.dart';
 
 import '../EarningSummary/EarningSummaryScreen.dart';
 import '../MyLearning/MyLearningScreen.dart';
+import '../TripDashboard/TripDashboardScreen.dart';
+import '../TripProgress/TripProgressScreen.dart';
 import '../SOS/SOSScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
@@ -124,7 +126,17 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                             );
                           }
 
-                          if (assignedTripController.assignedTrips.isEmpty) {
+                          // Filter trips to only show those that are NOT completed or cancelled
+                          final activeTrips = assignedTripController
+                              .assignedTrips
+                              .where((trip) {
+                                final status = trip.tripStatus.toLowerCase();
+                                return status != 'completed' &&
+                                    status != 'cancelled';
+                              })
+                              .toList();
+
+                          if (activeTrips.isEmpty) {
                             return const TripCardWidget(
                               pickupAddress: "No trips available",
                               destinationAddress:
@@ -134,15 +146,44 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                             );
                           }
 
-                          final trip =
-                              assignedTripController.assignedTrips.first;
+                          final trip = activeTrips.first;
                           final tags = [
-                            'Assigned',
+                            trip.tripStatus.capitalizeFirst ?? 'Assigned',
                           ].where((t) => t.isNotEmpty).toList();
 
                           return GestureDetector(
-                            onTap: () async {
-                              // TODO: Implement navigation to trip details, might need a tripId on AssignedTrip model
+                            onTap: () {
+                              final trips =
+                                  assignedTripController.assignedTrips;
+
+                              final active = trips.firstWhereOrNull((t) {
+                                final s = t.tripStatus.toLowerCase();
+                                return [
+                                  'in progress',
+                                  'inprogress',
+                                  'active',
+                                  'ongoing',
+                                  'en route',
+                                ].contains(s);
+                              });
+
+                              if (active != null) {
+                                Get.to(
+                                  () => TrackTripScreen(tripId: active.tripId),
+                                );
+                                return;
+                              }
+
+                              final next = trips.firstWhereOrNull((t) {
+                                final s = t.tripStatus.toLowerCase();
+                                return s != 'completed' && s != 'cancelled';
+                              });
+
+                              if (next != null) {
+                                Get.to(() => TripProgressScreen(trip: next));
+                              } else {
+                                Get.to(() => const TripDashboardScreen());
+                              }
                             },
                             child: TripCardWidget(
                               pickupAddress: trip.pickupLocation,
@@ -250,27 +291,35 @@ class ProfessionalHomePageScreen extends StatelessWidget {
           child: QuickActionButtonWidget(
             icon: Icons.my_location,
             title: "Track\nMy Trip",
-            onTap: () {
-              // Find the first active trip to track
-              if (assignedTripController.assignedTrips.isNotEmpty) {
-                final activeTrip = assignedTripController.assignedTrips
-                    .firstWhere(
-                      (t) => [
-                        'active',
-                        'in progress',
-                        'ongoing',
-                      ].contains(t.tripStatus.toLowerCase()),
-                      orElse: () => assignedTripController.assignedTrips.first,
-                    );
-                Get.to(() => TrackTripScreen(tripId: activeTrip.tripId));
+            onTap: () async {
+              await assignedTripController.fetchAssignedTrips();
+              final trips = assignedTripController.assignedTrips;
+
+              final active = trips.firstWhereOrNull((t) {
+                final s = t.tripStatus.toLowerCase();
+                return [
+                  'in progress',
+                  'inprogress',
+                  'active',
+                  'ongoing',
+                  'en route',
+                ].contains(s);
+              });
+
+              if (active != null) {
+                Get.to(() => TrackTripScreen(tripId: active.tripId));
+                return;
+              }
+
+              final next = trips.firstWhereOrNull((t) {
+                final s = t.tripStatus.toLowerCase();
+                return s != 'completed' && s != 'cancelled';
+              });
+
+              if (next != null) {
+                Get.to(() => TripProgressScreen(trip: next));
               } else {
-                Get.snackbar(
-                  'No Active Trip',
-                  'You have no assigned trips to track at the moment.',
-                  backgroundColor: Colors.redAccent,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                Get.to(() => const TripDashboardScreen());
               }
             },
           ),

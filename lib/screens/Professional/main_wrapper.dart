@@ -3,7 +3,7 @@ import '../../services/auth_service.dart';
 import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
 import 'FindJobs/FindJobsScreen.dart';
 import 'FeedsProfessional/FeedsProfessionalScreen.dart';
-import 'TripDashboard/TripDashboardScreen.dart';
+import 'Trips/ProfessionalTripsScreen.dart';
 import 'widgets/professional_bottom_nav_widget.dart';
 import 'JobProgress/JobProgressScreen.dart';
 import '../../utils/app_logger.dart';
@@ -43,7 +43,7 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
   final List<Widget> _screens = [
     const ProfessionalHomePageScreen(),
     const FindJobsScreen(), // Find
-    const TripDashboardScreen(), // Trips (placeholder - replace with actual Trips screen)
+    const ProfessionalTripsScreen(), // Trips - Smart Router
     const FeedsProfessionalScreen(), // Feeds
     const JobProgressScreen(), // Jobs
   ];

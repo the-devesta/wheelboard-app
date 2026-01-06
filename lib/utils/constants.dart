@@ -4,6 +4,11 @@ class ApiConstants {
   static const String baseUrl = 'https://wheelboardapi.addonshareware.com/';
 }
 
+class MapsConstants {
+  static const String googleMapsApiKey =
+      'AIzaSyDdLQMrmWeYCxIZMOm7Ogrh7cwow3cS_NE';
+}
+
 class API {
   static const String companySignUp = 'api/User/company_signup';
   static const String professionalSignUp = 'api/User/professional_signup';

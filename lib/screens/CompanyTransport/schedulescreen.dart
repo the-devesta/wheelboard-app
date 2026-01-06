@@ -8,6 +8,7 @@ import '../../utils/distance_service.dart';
 import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
 import 'dart:math';
+import '../../utils/constants.dart';
 import '../../utils/app_logger.dart';
 
 class ScheduleTripScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
   final TextEditingController payRangeController = TextEditingController();
 
   final PlacesService placesService = PlacesService(
-    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+    apiKey: MapsConstants.googleMapsApiKey,
   );
 
   List<Suggestion> pickupSuggestions = [];
@@ -40,6 +41,8 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
   DistanceResult? _distanceResult;
   bool _isCalculatingDistance = false;
   bool _isLoadingLocation = false;
+  double? _pickupLat;
+  double? _pickupLng;
 
   @override
   void initState() {
@@ -209,6 +212,11 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                           tripStatus: "Pending",
                           isScheduledTrip:
                               true, // ✅ This is a scheduled trip with driver selection
+                          latitude: _pickupLat,
+                          longitude: _pickupLng,
+                          distance: _distanceResult != null
+                              ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
+                              : "",
                         );
 
                         // 🔍 DEBUG: Log Trip object after creation
@@ -400,11 +408,21 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     setState(() => _isLoadingLocation = true);
 
     try {
-      final address = await LocationService.getCurrentLocationAddress();
+      final position = await LocationService.getCurrentPosition();
+      final address = position != null
+          ? await LocationService.getAddressFromCoordinates(
+              position.latitude,
+              position.longitude,
+            )
+          : null;
 
       if (address != null && address.isNotEmpty) {
         setState(() {
           controller.text = address;
+          if (controller == pickupController) {
+            _pickupLat = position?.latitude;
+            _pickupLng = position?.longitude;
+          }
         });
 
         // Auto-calculate distance if both locations are set
@@ -470,8 +488,12 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
           ),
           onChanged: (value) async {
             if (value.isNotEmpty) {
-              final results = await placesService.fetchSuggestions(value);
-              setState(() => pickupSuggestions = results);
+              try {
+                final results = await placesService.fetchSuggestions(value);
+                setState(() => pickupSuggestions = results);
+              } catch (e) {
+                AppLogger.e('Error fetching pickup suggestions: $e');
+              }
             } else {
               setState(() => pickupSuggestions = []);
             }
@@ -501,10 +523,19 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                       pickupSuggestions.clear();
                     });
 
-                    final loc = await placesService.fetchPlaceLocation(
-                      s.placeId,
-                    );
-                    AppLogger.d("Pickup LatLng: $loc");
+                    try {
+                      final loc = await placesService.fetchPlaceLocation(
+                        s.placeId,
+                      );
+                      AppLogger.d("Pickup LatLng: $loc");
+
+                      setState(() {
+                        _pickupLat = loc['lat'];
+                        _pickupLng = loc['lng'];
+                      });
+                    } catch (e) {
+                      AppLogger.e("Error fetching place location: $e");
+                    }
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();

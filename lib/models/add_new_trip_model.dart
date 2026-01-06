@@ -20,6 +20,9 @@ class Trip {
   final int totalBidCount;
   final bool
   isScheduledTrip; // Flag to identify if this is a scheduled trip with driver
+  final double? latitude;
+  final double? longitude;
+  final String? distance;
 
   Trip({
     required this.tripId,
@@ -42,6 +45,9 @@ class Trip {
     this.createdDate,
     this.totalBidCount = 0,
     this.isScheduledTrip = false, // Default is false (post trip)
+    this.latitude,
+    this.longitude,
+    this.distance,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
@@ -80,6 +86,9 @@ class Trip {
                       .toString(),
                 ) ??
                 0,
+      latitude: (json['latitude'] ?? json['Latitude'])?.toDouble(),
+      longitude: (json['longitude'] ?? json['Longitude'])?.toDouble(),
+      distance: json['distance'] ?? json['Distance'],
     );
   }
 
@@ -97,6 +106,9 @@ class Trip {
       "PayRange": payRange,
       "TripCode": tripCode,
       "TripStatus": tripStatus,
+      "Latitude": latitude ?? 0,
+      "Longitude": longitude ?? 0,
+      "Distance": distance ?? "",
     };
   }
 }

@@ -12,52 +12,42 @@ class CalendarHeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 60,
+      height: 70,
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 23),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
-              ),
-              child: const Icon(Icons.arrow_back_ios, size: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back, color: Color(0xFFFF5E5E)),
             ),
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                title ?? 'MY Calendar',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFF36969),
-                  letterSpacing: 0.5,
+            Expanded(
+              child: Center(
+                child: Text(
+                  title ?? 'MY Calendar',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFF36969),
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ),
-          ),
-          if (showMenu)
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
-              ),
-              child: const Icon(Icons.more_vert, size: 20),
-            )
-          else
-            const SizedBox(width: 44),
-        ],
+            if (showMenu)
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.refresh, color: Color(0xFFFF5E5E)),
+              )
+            else
+              const SizedBox(width: 48),
+          ],
+        ),
       ),
     );
   }

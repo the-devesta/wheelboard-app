@@ -8,6 +8,7 @@ import '../../utils/distance_service.dart';
 import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
 import 'dart:math';
+import '../../utils/constants.dart';
 import '../../utils/app_logger.dart';
 
 class Newtripscreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
   final TextEditingController minPayRangeController = TextEditingController();
   final TextEditingController maxPayRangeController = TextEditingController();
   final PlacesService placesService = PlacesService(
-    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+    apiKey: MapsConstants.googleMapsApiKey,
   ); // <-- put your key here
 
   List<Suggestion> pickupSuggestions = [];
@@ -40,6 +41,8 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
   DistanceResult? _distanceResult;
   bool _isCalculatingDistance = false;
   bool _isLoadingLocation = false;
+  double? _pickupLat;
+  double? _pickupLng;
 
   @override
   void initState() {
@@ -194,6 +197,11 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                           tripStatus: "Pending", // Default status
                           isScheduledTrip:
                               false, // ❌ This is a POST trip - no driver assigned
+                          latitude: _pickupLat,
+                          longitude: _pickupLng,
+                          distance: _distanceResult != null
+                              ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
+                              : "",
                         );
 
                         // ✅ Send API call (userId-based auth, no token needed)
@@ -331,11 +339,21 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
     setState(() => _isLoadingLocation = true);
 
     try {
-      final address = await LocationService.getCurrentLocationAddress();
+      final position = await LocationService.getCurrentPosition();
+      final address = position != null
+          ? await LocationService.getAddressFromCoordinates(
+              position.latitude,
+              position.longitude,
+            )
+          : null;
 
       if (address != null && address.isNotEmpty) {
         setState(() {
           controller.text = address;
+          if (controller == pickupController) {
+            _pickupLat = position?.latitude;
+            _pickupLng = position?.longitude;
+          }
         });
 
         // Auto-calculate distance if both locations are set
@@ -448,10 +466,19 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                       pickupSuggestions.clear();
                     });
 
-                    final loc = await placesService.fetchPlaceLocation(
-                      s.placeId,
-                    );
-                    AppLogger.d("Pickup LatLng: $loc");
+                    try {
+                      final loc = await placesService.fetchPlaceLocation(
+                        s.placeId,
+                      );
+                      AppLogger.d("Pickup LatLng: $loc");
+
+                      setState(() {
+                        _pickupLat = loc['lat'];
+                        _pickupLng = loc['lng'];
+                      });
+                    } catch (e) {
+                      AppLogger.e("Error fetching place location: $e");
+                    }
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();

@@ -196,6 +196,9 @@ class TripController extends GetxController {
         "TripStatus": trip.tripStatus.trim().isNotEmpty
             ? trip.tripStatus.trim()
             : "Pending",
+        "Latitude": (trip.latitude ?? 0).toString(),
+        "Longitude": (trip.longitude ?? 0).toString(),
+        "Distance": trip.distance ?? "",
       };
 
       // ✅ DriverId logic:
@@ -545,7 +548,7 @@ class TripController extends GetxController {
         }
       }
 
-      // ✅ Prepare JSON body for update - matching the API structure
+      // ✅ Prepare JSON body for update (camelCase as expected by Swagger/Backend)
       final body = <String, dynamic>{
         "tripId": trip.tripId,
         "userId": trip.userId,
@@ -564,22 +567,25 @@ class TripController extends GetxController {
             ? trip.tripStatus.trim()
             : "Pending",
         "vehicleNo": vehicleNumber,
+        "distance": trip.distance ?? "",
+        "latitude": trip.latitude ?? 0,
+        "longitude": trip.longitude ?? 0,
       };
 
       // 🔍 Debug: Log request
       AppLogger.d("==================================");
-      AppLogger.d("📤 TRIP UPDATE REQUEST");
+      AppLogger.d("📤 TRIP UPDATE REQUEST (JSON)");
       AppLogger.d("👉 Endpoint: ${API.updateTrip}");
-      AppLogger.d("👉 Full Body Data: ${json.encode(body)}");
+      AppLogger.d("👉 Body: ${json.encode(body)}");
       AppLogger.d("==================================");
 
-      // ✅ Call API using HttpHelper for consistent URL construction and headers
+      // ✅ Call API using HttpHelper.postData (JSON endpoint)
       final response = await HttpHelper.postData(
         endpoint: API.updateTrip,
         headers: {
           'Accept': '*/*',
           'Content-Type': 'application/json',
-          'UserId': trip.userId, // ✅ Added missing UserId header
+          'UserId': trip.userId,
         },
         data: body,
       );

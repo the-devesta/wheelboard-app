@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../utils/app_logger.dart';
+import '../utils/constants.dart';
 
 /// Distance calculation result model
 class DistanceResult {
@@ -64,12 +65,18 @@ class DistanceService {
           '&language=en'
           '&key=$apiKey';
 
-      AppLogger.d('Distance API URL: $url');
+      print('🌐 [DISTANCE REQUEST] -> $url');
+      AppLogger.d('🗺️ Calculating distance: $origin to $destination');
 
-      final response = await client.get(Uri.parse(url));
+      final response = await client
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 10));
+
+      print('🌐 [DISTANCE STATUS] -> ${response.statusCode}');
 
       if (response.statusCode != 200) {
-        AppLogger.d('Distance API Error: ${response.statusCode}');
+        print('🚨 [DISTANCE HTTP ERROR] -> ${response.body}');
+        AppLogger.e('❌ Distance API HTTP Error: ${response.statusCode}');
         return DistanceResult.empty();
       }
 
@@ -77,18 +84,30 @@ class DistanceService {
       final status = data['status'] as String?;
 
       if (status != 'OK') {
-        AppLogger.d('Distance API Status: $status');
-        AppLogger.d('Error: ${data['error_message']}');
+        print('🚨 [DISTANCE API STATUS ERROR] -> $status');
+        print('🚨 [DISTANCE BODY] -> ${response.body}');
+        AppLogger.e(
+          '❌ Distance API Status: $status. Message: ${data['error_message']}',
+        );
+
+        if (status == 'REQUEST_DENIED') {
+          print(
+            '💡 TIP: Make sure "Distance Matrix API" is ENABLED in Google Cloud Console for this API Key.',
+          );
+        }
+
         return DistanceResult.empty();
       }
 
       final rows = data['rows'] as List<dynamic>;
-      if (rows.isEmpty) {
+      if (rows.isEmpty || rows[0]['elements'] == null) {
+        print('🚨 [DISTANCE ERROR] -> No rows or elements in response');
         return DistanceResult.empty();
       }
 
       final elements = rows[0]['elements'] as List<dynamic>;
       if (elements.isEmpty) {
+        print('🚨 [DISTANCE ERROR] -> Elements list is empty');
         return DistanceResult.empty();
       }
 
@@ -96,7 +115,8 @@ class DistanceService {
       final elementStatus = element['status'] as String?;
 
       if (elementStatus != 'OK') {
-        AppLogger.d('Element Status: $elementStatus');
+        print('🚨 [ELEMENT STATUS ERROR] -> $elementStatus');
+        AppLogger.e('❌ Distance Element Status: $elementStatus');
         return DistanceResult.empty();
       }
 
@@ -120,6 +140,9 @@ class DistanceService {
       final truckDurationMinutes = (durationMinutes * 1.5).round();
       final truckDurationText = _formatDuration(truckDurationMinutes);
 
+      print('✅ [DISTANCE SUCCESS] -> $distanceKm km, $durationMinutes mins');
+      AppLogger.d('✅ Distance Success: $distanceKm km');
+
       return DistanceResult(
         distanceKm: distanceKm,
         distanceText: distanceText,
@@ -128,7 +151,8 @@ class DistanceService {
         truckDurationText: truckDurationText,
       );
     } catch (e) {
-      AppLogger.d('Distance calculation error: $e');
+      print('🚨 [DISTANCE EXCEPTION] -> $e');
+      AppLogger.e('❌ Distance calculation exception: $e');
       return DistanceResult.empty();
     }
   }
@@ -159,6 +183,4 @@ class DistanceService {
 
 /// Global instance for easy access
 /// Usage: distanceService.calculateDistance(origin: "Delhi", destination: "Mumbai")
-final distanceService = DistanceService(
-  apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
-);
+final distanceService = DistanceService(apiKey: MapsConstants.googleMapsApiKey);

@@ -18,7 +18,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../utils/call_utils.dart';
 import '../BidSubmit/BidSubmitScreen.dart';
 import '../../../models/unassigned_trip_model.dart';
 
@@ -335,15 +335,8 @@ class TripOverviewSheet extends StatelessWidget {
                   ),
                   if (tripDetails.companyMobileNo.isNotEmpty)
                     ElevatedButton.icon(
-                      onPressed: () async {
-                        final Uri phoneUri = Uri(
-                          scheme: 'tel',
-                          path: tripDetails.companyMobileNo,
-                        );
-                        if (await canLaunchUrl(phoneUri)) {
-                          await launchUrl(phoneUri);
-                        }
-                      },
+                      onPressed: () =>
+                          CallUtils.makeCall(tripDetails.companyMobileNo),
                       icon: const Icon(Icons.call, size: 16),
                       label: const Text("Call"),
                       style: ElevatedButton.styleFrom(

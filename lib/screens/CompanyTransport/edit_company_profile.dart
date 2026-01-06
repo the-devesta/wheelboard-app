@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:wheelboard/controllers/company_profile_controller.dart';
 import '../../utils/placeservices.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/constants.dart';
 
 class EditCompanyProfileScreen extends StatefulWidget {
   const EditCompanyProfileScreen({super.key});
@@ -18,7 +19,7 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
   );
 
   final PlacesService placesService = PlacesService(
-    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+    apiKey: MapsConstants.googleMapsApiKey,
   );
 
   List<Suggestion> locationSuggestions = [];
@@ -388,7 +389,7 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
                     });
                   }
                 } catch (e) {
-                  AppLogger.d("Error fetching suggestions: $e");
+                  AppLogger.e("Error fetching suggestions: $e");
                   if (mounted) {
                     setState(() {
                       locationSuggestions = [];

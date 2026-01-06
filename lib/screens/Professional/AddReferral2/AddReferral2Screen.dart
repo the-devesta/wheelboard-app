@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../utils/constants.dart';
 import '../../../utils/placeservices.dart';
 
 class AddReferral2Screen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
   bool _notifyWhenAccepted = true;
 
   final PlacesService _placesService = PlacesService(
-    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+    apiKey: MapsConstants.googleMapsApiKey,
   );
   List<Suggestion> _locationSuggestions = [];
 

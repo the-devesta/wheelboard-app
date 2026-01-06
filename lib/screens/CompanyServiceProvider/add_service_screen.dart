@@ -11,6 +11,7 @@ import '../../utils/placeservices.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/constants.dart';
 
 class AddServiceScreen extends StatefulWidget {
   final ServiceModel? service; // Optional service for edit mode
@@ -49,7 +50,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
   // Google Places Service
   final PlacesService _placesService = PlacesService(
-    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+    apiKey: MapsConstants.googleMapsApiKey,
   );
   List<Suggestion> _addressSuggestions = [];
 
@@ -533,7 +534,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                   final results = await _placesService.fetchSuggestions(value);
                   setState(() => _addressSuggestions = results);
                 } catch (e) {
-                  AppLogger.d('Error fetching address suggestions: $e');
+                  AppLogger.e('Error fetching address suggestions: $e');
                 }
               } else {
                 setState(() => _addressSuggestions = []);

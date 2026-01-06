@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wheelboard/screens/Professional/TrackTrip/TrackTripScreen.dart';
+import '../../../controllers/Professional/assigned_trip_controller.dart';
+import '../../../controllers/Professional/track_trip_controller.dart';
 import '../../../models/assigned_trip_model.dart';
 
 class TripDetailsScreen extends StatelessWidget {
@@ -35,6 +37,7 @@ class TripDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TrackTripController trackController = Get.put(TrackTripController());
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
@@ -446,31 +449,105 @@ class TripDetailsScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Track Trip Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Get.to(() => TrackTripScreen(tripId: trip.tripId));
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF375DFB),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // Action Buttons
+            Obx(() {
+              // Find the latest version of this trip from the controller
+              final currentTrip = Get.find<AssignedTripController>()
+                  .assignedTrips
+                  .firstWhere(
+                    (t) => t.tripId == trip.tripId,
+                    orElse: () => trip,
+                  );
+
+              final status = currentTrip.tripStatus.toLowerCase();
+              final bool isInProgress = [
+                'in progress',
+                'active',
+                'ongoing',
+              ].contains(status);
+
+              final bool isFinished = [
+                'completed',
+                'finished',
+                'cancelled',
+              ].contains(status);
+
+              if (isFinished) return const SizedBox.shrink();
+
+              return Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: Obx(
+                      () => ElevatedButton(
+                        onPressed: trackController.isLoading.value
+                            ? null
+                            : () {
+                                if (isInProgress) {
+                                  trackController.endTrip(currentTrip.tripId);
+                                } else {
+                                  trackController.startTrip(currentTrip.tripId);
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isInProgress
+                              ? const Color(0xFFEB5757)
+                              : const Color(0xFF27AE60),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: trackController.isLoading.value
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                isInProgress ? 'End Trip' : 'Start Trip',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'Track Trip',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Get.to(() => TrackTripScreen(tripId: trip.tripId));
+                      },
+                      icon: const Icon(Icons.map, size: 20),
+                      label: Text(
+                        'View Trip Map',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF375DFB),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF375DFB),
+                        side: const BorderSide(color: Color(0xFF375DFB)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
+                ],
+              );
+            }),
 
             const SizedBox(height: 32),
           ],

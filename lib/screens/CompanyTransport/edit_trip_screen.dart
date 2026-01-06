@@ -7,6 +7,7 @@ import '../../utils/session_manager.dart';
 import '../../utils/distance_service.dart';
 import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
+import '../../utils/constants.dart';
 import '../../utils/app_logger.dart';
 
 class EditTripScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
   final TextEditingController payRangeController = TextEditingController();
 
   final PlacesService placesService = PlacesService(
-    apiKey: "AIzaSyDD1jdzyCZ_QhA4QpsL9qFRg38phVn8mPI",
+    apiKey: MapsConstants.googleMapsApiKey,
   );
 
   List<Suggestion> pickupSuggestions = [];
@@ -41,6 +42,8 @@ class _EditTripScreenState extends State<EditTripScreen> {
   DistanceResult? _distanceResult;
   bool _isCalculatingDistance = false;
   bool _isLoadingLocation = false;
+  double? _pickupLat;
+  double? _pickupLng;
 
   @override
   void initState() {
@@ -83,6 +86,19 @@ class _EditTripScreenState extends State<EditTripScreen> {
     if (trip.driverId.isNotEmpty) {
       tripController.selectedDriver.value = trip.driverId;
     }
+
+    _pickupLat = trip.latitude;
+    _pickupLng = trip.longitude;
+    _distanceResult = trip.distance != null && trip.distance!.isNotEmpty
+        ? DistanceResult(
+            distanceKm:
+                double.tryParse(trip.distance!.replaceAll(' km', '')) ?? 0,
+            durationMinutes: 0,
+            distanceText: trip.distance!,
+            durationText: "",
+            truckDurationText: "",
+          )
+        : null;
 
     setState(() {});
   }
@@ -277,6 +293,11 @@ class _EditTripScreenState extends State<EditTripScreen> {
                                   tripCode: widget.trip.tripCode,
                                   tripStatus: widget.trip.tripStatus,
                                   isScheduledTrip: true,
+                                  latitude: _pickupLat,
+                                  longitude: _pickupLng,
+                                  distance: _distanceResult != null
+                                      ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
+                                      : widget.trip.distance,
                                 );
 
                                 // ✅ Call update API
@@ -344,8 +365,16 @@ class _EditTripScreenState extends State<EditTripScreen> {
           if (tripController.vehicles.isEmpty) {
             return const Text("No vehicles available");
           }
+          // Safety check: ensure the selected value is actually in the list of vehicles
+          final String? currentValue =
+              tripController.vehicles.any(
+                (v) => v.vehicleId == tripController.selectedVehicle.value,
+              )
+              ? tripController.selectedVehicle.value
+              : null;
+
           return DropdownButtonFormField<String>(
-            value: tripController.selectedVehicle.value,
+            value: currentValue,
             hint: Text(
               "Select Vehicle",
               style: TextStyle(
@@ -367,7 +396,11 @@ class _EditTripScreenState extends State<EditTripScreen> {
                   ),
                 )
                 .toList(),
-            onChanged: (val) => tripController.selectedVehicle.value = val,
+            onChanged: (val) {
+              if (val != null) {
+                tripController.selectedVehicle.value = val;
+              }
+            },
             icon: const Icon(
               Icons.keyboard_arrow_down,
               color: Color(0xFF006FFD),
@@ -400,8 +433,16 @@ class _EditTripScreenState extends State<EditTripScreen> {
           if (tripController.drivers.isEmpty) {
             return const Text("No drivers available");
           }
+          // Safety check: ensure the selected value is actually in the list of drivers
+          final String? currentValue =
+              tripController.drivers.any(
+                (d) => d.driverId == tripController.selectedDriver.value,
+              )
+              ? tripController.selectedDriver.value
+              : null;
+
           return DropdownButtonFormField<String>(
-            value: tripController.selectedDriver.value,
+            value: currentValue,
             hint: Text(
               "Select Driver",
               style: TextStyle(
@@ -430,7 +471,11 @@ class _EditTripScreenState extends State<EditTripScreen> {
                   ),
                 )
                 .toList(),
-            onChanged: (val) => tripController.selectedDriver.value = val,
+            onChanged: (val) {
+              if (val != null) {
+                tripController.selectedDriver.value = val;
+              }
+            },
             icon: const Icon(
               Icons.keyboard_arrow_down,
               color: Color(0xFF006FFD),
@@ -454,11 +499,21 @@ class _EditTripScreenState extends State<EditTripScreen> {
     setState(() => _isLoadingLocation = true);
 
     try {
-      final address = await LocationService.getCurrentLocationAddress();
+      final position = await LocationService.getCurrentPosition();
+      final address = position != null
+          ? await LocationService.getAddressFromCoordinates(
+              position.latitude,
+              position.longitude,
+            )
+          : null;
 
       if (address != null && address.isNotEmpty) {
         setState(() {
           controller.text = address;
+          if (controller == pickupController) {
+            _pickupLat = position?.latitude;
+            _pickupLng = position?.longitude;
+          }
         });
 
         // Auto-calculate distance if both locations are set
@@ -559,6 +614,13 @@ class _EditTripScreenState extends State<EditTripScreen> {
                       s.placeId,
                     );
                     AppLogger.d("Pickup LatLng: $loc");
+
+                    if (loc != null) {
+                      setState(() {
+                        _pickupLat = loc['lat'];
+                        _pickupLng = loc['lng'];
+                      });
+                    }
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();
