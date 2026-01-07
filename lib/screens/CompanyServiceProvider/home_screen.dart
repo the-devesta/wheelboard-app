@@ -8,8 +8,8 @@ import 'earnings_screen.dart';
 import 'add_service_screen.dart';
 import 'my_listings_screen.dart';
 import 'service_details_screen.dart';
-import 'booking_details_screen.dart';
 import '../CompanyTransport/job_screen.dart';
+
 import '../CompanyTransport/notification_screen.dart';
 import '../../controllers/notification_controller.dart';
 import '../../controllers/user_profile_controller.dart';
@@ -25,6 +25,7 @@ import '../../utils/share_service.dart';
 import '../CompanyTransport/fleet_userprofile.dart';
 import 'dart:convert';
 import '../../utils/app_logger.dart';
+import 'booking_list_screen.dart';
 
 class ServiceProviderHomeScreen extends StatefulWidget {
   const ServiceProviderHomeScreen({super.key});
@@ -40,6 +41,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   final feedsController = Get.put(FeedsController());
   List<ServiceModel> _services = [];
   bool _isLoadingServices = false;
+  int _totalLeads = 0;
+  List<String> _allServiceIds = [];
   final Map<String, String> _serviceImages =
       {}; // Store service images by serviceId
 
@@ -127,6 +130,46 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
       setState(() {
         _isLoadingServices = false;
       });
+      // After services are fetched, fetch all assignments (leads)
+      if (_services.isNotEmpty) {
+        _allServiceIds = _services.map((s) => s.serviceId).toList();
+        _fetchTotalLeads();
+      }
+    }
+  }
+
+  Future<void> _fetchTotalLeads() async {
+    try {
+      final sessionManager = SessionManager();
+      final token = await sessionManager.getString("authToken");
+
+      int total = 0;
+      for (var service in _services) {
+        final endpoint =
+            '${API.serviceAssignList}?serviceId=${service.serviceId}';
+        final response = await HttpHelper.getData(
+          endpoint: endpoint,
+          headers: {
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+            'Accept': '*/*',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final List<dynamic> data =
+              jsonDecode(response.body) as List<dynamic>? ?? [];
+          total += data.length;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _totalLeads = total;
+        });
+      }
+    } catch (e) {
+      AppLogger.d('Error fetching total leads: $e');
     }
   }
 
@@ -363,12 +406,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       child: GestureDetector(
                         onTap: () {
                           Get.to(
-                            () => BookingDetailsScreen(
-                              serviceId: _services.isNotEmpty
-                                  ? _services.first.serviceId
-                                  : '',
-                            ),
-                          ); // Navigate to booking details
+                            () => BookingListScreen(serviceIds: _allServiceIds),
+                          );
                         },
                         child: _buildStatCard(
                           context,
@@ -376,7 +415,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                           iconBgColor: const Color(0xFFD0FAE6),
                           iconColor: const Color(0xFF00B894),
                           label: 'Leads',
-                          value: '12',
+                          value: '$_totalLeads',
                         ),
                       ),
                     ),

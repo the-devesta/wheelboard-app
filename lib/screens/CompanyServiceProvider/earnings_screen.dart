@@ -5,28 +5,39 @@ import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/controllers/ServiceProvider/service_earnings_controller.dart';
 import 'package:wheelboard/models/ServiceProvider/service_earnings_model.dart';
 import 'package:wheelboard/utils/constants.dart';
-import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:wheelboard/screens/CompanyServiceProvider/register_payment_screen.dart';
 
-class EarningsScreen extends StatelessWidget {
+class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
+
+  @override
+  State<EarningsScreen> createState() => _EarningsScreenState();
+}
+
+class _EarningsScreenState extends State<EarningsScreen> {
+  String selectedFilter = 'This Month';
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(ServiceEarningsController());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
+          onPressed: () => Get.back(),
+        ),
+        centerTitle: false,
         title: Text(
-          'Service Earnings',
+          'Earnings',
           style: GoogleFonts.poppins(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFFFF5E5E),
+            color: const Color(0xFF1F2937),
           ),
         ),
       ),
@@ -37,25 +48,7 @@ class EarningsScreen extends StatelessWidget {
 
         final data = controller.dashboardData.value;
         if (data == null) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  size: 64,
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 16),
-                const Text("No earnings data found"),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => controller.fetchEarningsDashboard(),
-                  child: const Text("Retry"),
-                ),
-              ],
-            ),
-          );
+          return _buildEmptyState(controller);
         }
 
         return RefreshIndicator(
@@ -67,46 +60,50 @@ class EarningsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                // Hero Earnings Card
-                _buildHeroCard(data.totalEarnings),
+                // Total Earnings Card
+                _buildTotalEarningsCard(data.totalEarnings),
                 const SizedBox(height: 24),
 
-                // Chart Section
-                if (data.earningsChart.isNotEmpty) ...[
-                  _sectionTitle("Monthly Trend"),
-                  const SizedBox(height: 12),
-                  _buildChartContainer(data.earningsChart),
-                  const SizedBox(height: 24),
-                ],
+                // Service Breakdown Section
+                _buildSectionHeader("Service Breakdown"),
+                const SizedBox(height: 16),
+                ...data.serviceBreakdown
+                    .map((s) => _buildServiceBreakdownCard(s))
+                    .toList(),
 
-                // Service Breakdown
-                if (data.serviceBreakdown.isNotEmpty) ...[
-                  _sectionTitle("Service Breakdown"),
-                  const SizedBox(height: 12),
-                  ...data.serviceBreakdown
-                      .map((s) => _buildServiceTile(s))
-                      .toList(),
-                  const SizedBox(height: 24),
-                ],
+                const SizedBox(height: 24),
 
-                // Payment History
-                if (data.paymentHistory.isNotEmpty) ...[
-                  _sectionTitle("Recent Payments"),
-                  const SizedBox(height: 12),
-                  ...data.paymentHistory
-                      .map((p) => _buildPaymentTile(p))
-                      .toList(),
-                  const SizedBox(height: 24),
-                ],
+                // Earnings Over Time Section
+                _buildSectionHeader(
+                  "Earnings Over Time",
+                  trailing: _buildChartFilterDropdown(),
+                ),
+                const SizedBox(height: 16),
+                _buildEarningsChart(data.earningsChart),
 
-                // Add Payment Button
-                _buildActionButton(
-                  context: context,
-                  label: "RECORD NEW PAYMENT",
-                  icon: Icons.add_circle_outline,
-                  color: const Color(0xFFFF5E5E),
-                  onPressed: () =>
-                      _showRecordPaymentSheet(context, controller, data),
+                const SizedBox(height: 24),
+
+                // Payment History Section
+                _buildSectionHeader("Payment History"),
+                const SizedBox(height: 16),
+                ...data.paymentHistory
+                    .map((p) => _buildPaymentHistoryCard(p))
+                    .toList(),
+
+                const SizedBox(height: 24),
+
+                // Action Buttons
+                _buildOutlinedActionButton(
+                  label: "Export as PDF",
+                  icon: Icons.file_download_outlined,
+                  onPressed: () {
+                    // Logic to export as PDF
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildFilledActionButton(
+                  label: "Register New Payment",
+                  onPressed: () => Get.to(() => const RegisterPaymentScreen()),
                 ),
                 const SizedBox(height: 40),
               ],
@@ -117,48 +114,58 @@ class EarningsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeroCard(double total) {
+  Widget _buildEmptyState(ServiceEarningsController controller) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.account_balance_wallet_outlined,
+            size: 64,
+            color: Colors.grey,
+          ),
+          const SizedBox(height: 16),
+          const Text("No earnings data found"),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => controller.fetchEarningsDashboard(),
+            child: const Text("Retry"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalEarningsCard(double total) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF5E5E), Color(0xFFFF8E8E)],
+          colors: [Color(0xFFF36969), Color(0xFFF87171)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF5E5E).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'TOTAL REVENUE',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.8),
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const Icon(
-                Icons.account_balance_wallet,
-                color: Colors.white,
-                size: 20,
-              ),
-            ],
+          Text(
+            'Total Earnings',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.9),
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             HttpHelper.formatAmount(total),
             style: GoogleFonts.poppins(
@@ -167,237 +174,360 @@ class EarningsScreen extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              "Overall Earnings",
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildFilterTab("This Week"),
+              const SizedBox(width: 8),
+              _buildFilterTab("This Month"),
+              const SizedBox(width: 8),
+              _buildFilterTab("Custom"),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: const Color(0xFF1F2937),
+  Widget _buildFilterTab(String label) {
+    bool isSelected = selectedFilter == label;
+    return GestureDetector(
+      onTap: () => setState(() => selectedFilter = label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.white.withOpacity(0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildChartContainer(List<EarningsChartData> chartData) {
-    double maxVal =
-        chartData.fold(
-          1.0,
-          (prev, element) =>
-              element.totalAmount > prev ? element.totalAmount : prev,
-        ) *
-        1.2;
+  Widget _buildSectionHeader(String title, {Widget? trailing}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1F2937),
+          ),
+        ),
+        if (trailing != null) trailing,
+      ],
+    );
+  }
 
+  Widget _buildChartFilterDropdown() {
     return Container(
-      height: 220,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: const Color(0xFFE5E7EB),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: chartData.map((d) {
-                double barHeight = (d.totalAmount / maxVal) * 120;
-                return Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        "${(d.totalAmount / 1000).toStringAsFixed(1)}k",
-                        style: const TextStyle(fontSize: 8, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        width: 25,
-                        height: barHeight + 5,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFFFF5E5E).withOpacity(0.8),
-                              const Color(0xFFFF5E5E).withOpacity(0.4),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(6),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        d.monthName.substring(0, 3),
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+          Text(
+            "By Month",
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              color: const Color(0xFF3B82F6),
+              fontWeight: FontWeight.w500,
             ),
           ),
+          const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xFF3B82F6)),
         ],
       ),
     );
   }
 
-  Widget _buildServiceTile(ServiceBreakdown service) {
+  Widget _buildServiceBreakdownCard(ServiceBreakdown service) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF3F4F6)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEE2E2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.miscellaneous_services,
-                  color: Color(0xFFFF5E5E),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      service.serviceTitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1F2937),
-                      ),
-                    ),
-                    Text(
-                      "${service.bookingCount} Bookings",
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                HttpHelper.formatAmount(service.totalAmount),
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF10B981),
-                ),
-              ),
-            ],
-          ),
-          if (service.lastBookingDate != null) ...[
-            const Divider(height: 24),
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 14, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text(
-                  "Last booking: ${formatDateShort(service.lastBookingDate)}",
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentTile(PaymentHistory payment) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFECFDF5),
-              shape: BoxShape.circle,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF1F1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.arrow_downward,
-              size: 16,
-              color: Color(0xFF10B981),
+            child: Icon(
+              _getServiceIcon(service.serviceTitle),
+              color: const Color(0xFFF36969),
+              size: 24,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  payment.serviceTitle,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                  service.serviceTitle,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF111827),
                   ),
                 ),
                 Text(
-                  formatDateShort(payment.paymentDate),
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  "Last booking: ${_getTimeAgo(service.lastBookingDate)}",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      HttpHelper.formatAmount(service.totalAmount),
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "${service.bookingCount} bookings",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+        ],
+      ),
+    );
+  }
+
+  IconData _getServiceIcon(String title) {
+    if (title.toLowerCase().contains("tyre")) {
+      return Icons
+          .help_outline; // Figma shows a question mark in a circle for tyre? Actually it looks like a help icon.
+    } else if (title.toLowerCase().contains("engine")) {
+      return Icons.build_outlined;
+    } else if (title.toLowerCase().contains("battery")) {
+      return Icons.battery_charging_full_outlined;
+    }
+    return Icons.settings_outlined;
+  }
+
+  String _getTimeAgo(String? dateString) {
+    if (dateString == null) return "Never";
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) return "Today";
+      if (difference.inDays == 1) return "Yesterday";
+      if (difference.inDays < 7) return "${difference.inDays} days ago";
+      if (difference.inDays < 30) {
+        int weeks = (difference.inDays / 7).floor();
+        return "$weeks week${weeks > 1 ? 's' : ''} ago";
+      }
+      return formatDateShort(dateString);
+    } catch (_) {
+      return "Recently";
+    }
+  }
+
+  Widget _buildEarningsChart(List<EarningsChartData> chartData) {
+    if (chartData.isEmpty) {
+      return const SizedBox(
+        height: 200,
+        child: Center(child: Text("No data for chart")),
+      );
+    }
+
+    return Container(
+      height: 240,
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: 20, right: 10, left: 0, bottom: 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: LineChart(
+        LineChartData(
+          gridData: const FlGridData(show: false),
+          titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                interval: 1,
+                getTitlesWidget: (value, meta) {
+                  int index = value.toInt();
+                  if (index >= 0 && index < chartData.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        chartData[index].monthName.substring(0, 3),
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: const Color(0xFF6B7280),
+                          fontWeight: index == 4
+                              ? FontWeight.w700
+                              : FontWeight.w400, // May as active
+                        ),
+                      ),
+                    );
+                  }
+                  return const Text('');
+                },
+              ),
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: chartData.asMap().entries.map((e) {
+                return FlSpot(e.key.toDouble(), e.value.totalAmount);
+              }).toList(),
+              isCurved: true,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF438883), Color(0xFF438883)],
+              ),
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) {
+                  if (index == 3) {
+                    // Highlight index 4 (April/May area)
+                    return FlDotCirclePainter(
+                      radius: 6,
+                      color: const Color(0xFF438883),
+                      strokeWidth: 2,
+                      strokeColor: Colors.white,
+                    );
+                  }
+                  return FlDotCirclePainter(
+                    radius: 0,
+                    color: Colors.transparent,
+                  );
+                },
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF438883).withOpacity(0.3),
+                    const Color(0xFF438883).withOpacity(0.0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ],
+          lineTouchData: LineTouchData(
+            enabled: true,
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (_) => const Color(0xFFD1FAE5),
+              tooltipBorder: const BorderSide(
+                color: Color(0xFF438883),
+                width: 1,
+              ),
+              getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                return touchedSpots.map((LineBarSpot touchedSpot) {
+                  return LineTooltipItem(
+                    HttpHelper.formatAmount(touchedSpot.y),
+                    const TextStyle(
+                      color: Color(0xFF438883),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  );
+                }).toList();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentHistoryCard(PaymentHistory payment) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                payment.serviceTitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+              Text(
+                formatDateShort(payment.paymentDate),
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+            ],
+          ),
           Text(
-            "+${HttpHelper.formatAmount(payment.paymentAmount)}",
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF10B981),
-              fontSize: 14,
+            HttpHelper.formatAmount(payment.paymentAmount),
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F2937),
             ),
           ),
         ],
@@ -405,210 +535,60 @@ class EarningsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton({
-    required BuildContext context,
+  Widget _buildOutlinedActionButton({
     required String label,
     required IconData icon,
-    required Color color,
     required VoidCallback onPressed,
   }) {
     return SizedBox(
       width: double.infinity,
-      height: 56,
-      child: ElevatedButton.icon(
+      height: 54,
+      child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon),
+        icon: Icon(icon, color: const Color(0xFFF36969)),
         label: Text(
           label,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.poppins(
             fontSize: 16,
-            letterSpacing: 1,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFFF36969),
           ),
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Color(0xFFF36969)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilledActionButton({
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFF36969),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
-      ),
-    );
-  }
-
-  void _showRecordPaymentSheet(
-    BuildContext context,
-    ServiceEarningsController controller,
-    ServiceEarningsModel data,
-  ) {
-    final amountController = TextEditingController();
-    final purposeController = TextEditingController();
-    final notesController = TextEditingController();
-    String? selectedServiceId;
-
-    if (data.serviceBreakdown.isNotEmpty) {
-      selectedServiceId = data.serviceBreakdown.first.serviceId;
-    }
-
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Record Payment",
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                "Manually record a payment receive for your services.",
-                style: TextStyle(color: Colors.grey, fontSize: 13),
-              ),
-              const SizedBox(height: 24),
-
-              // Service Dropdown
-              const Text(
-                "Service",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: selectedServiceId,
-                decoration: _inputDecoration("Select Service"),
-                items: data.serviceBreakdown.map((s) {
-                  return DropdownMenuItem(
-                    value: s.serviceId,
-                    child: Text(s.serviceTitle),
-                  );
-                }).toList(),
-                onChanged: (val) => selectedServiceId = val,
-              ),
-              const SizedBox(height: 16),
-
-              // Amount
-              const Text(
-                "Amount (₹)",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: _inputDecoration("Enter amount"),
-              ),
-              const SizedBox(height: 16),
-
-              // Purpose
-              const Text(
-                "Purpose",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: purposeController,
-                decoration: _inputDecoration("e.g. Final Payment"),
-              ),
-              const SizedBox(height: 16),
-
-              // Notes
-              const Text(
-                "Notes",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: notesController,
-                maxLines: 2,
-                decoration: _inputDecoration("Any additional details..."),
-              ),
-              const SizedBox(height: 32),
-
-              Obx(
-                () => SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: controller.isRecordingPayment.value
-                        ? null
-                        : () async {
-                            if (selectedServiceId == null ||
-                                amountController.text.isEmpty) {
-                              Get.snackbar(
-                                "Error",
-                                "Please fill required fields",
-                                backgroundColor: Colors.orange.withOpacity(0.1),
-                              );
-                              return;
-                            }
-                            final ok = await controller.recordPayment(
-                              serviceId: selectedServiceId!,
-                              amount:
-                                  double.tryParse(amountController.text) ?? 0.0,
-                              purpose: purposeController.text,
-                              notes: notesController.text,
-                            );
-                            if (ok) Get.back();
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF5E5E),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: controller.isRecordingPayment.value
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "SUBMIT PAYMENT",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
       ),
-      isScrollControlled: true,
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: const Color(0xFFF3F4F6),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

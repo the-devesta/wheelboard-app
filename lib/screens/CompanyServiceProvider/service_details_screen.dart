@@ -10,6 +10,7 @@ import 'booking_details_screen.dart';
 import 'dart:convert';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/share_service.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -113,8 +114,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                     const SizedBox(height: 24),
                     _buildGalleryCard(service),
                     const SizedBox(height: 24),
-                    _buildStatsCard(),
-                    const SizedBox(height: 24),
                     _buildActionButtons(service),
                   ],
                 ),
@@ -150,7 +149,18 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.share, color: Colors.white),
-          onPressed: () {},
+          onPressed: () {
+            ShareService.shareService(
+              serviceId: widget.serviceId,
+              title: service['serviceTitle'] ?? service['title'] ?? 'Service',
+              businessName: service['businessName'] ?? '',
+              category: service['businessType'] ?? 'Service',
+              description: service['description'] ?? '',
+              location:
+                  '${service['fullAddress'] ?? ''}, ${service['city'] ?? ''}',
+              price: '₹${service['amount'] ?? service['price'] ?? 0}',
+            );
+          },
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -460,21 +470,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     );
   }
 
-  Widget _buildStatsCard() {
-    return _buildCard(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildStatItem(Icons.lightbulb, '12', 'Leads'),
-            _buildStatItem(Icons.visibility, '120', 'Views'),
-            _buildStatItem(Icons.assignment, '5', 'Assigns'),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildActionButtons(Map<String, dynamic> service) {
     // Create ServiceModel for edit
     final serviceModel = ServiceModel(
@@ -496,82 +491,27 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       daysOpen: service['daysOpen'],
     );
 
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: OutlinedButton(
-            onPressed: () {
-              Get.to(() => AddServiceScreen(service: serviceModel));
-            },
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              side: const BorderSide(color: Color(0xFFF36969)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Edit Service',
-              style: TextStyle(color: Color(0xFFF36969)),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 1,
-          child: OutlinedButton(
-            onPressed: () {
-              _showDeleteDialog(serviceModel);
-            },
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              side: const BorderSide(color: Color(0xFFF36969)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Color(0xFFF36969)),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF36969).withOpacity(0.1),
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          Get.to(() => AddServiceScreen(service: serviceModel));
+        },
+        icon: const Icon(Icons.edit, size: 18, color: Color(0xFFF36969)),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: const BorderSide(color: Color(0xFFF36969)),
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          child: IconButton(
-            icon: const Icon(Icons.share, color: Color(0xFFF36969)),
-            onPressed: () {},
+        ),
+        label: const Text(
+          'Edit Service Details',
+          style: TextStyle(
+            color: Color(0xFFF36969),
+            fontWeight: FontWeight.w600,
           ),
         ),
-      ],
-    );
-  }
-
-  void _showDeleteDialog(ServiceModel service) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Service'),
-        content: Text(
-          'Are you sure you want to delete "${service.serviceTitle}"?',
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              // Implement delete functionality
-              Get.back();
-              SnackBarHelper.success('Service deleted');
-              Get.back(); // Go back to listings
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }
@@ -649,25 +589,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             ],
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(IconData icon, String value, String label) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 24,
-          backgroundColor: const Color(0xFFF36969).withOpacity(0.1),
-          child: Icon(icon, color: const Color(0xFFF36969)),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
   }

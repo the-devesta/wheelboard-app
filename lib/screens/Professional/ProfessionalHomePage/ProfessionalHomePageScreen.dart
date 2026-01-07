@@ -12,13 +12,13 @@ import '../Calendar/CalendarScreen.dart';
 
 import '../EarningSummary/EarningSummaryScreen.dart';
 import '../MyLearning/MyLearningScreen.dart';
-import '../TripDashboard/TripDashboardScreen.dart';
 import '../TripProgress/TripProgressScreen.dart';
 import '../SOS/SOSScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../controllers/notification_controller.dart';
 import '../../../widgets/custom_loader.dart';
+import '../../../widgets/custom_snackbar.dart';
 
 /// Professional Homepage Screen
 /// Main screen matching Figma design exactly
@@ -86,10 +86,17 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                     clipBehavior:
                         Clip.none, // Allow overflow - don't clip trip card
                     children: [
-                      // Banner background - Responsive height
+                      // First child determines Stack height - make it tall enough for the trip card hit testing
                       SizedBox(
-                        height: screenHeight * 0.23, // ~23% of screen height
-                        child: const BannerHeaderWidget(),
+                        height: screenHeight * 0.43 + 40,
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              height: screenHeight * 0.23,
+                              child: const BannerHeaderWidget(),
+                            ),
+                          ],
+                        ),
                       ),
                       // Quick Action Buttons - Overlapping on banner - Responsive
                       Positioned(
@@ -137,12 +144,16 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                               .toList();
 
                           if (activeTrips.isEmpty) {
-                            return const TripCardWidget(
+                            return TripCardWidget(
                               pickupAddress: "No trips available",
-                              destinationAddress:
-                                  "Check back later for new trips",
+                              destinationAddress: "No any trip found",
                               dateTime: "",
-                              tags: [],
+                              tags: const [],
+                              onTap: () {
+                                SnackBarHelper.info(
+                                  "No trips available right now.",
+                                );
+                              },
                             );
                           }
 
@@ -151,7 +162,14 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                             trip.tripStatus.capitalizeFirst ?? 'Assigned',
                           ].where((t) => t.isNotEmpty).toList();
 
-                          return GestureDetector(
+                          return TripCardWidget(
+                            pickupAddress: trip.pickupLocation,
+                            destinationAddress: trip.deliveryLocation,
+                            dateTime: _formatDate(
+                              trip.pickupDate,
+                              trip.pickupTime,
+                            ),
+                            tags: tags,
                             onTap: () {
                               final trips =
                                   assignedTripController.assignedTrips;
@@ -182,18 +200,11 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                               if (next != null) {
                                 Get.to(() => TripProgressScreen(trip: next));
                               } else {
-                                Get.to(() => const TripDashboardScreen());
+                                SnackBarHelper.info(
+                                  "No active or scheduled trips found.",
+                                );
                               }
                             },
-                            child: TripCardWidget(
-                              pickupAddress: trip.pickupLocation,
-                              destinationAddress: trip.deliveryLocation,
-                              dateTime: _formatDate(
-                                trip.pickupDate,
-                                trip.pickupTime,
-                              ),
-                              tags: tags,
-                            ),
                           );
                         }),
                       ),
@@ -205,9 +216,6 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                   // Banner ends at: screenHeight * 0.23
                   // Trip card extends below banner - we need to account for full card height
                   // Using generous spacing to ensure no overlap: banner end + card extension + margin
-                  SizedBox(
-                    height: (screenHeight * 0.20) + 40,
-                  ), // Generous spacing to ensure trip card ends before jobs section
                   // Jobs Section - Below banner and cards
                   _buildJobsSection(context),
 
@@ -295,6 +303,11 @@ class ProfessionalHomePageScreen extends StatelessWidget {
               await assignedTripController.fetchAssignedTrips();
               final trips = assignedTripController.assignedTrips;
 
+              if (trips.isEmpty) {
+                SnackBarHelper.info("No trips assigned to you yet.");
+                return;
+              }
+
               final active = trips.firstWhereOrNull((t) {
                 final s = t.tripStatus.toLowerCase();
                 return [
@@ -319,7 +332,7 @@ class ProfessionalHomePageScreen extends StatelessWidget {
               if (next != null) {
                 Get.to(() => TripProgressScreen(trip: next));
               } else {
-                Get.to(() => const TripDashboardScreen());
+                SnackBarHelper.info("No active or scheduled trips found.");
               }
             },
           ),

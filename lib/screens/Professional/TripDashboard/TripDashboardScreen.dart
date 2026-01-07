@@ -610,12 +610,16 @@ class TripChartPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 
-    final spacing = size.width / (dataPoints.length - 1);
+    // Handle single point or multiple points
+    final double spacing = dataPoints.length > 1
+        ? size.width / (dataPoints.length - 1)
+        : 0;
     final path = Path();
     final fillPath = Path();
 
     for (int i = 0; i < dataPoints.length; i++) {
-      final x = i * spacing;
+      // If single point, center it. Otherwise scale by spacing.
+      final x = dataPoints.length > 1 ? i * spacing : size.width / 2;
       final y = size.height - (dataPoints[i] / maxValue) * size.height;
 
       if (i == 0) {
@@ -636,7 +640,7 @@ class TripChartPainter extends CustomPainter {
 
     // Draw points
     for (int i = 0; i < dataPoints.length; i++) {
-      final x = i * spacing;
+      final x = dataPoints.length > 1 ? i * spacing : size.width / 2;
       final y = size.height - (dataPoints[i] / maxValue) * size.height;
       canvas.drawCircle(
         Offset(x, y),

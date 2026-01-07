@@ -145,6 +145,60 @@ Download WheelBoard App: $wheelboardAppUrl
     await Share.share(shareText.trim(), subject: 'Professional: $name');
   }
 
+  /// Share booking details
+  static Future<void> shareBooking({
+    required String bookingId,
+    required String serviceTitle,
+    required String customerName,
+    required String scheduledDate,
+    required String scheduledTime,
+  }) async {
+    final shareText =
+        '''
+📅 Booking Details: $serviceTitle
+
+👤 Customer: $customerName
+📆 Date: $scheduledDate
+🕒 Time: $scheduledTime
+🆔 Booking ID: #$bookingId
+
+Shared via WheelBoard
+''';
+
+    await Share.share(shareText.trim(), subject: 'Booking: $serviceTitle');
+  }
+
+  /// Share service details
+  static Future<void> shareService({
+    required String serviceId,
+    required String title,
+    required String businessName,
+    required String category,
+    required String description,
+    required String location,
+    required String price,
+  }) async {
+    final serviceUrl = '$wheelboardWebsiteUrl/services/$serviceId';
+
+    final shareText =
+        '''
+🛠 Service: $title
+🏢 Business: $businessName
+📂 Category: $category
+📍 Location: $location
+💰 Price: $price
+
+📝 $description
+
+👇 View Details on WheelBoard:
+$serviceUrl
+
+Download WheelBoard App: $wheelboardAppUrl
+''';
+
+    await Share.share(shareText.trim(), subject: 'Service: $title');
+  }
+
   /// Copy link to clipboard
   static Future<void> copyLink(String url) async {
     await Clipboard.setData(ClipboardData(text: url));

@@ -7,6 +7,7 @@ class TripCardWidget extends StatelessWidget {
   final String destinationAddress;
   final String dateTime;
   final List<String> tags;
+  final VoidCallback? onTap;
 
   const TripCardWidget({
     super.key,
@@ -14,13 +15,13 @@ class TripCardWidget extends StatelessWidget {
     required this.destinationAddress,
     required this.dateTime,
     this.tags = const [],
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -32,95 +33,105 @@ class TripCardWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title with paper airplane icon - More visible
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF003366).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title with paper airplane icon - More visible
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF003366).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.send,
+                        size: 20,
+                        color: Color(0xFF003366),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      "Next Scheduled Trip",
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF003366),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.send,
-                  size: 20,
-                  color: Color(0xFF003366),
+                const SizedBox(height: 16),
+                // Pickup with red pin
+                _buildAddressRow(
+                  icon: Icons.location_on,
+                  label: "Pickup:",
+                  address: pickupAddress,
+                  iconColor: const Color(0xFFFF5E5E),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                "Next Scheduled Trip",
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF003366),
-                  letterSpacing: 0.5,
+                const SizedBox(height: 12),
+                // Destination with blue pin
+                _buildAddressRow(
+                  icon: Icons.location_on,
+                  label: "Destination:",
+                  address: destinationAddress,
+                  iconColor: const Color(0xFF003366),
+                  isDestination: true,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Pickup with red pin
-          _buildAddressRow(
-            icon: Icons.location_on,
-            label: "Pickup:",
-            address: pickupAddress,
-            iconColor: const Color(0xFFFF5E5E),
-          ),
-          const SizedBox(height: 12),
-          // Destination with blue pin
-          _buildAddressRow(
-            icon: Icons.location_on,
-            label: "Destination:",
-            address: destinationAddress,
-            iconColor: const Color(0xFF003366),
-            isDestination: true,
-          ),
-          const SizedBox(height: 12),
-          // Date & Time with red calendar icon
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.calendar_today,
-                size: 16,
-                color: Color(0xFFFF5E5E),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "Date & Time:",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
+                const SizedBox(height: 12),
+                // Date & Time with red calendar icon
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: Color(0xFFFF5E5E),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Date & Time:",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        dateTime,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFFADADB7),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  dateTime,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFFADADB7),
-                  ),
+                const SizedBox(height: 16),
+                // Tags
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: tags.map((tag) => _buildTag(tag)).toList(),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          // Tags
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: tags.map((tag) => _buildTag(tag)).toList(),
-          ),
-        ],
+        ),
       ),
     );
   }

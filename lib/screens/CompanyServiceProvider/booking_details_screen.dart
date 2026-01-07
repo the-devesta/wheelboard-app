@@ -7,11 +7,18 @@ import '../../widgets/custom_snackbar.dart';
 import 'dart:convert';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/share_service.dart';
+import 'package:intl/intl.dart';
 
 class BookingDetailsScreen extends StatefulWidget {
   final String serviceId;
+  final Map<String, dynamic>? initialBookingData;
 
-  const BookingDetailsScreen({super.key, required this.serviceId});
+  const BookingDetailsScreen({
+    super.key,
+    required this.serviceId,
+    this.initialBookingData,
+  });
 
   @override
   State<BookingDetailsScreen> createState() => _BookingDetailsScreenState();
@@ -28,7 +35,14 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     super.initState();
     AppLogger.d("🔍 BookingDetailsScreen initialized");
     AppLogger.d("🔍 Received Service ID: ${widget.serviceId}");
-    _fetchBookingDetails();
+
+    if (widget.initialBookingData != null) {
+      _bookingData = widget.initialBookingData;
+      _isLoading = false;
+      AppLogger.d("✅ Data passed from previous screen. Skipping API fetch.");
+    } else {
+      _fetchBookingDetails();
+    }
   }
 
   @override
@@ -158,7 +172,30 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           IconButton(
             icon: const Icon(Icons.share, color: Color(0xFF2D3436)),
             onPressed: () {
-              // Share functionality
+              if (_bookingData != null) {
+                final assignmentId = _bookingData!['assignmentId'] ?? '';
+                final serviceTitle = _bookingData!['serviceTitle'] ?? 'Service';
+                final customerName =
+                    _bookingData!['customerName'] ?? 'Customer';
+                final scheduledDate = _bookingData!['scheduledDate'] ?? '';
+                final scheduledTime = _bookingData!['scheduledTime'] ?? '';
+
+                String formattedDate = scheduledDate;
+                if (scheduledDate.isNotEmpty) {
+                  try {
+                    final dt = DateTime.parse(scheduledDate);
+                    formattedDate = DateFormat('dd MMM yyyy').format(dt);
+                  } catch (_) {}
+                }
+
+                ShareService.shareBooking(
+                  bookingId: assignmentId,
+                  serviceTitle: serviceTitle,
+                  customerName: customerName,
+                  scheduledDate: formattedDate,
+                  scheduledTime: scheduledTime,
+                );
+              }
             },
           ),
         ],
@@ -730,11 +767,16 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                       ? const Color(0xFFE9FDF4)
                       : status.toLowerCase() == 'pending'
                       ? const Color(0xFFFFF4E6)
+                      : (status.toLowerCase() == 'started' ||
+                            status.toLowerCase() == 'start')
+                      ? const Color(0xFFE3F2FD)
+                      : status.toLowerCase() == 'cancelled'
+                      ? const Color(0xFFFEE2E2)
                       : Colors.grey[200],
                   borderRadius: BorderRadius.circular(9999),
                 ),
                 child: Text(
-                  status,
+                  status.capitalizeFirst ?? status,
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w500,
@@ -745,6 +787,11 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                         ? const Color(0xFF00B894)
                         : status.toLowerCase() == 'pending'
                         ? const Color(0xFFFF9800)
+                        : (status.toLowerCase() == 'started' ||
+                              status.toLowerCase() == 'start')
+                        ? Colors.blue
+                        : status.toLowerCase() == 'cancelled'
+                        ? Colors.red
                         : Colors.grey[700],
                   ),
                 ),
@@ -834,6 +881,12 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     final assignmentId = _bookingData?['assignmentId'] ?? '';
     final status = _bookingData?['status']?.toString().toLowerCase() ?? '';
 
+    if (status == 'completed' || status == 'cancelled') {
+      return const SizedBox.shrink();
+    }
+
+    bool isStarted = status == 'started' || status == 'start';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -846,18 +899,23 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed:
-                  (_isUpdating ||
-                      status == 'completed' ||
-                      status == 'cancelled')
+              onPressed: _isUpdating
                   ? null
                   : () {
-                      _completeService(assignmentId);
+                      if (isStarted) {
+                        _completeService(assignmentId);
+                      } else {
+                        _startService(assignmentId);
+                      }
                     },
-              icon: const Icon(Icons.check, size: 16, color: Colors.white),
-              label: const Text(
-                'Complete Service',
-                style: TextStyle(
+              icon: Icon(
+                isStarted ? Icons.check : Icons.play_arrow,
+                size: 16,
+                color: Colors.white,
+              ),
+              label: Text(
+                isStarted ? 'Complete Service' : 'Start Service',
+                style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
@@ -865,7 +923,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF27AE60),
+                backgroundColor: isStarted
+                    ? const Color(0xFF27AE60)
+                    : const Color(0xFF00AAFF),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -874,37 +934,40 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed:
-                  (_isUpdating ||
-                      status == 'completed' ||
-                      status == 'cancelled')
-                  ? null
-                  : () {
-                      _showCancelDialog();
-                    },
-              icon: const Icon(Icons.close, size: 16, color: Color(0xFFFF4D4F)),
-              label: const Text(
-                'Cancel Appointment',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+          if (!isStarted) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isUpdating
+                    ? null
+                    : () {
+                        _showCancelDialog();
+                      },
+                icon: const Icon(
+                  Icons.close,
+                  size: 16,
                   color: Color(0xFFFF4D4F),
                 ),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFFF4D4F)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                label: const Text(
+                  'Cancel Appointment',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: Color(0xFFFF4D4F),
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFFF4D4F)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
