@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../manage_trip/manage_trip.dart';
 import '../../../widgets/common_header_widget.dart';
+import '../../../utils/navigation_helper.dart';
 
 class TripAccepted extends StatelessWidget {
   final String tripId;
@@ -217,8 +216,8 @@ class TripAccepted extends StatelessWidget {
                 height: 58,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigate to Manage Trips page
-                    Get.offAll(() => const ManageTrip());
+                    // Navigate to Main Wrapper's Trips tab
+                    NavigationHelper.navigateToTripsTab();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF36969),

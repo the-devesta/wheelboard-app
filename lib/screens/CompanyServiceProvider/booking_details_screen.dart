@@ -9,6 +9,7 @@ import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/share_service.dart';
 import 'package:intl/intl.dart';
+import '../../utils/call_utils.dart';
 
 class BookingDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -276,7 +277,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   Widget _buildBookingSummaryCard() {
     final assignment = _bookingData!;
     final serviceTitle = assignment['serviceTitle'] ?? 'Service';
-    final status = assignment['status'] ?? 'Pending';
+    final String status = (assignment['status'] ?? 'Pending').toString();
     final scheduledDate = assignment['scheduledDate'] ?? '';
     final scheduledTime = assignment['scheduledTime'] ?? '';
     final assignmentId = assignment['assignmentId'] ?? '';
@@ -353,7 +354,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                   borderRadius: BorderRadius.circular(9999),
                 ),
                 child: Text(
-                  status,
+                  status.capitalizeFirst ?? status,
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w500,
@@ -431,6 +432,11 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     final customerName = assignment['customerName'] ?? 'Customer';
     final vehicleNumber = assignment['vehicleNumber'] ?? '';
     final description = assignment['description'] ?? '';
+    final contactNumber =
+        assignment['contactNumber'] ??
+        assignment['customerMobile'] ??
+        assignment['mobileNumber'] ??
+        '';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -496,6 +502,31 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                               ),
                             ],
                           ),
+                        if (contactNumber.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.phone,
+                                size: 14,
+                                color: Color(0xFF828282),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  contactNumber,
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 14,
+                                    color: Color(0xFF828282),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -507,44 +538,67 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                   assignment['status']?.toString().toLowerCase() !=
                       'completed' &&
                   assignment['status']?.toString().toLowerCase() != 'cancelled')
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isUpdating
-                        ? null
-                        : () {
-                            final assignmentId =
-                                assignment['assignmentId'] ?? '';
-                            if (assignmentId.isNotEmpty) {
-                              _startService(assignmentId);
-                            }
-                          },
-                    icon: const Icon(
-                      Icons.play_arrow,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'Start Service',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: Colors.white,
+                Row(
+                  children: [
+                    if (contactNumber.isNotEmpty) ...[
+                      Expanded(
+                        flex: 1,
+                        child: OutlinedButton.icon(
+                          onPressed: () => CallUtils.makeCall(contactNumber),
+                          icon: const Icon(Icons.phone, size: 18),
+                          label: const Text('Call'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF00AAFF),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: const BorderSide(color: Color(0xFF00AAFF)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: _isUpdating
+                            ? null
+                            : () {
+                                final assignmentId =
+                                    assignment['assignmentId'] ?? '';
+                                if (assignmentId.isNotEmpty) {
+                                  _startService(assignmentId);
+                                }
+                              },
+                        icon: const Icon(
+                          Icons.play_arrow,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Start Service',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF27AE60),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          disabledBackgroundColor: Colors.grey[300],
+                        ),
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF27AE60),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      disabledBackgroundColor: Colors.grey[300],
-                    ),
-                  ),
+                  ],
                 ),
             ],
           ),
@@ -691,7 +745,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     final assignment = _bookingData!;
     final scheduledDate = assignment['scheduledDate'] ?? '';
     final scheduledTime = assignment['scheduledTime'] ?? '';
-    final status = assignment['status'] ?? 'Pending';
+    final String status = (assignment['status'] ?? 'Pending').toString();
 
     // Format scheduled date and time
     String formattedDateTime = 'Not scheduled';
@@ -896,43 +950,78 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isUpdating
-                  ? null
-                  : () {
-                      if (isStarted) {
-                        _completeService(assignmentId);
-                      } else {
-                        _startService(assignmentId);
-                      }
-                    },
-              icon: Icon(
-                isStarted ? Icons.check : Icons.play_arrow,
-                size: 16,
-                color: Colors.white,
-              ),
-              label: Text(
-                isStarted ? 'Complete Service' : 'Start Service',
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: Colors.white,
+          Row(
+            children: [
+              if (!isStarted &&
+                  (_bookingData!['contactNumber'] ??
+                          _bookingData!['customerMobile'] ??
+                          _bookingData!['mobileNumber'] ??
+                          '')
+                      .toString()
+                      .isNotEmpty) ...[
+                Expanded(
+                  flex: 1,
+                  child: OutlinedButton.icon(
+                    onPressed: () => CallUtils.makeCall(
+                      (_bookingData!['contactNumber'] ??
+                              _bookingData!['customerMobile'] ??
+                              _bookingData!['mobileNumber'] ??
+                              '')
+                          .toString(),
+                    ),
+                    icon: const Icon(Icons.phone, size: 18),
+                    label: const Text('Call'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF00AAFF),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Color(0xFF00AAFF)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                flex: isStarted ? 1 : 2,
+                child: ElevatedButton.icon(
+                  onPressed: _isUpdating
+                      ? null
+                      : () {
+                          if (isStarted) {
+                            _completeService(assignmentId);
+                          } else {
+                            _startService(assignmentId);
+                          }
+                        },
+                  icon: Icon(
+                    isStarted ? Icons.check : Icons.play_arrow,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    isStarted ? 'Complete Service' : 'Start Service',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isStarted
+                        ? const Color(0xFF27AE60)
+                        : const Color(0xFF00AAFF),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    disabledBackgroundColor: Colors.grey[300],
+                  ),
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isStarted
-                    ? const Color(0xFF27AE60)
-                    : const Color(0xFF00AAFF),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                disabledBackgroundColor: Colors.grey[300],
-              ),
-            ),
+            ],
           ),
           if (!isStarted) ...[
             const SizedBox(height: 8),

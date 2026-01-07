@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 
-import 'package:get/get.dart';
-import 'tripviewdetails.dart';
+import '../../utils/navigation_helper.dart';
 
 class ConfirmTripPage extends StatelessWidget {
   const ConfirmTripPage({super.key});
@@ -99,7 +98,7 @@ class ConfirmTripPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    onPressed: () => Get.to(TripDetailConfirmationScreen()),
+                    onPressed: () => NavigationHelper.navigateToTripsTab(),
                     child: const Text(
                       "OK",
                       style: TextStyle(fontSize: 16, color: Colors.white),

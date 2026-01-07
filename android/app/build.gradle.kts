@@ -15,12 +15,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
+    kotlinOptions { jvmTarget = JavaVersion.VERSION_11.toString() }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // TODO: Specify your own unique Application ID
+        // (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.wheelboard"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -34,6 +33,11 @@ android {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
+            isMinifyEnabled = true
+            proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -43,16 +47,17 @@ android {
         val variant = this
         variant.outputs.all {
             val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            val outputFileName = if (variant.buildType.name == "release") {
-                "Wheelboard.apk"
-            } else {
-                "app-${variant.buildType.name}.apk"
-            }
+            val outputFileName =
+                    if (variant.buildType.name == "release") {
+                        "Wheelboard.apk"
+                    } else {
+                        "app-${variant.buildType.name}.apk"
+                    }
             output.outputFileName = outputFileName
         }
     }
 }
 
-flutter {
-    source = "../.."
-}
+flutter { source = "../.." }
+flutter { source = "../.." }
+
