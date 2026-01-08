@@ -73,6 +73,8 @@ class API {
   static const String updateService = 'api/Service/update-service';
   static const String deleteService =
       'api/Service'; // Base path, will append /{serviceId}/user/{userId}/delete
+  static const String deleteAccount = 'api/User/delete-account';
+
   static const String cancelService =
       'api/Service/cancel-service'; // With assignmentId query param
   static const String updateServiceStatus =

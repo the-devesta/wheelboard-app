@@ -266,4 +266,20 @@ class HttpHelper {
     final formatter = NumberFormat('#,##0', 'en_IN');
     return '$symbol${formatter.format(amount)}';
   }
+
+  static Future<http.Response> postWithQuery({
+    required String endpoint,
+    required Map<String, dynamic> queryParams,
+    Map<String, String>? headers,
+  }) async {
+    final uri = Uri.parse(baseUrl + endpoint).replace(
+      queryParameters: queryParams.map((k, v) => MapEntry(k, v.toString())),
+    );
+
+    AppLogger.d("🌐 POST With Query");
+    AppLogger.d("🌐 URL: $uri");
+    AppLogger.d("🌐 Headers: ${headers ?? {'accept': '*/*'}}");
+
+    return await http.post(uri, headers: headers ?? {'accept': '*/*'});
+  }
 }

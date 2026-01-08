@@ -1,4 +1,10 @@
+import 'dart:convert';
+
 import 'package:get/get.dart';
+import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/screens/auth/onboarding_screen.dart';
+import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/utils/error_handler.dart';
 import '../utils/session_manager.dart';
 import '../widgets/custom_snackbar.dart';
 import '../utils/app_logger.dart';
@@ -137,6 +143,36 @@ class AuthService extends GetxService {
       AppLogger.d("❌ Error during logout: $e");
       SnackBarHelper.error("Logout failed. Please try again.");
       return false;
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      final response = await HttpHelper.postWithQuery(
+        endpoint: API.deleteAccount,
+        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
+        queryParams: {"userId": Get.find<AuthService>().userId},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        SnackBarHelper.success(data['message']);
+
+        final success = await AuthService.to.logout();
+        if (success) {
+          Get.offAll(() => const RegisterScreen());
+        }
+      } else {
+        final errorMessage = ErrorHandler.parseError(
+          response.body,
+          statusCode: response.statusCode,
+        );
+        SnackBarHelper.error(errorMessage);
+      }
+    } catch (e) {
+      AppLogger.d("❌ Error during delete account: $e");
+      SnackBarHelper.error("Delete failed. Please try again.");
     }
   }
 

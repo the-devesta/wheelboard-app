@@ -1,6 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/utils/app_logger.dart';
+import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/utils/error_handler.dart';
+import 'package:wheelboard/widgets/common_delete_button.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../controllers/user_profile_controller.dart';
@@ -84,6 +92,12 @@ class _ServiceProviderProfileScreenState
                       // _buildSubscriptionPlans(),
                       // const SizedBox(height: 16),
                       _buildQuickActions(),
+                      const SizedBox(height: 16),
+                      CommonDeleteButton(
+                        onConfirm: () {
+                          AuthService().deleteAccount();
+                        },
+                      ),
                       const SizedBox(height: 16),
                       _buildFooter(),
                     ],

@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -18,46 +17,36 @@ android {
     kotlinOptions { jvmTarget = JavaVersion.VERSION_11.toString() }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID
-        // (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.wheelboard"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             isMinifyEnabled = true
+            isShrinkResources = true
+
             proguardFiles(
                     getDefaultProguardFile("proguard-android-optimize.txt"),
                     "proguard-rules.pro"
             )
+
             signingConfig = signingConfigs.getByName("debug")
         }
-    }
 
-    // Set APK output file name to Wheelboard.apk
-    applicationVariants.all {
-        val variant = this
-        variant.outputs.all {
-            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            val outputFileName =
-                    if (variant.buildType.name == "release") {
-                        "Wheelboard.apk"
-                    } else {
-                        "app-${variant.buildType.name}.apk"
-                    }
-            output.outputFileName = outputFileName
-        }
+        debug { isMinifyEnabled = false }
     }
 }
 
-flutter { source = "../.." }
-flutter { source = "../.." }
+dependencies {
+    // ✅ FORCE LATEST Razorpay SDK
+    implementation("com.razorpay:checkout:1.6.40")
 
+    implementation("androidx.multidex:multidex:2.0.1")
+}
+
+flutter { source = "../.." }
