@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 
 import 'package:wheelboard/services/auth_service.dart';
+import 'package:wheelboard/widgets/common_delete_button.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
 import 'package:wheelboard/controllers/user_profile_controller.dart';
 import 'package:wheelboard/models/user_profile_model.dart';
@@ -91,6 +92,22 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       _buildSubscriptionPlanCard(),
                       const SizedBox(height: 16),
                       _buildQuickActionsCard(),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          color: Colors.white,
+                        ),
+                        child: CommonDeleteButton(
+                          onConfirm: () {
+                            AuthService().deleteAccount();
+                          },
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       _buildSupportCard(),
                       const SizedBox(height: 12),

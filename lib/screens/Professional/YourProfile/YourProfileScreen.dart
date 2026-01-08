@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wheelboard/widgets/common_delete_button.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/profile_service.dart';
 import '../../../widgets/custom_snackbar.dart';
@@ -84,6 +85,22 @@ class YourProfileScreen extends StatelessWidget {
                       _buildSubscriptionPlans(),
                       const SizedBox(height: 16),
                       _buildQuickActions(),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          color: Colors.white,
+                        ),
+                        child: CommonDeleteButton(
+                          onConfirm: () {
+                            AuthService().deleteAccount();
+                          },
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       _buildHelpCard(),
                       const SizedBox(height: 16),
