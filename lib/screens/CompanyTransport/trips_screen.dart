@@ -457,6 +457,7 @@ class _TripPageState extends State<TripPage>
     if (lowerStatus.contains('complete')) {
       return Colors.green;
     } else if (lowerStatus.contains('process') ||
+        lowerStatus.contains('progress') ||
         lowerStatus.contains('ongoing')) {
       return Colors.blue;
     } else if (lowerStatus.contains('upcoming') ||
@@ -875,6 +876,7 @@ class _TripsTabViews extends StatelessWidget {
     if (lowerStatus.contains('complete')) {
       return Colors.green;
     } else if (lowerStatus.contains('process') ||
+        lowerStatus.contains('progress') ||
         lowerStatus.contains('ongoing')) {
       return Colors.blue;
     } else if (lowerStatus.contains('upcoming') ||

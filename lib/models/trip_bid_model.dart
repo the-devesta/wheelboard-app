@@ -7,6 +7,7 @@ class TripBid {
   final DateTime? dateEntered;
   final String name;
   final String contactNumber;
+  final String? driverImagePath;
 
   TripBid({
     required this.bidId,
@@ -17,6 +18,7 @@ class TripBid {
     this.dateEntered,
     required this.name,
     required this.contactNumber,
+    this.driverImagePath,
   });
 
   factory TripBid.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class TripBid {
           : null,
       name: json['name'] ?? '',
       contactNumber: json['contactNumber'] ?? '',
+      driverImagePath: json['imagePath'] ?? json['driverImagePath'],
     );
   }
 }

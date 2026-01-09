@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wheelboard/screens/Professional/TrackTrip/TrackTripScreen.dart';
+import 'package:wheelboard/utils/app_logger.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../controllers/Professional/track_trip_controller.dart';
 import '../../../models/assigned_trip_model.dart';
@@ -37,6 +40,16 @@ class TripDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLogger.d("👀 View Details Screen Opened");
+    AppLogger.d(
+      "ℹ️ Currently displaying data passed from previous screen (No new API call)",
+    );
+    AppLogger.d("📋 Trip Data:");
+    AppLogger.d("   TripID: ${trip.tripId}");
+    AppLogger.d("   Status: ${trip.tripStatus}");
+    AppLogger.d("   Pickup: ${trip.pickupLocation}");
+    AppLogger.d("   Drop: ${trip.deliveryLocation}");
+
     final TrackTripController trackController = Get.put(TrackTripController());
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -412,18 +425,52 @@ class TripDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        if (trip.driverPhoto != null &&
-                            trip.driverPhoto!.isNotEmpty)
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundImage: NetworkImage(trip.driverPhoto!),
-                            onBackgroundImageError: (exception, stackTrace) {},
+                        if (trip.driverImagePath != null &&
+                            trip.driverImagePath!.isNotEmpty)
+                          CachedNetworkImage(
+                            imageUrl: trip.driverImagePath!,
+                            imageBuilder: (context, imageProvider) =>
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundImage: imageProvider,
+                                ),
+                            placeholder: (context, url) => CircleAvatar(
+                              radius: 30,
+                              backgroundColor: const Color(0xFFEBF4FF),
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF2F80ED),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => CircleAvatar(
+                              radius: 30,
+                              backgroundColor: const Color(0xFFEBF4FF),
+                              child: Text(
+                                trip.driverName.trim().isNotEmpty
+                                    ? trip.driverName.trim()[0].toUpperCase()
+                                    : 'D',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF2F80ED),
+                                ),
+                              ),
+                            ),
                           )
                         else
                           CircleAvatar(
                             radius: 30,
-                            backgroundColor: Colors.grey[300],
-                            child: const Icon(Icons.person, color: Colors.grey),
+                            backgroundColor: const Color(0xFFEBF4FF),
+                            child: Text(
+                              trip.driverName.trim().isNotEmpty
+                                  ? trip.driverName.trim()[0].toUpperCase()
+                                  : 'D',
+                              style: GoogleFonts.poppins(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2F80ED),
+                              ),
+                            ),
                           ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -438,9 +485,66 @@ class TripDetailsScreen extends StatelessWidget {
                                   color: const Color(0xFF1F2937),
                                 ),
                               ),
+                              if (trip.driverContact.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.phone,
+                                      size: 14,
+                                      color: Color(0xFF6B7280),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      trip.driverContact,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),
+                        if (trip.driverContact.isNotEmpty)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEBF4FF),
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.phone,
+                                color: Color(0xFF2F80ED),
+                                size: 20,
+                              ),
+                              onPressed: () async {
+                                final Uri launchUri = Uri(
+                                  scheme: 'tel',
+                                  path: trip.driverContact,
+                                );
+                                try {
+                                  if (await canLaunchUrl(launchUri)) {
+                                    await launchUrl(launchUri);
+                                  } else {
+                                    // Fallback for some devices or simulators
+                                    await launchUrl(launchUri);
+                                  }
+                                } catch (e) {
+                                  AppLogger.d("❌ Error launching dialer: $e");
+                                  Get.snackbar(
+                                    "Error",
+                                    "Could not launch dialer",
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                  );
+                                }
+                              },
+                            ),
+                          ),
                       ],
                     ),
                   ],

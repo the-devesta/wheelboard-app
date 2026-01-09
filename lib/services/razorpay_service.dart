@@ -37,6 +37,7 @@ class RazorpayService {
     String customerName = 'WheelBoard',
     String prefillContact = '9999999999',
     String prefillEmail = 'payments@wheelboard.app',
+    String? image,
     Map<String, dynamic>? notes,
   }) async {
     if (amountInPaise <= 0) {
@@ -64,6 +65,8 @@ class RazorpayService {
       'prefill': {'contact': prefillContact, 'email': prefillEmail},
       'notes': notes ?? {},
       'theme': {'color': '#F36969'},
+      'image':
+          image ?? 'https://wheelboardapi.addonshareware.com/images/logo.png',
     };
 
     if (_razorpay == null) {

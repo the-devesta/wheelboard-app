@@ -216,8 +216,8 @@ class TripAccepted extends StatelessWidget {
                 height: 58,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigate to Main Wrapper's Trips tab
-                    NavigationHelper.navigateToTripsTab();
+                    // Navigate to Home Screen (Main Wrapper)
+                    NavigationHelper.navigateToMainWrapper();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF36969),

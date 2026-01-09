@@ -181,7 +181,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           Text(
             value,
             style: GoogleFonts.poppins(
-              fontSize: value.length > 8 ? 16 : 20,
+              fontSize: value.length > 8 ? 16 : 15,
               fontWeight: FontWeight.w700,
               color: valueColor,
             ),
@@ -190,7 +190,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             const Text(
               '★',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFFF39C12),
               ),
@@ -457,9 +457,9 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             if (tripController.isLoading.value)
               const CustomLoader.small()
             else
-              ...completedTrips
-                  .take(3)
-                  .map((trip) => _buildTripCard(trip, isCompleted: true)),
+              ...completedTrips.map(
+                (trip) => _buildTripCard(trip, isCompleted: true),
+              ),
           ],
         ),
       );

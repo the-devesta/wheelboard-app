@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'driver/view_driver_screen.dart';
 import 'trip/assign_trip_screen.dart';
 import '../../controllers/trip_bids_controller.dart';
@@ -245,37 +246,19 @@ class _BidsScreenState extends State<BidsScreen> {
                   height: 200,
                   width: double.infinity,
                   color: Colors.grey.shade200,
-                  child: Image.network(
-                    driverImage,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Show icon placeholder if image fails to load
-                      return Container(
-                        color: Colors.grey.shade300,
-                        child: const Center(
-                          child: Icon(
-                            Icons.person,
-                            size: 80,
-                            color: Colors.grey,
+                  child: driverImage.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: driverImage,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFF36969),
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: Colors.grey.shade200,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                          errorWidget: (context, url, error) =>
+                              _buildInitialsPlaceholder(driverName),
+                        )
+                      : _buildInitialsPlaceholder(driverName),
                 ),
               ),
               // Verified Badge
@@ -517,16 +500,34 @@ class _BidsScreenState extends State<BidsScreen> {
   }
 
   // Get driver image from different source
+  // Get driver image from model
   String _getDriverImage(TripBid bid) {
-    // Use UI Avatars service with driver name initials
-    final nameInitials = bid.name.isNotEmpty
-        ? bid.name
+    return bid.driverImagePath ?? '';
+  }
+
+  Widget _buildInitialsPlaceholder(String name) {
+    final initials = name.trim().isNotEmpty
+        ? name
+              .trim()
               .split(' ')
               .map((n) => n.isNotEmpty ? n[0] : '')
               .take(2)
               .join()
+              .toUpperCase()
         : 'DR';
-    // Use a different placeholder service - UI Avatars
-    return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(nameInitials)}&size=200&background=random&color=fff&bold=true';
+    return Container(
+      color: const Color(0xFFEBF4FF), // Light blue background
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontSize: 60,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2F80ED), // Blue text
+            letterSpacing: 2,
+          ),
+        ),
+      ),
+    );
   }
 }

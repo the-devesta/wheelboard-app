@@ -32,7 +32,7 @@ class AssignedTrip {
   final String? bidId;
   final double? bidAmount;
   final String? bidDescription;
-  final String? driverPhoto;
+  final String? driverImagePath;
   final double? platformFee;
   final double? amountToDriver;
   final double? totalTripCost;
@@ -60,7 +60,7 @@ class AssignedTrip {
     this.bidId,
     this.bidAmount,
     this.bidDescription,
-    this.driverPhoto,
+    this.driverImagePath,
     this.platformFee,
     this.amountToDriver,
     this.totalTripCost,
@@ -94,7 +94,7 @@ class AssignedTrip {
     bidId: json["bidId"],
     bidAmount: json["bidAmount"]?.toDouble(),
     bidDescription: json["bidDescription"],
-    driverPhoto: json["driverPhoto"],
+    driverImagePath: json["driverImagePath"] ?? json["driverPhoto"],
     platformFee: json["platformFee"]?.toDouble(),
     amountToDriver: json["amountToDriver"]?.toDouble(),
     totalTripCost: json["totalTripCost"]?.toDouble(),
@@ -124,7 +124,7 @@ class AssignedTrip {
     if (bidId != null) "bidId": bidId,
     if (bidAmount != null) "bidAmount": bidAmount,
     if (bidDescription != null) "bidDescription": bidDescription,
-    if (driverPhoto != null) "driverPhoto": driverPhoto,
+    if (driverImagePath != null) "driverImagePath": driverImagePath,
     if (platformFee != null) "platformFee": platformFee,
     if (amountToDriver != null) "amountToDriver": amountToDriver,
     if (totalTripCost != null) "totalTripCost": totalTripCost,
@@ -181,7 +181,7 @@ class AssignedTrip {
       bidId: bidId ?? this.bidId,
       bidAmount: bidAmount ?? this.bidAmount,
       bidDescription: bidDescription ?? this.bidDescription,
-      driverPhoto: driverPhoto ?? this.driverPhoto,
+      driverImagePath: driverImagePath ?? this.driverImagePath,
       platformFee: platformFee ?? this.platformFee,
       amountToDriver: amountToDriver ?? this.amountToDriver,
       totalTripCost: totalTripCost ?? this.totalTripCost,

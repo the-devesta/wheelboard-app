@@ -731,6 +731,7 @@ class TripController extends GetxController {
         return tripStatus == 'in-process' ||
             tripStatus == 'in process' ||
             tripStatus.contains('process') ||
+            tripStatus.contains('progress') ||
             tripStatus == 'ongoing';
       } else if (searchStatus == 'upcoming') {
         return tripStatus == 'upcoming' || tripStatus == 'pending';

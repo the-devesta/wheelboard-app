@@ -414,27 +414,7 @@ class HomeScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFFD1E5E2,
-                                    ), // Light green from Figma
-                                    borderRadius: BorderRadius.circular(9999),
-                                  ),
-                                  child: Text(
-                                    "Call Now",
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: const Color(0xFFFF5E5E),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                  ),
-                                ),
+                                const SizedBox.shrink(),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -477,7 +457,7 @@ class HomeScreen extends StatelessWidget {
                                 const Icon(Icons.person_outline, size: 16),
                                 const SizedBox(width: 4),
                                 Text(
-                                  "${job.openings} Applicants",
+                                  "${job.openings} Positions",
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               ],

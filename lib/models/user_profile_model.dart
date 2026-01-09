@@ -30,6 +30,7 @@ class UserProfileModel {
   final String? businessName;
   final String? businessType;
   final String? businessLogoPath;
+  final String? servicesOffered;
 
   // KYC related fields
   final bool? isKYCCompleted;
@@ -59,6 +60,7 @@ class UserProfileModel {
     this.businessName,
     this.businessType,
     this.businessLogoPath,
+    this.servicesOffered,
     // KYC fields
     this.isKYCCompleted,
   });
@@ -94,6 +96,7 @@ class UserProfileModel {
       businessName: json['businessName'] as String?,
       businessType: json['businessType'] as String?,
       businessLogoPath: json['businessLogoPath'] as String?,
+      servicesOffered: json['servicesOffered'] as String?,
       // KYC fields
       isKYCCompleted: json['isKYCCompleted'] as bool?,
     );
@@ -126,6 +129,7 @@ class UserProfileModel {
       if (businessName != null) 'businessName': businessName,
       if (businessType != null) 'businessType': businessType,
       if (businessLogoPath != null) 'businessLogoPath': businessLogoPath,
+      if (servicesOffered != null) 'servicesOffered': servicesOffered,
       // KYC fields
       if (isKYCCompleted != null) 'isKYCCompleted': isKYCCompleted,
     };

@@ -1347,12 +1347,35 @@ class DashboardScreen extends StatelessWidget {
       );
     }
 
-    final tripData = trendData
-        .map((item) => item.completedTrips?.toDouble() ?? 0.0)
-        .toList();
+    // Initialize with 0s for Mon-Sun
+    final List<double> tripData = List.filled(7, 0.0);
 
-    while (tripData.length < 7) {
-      tripData.add(0.0);
+    final dayMap = {
+      'Monday': 0,
+      'Tuesday': 1,
+      'Wednesday': 2,
+      'Thursday': 3,
+      'Friday': 4,
+      'Saturday': 5,
+      'Sunday': 6,
+    };
+
+    for (var item in trendData) {
+      if (item.dayName != null) {
+        // Handle case variations if necessary, though API typically returns Title Case
+        final day = item.dayName!;
+        // Simple flexible matching (e.g. "Wed" or "Wednesday")
+        int? index;
+        dayMap.forEach((key, val) {
+          if (day.toLowerCase().startsWith(key.toLowerCase().substring(0, 3))) {
+            index = val;
+          }
+        });
+
+        if (index != null) {
+          tripData[index!] = item.completedTrips?.toDouble() ?? 0.0;
+        }
+      }
     }
 
     final chartData = tripData.take(7).toList();

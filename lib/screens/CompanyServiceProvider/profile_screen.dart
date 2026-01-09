@@ -83,7 +83,7 @@ class _ServiceProviderProfileScreenState
                       const SizedBox(height: 12),
                       _buildProfileCard(profile),
                       const SizedBox(height: 20),
-                      _buildServicesOfferedSection(),
+                      _buildServicesOfferedSection(profile),
                       const SizedBox(height: 20),
                       _buildBusinessInfoCard(profile),
                       const SizedBox(height: 20),
@@ -315,7 +315,21 @@ class _ServiceProviderProfileScreenState
     );
   }
 
-  Widget _buildServicesOfferedSection() {
+  Widget _buildServicesOfferedSection(UserProfileModel? profile) {
+    if (profile?.servicesOffered == null || profile!.servicesOffered!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final servicesList = profile.servicesOffered!
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    if (servicesList.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -339,31 +353,16 @@ class _ServiceProviderProfileScreenState
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: [
-              _buildServiceButton(
-                'Tyre Services',
-                isSelected: selectedService == 'Tyre Services',
-              ),
-              _buildServiceButton(
-                'Vehicle Services',
-                isSelected: selectedService == 'Vehicle Services',
-              ),
-              _buildServiceButton(
-                'Tyre Retreader',
-                isSelected: selectedService == 'Tyre Retreader',
-              ),
-              _buildServiceButton(
-                'Other',
-                isSelected: selectedService == 'Other',
-              ),
-            ],
+            children: servicesList
+                .map((service) => _buildServiceButton(service))
+                .toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildServiceButton(String text, {bool isSelected = false}) {
+  Widget _buildServiceButton(String text) {
     return GestureDetector(
       onTap: () {
         // setState(() {

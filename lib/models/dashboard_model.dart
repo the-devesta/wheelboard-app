@@ -170,14 +170,14 @@ class VehiclesOnLease {
 }
 
 class TripCompletionTrend {
-  final String? date;
+  final String? dayName;
   final int? completedTrips;
 
-  TripCompletionTrend({this.date, this.completedTrips});
+  TripCompletionTrend({this.dayName, this.completedTrips});
 
   factory TripCompletionTrend.fromJson(Map<String, dynamic> json) {
     return TripCompletionTrend(
-      date: json['date'] as String?,
+      dayName: json['dayName'] as String?,
       completedTrips: json['completedTrips'] as int? ?? 0,
     );
   }

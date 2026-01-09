@@ -12,6 +12,7 @@ import '../../widgets/custom_snackbar.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
+import '../../controllers/user_profile_controller.dart';
 
 class AddServiceScreen extends StatefulWidget {
   final ServiceModel? service; // Optional service for edit mode
@@ -55,7 +56,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   List<Suggestion> _addressSuggestions = [];
 
   // Category options
-  final List<String> _categoryOptions = [
+  List<String> _categoryOptions = [
     'Tyre Services',
     'Vehicle Services',
     'Tyre Retreader',
@@ -66,6 +67,28 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   void initState() {
     super.initState();
     _controller = Get.put(ServiceProviderController(), permanent: false);
+
+    // Dynamic Category Loading from User Profile
+    final userProfileController = Get.put(UserProfileController());
+    final profile = userProfileController.userProfile.value;
+
+    if (profile != null &&
+        profile.servicesOffered != null &&
+        profile.servicesOffered!.isNotEmpty) {
+      final services = profile.servicesOffered!
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      if (services.isNotEmpty) {
+        _categoryOptions = services;
+        // Reset selected category to first valid option if current one is not in list
+        if (!_categoryOptions.contains(_selectedCategory)) {
+          _selectedCategory = _categoryOptions.first;
+        }
+      }
+    }
+
     _descriptionController.addListener(() {
       setState(() {
         _descriptionLength = _descriptionController.text.length;
@@ -90,7 +113,10 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     _pricingOption = service.pricingOption ?? 'Flat Price';
 
     // Set category from serviceCategory first, then fallback to businessType
-    String categoryToSet = 'Tyre Services'; // Default
+    String categoryToSet = _categoryOptions.isNotEmpty
+        ? _categoryOptions.first
+        : 'Tyre Services'; // Default fallback
+
     if (service.serviceCategory != null &&
         service.serviceCategory!.isNotEmpty) {
       categoryToSet = service.serviceCategory!;
@@ -106,8 +132,11 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     // Validate that the category exists in _categoryOptions
     if (_categoryOptions.contains(categoryToSet)) {
       _selectedCategory = categoryToSet;
+    } else if (_categoryOptions.isNotEmpty) {
+      _selectedCategory = _categoryOptions.first;
     } else {
-      _selectedCategory = 'Tyre Services';
+      _categoryOptions.add(categoryToSet);
+      _selectedCategory = categoryToSet;
     }
 
     _isVisible = service.isAvailable;

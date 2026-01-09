@@ -192,15 +192,6 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
                                   color: Color(0xFF00B894),
                                 ),
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '/ trip',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontFamily: 'Poppins',
-                                  color: Colors.grey[600],
-                                ),
-                              ),
                             ],
                           ),
                         ],
@@ -436,6 +427,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
                     amount: platformFeeAmount,
                     hasInfo: true,
                     hasPayNow: true,
+                    onPayNowTap: () => _startPayment(bid, isPartial: true),
                   ),
                   const Divider(height: 32),
                   _buildPaymentRow(
@@ -806,7 +798,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
               child: ElevatedButton(
                 onPressed: _isPaymentProcessing
                     ? null
-                    : () => _startPayment(bid),
+                    : () => _startPayment(bid, isPartial: false),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF36969),
                   foregroundColor: Colors.white,
@@ -816,7 +808,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
                   ),
                 ),
                 child: Text(
-                  _isPaymentProcessing ? 'Processing...' : 'Pay Now',
+                  _isPaymentProcessing ? 'Processing...' : 'Pay Full Amount',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
@@ -833,7 +825,10 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
     );
   }
 
-  Future<void> _startPayment(AssignTripBid bid) async {
+  Future<void> _startPayment(
+    AssignTripBid bid, {
+    bool isPartial = false,
+  }) async {
     if (!mounted || _isPaymentProcessing) return;
 
     setState(() {
@@ -841,7 +836,11 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
       _bidInPayment = bid;
     });
 
-    final payableAmount = _resolveTotalCost(bid);
+    // If partial, pay only platform fee. Otherwise, pay total/full.
+    final payableAmount = isPartial
+        ? _nonNegative(bid.platformFee)
+        : _resolveTotalCost(bid);
+
     final receipt = _buildReceiptId(bid);
 
     try {
@@ -1051,6 +1050,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
     required String amount,
     bool hasInfo = false,
     bool hasPayNow = false,
+    VoidCallback? onPayNowTap,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1058,12 +1058,15 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
         Expanded(
           child: Row(
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: Colors.grey[600],
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Poppins',
+                    color: Colors.grey[600],
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (hasInfo) ...[
@@ -1072,21 +1075,25 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
               ],
               if (hasPayNow) ...[
                 const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8FAF4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Pay Now',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Poppins',
-                      color: Color(0xFF00B894),
+                InkWell(
+                  onTap: onPayNowTap,
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8FAF4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'Book Now',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Poppins',
+                        color: Color(0xFF00B894),
+                      ),
                     ),
                   ),
                 ),
