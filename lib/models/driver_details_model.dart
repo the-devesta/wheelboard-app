@@ -7,8 +7,11 @@ class DriverDetailsModel {
   final String vehicleNumber;
   final String description;
   final bool isDeclarationAccepted;
+  final bool isKYCCompleted;
+  final bool isVerified;
   final String? driverImagePath;
   final String? dlNumber;
+  final DateTime? dateOfBirth;
 
   DriverDetailsModel({
     required this.driverId,
@@ -19,8 +22,11 @@ class DriverDetailsModel {
     required this.vehicleNumber,
     required this.description,
     required this.isDeclarationAccepted,
+    this.isKYCCompleted = false,
+    this.isVerified = false,
     this.driverImagePath,
     this.dlNumber,
+    this.dateOfBirth,
   });
 
   factory DriverDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -33,11 +39,17 @@ class DriverDetailsModel {
       vehicleNumber: json['vehicleNumber'] ?? '',
       description: json['description'] ?? '',
       isDeclarationAccepted: json['isDeclarationAccepted'] ?? false,
+      isKYCCompleted: json['isKYCCompleted'] ?? false,
+      isVerified: json['isVerified'] ?? false,
       driverImagePath: json['driverImagePath'],
       dlNumber:
+          json['dlNo'] ??
           json['dlNumber'] ??
           json['drivingLicenseNumber'] ??
           json['licenseNumber'],
+      dateOfBirth: json['dateOfBirth'] != null
+          ? DateTime.tryParse(json['dateOfBirth'])
+          : null,
     );
   }
 
@@ -51,8 +63,11 @@ class DriverDetailsModel {
       'vehicleNumber': vehicleNumber,
       'description': description,
       'isDeclarationAccepted': isDeclarationAccepted,
+      'isKYCCompleted': isKYCCompleted,
+      'isVerified': isVerified,
       'driverImagePath': driverImagePath,
       'dlNumber': dlNumber,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
     };
   }
 }

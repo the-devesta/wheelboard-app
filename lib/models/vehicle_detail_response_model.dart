@@ -48,6 +48,7 @@ class VehicleInfo {
   final String vehicleNumber;
   final int manufacturingYear;
   final String status;
+  final String ownershipType;
 
   VehicleInfo({
     required this.vehicleId,
@@ -55,6 +56,7 @@ class VehicleInfo {
     required this.vehicleNumber,
     required this.manufacturingYear,
     required this.status,
+    required this.ownershipType,
   });
 
   factory VehicleInfo.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,7 @@ class VehicleInfo {
       vehicleNumber: json['vehicleNumber'] ?? '',
       manufacturingYear: json['manufacturingYear'] ?? 0,
       status: json['status'] ?? '',
+      ownershipType: json['ownershipType'] ?? 'Owned',
     );
   }
 }

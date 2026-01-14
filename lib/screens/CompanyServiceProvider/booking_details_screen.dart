@@ -270,7 +270,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 );
               },
             ),
-      bottomNavigationBar: _buildBottomButtons(),
+      bottomNavigationBar: (_isLoading || _bookingData == null)
+          ? null
+          : _buildBottomButtons(),
     );
   }
 
@@ -953,9 +955,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           Row(
             children: [
               if (!isStarted &&
-                  (_bookingData!['contactNumber'] ??
-                          _bookingData!['customerMobile'] ??
-                          _bookingData!['mobileNumber'] ??
+                  (_bookingData?['contactNumber'] ??
+                          _bookingData?['customerMobile'] ??
+                          _bookingData?['mobileNumber'] ??
                           '')
                       .toString()
                       .isNotEmpty) ...[
@@ -963,9 +965,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                   flex: 1,
                   child: OutlinedButton.icon(
                     onPressed: () => CallUtils.makeCall(
-                      (_bookingData!['contactNumber'] ??
-                              _bookingData!['customerMobile'] ??
-                              _bookingData!['mobileNumber'] ??
+                      (_bookingData?['contactNumber'] ??
+                              _bookingData?['customerMobile'] ??
+                              _bookingData?['mobileNumber'] ??
                               '')
                           .toString(),
                     ),

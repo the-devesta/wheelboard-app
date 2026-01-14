@@ -9,11 +9,233 @@ import 'package:wheelboard/services/auth_service.dart';
 
 import 'package:wheelboard/utils/app_logger.dart';
 
+import 'dart:async';
+import 'package:geolocator/geolocator.dart';
+
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:geocoding/geocoding.dart' as geo;
+import '../../utils/constants.dart';
+
 class TrackTripController extends GetxController {
   final isLoading = false.obs;
   final AuthService _authService = Get.find<AuthService>();
   final AssignedTripController _assignedTripController =
       Get.find<AssignedTripController>();
+
+  // Tracking Data
+  final currentPosition = Rxn<Position>();
+  final distanceRemaining = "Calculating...".obs;
+  final eta = "Calculating...".obs;
+  final progress = 0.0.obs;
+  StreamSubscription<Position>? _positionStream;
+
+  @override
+  void onClose() {
+    stopLocationUpdates();
+    super.onClose();
+  }
+
+  void startLocationUpdates(String tripId) async {
+    debugPrint("📍 [DEBUG] Starting updates for: $tripId");
+    AppLogger.d("📍 Starting location updates for Trip: $tripId");
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      debugPrint("❌ [DEBUG] Location services disabled");
+      AppLogger.d("❌ Location services are disabled");
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        debugPrint("❌ [DEBUG] Permission denied");
+        AppLogger.d("❌ Location permissions are denied");
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      debugPrint("❌ [DEBUG] Permission denied forever");
+      AppLogger.d("❌ Location permissions are permanently denied");
+      return;
+    }
+
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      debugPrint(
+        "📍 [DEBUG] Initial Position: ${position.latitude}, ${position.longitude}",
+      );
+      AppLogger.d(
+        "📍 Initial Position: ${position.latitude}, ${position.longitude}",
+      );
+      currentPosition.value = position;
+      _updateTripMetrics(tripId, position);
+    } catch (e) {
+      debugPrint("❌ [DEBUG] Error initial pos: $e");
+      AppLogger.d("❌ Error getting initial position: $e");
+    }
+
+    _positionStream =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 10,
+          ),
+        ).listen((Position position) {
+          AppLogger.d(
+            "📍 Position Stream Update: ${position.latitude}, ${position.longitude}",
+          );
+          currentPosition.value = position;
+          _updateTripMetrics(tripId, position);
+        });
+  }
+
+  void stopLocationUpdates() {
+    AppLogger.d("🛑 Stopping location updates");
+    _positionStream?.cancel();
+    _positionStream = null;
+  }
+
+  Future<void> _updateTripMetrics(String tripId, Position position) async {
+    try {
+      final trip = _assignedTripController.assignedTrips.firstWhere(
+        (t) => t.tripId == tripId,
+      );
+
+      debugPrint(
+        "📊 [DEBUG] Trip Info: Lat=${trip.latitude}, Lng=${trip.longitude}, Dist=${trip.distance}",
+      );
+      AppLogger.d(
+        "📊 Trip Found: ${trip.tripId}, Dest: ${trip.latitude}, ${trip.longitude}, Dist: ${trip.distance}",
+      );
+
+      double? destLat = trip.latitude;
+      double? destLng = trip.longitude;
+
+      if (destLat == null || destLat == 0 || destLng == null || destLng == 0) {
+        debugPrint(
+          "🔍 [DEBUG] Geocoding fallback for: ${trip.deliveryLocation}",
+        );
+        AppLogger.d(
+          "🔍 Coordinates missing, attempting geocoding for: ${trip.deliveryLocation}",
+        );
+        try {
+          List<geo.Location> locations = await geo.locationFromAddress(
+            trip.deliveryLocation,
+          );
+          if (locations.isNotEmpty) {
+            destLat = locations.first.latitude;
+            destLng = locations.first.longitude;
+            debugPrint("✅ [DEBUG] Geocoding Success: $destLat, $destLng");
+            AppLogger.d("✅ Geocoding Success: $destLat, $destLng");
+          }
+        } catch (e) {
+          debugPrint("❌ [DEBUG] Geocoding Error: $e");
+          AppLogger.d("❌ Geocoding Failed for '${trip.deliveryLocation}': $e");
+        }
+      }
+
+      if (destLat != null && destLat != 0 && destLng != null && destLng != 0) {
+        debugPrint("🌐 [DEBUG] Calling Distance Matrix API...");
+        _fetchGoogleMetrics(
+          position.latitude,
+          position.longitude,
+          destLat,
+          destLng,
+          trip.distance,
+        );
+      } else {
+        debugPrint("⚠️ [DEBUG] No coordinates for destination!");
+        AppLogger.d("⚠️ Trip destination coordinates could not be determined!");
+      }
+    } catch (e) {
+      AppLogger.d("❌ Error finding trip in controller: $e");
+    }
+  }
+
+  Future<void> _fetchGoogleMetrics(
+    double lat,
+    double lng,
+    double destLat,
+    double destLng,
+    String? baseDistance,
+  ) async {
+    try {
+      final url =
+          "https://maps.googleapis.com/maps/api/distancematrix/json?origins=$lat,$lng&destinations=$destLat,$destLng&key=${MapsConstants.googleMapsApiKey}";
+
+      debugPrint("🌐 [DEBUG] API Call: $url");
+      AppLogger.d("🌐 Calling Google Distance Matrix API...");
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        debugPrint("✅ [DEBUG] API Body: ${response.body}");
+        AppLogger.d("✅ Google API Response: ${response.body}");
+
+        if (data['status'] == 'OK') {
+          final element = data['rows'][0]['elements'][0];
+          debugPrint("✅ [DEBUG] Element Status: ${element['status']}");
+          if (element['status'] == 'OK') {
+            distanceRemaining.value = element['distance']['text'];
+            eta.value = element['duration']['text'];
+
+            debugPrint(
+              "🎯 [DEBUG] Result: ${distanceRemaining.value}, ${eta.value}",
+            );
+            AppLogger.d(
+              "🎯 Metrics Updated: Dist=${distanceRemaining.value}, ETA=${eta.value}",
+            );
+
+            // Calculate Progress
+            double currentDistMeters = element['distance']['value'].toDouble();
+            double totalDistMeters = 0;
+
+            if (baseDistance != null && baseDistance.isNotEmpty) {
+              try {
+                String distStr = baseDistance.replaceAll(
+                  RegExp(r'[^0-9.]'),
+                  '',
+                );
+                totalDistMeters = double.parse(distStr) * 1000;
+              } catch (_) {}
+            }
+
+            // Fallback: If we don't have total distance, use a sensible default or dynamic estimation
+            if (totalDistMeters <= 0) {
+              totalDistMeters =
+                  currentDistMeters +
+                  5000; // Assume we have 5km more if unknown
+            }
+
+            double rawProgress = 1.0 - (currentDistMeters / totalDistMeters);
+            progress.value = rawProgress.clamp(0.0, 1.0);
+            AppLogger.d(
+              "📈 Trip Progress: ${progress.value} (Current: $currentDistMeters, Total: $totalDistMeters)",
+            );
+          } else {
+            AppLogger.d("⚠️ Element status not OK: ${element['status']}");
+          }
+        } else {
+          AppLogger.d("⚠️ API status not OK: ${data['status']}");
+          if (data['error_message'] != null) {
+            AppLogger.d("❌ Error Message: ${data['error_message']}");
+          }
+        }
+      } else {
+        AppLogger.d("❌ API HTTP Error: ${response.statusCode}");
+      }
+    } catch (e) {
+      AppLogger.d("❌ Exception in _fetchGoogleMetrics: $e");
+    }
+  }
 
   Future<void> startTrip(String tripId) async {
     AppLogger.d("🚀 Starting trip with ID: $tripId");

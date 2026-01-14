@@ -69,6 +69,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             vehicleNumber: widget.vehicle.vehicleNumber,
             manufacturingYear: widget.vehicle.manufacturingYear,
             status: widget.vehicle.status,
+            ownershipType: widget.vehicle.ownershipType,
           );
 
       // Get current status from API or use selected status
@@ -237,9 +238,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                           ),
                         ],
                       ),
-                      child: const Text(
-                        'Owned',
-                        style: TextStyle(
+                      child: Text(
+                        vehicleInfo.ownershipType,
+                        style: const TextStyle(
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w500,
                           fontSize: 10,

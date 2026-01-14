@@ -418,12 +418,108 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                       ? driver.description
                                       : "No description available",
                                 ),
-                                _infoRow(
-                                  "Status",
-                                  driver.isDeclarationAccepted
-                                      ? "Verified ✓"
-                                      : "Pending",
+                                // Status Row with Blue Tick
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(
+                                        width: 120,
+                                        child: Text(
+                                          "Status:",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      driver.isVerified
+                                          ? Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFE3F2FD),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                border: Border.all(
+                                                  color: const Color(
+                                                    0xFF1976D2,
+                                                  ),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.verified,
+                                                    color: Color(0xFF1976D2),
+                                                    size: 16,
+                                                  ),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    "Verified",
+                                                    style: TextStyle(
+                                                      color: Color(0xFF1976D2),
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            )
+                                          : Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFFFF3E0),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                border: Border.all(
+                                                  color: const Color(
+                                                    0xFFFF9800,
+                                                  ),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.pending,
+                                                    color: Color(0xFFFF9800),
+                                                    size: 16,
+                                                  ),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    "Pending",
+                                                    style: TextStyle(
+                                                      color: Color(0xFFFF9800),
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                    ],
+                                  ),
                                 ),
+                                if (driver.dateOfBirth != null)
+                                  _infoRow(
+                                    "Date of Birth",
+                                    _formatDate(driver.dateOfBirth!),
+                                  ),
 
                                 const SizedBox(height: 16),
 
@@ -599,6 +695,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         ],
       ),
     );
+  }
+
+  /// Format date to DD/MM/YYYY
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   Widget _actionButton(

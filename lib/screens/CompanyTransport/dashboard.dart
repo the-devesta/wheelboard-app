@@ -277,7 +277,25 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // ---------------- Top Rated Professionals ----------------
-                _sectionTitle("Top Rated Professionals"),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sectionTitle("Top Rated Professionals"),
+                    Obx(() {
+                      if (data.topProfessionals.length <= 3)
+                        return const SizedBox.shrink();
+                      return TextButton(
+                        onPressed: () =>
+                            controller.showAllProfessionals.toggle(),
+                        child: Text(
+                          controller.showAllProfessionals.value
+                              ? "Show Less"
+                              : "View All",
+                        ),
+                      );
+                    }),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 Obx(() {
                   // Get unique professional types from data
@@ -331,11 +349,13 @@ class DashboardScreen extends StatelessWidget {
                     }).toList();
                   }
 
+                  final displayedList = controller.showAllProfessionals.value
+                      ? filteredProfessionals
+                      : filteredProfessionals.take(3).toList();
+
                   return filteredProfessionals.isNotEmpty
                       ? Column(
-                          children: filteredProfessionals.take(3).map((
-                            professional,
-                          ) {
+                          children: displayedList.map((professional) {
                             final role =
                                 professional.professionalType.isNotEmpty
                                 ? "${professional.professionalType} • ${professional.city}"
@@ -498,51 +518,81 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // ---------------- Assigned Services ----------------
-                _sectionTitle("Assigned Services"),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sectionTitle("Assigned Services"),
+                    Obx(() {
+                      if (data.assignedServices.length <= 3)
+                        return const SizedBox.shrink();
+                      return TextButton(
+                        onPressed: () =>
+                            controller.showAllAssignedServices.toggle(),
+                        child: Text(
+                          controller.showAllAssignedServices.value
+                              ? "Show Less"
+                              : "View All",
+                        ),
+                      );
+                    }),
+                  ],
+                ),
                 const SizedBox(height: 12),
-                ...(data.assignedServices.isNotEmpty
-                    ? data.assignedServices.take(3).map((service) {
-                        // Format date
-                        String formattedDate = "Unknown";
-                        if (service.dateModified != null) {
-                          try {
-                            final date = DateTime.parse(service.dateModified!);
-                            final now = DateTime.now();
-                            final difference = now.difference(date);
+                Obx(() {
+                  final displayedServices =
+                      controller.showAllAssignedServices.value
+                      ? data.assignedServices
+                      : data.assignedServices.take(3).toList();
 
-                            if (difference.inDays == 0) {
-                              formattedDate = "Today";
-                            } else if (difference.inDays == 1) {
-                              formattedDate = "Yesterday";
-                            } else if (difference.inDays < 7) {
-                              formattedDate = "${difference.inDays} days ago";
-                            } else if (difference.inDays < 30) {
-                              formattedDate =
-                                  "${(difference.inDays / 7).floor()} weeks ago";
-                            } else {
-                              formattedDate =
-                                  "${(difference.inDays / 30).floor()} months ago";
+                  return data.assignedServices.isNotEmpty
+                      ? Column(
+                          children: displayedServices.map((service) {
+                            // Format date
+                            String formattedDate = "Unknown";
+                            if (service.dateModified != null) {
+                              try {
+                                final date = DateTime.parse(
+                                  service.dateModified!,
+                                );
+                                final now = DateTime.now();
+                                final difference = now.difference(date);
+
+                                if (difference.inDays == 0) {
+                                  formattedDate = "Today";
+                                } else if (difference.inDays == 1) {
+                                  formattedDate = "Yesterday";
+                                } else if (difference.inDays < 7) {
+                                  formattedDate =
+                                      "${difference.inDays} days ago";
+                                } else if (difference.inDays < 30) {
+                                  formattedDate =
+                                      "${(difference.inDays / 7).floor()} weeks ago";
+                                } else {
+                                  formattedDate =
+                                      "${(difference.inDays / 30).floor()} months ago";
+                                }
+                              } catch (e) {
+                                formattedDate = service.dateModified!;
+                              }
                             }
-                          } catch (e) {
-                            formattedDate = service.dateModified!;
-                          }
-                        }
 
-                        return _serviceTile(
-                          title: service.serviceTitle ?? "Service",
-                          desc: service.category?.isNotEmpty == true
-                              ? service.category!
-                              : "No category",
-                          tag: service.category?.isNotEmpty == true
-                              ? service.category!
-                              : "General",
-                          updatedAt: formattedDate,
-                          onDelete: () {
-                            AppLogger.d("Delete tapped");
-                          },
-                        );
-                      }).toList()
-                    : [_emptyState("No assigned services")]),
+                            return _serviceTile(
+                              title: service.serviceTitle ?? "Service",
+                              desc: service.category?.isNotEmpty == true
+                                  ? service.category!
+                                  : "No category",
+                              tag: service.category?.isNotEmpty == true
+                                  ? service.category!
+                                  : "General",
+                              updatedAt: formattedDate,
+                              onDelete: () {
+                                AppLogger.d("Delete tapped");
+                              },
+                            );
+                          }).toList(),
+                        )
+                      : _emptyState("No assigned services");
+                }),
 
                 const SizedBox(height: 24),
 
@@ -552,10 +602,12 @@ class DashboardScreen extends StatelessWidget {
                 ...(data.upcomingTrips.isNotEmpty
                     ? data.upcomingTrips.take(3).map((trip) {
                         return _tripTile(
-                          id: trip.id ?? "N/A",
-                          route: trip.route ?? "Route not specified",
-                          time: trip.time ?? "Time not specified",
-                          driver: trip.driver ?? "Driver not assigned",
+                          id: trip.tripCode ?? "N/A",
+                          route:
+                              "${trip.pickupLocation ?? 'N/A'} to ${trip.deliveryLocation ?? 'N/A'}",
+                          time:
+                              "${trip.pickupDate?.split('T')[0] ?? ''} ${trip.pickupTime ?? ''}",
+                          driver: trip.driverName ?? "Driver not assigned",
                           onManage: () {
                             Get.to(() => const TripPage());
                           },

@@ -307,19 +307,33 @@ class AssignedService {
 }
 
 class UpcomingTrip {
-  final String? id;
-  final String? route;
-  final String? time;
-  final String? driver;
+  final String? tripId;
+  final String? tripCode;
+  final String? pickupLocation;
+  final String? deliveryLocation;
+  final String? pickupDate;
+  final String? pickupTime;
+  final String? driverName;
 
-  UpcomingTrip({this.id, this.route, this.time, this.driver});
+  UpcomingTrip({
+    this.tripId,
+    this.tripCode,
+    this.pickupLocation,
+    this.deliveryLocation,
+    this.pickupDate,
+    this.pickupTime,
+    this.driverName,
+  });
 
   factory UpcomingTrip.fromJson(Map<String, dynamic> json) {
     return UpcomingTrip(
-      id: json['id'] as String?,
-      route: json['route'] as String?,
-      time: json['time'] as String?,
-      driver: json['driver'] as String?,
+      tripId: json['tripId'] as String?,
+      tripCode: json['tripCode'] as String?,
+      pickupLocation: json['pickupLocation'] as String?,
+      deliveryLocation: json['deliveryLocation'] as String?,
+      pickupDate: json['pickupDate'] as String?,
+      pickupTime: json['pickupTime'] as String?,
+      driverName: json['driverName'] as String?,
     );
   }
 }

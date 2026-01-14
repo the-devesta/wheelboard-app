@@ -353,20 +353,69 @@ class _TripPageState extends State<TripPage>
                         vertical: 4,
                       ),
                       dividerColor: Colors.transparent,
-                      labelColor: Colors.green[700],
-                      unselectedLabelColor: Colors.green[400],
-                      tabs: const [
+                      tabs: [
                         Tab(
-                          icon: Icon(Icons.check_circle, size: 18),
-                          text: "Completed",
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                size: 16,
+                                color: Colors.green[700],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Completed',
+                                style: TextStyle(
+                                  color: Colors.green[700],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         Tab(
-                          icon: Icon(Icons.autorenew, size: 18),
-                          text: "In-Process",
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.autorenew,
+                                size: 16,
+                                color: Colors.blue[700],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'In-Process',
+                                style: TextStyle(
+                                  color: Colors.blue[700],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         Tab(
-                          icon: Icon(Icons.access_time, size: 18),
-                          text: "Upcoming",
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Upcoming',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -570,27 +619,7 @@ class _TripPageState extends State<TripPage>
               ),
             ],
           ),
-          const SizedBox(height: 3),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-          const SizedBox(height: 3),
+          const SizedBox(height: 8),
 
           Row(
             children: [
@@ -1337,7 +1366,7 @@ class _UpcomingTripCard extends StatelessWidget {
   }
 }
 
-/// Simple card row for non-TripInfoCard examples
+/// Simple card row for Completed and In-Process trips
 class _TripTile extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -1363,125 +1392,145 @@ class _TripTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: const Border(
+          left: BorderSide(color: Color(0xFF4CAF50), width: 4),
+        ),
         boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Status pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: statusColor),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  statusText == "Completed"
-                      ? Icons.check_circle
-                      : statusText == "In-Process"
-                      ? Icons.autorenew
-                      : Icons.access_time,
-                  color: statusColor,
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  statusText,
-                  style: TextStyle(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: statusColor),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    statusText.toLowerCase().contains('complete')
+                        ? Icons.check_circle
+                        : statusText.toLowerCase().contains('process') ||
+                              statusText.toLowerCase().contains('progress')
+                        ? Icons.autorenew
+                        : Icons.access_time,
                     color: statusColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Trip Title
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+
+            // Subtitle (Route)
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 14, color: Colors.green[600]),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-
-          Row(
-            children: [
-              const Icon(Icons.location_on, size: 14, color: Colors.grey),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              chip,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 14, color: Colors.black54),
-              const SizedBox(width: 6),
-              Text(
-                date,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
-              ),
-            ],
-          ),
-          if (vehicle.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            // Date Row
             Row(
               children: [
                 const Icon(
-                  Icons.directions_car,
+                  Icons.calendar_today,
                   size: 14,
                   color: Colors.black54,
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  vehicle,
+                  date,
                   style: const TextStyle(fontSize: 13, color: Colors.black87),
                 ),
               ],
             ),
+
+            // Vehicle Row
+            if (vehicle.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.directions_car,
+                    size: 14,
+                    color: Colors.black54,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      vehicle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            // Driver Row
+            if (driver.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.person, size: 14, color: Colors.black54),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      driver,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
-          if (driver.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.person, size: 14, color: Colors.black54),
-                const SizedBox(width: 6),
-                Text(
-                  driver,
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
-                ),
-              ],
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

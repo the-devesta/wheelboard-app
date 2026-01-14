@@ -36,6 +36,9 @@ class AssignedTrip {
   final double? platformFee;
   final double? amountToDriver;
   final double? totalTripCost;
+  final String? distance;
+  final double? latitude;
+  final double? longitude;
 
   AssignedTrip({
     required this.tripId,
@@ -64,6 +67,9 @@ class AssignedTrip {
     this.platformFee,
     this.amountToDriver,
     this.totalTripCost,
+    this.distance,
+    this.latitude,
+    this.longitude,
   });
 
   factory AssignedTrip.fromJson(Map<String, dynamic> json) => AssignedTrip(
@@ -98,6 +104,9 @@ class AssignedTrip {
     platformFee: json["platformFee"]?.toDouble(),
     amountToDriver: json["amountToDriver"]?.toDouble(),
     totalTripCost: json["totalTripCost"]?.toDouble(),
+    distance: json["distance"]?.toString(),
+    latitude: json["latitude"]?.toDouble(),
+    longitude: json["longitude"]?.toDouble(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -128,6 +137,9 @@ class AssignedTrip {
     if (platformFee != null) "platformFee": platformFee,
     if (amountToDriver != null) "amountToDriver": amountToDriver,
     if (totalTripCost != null) "totalTripCost": totalTripCost,
+    if (distance != null) "distance": distance,
+    if (latitude != null) "latitude": latitude,
+    if (longitude != null) "longitude": longitude,
   };
 
   AssignedTrip copyWith({
@@ -157,6 +169,9 @@ class AssignedTrip {
     double? platformFee,
     double? amountToDriver,
     double? totalTripCost,
+    String? distance,
+    double? latitude,
+    double? longitude,
   }) {
     return AssignedTrip(
       tripId: tripId ?? this.tripId,
@@ -185,6 +200,9 @@ class AssignedTrip {
       platformFee: platformFee ?? this.platformFee,
       amountToDriver: amountToDriver ?? this.amountToDriver,
       totalTripCost: totalTripCost ?? this.totalTripCost,
+      distance: distance ?? this.distance,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 }

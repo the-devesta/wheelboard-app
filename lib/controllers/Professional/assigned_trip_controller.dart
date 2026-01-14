@@ -56,6 +56,7 @@ class AssignedTripController extends GetxController {
       }
 
       if (response.statusCode == 200) {
+        AppLogger.d("🚗 RAW TRIP DATA: ${response.body}");
         try {
           final List<dynamic> tripData = jsonDecode(response.body);
           if (tripData.isEmpty) {

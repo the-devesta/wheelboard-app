@@ -11,6 +11,8 @@ class DashboardController extends GetxController {
   final dashboardData = Rxn<DashboardModel>();
   final errorMessage = ''.obs;
   final selectedProfessionalFilter = 'All'.obs;
+  final showAllAssignedServices = false.obs;
+  final showAllProfessionals = false.obs;
 
   @override
   void onInit() {

@@ -7,6 +7,9 @@ class AssignedServiceModel {
   final DateTime scheduledDate;
   final String scheduledTime;
   final String category;
+  final double amount;
+  final String serviceId;
+  final String assignedToUserId;
 
   AssignedServiceModel({
     required this.assignmentId,
@@ -17,6 +20,9 @@ class AssignedServiceModel {
     required this.scheduledDate,
     required this.scheduledTime,
     required this.category,
+    required this.amount,
+    required this.serviceId,
+    required this.assignedToUserId,
   });
 
   factory AssignedServiceModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +35,9 @@ class AssignedServiceModel {
       scheduledDate: DateTime.parse(json['scheduledDate']),
       scheduledTime: json['scheduledTime'] ?? '',
       category: json['category'] ?? '',
+      amount: (json['amount'] ?? 0).toDouble(), // Ensure double
+      serviceId: json['serviceId'] ?? '',
+      assignedToUserId: json['assignedToUserId'] ?? '',
     );
   }
 }

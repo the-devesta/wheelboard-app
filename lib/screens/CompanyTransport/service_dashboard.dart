@@ -112,6 +112,7 @@ ServiceCardData mapToCard(AssignedServiceModel s) {
     meta: "${s.scheduledDate.toLocal().toString().split(' ').first}",
     status: s.status,
     assignedId: s.assignmentId,
+    model: s,
   );
 }
 
@@ -212,6 +213,7 @@ class ServiceCardData {
   final String status;
   final bool showTrash;
   final String assignedId;
+  final AssignedServiceModel? model;
 
   const ServiceCardData({
     required this.title,
@@ -222,6 +224,7 @@ class ServiceCardData {
     required this.status,
     required this.meta,
     required this.assignedId,
+    this.model,
     this.showTrash = true,
   });
 }
@@ -281,7 +284,7 @@ class ServiceCard extends StatelessWidget {
           /// ---------- EXPANDABLE TASK PROGRESS ----------
           AnimatedCrossFade(
             firstChild: const SizedBox(),
-            secondChild: _TaskProgress(data: data),
+            secondChild: _TaskProgress(data: data, controller: controller),
             crossFadeState: expanded
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
@@ -703,8 +706,13 @@ class _TimelineRow extends StatelessWidget {
 
 class _TaskProgress extends StatelessWidget {
   final ServiceCardData data;
+  final ServiceDashboardController controller;
 
-  const _TaskProgress({super.key, required this.data});
+  const _TaskProgress({
+    super.key,
+    required this.data,
+    required this.controller,
+  });
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -726,29 +734,40 @@ class _TaskProgress extends StatelessWidget {
         if (data.status.toLowerCase().contains("inprogress") ||
             data.status.toLowerCase().contains("start"))
           _progressItem("Work In Progress", true),
-        if (data.status.toLowerCase().contains("completed"))
+        if (data.status.toLowerCase().contains("completed") ||
+            data.status.toLowerCase().contains("paid"))
           _progressItem("Work Completed", true),
-        if (data.status.toLowerCase().contains("payment"))
-          _progressItem("Payment", true),
+        if (data.status.toLowerCase().contains("paid"))
+          _progressItem("Payment Success", true),
+        if (data.status.toLowerCase().contains("completed") &&
+            !data.status.toLowerCase().contains("paid"))
+          _progressItem("Payment Pending", false, isPending: true),
         if (data.status.toLowerCase().contains("cancelled"))
           _progressItem("Cancelled", false),
         if (data.status.toLowerCase().contains("completed"))
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Container(
-              width: Get.width,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.greenAccent,
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-              ),
-              child: Center(
-                child: Text(
-                  'Complete payment',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+            child: InkWell(
+              onTap: () {
+                if (data.model != null) {
+                  controller.initiatePayment(data.model!);
+                }
+              },
+              child: Container(
+                width: Get.width,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00B894),
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                child: Center(
+                  child: Text(
+                    'Complete payment',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -758,15 +777,19 @@ class _TaskProgress extends StatelessWidget {
     );
   }
 
-  Widget _progressItem(String title, bool done) {
+  Widget _progressItem(String title, bool done, {bool isPending = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
           Icon(
-            done ? Icons.check_circle : Icons.cancel,
+            isPending
+                ? Icons.radio_button_unchecked
+                : (done ? Icons.check_circle : Icons.cancel),
             size: 18,
-            color: done ? Colors.green : Colors.red,
+            color: isPending
+                ? Colors.grey
+                : (done ? const Color(0xFF00B894) : Colors.red),
           ),
           const SizedBox(width: 10),
           Expanded(

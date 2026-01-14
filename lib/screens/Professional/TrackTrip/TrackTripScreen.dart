@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../controllers/Professional/track_trip_controller.dart';
 import '../../../models/assigned_trip_model.dart';
 import '../../../utils/call_utils.dart';
+import 'package:geocoding/geocoding.dart' as geo;
 
 class TrackTripScreen extends StatefulWidget {
   final String tripId;
@@ -17,12 +19,92 @@ class TrackTripScreen extends StatefulWidget {
 
 class _TrackTripScreenState extends State<TrackTripScreen> {
   final Set<Marker> _markers = {};
+  LatLng? _destination;
+  GoogleMapController? _mapController;
+  Worker? _locationWorker;
 
-  final LatLng _center = const LatLng(20.5937, 78.9629); // Default India center
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controller using Get.put in initState
+    final trackController = Get.put(TrackTripController());
+    final assignedTripController = Get.find<AssignedTripController>();
+    final trip = assignedTripController.assignedTrips.firstWhere(
+      (t) => t.tripId == widget.tripId,
+    );
+
+    if (trip.latitude != null &&
+        trip.longitude != null &&
+        trip.latitude != 0 &&
+        trip.longitude != 0) {
+      _setDestinationMarker(LatLng(trip.latitude!, trip.longitude!));
+    } else {
+      _geocodeDestination(trip.deliveryLocation);
+    }
+
+    trackController.startLocationUpdates(widget.tripId);
+
+    // Listen to location changes to update marker and camera
+    _locationWorker = ever(trackController.currentPosition, (Position? pos) {
+      if (pos != null && mounted) {
+        final currentLatLng = LatLng(pos.latitude, pos.longitude);
+        setState(() {
+          _markers.removeWhere((m) => m.markerId.value == 'current_pos');
+          _markers.add(
+            Marker(
+              markerId: const MarkerId('current_pos'),
+              position: currentLatLng,
+              infoWindow: const InfoWindow(title: 'You are here'),
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueBlue,
+              ),
+            ),
+          );
+        });
+
+        _mapController?.animateCamera(CameraUpdate.newLatLng(currentLatLng));
+      }
+    });
+  }
+
+  void _setDestinationMarker(LatLng position) {
+    if (!mounted) return;
+    setState(() {
+      _destination = position;
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('destination'),
+          position: position,
+          infoWindow: const InfoWindow(title: 'Destination'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      );
+    });
+  }
+
+  Future<void> _geocodeDestination(String address) async {
+    if (address.isEmpty) return;
+    try {
+      List<geo.Location> locations = await geo.locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        final pos = LatLng(locations.first.latitude, locations.first.longitude);
+        _setDestinationMarker(pos);
+      }
+    } catch (e) {
+      debugPrint("❌ Map Geocoding Error: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _locationWorker?.dispose();
+    Get.find<TrackTripController>().stopLocationUpdates();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final trackController = Get.put(TrackTripController());
+    final trackController = Get.find<TrackTripController>();
     final assignedTripController = Get.find<AssignedTripController>();
 
     return Scaffold(
@@ -58,31 +140,104 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
           return Column(
             children: [
               // 1. Top Bar
-              _buildTopBar(context, widget.tripId),
+              _buildTopBar(context, widget.tripId, trackController),
 
+              // 2. Map Container with Compact Height (30% of screen)
+              Container(
+                height: MediaQuery.of(context).size.height * 0.30,
+                width: double.infinity,
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: _destination ?? const LatLng(28.5581811, 77.344654),
+                    zoom: 14.0,
+                  ),
+                  onMapCreated: (controller) => _mapController = controller,
+                  markers: _markers,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  mapType: MapType.normal,
+                  style: _mapStyle,
+                ),
+              ),
+
+              // 3. Details Content (Scrollable & Responsive)
               Expanded(
-                child: Stack(
-                  children: [
-                    // 2. Real Google Map
-                    GoogleMap(
-                      initialCameraPosition: CameraPosition(
-                        target: _center,
-                        zoom: 5.0,
-                      ),
-                      markers: _markers,
-                      myLocationEnabled: true,
-                      myLocationButtonEnabled: false,
-                      mapType: MapType.normal,
-                      style: _mapStyle,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  child: _buildDetailsContent(context, trip, trackController),
+                ),
+              ),
+
+              // 4. Fixed Action Buttons at the Bottom
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
                     ),
-
-                    // 3. Floating Address Card
-                    _buildFloatingLocationCard(trip.deliveryLocation),
-
-                    // 4. Bottom Detail Sheet
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: _buildDetailSheet(context, trip, trackController),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => CallUtils.makeCall(trip.driverContact),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: Colors.grey[200]!),
+                        ),
+                        child: const Icon(Icons.call, color: Color(0xFF1F2937)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 4,
+                      child: Obx(
+                        () => ElevatedButton(
+                          onPressed: trackController.isLoading.value
+                              ? null
+                              : () => _confirmEndTrip(
+                                  context,
+                                  trip.tripId,
+                                  trackController,
+                                ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF5E5E),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: trackController.isLoading.value
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  'Complete Trip',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -94,7 +249,11 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
     );
   }
 
-  Widget _buildTopBar(BuildContext context, String tripId) {
+  Widget _buildTopBar(
+    BuildContext context,
+    String tripId,
+    TrackTripController controller,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -151,7 +310,7 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              onPressed: () {},
+              onPressed: () => controller.startLocationUpdates(tripId),
               icon: const Icon(
                 Icons.refresh,
                 color: Color(0xFFFF5E5E),
@@ -164,124 +323,47 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
     );
   }
 
-  Widget _buildFloatingLocationCard(String address) {
-    return Positioned(
-      top: 20,
-      left: 20,
-      right: 20,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.flag, color: Color(0xFF2E7D32), size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Destination',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                  Text(
-                    address.isEmpty ? "Directing to destination..." : address,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1F2937),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailSheet(
+  Widget _buildDetailsContent(
     BuildContext context,
     AssignedTrip trip,
     TrackTripController controller,
   ) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 30,
-            offset: const Offset(0, -10),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 50,
-            height: 5,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          const SizedBox(height: 24),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 5),
 
-          // Progress & Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
+        // Progress & Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'On the way',
                     style: GoogleFonts.poppins(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1F2937),
                     ),
                   ),
                   Text(
-                    'Updated just now',
+                    'Vehicle: ${trip.vehicleNumber} (${trip.vehicleModel})',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey[400],
+                      fontSize: 10,
+                      color: const Color(0xFFFF5E5E),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
-              Container(
+            ),
+            Obx(
+              () => Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 6,
@@ -291,7 +373,7 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '60% Done',
+                  '${(controller.progress.value * 100).toStringAsFixed(0)}% Done',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -299,95 +381,165 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                   ),
                 ),
               ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Obx(
+            () => LinearProgressIndicator(
+              value: controller.progress.value,
+              backgroundColor: const Color(0xFFF3F4F6),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF1976D2),
+              ),
+              minHeight: 6,
+            ),
           ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: 0.6,
-              backgroundColor: Color(0xFFF3F4F6),
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1976D2)),
-              minHeight: 8,
+        ),
+        const SizedBox(height: 16),
+
+        // Quick Info Stats
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          childAspectRatio: 2.3,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          children: [
+            Obx(
+              () => _buildInfoCard(
+                'ETA',
+                controller.eta.value,
+                Icons.timer_outlined,
+              ),
+            ),
+            Obx(
+              () => _buildInfoCard(
+                'Distance',
+                controller.distanceRemaining.value,
+                Icons.straighten,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildInfoCard(
+          'Driver',
+          '${trip.driverName} • ${trip.driverContact}',
+          Icons.person_pin_circle_outlined,
+        ),
+
+        const SizedBox(height: 12),
+        // Trip Route Details
+        Text(
+          'TRIP ROUTE',
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[400],
+            letterSpacing: 1.1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildRouteItem(
+          'Pickup Location',
+          trip.pickupLocation,
+          const Color(0xFF2E7D32),
+          isStart: true,
+        ),
+        const SizedBox(height: 12),
+        _buildRouteItem(
+          'Delivery Destination',
+          trip.deliveryLocation,
+          const Color(0xFFFF5E5E),
+          isStart: false,
+        ),
+
+        const SizedBox(height: 24),
+        if (trip.specialInstructions.isNotEmpty) ...[
+          Text(
+            'INSTRUCTIONS',
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[400],
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFFEDD5)),
+            ),
+            child: Text(
+              trip.specialInstructions,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: const Color(0xFF9A3412),
+              ),
             ),
           ),
           const SizedBox(height: 24),
-
-          // Info Grid
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            childAspectRatio: 2.3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            children: [
-              _buildInfoCard('ETA', '15-20 min', Icons.timer_outlined),
-              _buildInfoCard('Distance', '4.2 km', Icons.straighten),
-              _buildInfoCard(
-                'Driver',
-                '${trip.driverName}\n${trip.driverContact}',
-                Icons.person_outline,
-              ),
-              _buildStatusCard('Status', trip.tripStatus),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => CallUtils.makeCall(trip.driverContact),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    side: BorderSide(color: Colors.grey[200]!),
-                  ),
-                  child: const Icon(Icons.call, color: Color(0xFF1F2937)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 4,
-                child: ElevatedButton(
-                  onPressed: controller.isLoading.value
-                      ? null
-                      : () => _confirmEndTrip(context, trip.tripId, controller),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5E5E),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: controller.isLoading.value
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Complete Trip',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
         ],
-      ),
+      ],
+    );
+  }
+
+  Widget _buildRouteItem(
+    String label,
+    String address,
+    Color color, {
+    required bool isStart,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: color.withOpacity(0.2), width: 4),
+              ),
+            ),
+            if (isStart)
+              Container(width: 2, height: 30, color: Colors.grey[200]),
+          ],
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: Colors.grey[400],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                address.isEmpty ? "N/A" : address,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -507,53 +659,6 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF111827),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusCard(String title, String value) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCFCE7)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.local_shipping_outlined,
-            size: 18,
-            color: Color(0xFF16A34A),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    color: const Color(0xFF16A34A),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF15803D),
                   ),
                 ),
               ],

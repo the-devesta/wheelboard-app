@@ -156,6 +156,7 @@ class API {
   static const String serviceEarningsDashboard =
       'api/Service/service-earnings-dashboard';
   static const String createPayment = 'api/Service/create-payment';
+  static const String completePayment = 'api/Service/complete-payment';
 }
 
 String formatDateShort(String? dateString) {
