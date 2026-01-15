@@ -72,6 +72,8 @@ import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../models/add_new_vehicle_model.dart';
 import '../utils/app_logger.dart';
+import '../utils/error_handler.dart';
+import 'package:flutter/material.dart';
 
 class AddVehicleController extends GetxController {
   var isLoading = false.obs;
@@ -119,11 +121,18 @@ class AddVehicleController extends GetxController {
       }
       AppLogger.d("🚗 ==================================");
 
-      // Call helper (make sure HttpHelper can handle dynamic fields)
+      // Convert dynamic to String for multipart form-data, filter out nulls
+      final Map<String, String> processedFields = {};
+      fields.forEach((key, value) {
+        if (value != null && value.toString().isNotEmpty) {
+          processedFields[key] = value.toString();
+        }
+      });
+
+      // Call helper
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.addVehicle,
-        fields: fields.map((k, v) => MapEntry(k, v?.toString() ?? "")),
-        // 🔑 Convert dynamic to String for multipart form-data
+        fields: processedFields,
         files: files,
         fieldKey: "Images", // matches backend
         headers: {"Authorization": "Bearer $token"},
@@ -149,18 +158,29 @@ class AddVehicleController extends GetxController {
         AppLogger.d("🚗 ❌ VEHICLE ADDITION FAILED!");
         AppLogger.d("🚗 Error Status: ${response.statusCode}");
         AppLogger.d("🚗 Error Body: ${response.body}");
-        Get.snackbar("Error", "Failed with status: ${response.statusCode}");
+
+        // Parse error for user-friendly message
+        final errorMsg = ErrorHandler.parseError(
+          response.body,
+          statusCode: response.statusCode,
+        );
+        Get.snackbar(
+          "Error",
+          errorMsg,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
         return false;
       }
-    } catch (e, stack) {
-      // 🔹 Log exception with stacktrace
-      AppLogger.d("🚗 ==================================");
-      AppLogger.d("🚗 EXCEPTION OCCURRED");
-      AppLogger.d("🚗 ==================================");
-      AppLogger.d("🚗 Exception: $e");
-      AppLogger.d("🚗 Stacktrace: $stack");
-      AppLogger.d("🚗 ==================================");
-      Get.snackbar("Error", "Something went wrong: $e");
+    } catch (e) {
+      final errorMsg = ErrorHandler.handleNetworkError(e);
+      Get.snackbar(
+        "Error",
+        errorMsg,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
     } finally {
       isLoading.value = false;
@@ -220,11 +240,18 @@ class AddVehicleController extends GetxController {
       AppLogger.d("🚗 Files attached: ${files.length}");
       AppLogger.d("🚗 ==================================");
 
-      // Call helper (make sure HttpHelper can handle dynamic fields)
+      // Convert dynamic to String for multipart form-data, filter out nulls
+      final Map<String, String> processedFields = {};
+      fields.forEach((key, value) {
+        if (value != null && value.toString().isNotEmpty) {
+          processedFields[key] = value.toString();
+        }
+      });
+
+      // Call helper
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.updateVehicle,
-        fields: fields.map((k, v) => MapEntry(k, v?.toString() ?? "")),
-        // 🔑 Convert dynamic to String for multipart form-data
+        fields: processedFields,
         files: files,
         fieldKey: "Images", // matches backend
         headers: {"Authorization": "Bearer $token"},
@@ -249,18 +276,29 @@ class AddVehicleController extends GetxController {
         AppLogger.d("🚗 ❌ VEHICLE UPDATE FAILED!");
         AppLogger.d("🚗 Error Status: ${response.statusCode}");
         AppLogger.d("🚗 Error Body: ${response.body}");
-        Get.snackbar("Error", "Failed with status: ${response.statusCode}");
+
+        // Parse error for user-friendly message
+        final errorMsg = ErrorHandler.parseError(
+          response.body,
+          statusCode: response.statusCode,
+        );
+        Get.snackbar(
+          "Error",
+          errorMsg,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
         return false;
       }
-    } catch (e, stack) {
-      // 🔹 Log exception with stacktrace
-      AppLogger.d("🚗 ==================================");
-      AppLogger.d("🚗 UPDATE EXCEPTION OCCURRED");
-      AppLogger.d("🚗 ==================================");
-      AppLogger.d("🚗 Exception: $e");
-      AppLogger.d("🚗 Stacktrace: $stack");
-      AppLogger.d("🚗 ==================================");
-      Get.snackbar("Error", "Something went wrong: $e");
+    } catch (e) {
+      final errorMsg = ErrorHandler.handleNetworkError(e);
+      Get.snackbar(
+        "Error",
+        errorMsg,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
     } finally {
       isLoading.value = false;

@@ -6,6 +6,7 @@ import 'package:wheelboard/models/expense_purpose_model.dart';
 import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/utils/error_handler.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
@@ -123,24 +124,18 @@ class ExpenseController extends GetxController {
           return true;
         }
       } else {
-        try {
-          final errorBody = jsonDecode(response.body);
-          final errorMessage =
-              errorBody['message'] ??
-              errorBody['title'] ??
-              errorBody['error'] ??
-              'Failed to save expense';
-          SnackBarHelper.error(errorMessage);
-        } catch (_) {
-          SnackBarHelper.error(
-            'Failed to save expense (${response.statusCode})',
-          );
-        }
+        // Use ErrorHandler for proper backend error message
+        final errorMsg = ErrorHandler.parseError(
+          response.body,
+          statusCode: response.statusCode,
+        );
+        SnackBarHelper.error(errorMsg);
         return false;
       }
     } catch (e) {
       AppLogger.d("❌ Error saving expense: $e");
-      SnackBarHelper.error('Error saving expense: ${e.toString()}');
+      final errorMsg = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMsg);
       return false;
     } finally {
       isSaving(false);

@@ -1093,8 +1093,16 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         SnackBarHelper.success('Service started successfully');
-        // Refresh booking details to update status
-        await _fetchBookingDetails();
+        // Update local state to reflect the new status
+        if (_bookingData != null) {
+          setState(() {
+            _bookingData!['status'] = 'started';
+          });
+        }
+        // Only fetch if we have a valid serviceId
+        if (widget.serviceId.isNotEmpty) {
+          await _fetchBookingDetails();
+        }
       } else {
         String errorMessage = "Failed to start service";
         try {
@@ -1146,8 +1154,16 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         SnackBarHelper.success('Service completed successfully');
-        // Refresh booking details to update status
-        await _fetchBookingDetails();
+        // Update local state to reflect the new status
+        if (_bookingData != null) {
+          setState(() {
+            _bookingData!['status'] = 'completed';
+          });
+        }
+        // Only fetch if we have a valid serviceId
+        if (widget.serviceId.isNotEmpty) {
+          await _fetchBookingDetails();
+        }
       } else {
         String errorMessage = "Failed to complete service";
         try {
@@ -1229,8 +1245,16 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         SnackBarHelper.success('Appointment cancelled successfully');
-        // Refresh booking details to update status
-        await _fetchBookingDetails();
+        // Update local state to reflect the new status
+        if (_bookingData != null) {
+          setState(() {
+            _bookingData!['status'] = 'cancelled';
+          });
+        }
+        // Only fetch if we have a valid serviceId
+        if (widget.serviceId.isNotEmpty) {
+          await _fetchBookingDetails();
+        }
         // Optionally navigate back
         if (mounted) {
           Get.back();

@@ -716,6 +716,7 @@ Widget _buildKycItem(
 }
 
 Widget _buildPlatformPreferences() {
+  final controller = Get.find<UserProfileController>();
   return _buildCard(
     title: 'Platform Preferences',
     children: [
@@ -760,16 +761,42 @@ Widget _buildPlatformPreferences() {
         ],
       ),
       const SizedBox(height: 24),
-      _buildToggleRow(Icons.sms, 'SMS Notifications', true),
+      Obx(
+        () => _buildToggleRow(
+          Icons.sms,
+          'SMS Notifications',
+          controller.smsNotifications.value,
+          controller.toggleSmsNotifications,
+        ),
+      ),
       const SizedBox(height: 24),
-      _buildToggleRow(Icons.email, 'Email Notifications', false),
+      Obx(
+        () => _buildToggleRow(
+          Icons.email,
+          'Email Notifications',
+          controller.emailNotifications.value,
+          controller.toggleEmailNotifications,
+        ),
+      ),
       const SizedBox(height: 24),
-      _buildToggleRow(Icons.message, 'WhatsApp Notifications', true),
+      Obx(
+        () => _buildToggleRow(
+          Icons.message,
+          'WhatsApp Notifications',
+          controller.whatsappNotifications.value,
+          controller.toggleWhatsappNotifications,
+        ),
+      ),
     ],
   );
 }
 
-Widget _buildToggleRow(IconData icon, String title, bool value) {
+Widget _buildToggleRow(
+  IconData icon,
+  String title,
+  bool value,
+  ValueChanged<bool> onChanged,
+) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
@@ -789,7 +816,7 @@ Widget _buildToggleRow(IconData icon, String title, bool value) {
       ),
       Switch(
         value: value,
-        onChanged: (_) {},
+        onChanged: onChanged,
         activeThumbColor: const Color(0xFF30DB5B),
       ),
     ],

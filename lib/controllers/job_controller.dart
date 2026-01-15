@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:get/get.dart';
+import 'package:wheelboard/utils/error_handler.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
 import '../services/auth_service.dart';
@@ -82,7 +83,7 @@ class JobController extends GetxController {
     required String city,
     required String jobType,
     required String description,
-    required List<File> images,
+    List<File>? images, // Images are now optional
   }) async {
     try {
       isLoading.value = true;
@@ -95,15 +96,10 @@ class JobController extends GetxController {
         return false;
       }
 
-      if (images.isEmpty) {
-        SnackBarHelper.error("Please upload at least one image");
-        return false;
-      }
-
       AppLogger.d("💼 Adding new job...");
       AppLogger.d("💼 UserId: $userId");
       AppLogger.d("💼 Role: $role");
-      AppLogger.d("💼 Images: ${images.length}");
+      AppLogger.d("💼 Images: ${images?.length ?? 0}");
 
       // Prepare fields for multipart
       final fields = <String, String?>{
@@ -117,11 +113,11 @@ class JobController extends GetxController {
         'Description': description,
       };
 
-      // Send multipart request (no token needed, works with userId only)
+      // Send multipart request (images are optional now)
       final streamedResponse = await HttpHelper.uploadMultipart(
         endpoint: API.addJob,
         fields: fields,
-        files: images,
+        files: images ?? [], // Pass empty list if no images
         fieldKey: 'Images', // API expects 'Images' as field name
         headers: {'Accept': '*/*'},
       );
@@ -139,21 +135,18 @@ class JobController extends GetxController {
         return true;
       } else {
         AppLogger.d("❌ Failed to add job: ${streamedResponse.statusCode}");
-        try {
-          final errorData = json.decode(responseBody);
-          final errorMessage =
-              errorData['errors']?['Images']?[0] ??
-              errorData['title'] ??
-              "Failed to post job";
-          SnackBarHelper.error(errorMessage);
-        } catch (e) {
-          SnackBarHelper.error("Failed to post job");
-        }
+        // Use ErrorHandler for proper backend error message
+        final errorMsg = ErrorHandler.parseError(
+          responseBody,
+          statusCode: streamedResponse.statusCode,
+        );
+        SnackBarHelper.error(errorMsg);
         return false;
       }
     } catch (e) {
       AppLogger.d("❌ Error adding job: $e");
-      SnackBarHelper.error("Failed to post job: ${e.toString()}");
+      final errorMsg = ErrorHandler.handleNetworkError(e);
+      SnackBarHelper.error(errorMsg);
       return false;
     } finally {
       isLoading.value = false;

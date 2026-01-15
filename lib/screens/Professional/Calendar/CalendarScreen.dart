@@ -52,8 +52,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           (event) => Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: EventCardWidget(
-                              fromLocation: event.category,
-                              toLocation: event.eventName,
+                              eventName: event.eventName,
                               time: _formatEventTime(
                                 event.startTime,
                                 event.endTime,

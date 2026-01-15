@@ -492,26 +492,36 @@ class CommonFeedScreen extends StatelessWidget {
           ),
         );
       }),
-      floatingActionButton: ElevatedButton(
-        onPressed: () {
-          Get.to(const NetworkPostScreen())?.then((result) {
-            if (result == true) {
-              postController.refreshPosts();
-            }
-          });
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFFFD6C6C),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      floatingActionButton: Obx(() {
+        final userType = AuthService.to.userType.value;
+        AppLogger.d("👤 Current User Type in Feed: '$userType'");
+
+        // Hide "New Post" button for Professional users (case-insensitive check)
+        if (userType.toLowerCase().trim() == 'professional') {
+          return const SizedBox.shrink();
+        }
+
+        return ElevatedButton(
+          onPressed: () {
+            Get.to(const NetworkPostScreen())?.then((result) {
+              if (result == true) {
+                postController.refreshPosts();
+              }
+            });
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFFFD6C6C),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 4,
           ),
-          elevation: 4,
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-          child: Text("New Post ", style: TextStyle(color: AppColors.white)),
-        ),
-      ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+            child: Text("New Post ", style: TextStyle(color: AppColors.white)),
+          ),
+        );
+      }),
     );
   }
 }

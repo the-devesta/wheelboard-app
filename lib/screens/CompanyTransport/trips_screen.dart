@@ -11,6 +11,9 @@ import 'package:wheelboard/utils/session_manager.dart';
 
 import 'package:wheelboard/models/add_new_trip_model.dart';
 import '../../widgets/custom_loader.dart';
+import 'TripExpenses/TripExpensesScreen.dart';
+import '../../controllers/trip_expenses_controller.dart';
+import '../../services/auth_service.dart';
 
 class TripPage extends StatefulWidget {
   final int initialTabIndex;
@@ -434,68 +437,74 @@ class _TripPageState extends State<TripPage>
       ),
 
       // FAB column - matching Figma design
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // New Trip Button
-          Container(
-            margin: const EdgeInsets.only(bottom: 4),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Get.to(const Newtripscreen());
-              },
-              icon: const Icon(Icons.add_circle, size: 24),
-              label: const Text(
-                "New Trip",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Poppins',
+      floatingActionButton: Obx(() {
+        if (AuthService.to.userType.value.toLowerCase().trim() ==
+            'professional') {
+          return const SizedBox.shrink();
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // New Trip Button
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Get.to(const Newtripscreen());
+                },
+                icon: const Icon(Icons.add_circle, size: 24),
+                label: const Text(
+                  "Post  Trip",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF26868),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(117, 42),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Color(0xFFDFF5EB), width: 2),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF26868),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(117, 42),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: Color(0xFFDFF5EB), width: 2),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
               ),
             ),
-          ),
-          // Schedule Button
-          Container(
-            margin: const EdgeInsets.only(bottom: 4),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Get.to(const ScheduleTripScreen());
-              },
-              icon: const Icon(Icons.calendar_today, size: 24),
-              label: const Text(
-                "Schedule",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Poppins',
+            // Schedule Button
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Get.to(const ScheduleTripScreen());
+                },
+                icon: const Icon(Icons.calendar_today, size: 24),
+                label: const Text(
+                  "Schedule",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF26868),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(117, 42),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Color(0xFFDFF5EB), width: 2),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF26868),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(117, 42),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: Color(0xFFDFF5EB), width: 2),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
 
@@ -962,16 +971,21 @@ class _TripsTabViews extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
             children: completedTrips.map((trip) {
-              return _TripTile(
-                title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
-                subtitle:
-                    "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
-                statusColor: _getStatusColor(trip.tripStatus),
-                statusText: trip.tripStatus,
-                date: _formatDate(trip.pickupDate, trip.pickupTime),
-                chip: trip.vehicleType ?? "Standard",
-                vehicle: trip.vehicleNumber ?? '',
-                driver: trip.driverName ?? 'Not assigned',
+              return GestureDetector(
+                onTap: () {
+                  Get.to(() => TripExpensesScreen(tripId: trip.tripId));
+                },
+                child: _TripTile(
+                  title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
+                  subtitle:
+                      "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
+                  statusColor: _getStatusColor(trip.tripStatus),
+                  statusText: trip.tripStatus,
+                  date: _formatDate(trip.pickupDate, trip.pickupTime),
+                  chip: trip.vehicleType ?? "Standard",
+                  vehicle: trip.vehicleNumber ?? '',
+                  driver: trip.driverName ?? 'Not assigned',
+                ),
               );
             }).toList(),
           );
@@ -1264,8 +1278,9 @@ class _UpcomingTripCard extends StatelessWidget {
                   const SizedBox(height: 12),
                 ],
                 // Share Trip + View Bids row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
                     // Share Trip Button
                     _actionButton(
@@ -1274,10 +1289,38 @@ class _UpcomingTripCard extends StatelessWidget {
                       color: const Color(0xFFF36969),
                       onTap: () => _shareTrip(trip),
                     ),
+                    // Delete Button
+                    _actionButton(
+                      icon: Icons.delete_outline,
+                      label: 'Delete',
+                      color: Colors.red,
+                      onTap: () {
+                        Get.defaultDialog(
+                          title: "Delete Trip",
+                          middleText:
+                              "Are you sure you want to delete this trip?",
+                          textConfirm: "Delete",
+                          textCancel: "Cancel",
+                          confirmTextColor: Colors.white,
+                          buttonColor: Colors.red,
+                          onConfirm: () async {
+                            Get.back(); // close dialog
+                            final controller = Get.put(
+                              TripExpensesController(),
+                            );
+                            bool success = await controller.deleteTrip(tripId);
+                            if (success) {
+                              // Refresh the trip list to remove deleted trip from UI
+                              final tripCtrl = Get.find<TripController>();
+                              final userId = AuthService.to.currentUserId;
+                              await tripCtrl.refreshTrips(userId);
+                            }
+                          },
+                        );
+                      },
+                    ),
                     if (trip.driverId.isEmpty &&
-                        (trip.driverName == null ||
-                            trip.driverName!.isEmpty)) ...[
-                      const SizedBox(width: 6),
+                        (trip.driverName == null || trip.driverName!.isEmpty))
                       // View Bids Button
                       _actionButton(
                         icon: Icons.description,
@@ -1287,8 +1330,6 @@ class _UpcomingTripCard extends StatelessWidget {
                             ? () => Get.to(() => BidsScreen(tripId: tripId))
                             : null,
                       ),
-                    ],
-                    const SizedBox(width: 6),
                     // Details Button
                     _actionButton(
                       icon: Icons.arrow_forward,
@@ -1322,7 +1363,6 @@ class _UpcomingTripCard extends StatelessWidget {
 📍 To: $deliveryShort
 📅 Date: $dateStr
 ⏰ Time: ${trip.pickupTime.isNotEmpty ? trip.pickupTime : 'Not specified'}
-💰 Pay Range: ${trip.payRange.isNotEmpty ? trip.payRange : 'Negotiable'}
 🚗 Driver: ${trip.driverName ?? 'Not assigned'}
 
 🔗 View on Wheelboard: https://wheelboard.in/trips/${trip.tripId}
