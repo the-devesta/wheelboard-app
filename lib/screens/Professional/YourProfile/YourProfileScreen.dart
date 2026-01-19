@@ -1568,6 +1568,15 @@ void _showPanCardDialog(BuildContext context) {
 /// Verify PAN Card via API
 Future<void> _verifyPanCard(String userId, String panNumber) async {
   try {
+    AppLogger.d(
+      '🔐 Starting PAN verification - userId: $userId, pan: $panNumber',
+    );
+
+    if (userId.isEmpty) {
+      SnackBarHelper.error('User ID not found. Please try again.');
+      return;
+    }
+
     SnackBarHelper.info('Verifying PAN Card...');
 
     final profileService = ProfileService();
@@ -1577,7 +1586,9 @@ Future<void> _verifyPanCard(String userId, String panNumber) async {
     );
 
     if (result['success'] == true) {
-      SnackBarHelper.success(result['message'] ?? 'Verification successful');
+      SnackBarHelper.success(
+        result['message'] ?? 'PAN Card verified successfully!',
+      );
       // Refresh profile to get updated KYC status
       final controller = Get.find<UserProfileController>();
       controller.fetchCurrentUserProfile();
@@ -1586,6 +1597,11 @@ Future<void> _verifyPanCard(String userId, String panNumber) async {
     }
   } catch (e) {
     AppLogger.d('Error verifying PAN card: $e');
-    SnackBarHelper.error('Failed to verify: ${e.toString()}');
+    // Extract clean error message
+    String errorMsg = e.toString();
+    if (errorMsg.contains('Exception:')) {
+      errorMsg = errorMsg.replaceAll('Exception:', '').trim();
+    }
+    SnackBarHelper.error(errorMsg);
   }
 }

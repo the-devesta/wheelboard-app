@@ -15,8 +15,11 @@ class LoginController extends GetxController {
 
   String _formatPhone(String phone) {
     String p = phone.trim();
-    if (p.length == 10 && !p.startsWith('+')) {
-      return "+91$p";
+    // Remove +91 or 91 prefix if present - API expects plain 10 digit number
+    if (p.startsWith('+91')) {
+      p = p.substring(3);
+    } else if (p.startsWith('91') && p.length > 10) {
+      p = p.substring(2);
     }
     return p;
   }
@@ -46,6 +49,7 @@ class LoginController extends GetxController {
       final response = await HttpHelper.postData(
         endpoint: API.sendOtp,
         data: requestData,
+        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
       );
 
       AppLogger.apiResponse(
@@ -101,6 +105,7 @@ class LoginController extends GetxController {
       final response = await HttpHelper.postData(
         endpoint: API.loginWithOtp,
         data: requestData,
+        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
       );
 
       AppLogger.apiResponse(

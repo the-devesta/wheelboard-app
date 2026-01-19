@@ -43,8 +43,10 @@ class ServiceProviderModel {
       "City": city,
       "PhoneNumber": phoneNumber,
       "Email": email,
-      if (whatsappNumber != null && whatsappNumber!.isNotEmpty)
-        "WhatsAppNumber": whatsappNumber!,
+      // WhatsAppNumber is required by API - use phoneNumber as fallback
+      "WhatsAppNumber": (whatsappNumber != null && whatsappNumber!.isNotEmpty)
+          ? whatsappNumber!
+          : phoneNumber,
       "Description": description,
     };
   }

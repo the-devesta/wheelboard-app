@@ -48,8 +48,10 @@ class UpdateServiceModel {
       'FullAddress': fullAddress,
       'City': city,
       'ContactNumber': contactNumber,
-      if (whatsappNumber != null && whatsappNumber!.isNotEmpty)
-        'WhatsappNumber': whatsappNumber!,
+      // WhatsappNumber is required by API - use contactNumber as fallback
+      'WhatsappNumber': (whatsappNumber != null && whatsappNumber!.isNotEmpty)
+          ? whatsappNumber!
+          : contactNumber,
       'Description': description,
       'IsFlatPrice': isFlatPrice.toString(),
       'Price': price.toString(),
