@@ -127,4 +127,42 @@ class ProfileService {
       );
     }
   }
+
+  /// Verify PAN Card KYC
+  /// This API is called when user wants to verify their PAN card
+  /// Required for professional users with type Technical or Helper
+  Future<Map<String, dynamic>> verifyPanKYC({
+    required String userId,
+    required String panNumber,
+  }) async {
+    final response = await HttpHelper.postData(
+      endpoint: API.verifyPanKYC,
+      headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
+      data: {'userId': userId, 'panNumber': panNumber},
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      // Parse the response
+      Map<String, dynamic> responseData = {};
+      if (response.body.isNotEmpty) {
+        try {
+          responseData = Map<String, dynamic>.from(
+            jsonDecode(response.body) as Map,
+          );
+        } catch (e) {
+          AppLogger.d('Error parsing response: $e');
+        }
+      }
+
+      return {
+        'success': true,
+        'message': 'PAN Card verified successfully',
+        'data': responseData,
+      };
+    } else {
+      throw Exception(
+        'Failed to verify PAN card (${response.statusCode}): ${response.body}',
+      );
+    }
+  }
 }

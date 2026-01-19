@@ -312,10 +312,28 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
 
   Widget _buildPricingSection(ServiceModel service) {
     final amount = service.amount;
-    final pricingOption = service.pricingOption ?? '';
+    final rawPricingOption = service.pricingOption ?? '';
     final hoursFrom = service.businessHoursFrom ?? '';
     final hoursTo = service.businessHoursTo ?? '';
     final daysOpen = service.daysOpen ?? '';
+
+    // Convert pricingOption to readable text (handle boolean strings)
+    String pricingOption = '';
+    if (rawPricingOption.isNotEmpty) {
+      final optionLower = rawPricingOption.toLowerCase();
+      if (optionLower == 'true' ||
+          optionLower == 'flat price' ||
+          optionLower == 'flat') {
+        pricingOption = 'Flat Price';
+      } else if (optionLower == 'false' ||
+          optionLower == 'per hour' ||
+          optionLower == 'hourly') {
+        pricingOption = 'Per Hour';
+      } else {
+        // Use as is if it's already readable (not true/false)
+        pricingOption = rawPricingOption;
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -346,15 +364,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               const Spacer(),
-              const Icon(
-                Icons.info_outline,
-                size: 18,
-                color: Color(0xFF00B894),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                pricingOption.isNotEmpty ? pricingOption : 'Pricing info N/A',
-              ),
+              if (pricingOption.isNotEmpty) ...[
+                const Icon(
+                  Icons.info_outline,
+                  size: 18,
+                  color: Color(0xFF00B894),
+                ),
+                const SizedBox(width: 4),
+                Text(pricingOption),
+              ],
             ],
           ),
           const SizedBox(height: 10),
