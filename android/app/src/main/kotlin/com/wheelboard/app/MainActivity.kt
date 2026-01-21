@@ -1,4 +1,4 @@
-package com.addonshareware.wheelboard
+package com.wheelboard.app
 
 import io.flutter.embedding.android.FlutterActivity
 
