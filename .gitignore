@@ -16,3 +16,5 @@ ios/Pods/
 .android/
 .idea/
 .vscode/
+.DS_Store
+.metadata
