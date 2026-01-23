@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:wheelboard/services/config.dart';
 
 class ApiConstants {
-  static const String baseUrl = 'https://wheelboardapi.addonshareware.com/';
+  static String baseUrl = AppConfig.baseUrl;
 }
 
 class MapsConstants {
