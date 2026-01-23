@@ -174,6 +174,13 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   }
 
   Future<void> _togglePublishStatus(String serviceId) async {
+    // Find current service to determine anticipated new state
+    final currentService = _services.firstWhere(
+      (s) => s.serviceId == serviceId,
+      orElse: () => _services.first,
+    );
+    final willBePublished = !currentService.isAvailable;
+
     setState(() {
       _isLoadingServices = true;
     });
@@ -192,10 +199,12 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
       );
 
       if (response.statusCode == 200) {
+        // Show toggle message based on new state
+        final statusText = willBePublished ? "Published" : "Unpublished";
         Get.snackbar(
           "Success",
-          "Service status updated",
-          backgroundColor: Colors.green,
+          "Service $statusText successfully",
+          backgroundColor: willBePublished ? Colors.green : Colors.orange,
           colorText: Colors.white,
         );
         await _fetchMyServices(); // Refresh list to get new status

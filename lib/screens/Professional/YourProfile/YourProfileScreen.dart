@@ -591,17 +591,15 @@ Widget _buildCompleteKyc() {
           },
         ),
 
-      // Show Aadhar for Technician/Helper
+      // Show PAN Card for Technician/Helper
       if (!isDriver)
         Builder(
           builder: (context) {
             return _buildKycItem(
-              'Aadhar Card',
+              'PAN Card',
               'Missing',
               Colors.red,
-              onTap: () {
-                SnackBarHelper.info('Aadhar verification coming soon');
-              },
+              onTap: () => _showPanCardDialog(context),
             );
           },
         ),
@@ -716,6 +714,7 @@ Widget _buildKycItem(
 }
 
 Widget _buildPlatformPreferences() {
+  final controller = Get.find<UserProfileController>();
   return _buildCard(
     title: 'Platform Preferences',
     children: [
@@ -760,16 +759,42 @@ Widget _buildPlatformPreferences() {
         ],
       ),
       const SizedBox(height: 24),
-      _buildToggleRow(Icons.sms, 'SMS Notifications', true),
+      Obx(
+        () => _buildToggleRow(
+          Icons.sms,
+          'SMS Notifications',
+          controller.smsNotifications.value,
+          controller.toggleSmsNotifications,
+        ),
+      ),
       const SizedBox(height: 24),
-      _buildToggleRow(Icons.email, 'Email Notifications', false),
+      Obx(
+        () => _buildToggleRow(
+          Icons.email,
+          'Email Notifications',
+          controller.emailNotifications.value,
+          controller.toggleEmailNotifications,
+        ),
+      ),
       const SizedBox(height: 24),
-      _buildToggleRow(Icons.message, 'WhatsApp Notifications', true),
+      Obx(
+        () => _buildToggleRow(
+          Icons.message,
+          'WhatsApp Notifications',
+          controller.whatsappNotifications.value,
+          controller.toggleWhatsappNotifications,
+        ),
+      ),
     ],
   );
 }
 
-Widget _buildToggleRow(IconData icon, String title, bool value) {
+Widget _buildToggleRow(
+  IconData icon,
+  String title,
+  bool value,
+  ValueChanged<bool> onChanged,
+) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
@@ -789,7 +814,7 @@ Widget _buildToggleRow(IconData icon, String title, bool value) {
       ),
       Switch(
         value: value,
-        onChanged: (_) {},
+        onChanged: onChanged,
         activeThumbColor: const Color(0xFF30DB5B),
       ),
     ],
@@ -1445,5 +1470,138 @@ Future<void> _verifyDrivingLicense(
   } catch (e) {
     AppLogger.d('Error verifying driving license: $e');
     SnackBarHelper.error('Failed to verify: ${e.toString()}');
+  }
+}
+
+/// Show PAN Card Verification Dialog
+/// For Technical and Helper professional types
+void _showPanCardDialog(BuildContext context) {
+  final panNumberController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  final controller = Get.find<UserProfileController>();
+
+  showDialog(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(
+              'Verify PAN Card',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: panNumberController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      labelText: 'PAN Card Number',
+                      hintText: 'Enter your PAN number (e.g., ABCDE1234F)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your PAN number';
+                      }
+                      // Basic PAN format validation: 5 letters + 4 digits + 1 letter
+                      final panRegex = RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$');
+                      if (!panRegex.hasMatch(value.toUpperCase())) {
+                        return 'Please enter a valid PAN number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'PAN format: ABCDE1234F',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.poppins(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    Navigator.of(dialogContext).pop();
+                    await _verifyPanCard(
+                      controller.userProfile.value?.userId ?? '',
+                      panNumberController.text.trim().toUpperCase(),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF36969),
+                ),
+                child: Text(
+                  'Verify',
+                  style: GoogleFonts.poppins(color: Colors.white),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+/// Verify PAN Card via API
+Future<void> _verifyPanCard(String userId, String panNumber) async {
+  try {
+    AppLogger.d(
+      '🔐 Starting PAN verification - userId: $userId, pan: $panNumber',
+    );
+
+    if (userId.isEmpty) {
+      SnackBarHelper.error('User ID not found. Please try again.');
+      return;
+    }
+
+    SnackBarHelper.info('Verifying PAN Card...');
+
+    final profileService = ProfileService();
+    final result = await profileService.verifyPanKYC(
+      userId: userId,
+      panNumber: panNumber,
+    );
+
+    if (result['success'] == true) {
+      SnackBarHelper.success(
+        result['message'] ?? 'PAN Card verified successfully!',
+      );
+      // Refresh profile to get updated KYC status
+      final controller = Get.find<UserProfileController>();
+      controller.fetchCurrentUserProfile();
+    } else {
+      SnackBarHelper.error('Verification failed');
+    }
+  } catch (e) {
+    AppLogger.d('Error verifying PAN card: $e');
+    // Extract clean error message
+    String errorMsg = e.toString();
+    if (errorMsg.contains('Exception:')) {
+      errorMsg = errorMsg.replaceAll('Exception:', '').trim();
+    }
+    SnackBarHelper.error(errorMsg);
   }
 }

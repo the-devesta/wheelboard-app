@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:wheelboard/utils/share_service.dart';
 import 'package:wheelboard/screens/CompanyTransport/notification_screen.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
@@ -494,12 +494,15 @@ class JobCard extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Share.share(
-                      "Check out this job on WheelBoard!\n\n"
-                      "${job.companyName ?? 'Company'} - ${job.role}\n"
-                      "Location: ${job.city}\n"
-                      "Salary: ₹${job.salary.toStringAsFixed(0)}\n\n"
-                      "Download WheelBoard to apply!",
+                    ShareService.shareJob(
+                      jobId: job.jobId,
+                      jobTitle: job.role,
+                      city: job.city,
+                      jobType: job.jobType,
+                      jobDuration: job.jobDuration,
+                      openings: job.openings,
+                      salary: job.salary.toInt(),
+                      description: job.description,
                     );
                   },
                   style: ElevatedButton.styleFrom(

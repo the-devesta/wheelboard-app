@@ -20,7 +20,7 @@ class ProfessionLogin extends StatelessWidget {
 
   final LoginController loginController = Get.put(LoginController());
   final TextEditingController phoneController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController otpController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +68,7 @@ class ProfessionLogin extends StatelessWidget {
                     const SizedBox(height: 12),
                     // Subtitle
                     Text(
-                      "Enter your Phone no. and password to log in",
+                      "Enter your Phone no. to receive an OTP",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -100,67 +100,84 @@ class ProfessionLogin extends StatelessWidget {
                           _buildDivider(context),
                           const SizedBox(height: 24),
 
-                          /// 📌 Phone Number
-                          _buildInputField(
-                            controller: phoneController,
-                            hintText: "Enter your phone number",
-                            keyboardType: TextInputType.phone,
-                          ),
-                          const SizedBox(height: 16),
-
-                          /// 📌 Password with Eye Toggle (Obx)
+                          /// 📌 Phone & OTP Input Section
                           Obx(
-                            () => _buildInputField(
-                              controller: passwordController,
-                              hintText: "Enter your password",
-                              obscureText:
-                                  loginController.obscurePassword.value,
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  loginController.obscurePassword.value
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                  color: const Color(0xFF6C7278),
-                                  size: 16,
+                            () => Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Phone Field (Read-only when OTP sent)
+                                _buildInputField(
+                                  controller: phoneController,
+                                  hintText: "Enter your phone number",
+                                  keyboardType: TextInputType.phone,
+                                  readOnly: loginController.isOTPSent.value,
+                                  prefixIcon: const Icon(
+                                    Icons.phone_android,
+                                    size: 20,
+                                    color: Color(0xFF6C7278),
+                                  ),
+                                  suffixIcon: loginController.isOTPSent.value
+                                      ? TextButton(
+                                          onPressed: () {
+                                            loginController.resetOTP();
+                                            otpController.clear();
+                                          },
+                                          child: const Text(
+                                            "Change",
+                                            style: TextStyle(
+                                              color: Color(0xFFF26262),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
                                 ),
-                                onPressed: () {
-                                  loginController.obscurePassword.value =
-                                      !loginController.obscurePassword.value;
-                                },
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                              ),
+
+                                if (loginController.isOTPSent.value) ...[
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    "Enter 6-digit OTP",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF535353),
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildInputField(
+                                    controller: otpController,
+                                    hintText: "Enter OTP",
+                                    keyboardType: TextInputType.number,
+                                    prefixIcon: const Icon(
+                                      Icons.lock_outline,
+                                      size: 20,
+                                      color: Color(0xFF6C7278),
+                                    ),
+                                    maxLength: 6,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      onPressed: () => loginController.sendOTP(
+                                        phoneController.text,
+                                      ),
+                                      child: const Text(
+                                        "Resend OTP",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF6C7278),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 24),
+                              ],
                             ),
                           ),
-
-                          const SizedBox(height: 16),
-
-                          /// 📌 Forgot Password
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                Get.to(ForgotPasswordScreen());
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                "Forgot Password ?",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: const Color(0xFFF26262),
-                                  height: 1.4,
-                                  letterSpacing: -0.12,
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
 
                           /// 📌 Login Button
                           _buildLoginButton(),
@@ -215,20 +232,25 @@ class ProfessionLogin extends StatelessWidget {
                           Row(
                             children: [
                               Expanded(
-                                child: _buildTestLoginButton("Transport", () {
-                                  phoneController.text = "9304514788";
-                                  passwordController.text = "qqqqqq";
-                                  _performLogin();
-                                }),
+                                child: _buildTestLoginButton(
+                                  "Transport",
+                                  () async {
+                                    phoneController.text = "9304514788";
+                                    await loginController.sendOTP(
+                                      phoneController.text,
+                                    );
+                                  },
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: _buildTestLoginButton(
                                   "Professional",
-                                  () {
+                                  () async {
                                     phoneController.text = "9304514789";
-                                    passwordController.text = "qqqqqq";
-                                    _performLogin();
+                                    await loginController.sendOTP(
+                                      phoneController.text,
+                                    );
                                   },
                                 ),
                               ),
@@ -236,10 +258,11 @@ class ProfessionLogin extends StatelessWidget {
                               Expanded(
                                 child: _buildTestLoginButton(
                                   "Service Provider",
-                                  () {
+                                  () async {
                                     phoneController.text = "9304593045";
-                                    passwordController.text = "qqqqqq";
-                                    _performLogin();
+                                    await loginController.sendOTP(
+                                      phoneController.text,
+                                    );
                                   },
                                 ),
                               ),
@@ -290,17 +313,26 @@ class ProfessionLogin extends StatelessWidget {
       SnackBarHelper.error("Please enter phone number");
       return;
     }
-    if (passwordController.text.trim().isEmpty) {
-      SnackBarHelper.error("Please enter password");
-      return;
-    }
+
     if (loginController.isLoading.value) {
       return;
     }
 
-    final responseData = await loginController.login(
+    if (!loginController.isOTPSent.value) {
+      // Step 1: Send OTP
+      await loginController.sendOTP(phoneController.text.trim());
+      return;
+    }
+
+    // Step 2: Login with OTP
+    if (otpController.text.trim().isEmpty) {
+      SnackBarHelper.error("Please enter OTP");
+      return;
+    }
+
+    final responseData = await loginController.loginWithOTP(
       phoneController.text.trim(),
-      passwordController.text.trim(),
+      otpController.text.trim(),
     );
 
     if (responseData != null && responseData.isNotEmpty) {
@@ -326,9 +358,7 @@ class ProfessionLogin extends StatelessWidget {
       );
 
       if (loginSuccess) {
-        // Note: Success toast is already shown by AuthService.login()
         if (businessCategory == "Transport" && !isProfileComplete) {
-          // ✅ Get registration data from SessionManager
           final sessionManager = SessionManager();
           final registrationData = {
             "userId": userId,
@@ -358,8 +388,6 @@ class ProfessionLogin extends StatelessWidget {
       } else {
         SnackBarHelper.error("Login failed: Could not save session");
       }
-    } else {
-      SnackBarHelper.error("Invalid credentials. Please try again.");
     }
   }
 
@@ -425,24 +453,29 @@ class ProfessionLogin extends StatelessWidget {
     required TextEditingController controller,
     required String hintText,
     bool obscureText = false,
+    bool readOnly = false,
     TextInputType keyboardType = TextInputType.text,
+    Widget? prefixIcon,
     Widget? suffixIcon,
+    int? maxLength,
   }) {
     return Container(
-      height: 46,
+      height: 52,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: readOnly ? const Color(0xFFF9F9F9) : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFEDF1F3)),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
+        readOnly: readOnly,
         keyboardType: keyboardType,
+        maxLength: maxLength,
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF1A1C1E),
+          color: readOnly ? Colors.grey : const Color(0xFF1A1C1E),
           height: 1.4,
           letterSpacing: -0.14,
           fontFamily: 'Inter',
@@ -452,18 +485,20 @@ class ProfessionLogin extends StatelessWidget {
           hintStyle: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF1A1C1E),
+            color: const Color(0xFFADAEBC),
             height: 1.4,
             letterSpacing: -0.14,
             fontFamily: 'Inter',
           ),
+          counterText: "",
+          prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
+          contentPadding: EdgeInsets.symmetric(
             horizontal: 14,
-            vertical: 12,
+            vertical: (prefixIcon != null || suffixIcon != null) ? 14 : 12,
           ),
         ),
       ),
@@ -497,7 +532,9 @@ class ProfessionLogin extends StatelessWidget {
                   ),
                 )
               : Text(
-                  "Log In",
+                  loginController.isOTPSent.value
+                      ? "Verify & Log In"
+                      : "Send OTP",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,

@@ -14,6 +14,8 @@ class API {
   static const String companySignUp = 'api/User/company_signup';
   static const String professionalSignUp = 'api/User/professional_signup';
   static const String login = 'api/User/login';
+  static const String sendOtp = 'api/User/send-otp';
+  static const String loginWithOtp = 'api/User/login-with-otp';
   static const String saveReferal = 'api/User/save-referral';
 
   static const String completeTransport = 'api/User/complete-transport';
@@ -148,6 +150,7 @@ class API {
 
   // KYC Verification APIs
   static const String verifyDrivingLicence = 'api/User/VerifyDrivingLicenceKYC';
+  static const String verifyPanKYC = 'api/User/VerifyPanKYC';
 
   // Earnings Dashboard API
   static const String earningsDashboard = 'api/Trip/earnings-dashboard';

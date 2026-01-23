@@ -127,4 +127,63 @@ class ProfileService {
       );
     }
   }
+
+  /// Verify PAN Card KYC
+  /// This API is called when user wants to verify their PAN card
+  /// Required for professional users with type Technical or Helper
+  Future<Map<String, dynamic>> verifyPanKYC({
+    required String userId,
+    required String panNumber,
+  }) async {
+    AppLogger.d('🔐 PAN KYC Request - userId: $userId, panNumber: $panNumber');
+
+    final response = await HttpHelper.postData(
+      endpoint: API.verifyPanKYC,
+      headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
+      data: {'panNumber': panNumber, 'userId': userId},
+    );
+
+    AppLogger.d('🔐 PAN KYC Response Status: ${response.statusCode}');
+    AppLogger.d('🔐 PAN KYC Response Body: ${response.body}');
+
+    // Parse response body
+    Map<String, dynamic> responseData = {};
+    if (response.body.isNotEmpty) {
+      try {
+        responseData = Map<String, dynamic>.from(
+          jsonDecode(response.body) as Map,
+        );
+      } catch (e) {
+        AppLogger.d('Error parsing response: $e');
+      }
+    }
+
+    // Check API response code (inside body) or HTTP status
+    final apiCode = responseData['code'];
+    final message = responseData['message'] ?? '';
+
+    // Success if HTTP 200 OR if code in body is 200
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      // Even if HTTP is 200, check if API returned error code
+      if (apiCode != null && apiCode != 200) {
+        throw Exception(
+          message.isNotEmpty ? message : 'PAN verification failed',
+        );
+      }
+
+      return {
+        'success': true,
+        'message': message.isNotEmpty
+            ? message
+            : 'PAN Card verified successfully',
+        'data': responseData['result'] ?? responseData,
+      };
+    } else {
+      // Handle error response
+      final errorMessage = message.isNotEmpty
+          ? message
+          : 'Failed to verify PAN card (${response.statusCode})';
+      throw Exception(errorMessage);
+    }
+  }
 }

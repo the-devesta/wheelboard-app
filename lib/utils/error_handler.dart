@@ -58,11 +58,23 @@ class ErrorHandler {
       return _formatMessage(error.toString());
     }
 
-    // Check for validation errors (array of errors)
+    // Check for validation errors
     if (errorData.containsKey('errors') && errorData['errors'] != null) {
       final errors = errorData['errors'];
+
+      // Handle errors as a List
       if (errors is List && errors.isNotEmpty) {
         return _formatMessage(errors.first.toString());
+      }
+
+      // Handle errors as a Map (e.g., {"FieldName": ["Error message"]})
+      if (errors is Map && errors.isNotEmpty) {
+        final firstKey = errors.keys.first;
+        final firstError = errors[firstKey];
+        if (firstError is List && firstError.isNotEmpty) {
+          return _formatMessage(firstError.first.toString());
+        }
+        return _formatMessage(firstError.toString());
       }
     }
 

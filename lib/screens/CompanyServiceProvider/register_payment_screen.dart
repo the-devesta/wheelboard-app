@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wheelboard/controllers/ServiceProvider/service_earnings_controller.dart';
 import 'package:intl/intl.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class RegisterPaymentScreen extends StatefulWidget {
   const RegisterPaymentScreen({super.key});
@@ -27,11 +28,17 @@ class _RegisterPaymentScreenState extends State<RegisterPaymentScreen> {
     super.initState();
     _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
 
-    // Default to first service if available
-    final data = controller.dashboardData.value;
-    if (data != null && data.serviceBreakdown.isNotEmpty) {
-      _selectedServiceId = data.serviceBreakdown.first.serviceId;
-    }
+    // Refresh services when screen opens
+    controller.fetchUserServices();
+
+    // Listen for userServices changes to set default selection
+    ever(controller.userServices, (services) {
+      if (services.isNotEmpty && _selectedServiceId == null) {
+        setState(() {
+          _selectedServiceId = services.first['serviceId'];
+        });
+      }
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -258,66 +265,96 @@ class _RegisterPaymentScreenState extends State<RegisterPaymentScreen> {
   }
 
   Widget _buildServiceDropdown() {
-    final data = controller.dashboardData.value;
-    if (data == null || data.serviceBreakdown.isEmpty) {
-      return const Text("No services available");
-    }
+    return Obx(() {
+      final services = controller.userServices;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD1D5DB)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedServiceId,
-          isExpanded: true,
-          hint: const Text(
-            "Select service",
-            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
-          ),
-          onChanged: (String? newValue) {
-            setState(() {
-              _selectedServiceId = newValue;
-            });
-          },
-          items: data.serviceBreakdown.map((service) {
-            return DropdownMenuItem<String>(
-              value: service.serviceId,
-              child: Text(
-                service.serviceTitle,
-                style: const TextStyle(fontSize: 14),
+      if (services.isEmpty) {
+        // Fallback to serviceBreakdown if userServices is empty
+        final data = controller.dashboardData.value;
+        if (data != null && data.serviceBreakdown.isNotEmpty) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFD1D5DB)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedServiceId,
+                isExpanded: true,
+                hint: const Text(
+                  "Select service",
+                  style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                ),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedServiceId = newValue;
+                  });
+                },
+                items: data.serviceBreakdown.map((service) {
+                  return DropdownMenuItem<String>(
+                    value: service.serviceId,
+                    child: Text(
+                      service.serviceTitle,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  );
+                }).toList(),
               ),
-            );
-          }).toList(),
+            ),
+          );
+        }
+        return const Text("No services available. Please add a service first.");
+      }
+
+      // Use userServices from API
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFD1D5DB)),
         ),
-      ),
-    );
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedServiceId,
+            isExpanded: true,
+            hint: const Text(
+              "Select service",
+              style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+            ),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedServiceId = newValue;
+              });
+            },
+            items: services.map((service) {
+              return DropdownMenuItem<String>(
+                value: service['serviceId'],
+                child: Text(
+                  service['serviceTitle'] ?? 'Service',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      );
+    });
   }
 
   Future<void> _handleSave() async {
     if (_purposeController.text.isEmpty ||
         _amountController.text.isEmpty ||
         _selectedServiceId == null) {
-      Get.snackbar(
-        "Required Fields",
-        "Please fill in all mandatory fields.",
-        backgroundColor: Colors.red.withOpacity(0.1),
-        colorText: Colors.red,
-      );
+      SnackBarHelper.error('Please fill in all mandatory fields.');
       return;
     }
 
     final double amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
-      Get.snackbar(
-        "Invalid Amount",
-        "Please enter a valid payment amount.",
-        backgroundColor: Colors.red.withOpacity(0.1),
-        colorText: Colors.red,
-      );
+      SnackBarHelper.error('Please enter a valid payment amount.');
       return;
     }
 
@@ -328,8 +365,14 @@ class _RegisterPaymentScreenState extends State<RegisterPaymentScreen> {
       notes: _notesController.text,
     );
 
-    if (success) {
-      Get.back(); // Return to Earnings screen
+    if (success && mounted) {
+      // Delay to let user see the success snackbar
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Navigate back using Navigator.pop (more reliable)
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 }

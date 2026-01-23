@@ -12,6 +12,16 @@ class UserProfileController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
 
+  // Preference Toggles (Local State)
+  var smsNotifications = true.obs;
+  var emailNotifications = false.obs;
+  var whatsappNotifications = true.obs;
+
+  void toggleSmsNotifications(bool value) => smsNotifications.value = value;
+  void toggleEmailNotifications(bool value) => emailNotifications.value = value;
+  void toggleWhatsappNotifications(bool value) =>
+      whatsappNotifications.value = value;
+
   /// Fetch user profile by userId
   Future<bool> fetchUserProfile(String userId) async {
     try {

@@ -179,7 +179,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
   }
 
   Widget _buildFilterRow() {
-    const filters = ['ONBOARD', 'HIRED', 'FAVOURITE'];
+    const filters = ['ONBOARD', 'HIRED'];
 
     return Obx(() {
       final selectedFilter = controller.selectedFilter.value;
@@ -412,14 +412,6 @@ class _ProfessionalCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: onToggleFavorite,
-                    child: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: const Color(0xFFE83B4F),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -429,10 +421,6 @@ class _ProfessionalCard extends StatelessWidget {
                     label: status == 'ONBOARD' ? 'Onboard' : status,
                     isSelected: true,
                   ),
-                  if (isFavorite && status != 'FAVOURITE') ...[
-                    const SizedBox(width: 8),
-                    const _StatusChip(label: 'FAVOURITE', isSelected: false),
-                  ],
                 ],
               ),
             ],

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/add_new_trip_model.dart';
 import 'edit_trip_screen.dart';
+import '../../controllers/trip_expenses_controller.dart';
 
 class TripDetailsScreen extends StatelessWidget {
   final Trip trip;
@@ -171,6 +172,56 @@ class TripDetailsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
+
+                    // Delete Trip Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // Confirm Dialog
+                          Get.defaultDialog(
+                            title: "Delete Trip",
+                            middleText:
+                                "Are you sure you want to delete this trip?",
+                            textConfirm: "Delete",
+                            textCancel: "Cancel",
+                            confirmTextColor: Colors.white,
+                            buttonColor: Colors.red,
+                            onConfirm: () async {
+                              Get.back(); // close dialog
+                              final controller = Get.put(
+                                TripExpensesController(),
+                              );
+                              bool success = await controller.deleteTrip(
+                                trip.tripId,
+                              );
+                              if (success) {
+                                Get.back(); // go back to list
+                              }
+                            },
+                          );
+                        },
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        label: const Text(
+                          "Delete Trip",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     // Edit Button
                     SizedBox(
                       width: double.infinity,
@@ -268,7 +319,6 @@ class TripDetailsScreen extends StatelessWidget {
 📍 To: $deliveryShort
 📅 Date: $dateStr
 ⏰ Time: ${trip.pickupTime.isNotEmpty ? trip.pickupTime : 'Not specified'}
-💰 Pay Range: ${trip.payRange.isNotEmpty ? trip.payRange : 'Negotiable'}
 🚗 Driver: ${trip.driverName ?? 'Not assigned'}
 
 🔗 View on Wheelboard: https://wheelboard.in/trips/${trip.tripId}

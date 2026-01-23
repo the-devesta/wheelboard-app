@@ -5,7 +5,7 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'job_form_screen.dart';
 import 'job_application_screen.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:wheelboard/utils/share_service.dart';
 import '../../controllers/job_controller.dart';
 import '../../models/job_model.dart';
 import '../../widgets/custom_loader.dart';
@@ -315,13 +315,15 @@ class JobCard extends StatelessWidget {
                       // Share Button
                       GestureDetector(
                         onTap: () {
-                          Share.share(
-                            "Job: ${job.role}\n"
-                            "Duration: ${job.jobDuration}\n"
-                            "Openings: ${job.openings}\n"
-                            "Salary: ₹${job.salary}\n"
-                            "City: ${job.city}\n"
-                            "Description: ${job.description}",
+                          ShareService.shareJob(
+                            jobId: job.jobId,
+                            jobTitle: job.role,
+                            city: job.city,
+                            jobType: job.jobType,
+                            jobDuration: job.jobDuration,
+                            openings: job.openings,
+                            salary: job.salary,
+                            description: job.description,
                           );
                         },
                         child: Container(

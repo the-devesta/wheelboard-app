@@ -4,8 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// Event Card Widget
 /// Displays trip/event information with route and status
 class EventCardWidget extends StatelessWidget {
-  final String fromLocation;
-  final String toLocation;
+  final String eventName;
   final String time;
   final String vehicleNumber;
   final String status;
@@ -13,8 +12,7 @@ class EventCardWidget extends StatelessWidget {
 
   const EventCardWidget({
     super.key,
-    required this.fromLocation,
-    required this.toLocation,
+    required this.eventName,
     required this.time,
     required this.vehicleNumber,
     required this.status,
@@ -33,30 +31,13 @@ class EventCardWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Route
+          // Event Name
           Row(
             children: [
               const Icon(Icons.location_on, size: 16, color: Color(0xFFF36969)),
               const SizedBox(width: 4),
               Text(
-                fromLocation,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFF36969),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.arrow_forward,
-                size: 16,
-                color: Color(0xFFF36969),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.location_on, size: 16, color: Color(0xFFF36969)),
-              const SizedBox(width: 4),
-              Text(
-                toLocation,
+                eventName,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

@@ -215,12 +215,17 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
     String yLabelPrefix = '';
     double maxValue = 10;
 
+    // Determine color and suffix based on selection
+    Color chartColor;
+    String yLabelSuffix = '';
+
     if (_selectedChartType == 'Trips') {
       dataPoints = weeklyTrend.map((e) => (e.trips as num).toDouble()).toList();
       maxValue = dataPoints.fold(
         5.0,
         (prev, element) => element > prev ? element : prev,
       );
+      chartColor = const Color(0xFF375DFB); // Blue for Trips
     } else if (_selectedChartType == 'Earnings') {
       dataPoints = weeklyTrend
           .map((e) => (e.earnings as num).toDouble())
@@ -230,14 +235,17 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
         100.0,
         (prev, element) => element > prev ? element : prev,
       );
+      chartColor = const Color(0xFF27AE60); // Green for Earnings
     } else {
       dataPoints = weeklyTrend
           .map((e) => (e.distance as num).toDouble())
           .toList();
+      yLabelSuffix = 'km';
       maxValue = dataPoints.fold(
         10.0,
         (prev, element) => element > prev ? element : prev,
       );
+      chartColor = const Color(0xFFF36969); // Red for Distance
     }
 
     // Round up maxValue to nearest "pretty" number
@@ -299,7 +307,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                   children: [
                     // Y-Axis Labels
                     SizedBox(
-                      width: 35,
+                      width: 40,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: List.generate(6, (index) {
@@ -308,7 +316,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                               ? '${(val / 1000).toStringAsFixed(1)}k'
                               : val.toStringAsFixed(0);
                           return Text(
-                            '$yLabelPrefix$label',
+                            '$yLabelPrefix$label$yLabelSuffix',
                             style: GoogleFonts.inter(
                               fontSize: 9,
                               color: Colors.grey,
@@ -345,6 +353,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                             painter: TripChartPainter(
                               dataPoints: dataPoints,
                               maxValue: maxValue,
+                              color: chartColor,
                             ),
                           ),
                         ],
@@ -356,7 +365,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
               const SizedBox(height: 8),
               // X-Axis Labels (Days)
               Padding(
-                padding: const EdgeInsets.only(left: 43),
+                padding: const EdgeInsets.only(left: 48),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: weeklyTrend
@@ -381,16 +390,26 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
 
   Widget _buildChartToggleButton(String label) {
     bool isSelected = _selectedChartType == label;
+
+    // Determine button color based on label (active state)
+    // Trips: Blue, Earnings: Green, Distance: Red
+    Color activeColor;
+    if (label == 'Trips') {
+      activeColor = const Color(0xFF375DFB);
+    } else if (label == 'Earnings') {
+      activeColor = const Color(0xFF27AE60);
+    } else {
+      activeColor = const Color(0xFFF36969);
+    }
+
     return GestureDetector(
       onTap: () => setState(() => _selectedChartType = label),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF36969) : Colors.white,
+          color: isSelected ? activeColor : Colors.white,
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFFF36969)
-                : const Color(0xFFE0E0E0),
+            color: isSelected ? activeColor : const Color(0xFFE0E0E0),
           ),
           borderRadius: BorderRadius.circular(20),
         ),
@@ -586,15 +605,20 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
 class TripChartPainter extends CustomPainter {
   final List<double> dataPoints;
   final double maxValue;
+  final Color color;
 
-  TripChartPainter({required this.dataPoints, required this.maxValue});
+  TripChartPainter({
+    required this.dataPoints,
+    required this.maxValue,
+    required this.color,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (dataPoints.isEmpty) return;
 
     final paint = Paint()
-      ..color = const Color(0xFFF25C5C)
+      ..color = color
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -603,10 +627,7 @@ class TripChartPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFFF25C5C).withOpacity(0.3),
-          const Color(0xFFF25C5C).withOpacity(0.01),
-        ],
+        colors: [color.withOpacity(0.3), color.withOpacity(0.01)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 

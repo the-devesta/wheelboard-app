@@ -39,6 +39,7 @@ class TripDashboardController extends GetxController {
       );
 
       if (response.statusCode == 200) {
+        AppLogger.d("📊 Dashboard Data: ${response.body}"); // Log raw data
         final Map<String, dynamic> data = jsonDecode(response.body);
         dashboardData.value = TripDashboardModel.fromJson(data);
         AppLogger.d("✅ Trip dashboard data loaded successfully");

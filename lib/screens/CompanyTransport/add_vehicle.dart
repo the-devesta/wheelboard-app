@@ -182,6 +182,32 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   }
 
   Future<void> _submitVehicle() async {
+    // Client-side validation
+    if (_vehicleNumberController.text.trim().isEmpty) {
+      SnackBarHelper.warning("Please enter vehicle number");
+      return;
+    }
+    if (_vehicleModelController.text.trim().isEmpty) {
+      SnackBarHelper.warning("Please enter vehicle model");
+      return;
+    }
+    if (_manufacturingYearController.text.trim().isEmpty) {
+      SnackBarHelper.warning("Please enter manufacturing year");
+      return;
+    }
+    if (_vehicleType == null) {
+      SnackBarHelper.warning("Please select vehicle type");
+      return;
+    }
+    if (_descriptionController.text.trim().isEmpty) {
+      SnackBarHelper.warning("Please enter description");
+      return;
+    }
+    if (!_isDeclarationAccepted) {
+      SnackBarHelper.warning("Please accept the declaration");
+      return;
+    }
+
     // Convert PlatformFile → File (only for mobile/desktop, not web)
     final sessionManager = SessionManager();
     final token = await sessionManager.getString("authToken") ?? "";
@@ -191,6 +217,12 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       for (final p in _pickedImages) {
         if (p.path != null) files.add(File(p.path!));
       }
+    }
+
+    // Backend requires at least one image usually
+    if (files.isEmpty && !widget.isEditMode) {
+      SnackBarHelper.warning("Please upload at least one vehicle image");
+      return;
     }
 
     // Build model

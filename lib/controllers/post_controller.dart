@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../apihelperclass/api_helper.dart';
 import '../utils/constants.dart';
+import '../utils/error_handler.dart';
 import '../services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import '../utils/app_logger.dart';
@@ -15,6 +17,12 @@ class PostController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _initWithAuth();
+  }
+
+  Future<void> _initWithAuth() async {
+    // Ensure auth state is fresh (fixes empty userType issue)
+    await AuthService.to.refreshLoginStatus();
     fetchUserPosts();
   }
 
@@ -23,7 +31,6 @@ class PostController extends GetxController {
     required String content,
     required String category,
     List<File>? images,
-    String? partnerId,
   }) async {
     try {
       isCreatingPost.value = true;
@@ -37,72 +44,63 @@ class PostController extends GetxController {
         return false;
       }
 
-      // Prepare fields
-      Map<String, String?> fields = {
+      // Prepare fields - only send what Swagger shows (UserId, Content, Category, Images)
+      Map<String, String> fields = {
         'UserId': userId,
         'Content': content,
         'Category': category,
-        'CreatedBy': userId,
-        'PartnerId': partnerId ?? '0',
       };
 
-      // If no images, create post without multipart
-      if (images == null || images.isEmpty) {
-        // Create post without images using regular POST
-        final response = await HttpHelper.postData(
-          endpoint: API.createPost,
-          data: {
-            'UserId': userId,
-            'Content': content,
-            'Category': category,
-            'Images': '', // Empty string for no images
-            'CreatedBy': userId,
-            'PartnerId': partnerId ?? '0',
-          },
-          headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
-        );
+      // Always use multipart/form-data as per Swagger
+      final streamedResponse = await HttpHelper.uploadMultipart(
+        endpoint: API.createPost,
+        fields: fields,
+        files: images ?? [], // Empty list if no images
+        fieldKey: 'Images', // Field name for images
+        headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
+      );
 
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          if (data['message'] != null &&
-              data['message'].contains('successfully')) {
-            Get.snackbar("Success", "Post created successfully!");
-            await fetchUserPosts(); // Refresh posts
-            return true;
-          }
+      final response = await http.Response.fromStream(streamedResponse);
+
+      AppLogger.d("📝 Post creation response status: ${response.statusCode}");
+      AppLogger.d("📝 Post creation response body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        if (data['success'] == true ||
+            (data['message'] != null &&
+                data['message'].toString().toLowerCase().contains('success'))) {
+          Get.snackbar(
+            "Success",
+            "Post created successfully!",
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+          await fetchUserPosts(); // Refresh posts
+          return true;
         }
-        Get.snackbar("Error", "Failed to create post: ${response.statusCode}");
-        return false;
-      } else {
-        // Create post with images using multipart
-        final streamedResponse = await HttpHelper.uploadMultipart(
-          endpoint: API.createPost,
-          fields: fields,
-          files: images,
-          fieldKey: 'Images', // Field name for images
-          headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
-        );
-
-        final response = await http.Response.fromStream(streamedResponse);
-
-        AppLogger.d("📝 Post creation response status: ${response.statusCode}");
-        AppLogger.d("📝 Post creation response body: ${response.body}");
-
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          if (data['message'] != null &&
-              data['message'].contains('successfully')) {
-            Get.snackbar("Success", "Post created successfully!");
-            await fetchUserPosts(); // Refresh posts
-            return true;
-          }
-        }
-        Get.snackbar("Error", "Failed to create post: ${response.statusCode}");
-        return false;
       }
+      // Use ErrorHandler for proper error message
+      final errorMsg = ErrorHandler.parseError(
+        response.body,
+        statusCode: response.statusCode,
+      );
+      Get.snackbar(
+        "Error",
+        errorMsg,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
     } catch (e) {
       AppLogger.d("❌ Error creating post: $e");
-      Get.snackbar("Error", "Failed to create post: ${e.toString()}");
+      final errorMsg = ErrorHandler.handleNetworkError(e);
+      Get.snackbar(
+        "Error",
+        errorMsg,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
     } finally {
       isCreatingPost.value = false;
