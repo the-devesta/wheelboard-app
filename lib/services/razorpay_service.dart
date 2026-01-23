@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:wheelboard/utils/constants.dart';
 import '../utils/app_logger.dart';
 
 typedef PaymentSuccessHandler = void Function(PaymentSuccessResponse response);
@@ -65,8 +66,7 @@ class RazorpayService {
       'prefill': {'contact': prefillContact, 'email': prefillEmail},
       'notes': notes ?? {},
       'theme': {'color': '#F36969'},
-      'image':
-          image ?? 'https://wheelboardapi.addonshareware.com/images/logo.png',
+      'image': image ?? '${ApiConstants.baseUrl}images/logo.png',
     };
 
     if (_razorpay == null) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:wheelboard/services/config.dart';
 import 'dart:io';
 
 import './services/auth_service.dart';
@@ -8,27 +9,28 @@ import 'screens/auth/onboarding_screen.dart';
 import 'widgets/custom_loader.dart';
 import 'utils/app_logger.dart';
 
-class MyHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        // Only allow specific domains for development/testing
-        // In production, this should be more restrictive
-        if (host == 'wheelboardapi.addonshareware.com' ||
-            host == 'localhost' ||
-            host == '10.0.2.2' ||
-            host == '127.0.0.1') {
-          return true;
-        }
-        return false; // Reject certificates for other domains
-      };
-  }
-}
+// class MyHttpOverrides extends HttpOverrides {
+// @override
+// HttpClient createHttpClient(SecurityContext? context) {
+//   return super.createHttpClient(context)
+//     ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+//       // Only allow specific domains for development/testing
+//       // In production, this should be more restrictive
+//       if (host == 'wheelboardapi.addonshareware.com' ||
+//           host == 'localhost' ||
+//           host == '10.0.2.2' ||
+//           host == '127.0.0.1') {
+//         return true;
+//       }
+//       return false; // Reject certificates for other domains
+//     };
+// }
+// }
 
 void main() async {
-  HttpOverrides.global = MyHttpOverrides();
-
+  // HttpOverrides.global = MyHttpOverrides();
+  // Set the environment here: change to Environment.testing for test server
+  AppConfig.currentEnvironment = Environment.production;
   // Initialize GetX services
   Get.put(AuthService());
 

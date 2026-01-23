@@ -58,7 +58,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 driver.driverImagePath!.isNotEmpty) {
               final imagePath = driver.driverImagePath!.trim();
               if (imagePath.isNotEmpty &&
-                  imagePath != 'https://wheelboardapi.addonshareware.com/') {
+                  imagePath != '${ApiConstants.baseUrl}') {
                 driverImageUrl = imagePath.startsWith('http')
                     ? imagePath
                     : ApiConstants.baseUrl + imagePath;
