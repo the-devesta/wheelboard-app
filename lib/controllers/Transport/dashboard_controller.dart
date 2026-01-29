@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:get/get.dart';
-import '../apihelperclass/api_helper.dart';
-import '../models/dashboard_model.dart';
-import '../utils/constants.dart';
-import '../services/auth_service.dart';
-import '../widgets/custom_snackbar.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../models/dashboard_model.dart';
+import '../../utils/constants.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class DashboardController extends GetxController {
   final isLoading = false.obs;

@@ -30,22 +30,40 @@ class _SOSScreenState extends State<SOSScreen>
     super.dispose();
   }
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
+  Future<void> _triggerSOS() async {
+    if (_isActivated) {
+      setState(() => _isActivated = false);
+      _controller.duration = const Duration(seconds: 2);
+      _controller.repeat();
+      return;
+    }
+
     setState(() => _isActivated = true);
+    _controller.duration = const Duration(milliseconds: 500); // Faster pulse
+    _controller.repeat();
 
-    // Simulate "Activation" delay/effect before calling
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Show feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          '🚨 EMERGENCY SOS ACTIVATED! Banners and Alerts sent to all contacts.',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
 
+  Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
     } else {
       debugPrint('Could not launch $launchUri');
-    }
-
-    // Reset state after returning (optional)
-    if (mounted) {
-      setState(() => _isActivated = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch dialer for $phoneNumber')),
+      );
     }
   }
 
@@ -97,46 +115,61 @@ class _SOSScreenState extends State<SOSScreen>
             const SizedBox(height: 24),
 
             // Emergency Alert Section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: _isActivated
-                    ? const Color(0xFFFFEBEE)
-                    : const Color(0xFFFFF5F5),
-                borderRadius: BorderRadius.circular(20),
-                border: _isActivated
-                    ? Border.all(color: Colors.red, width: 2)
-                    : null,
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    _isActivated ? 'SOS ACTIVATED' : 'Emergency Alert',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: _isActivated
-                          ? Colors.red
-                          : const Color(0xFF222B45),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                // Determine card color: blinking if activated, static light red if not
+                Color cardColor = const Color(0xFFFFF5F5);
+                if (_isActivated) {
+                  cardColor = _controller.value > 0.5
+                      ? const Color(0xFFFFEBEE)
+                      : const Color(0xFFFFCDD2);
+                }
 
-                  // Animated SOS Button
-                  SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: GestureDetector(
-                      onTap: () => _makePhoneCall('112'),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Ripple Effect 1
-                          AnimatedBuilder(
-                            animation: _controller,
-                            builder: (context, child) {
-                              return Container(
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(20),
+                    border: _isActivated
+                        ? Border.all(color: Colors.red, width: 3)
+                        : null,
+                    boxShadow: _isActivated
+                        ? [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.3),
+                              blurRadius: 15,
+                              spreadRadius: 5,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        _isActivated ? 'SOS ACTIVATED' : 'Emergency Alert',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: _isActivated
+                              ? Colors.red
+                              : const Color(0xFF222B45),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Animated SOS Button
+                      SizedBox(
+                        width: 200,
+                        height: 200,
+                        child: GestureDetector(
+                          onTap: _triggerSOS,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Ripple Effect 1
+                              Container(
                                 width: 140 + (_controller.value * 40),
                                 height: 140 + (_controller.value * 40),
                                 decoration: BoxDecoration(
@@ -145,95 +178,95 @@ class _SOSScreenState extends State<SOSScreen>
                                     0xFFE53935,
                                   ).withOpacity(0.3 * (1 - _controller.value)),
                                 ),
-                              );
-                            },
-                          ),
-                          // Ripple Effect 2 (Delayed)
-                          AnimatedBuilder(
-                            animation: _controller,
-                            builder: (context, child) {
-                              double value = (_controller.value + 0.5) % 1.0;
-                              return Container(
-                                width: 140 + (value * 40),
-                                height: 140 + (value * 40),
+                              ),
+                              // Ripple Effect 2 (Delayed)
+                              Builder(
+                                builder: (context) {
+                                  double value =
+                                      (_controller.value + 0.5) % 1.0;
+                                  return Container(
+                                    width: 140 + (value * 40),
+                                    height: 140 + (value * 40),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(
+                                        0xFFE53935,
+                                      ).withOpacity(0.3 * (1 - value)),
+                                    ),
+                                  );
+                                },
+                              ),
+                              // Main Button
+                              Container(
+                                width: 140,
+                                height: 140,
                                 decoration: BoxDecoration(
+                                  color: const Color(0xFFE53935),
                                   shape: BoxShape.circle,
-                                  color: const Color(
-                                    0xFFE53935,
-                                  ).withOpacity(0.3 * (1 - value)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFFE53935,
+                                      ).withOpacity(0.5),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
                                 ),
-                              );
-                            },
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _isActivated
+                                          ? Icons.notifications_active
+                                          : Icons.warning_amber_rounded,
+                                      color: Colors.white,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'SOS',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          // Main Button
-                          Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE53935),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFFE53935,
-                                  ).withOpacity(0.5),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _isActivated
-                                      ? Icons.notifications_active
-                                      : Icons.warning_amber_rounded,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'SOS',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 32),
-                  Text(
-                    _isActivated
-                        ? 'Calling Emergency Services...'
-                        : 'Tap to activate emergency alert',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: _isActivated
-                          ? Colors.red
-                          : const Color(0xFF222B45),
-                    ),
+                      const SizedBox(height: 32),
+                      Text(
+                        _isActivated
+                            ? 'Calling Emergency Services...'
+                            : 'Tap to activate emergency alert',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: _isActivated
+                              ? Colors.red
+                              : const Color(0xFF222B45),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'This will notify your company and emergency contacts',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: const Color(0xFF8F9BB3),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'This will notify your company and emergency contacts',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: const Color(0xFF8F9BB3),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
 
             const SizedBox(height: 32),
@@ -277,10 +310,19 @@ class _SOSScreenState extends State<SOSScreen>
             const SizedBox(height: 16),
             _buildContactCard(
               title: 'Roadside Assistance',
-              number: '1800-123-4567',
+              number: '1033',
               icon: Icons.car_crash_outlined,
               color: const Color(0xFFE0F2F1),
               iconColor: const Color(0xFF00695C),
+              onTap: () => _makePhoneCall('1033'),
+            ),
+            const SizedBox(height: 16),
+            _buildContactCard(
+              title: 'Roadside Assistance (Toll-Free)',
+              number: '1800-123-4567',
+              icon: Icons.car_repair_outlined,
+              color: const Color(0xFFE8F5E9),
+              iconColor: const Color(0xFF2E7D32),
               onTap: () => _makePhoneCall('1800-123-4567'),
             ),
             const SizedBox(height: 16),

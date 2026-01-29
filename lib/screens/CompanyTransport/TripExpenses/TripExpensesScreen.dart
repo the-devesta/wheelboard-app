@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:wheelboard/controllers/trip_expenses_controller.dart';
+import 'package:wheelboard/controllers/Transport/trip_expenses_controller.dart';
 import 'package:wheelboard/models/trip_expenses_model.dart';
 
 class TripExpensesScreen extends StatefulWidget {

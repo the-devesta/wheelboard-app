@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io' show File;
-import '../../controllers/service_provider_controller.dart';
+import '../../controllers/Transport/service_provider_controller.dart';
 import '../../models/service_provider_signup.dart';
 
 class AlliedBusinessRegistrationScreen extends StatefulWidget {

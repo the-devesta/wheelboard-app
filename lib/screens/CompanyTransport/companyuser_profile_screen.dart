@@ -7,7 +7,7 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import 'package:wheelboard/widgets/common_delete_button.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
-import 'package:wheelboard/controllers/user_profile_controller.dart';
+import 'package:wheelboard/controllers/Transport/user_profile_controller.dart';
 import 'package:wheelboard/models/user_profile_model.dart';
 import '../auth/onboarding_screen.dart';
 import 'edit_company_profile.dart';

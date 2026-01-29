@@ -68,11 +68,11 @@
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../models/add_new_vehicle_model.dart';
-import '../utils/app_logger.dart';
-import '../utils/error_handler.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../models/add_new_vehicle_model.dart';
+import '../../utils/app_logger.dart';
+import '../../utils/error_handler.dart';
 import 'package:flutter/material.dart';
 
 class AddVehicleController extends GetxController {

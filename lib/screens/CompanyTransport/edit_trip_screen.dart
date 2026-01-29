@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
-import '../../controllers/add_trip_controller.dart';
+import '../../controllers/Transport/add_trip_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../utils/distance_service.dart';
 import '../../utils/location_service.dart';

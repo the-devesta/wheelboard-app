@@ -7,7 +7,7 @@ import 'package:wheelboard/screens/CompanyTransport/Lease/leased_vehicles_screen
 import 'add_vehicle.dart';
 import 'add_new_driver.dart';
 import 'vehicle_detail_screen.dart';
-import '../../controllers/fleet_controller.dart'; // adjust the path
+import '../../controllers/Transport/fleet_controller.dart'; // adjust the path
 import '../../utils/session_manager.dart';
 import '../../models/get_driver_model.dart';
 import '../../models/get_vehicle_model.dart';

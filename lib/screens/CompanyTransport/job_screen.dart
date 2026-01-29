@@ -6,7 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'job_form_screen.dart';
 import 'job_application_screen.dart';
 import 'package:wheelboard/utils/share_service.dart';
-import '../../controllers/job_controller.dart';
+import '../../controllers/Transport/job_controller.dart';
 import '../../models/job_model.dart';
 import '../../widgets/custom_loader.dart';
 

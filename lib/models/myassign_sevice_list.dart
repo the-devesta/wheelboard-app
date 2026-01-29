@@ -8,6 +8,7 @@ class AssignedServiceModel {
   final String scheduledTime;
   final String category;
   final double amount;
+  final double paymentAmount;
   final String serviceId;
   final String assignedToUserId;
 
@@ -21,6 +22,7 @@ class AssignedServiceModel {
     required this.scheduledTime,
     required this.category,
     required this.amount,
+    required this.paymentAmount,
     required this.serviceId,
     required this.assignedToUserId,
   });
@@ -35,7 +37,8 @@ class AssignedServiceModel {
       scheduledDate: DateTime.parse(json['scheduledDate']),
       scheduledTime: json['scheduledTime'] ?? '',
       category: json['category'] ?? '',
-      amount: (json['amount'] ?? 0).toDouble(), // Ensure double
+      amount: (json['amount'] ?? 0).toDouble(),
+      paymentAmount: (json['paymentAmount'] ?? 0).toDouble(),
       serviceId: json['serviceId'] ?? '',
       assignedToUserId: json['assignedToUserId'] ?? '',
     );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import '../../CompanyTransport/notification_screen.dart';
-import '../../../controllers/notification_controller.dart';
+import '../../../controllers/Transport/notification_controller.dart';
 import '../YourProfile/YourProfileScreen.dart';
 
 /// Professional Header Widget

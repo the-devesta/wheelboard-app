@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'driver/view_driver_screen.dart';
 import 'trip/assign_trip_screen.dart';
-import '../../controllers/trip_bids_controller.dart';
+import '../../controllers/Transport/trip_bids_controller.dart';
 import '../../models/trip_bid_model.dart';
 
 class BidsScreen extends StatefulWidget {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../controllers/driver_details_controller.dart';
+import '../../controllers/Transport/driver_details_controller.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';

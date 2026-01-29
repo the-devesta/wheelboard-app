@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
-import '../apihelperclass/api_helper.dart';
-import '../models/user_profile_model.dart';
-import '../utils/constants.dart';
-import '../widgets/custom_snackbar.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../models/user_profile_model.dart';
+import '../../utils/constants.dart';
+import '../../widgets/custom_snackbar.dart';
 import 'user_profile_controller.dart';
-import '../utils/app_logger.dart';
+import '../../utils/app_logger.dart';
 
 class CompanyProfileController extends GetxController {
   final UserProfileController _profileController =

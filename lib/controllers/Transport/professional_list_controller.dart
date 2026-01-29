@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import 'package:get/get.dart';
 
-import '../apihelperclass/api_helper.dart';
-import '../models/professional_profile_model.dart';
-import '../utils/constants.dart';
-import '../utils/session_manager.dart';
-import '../widgets/custom_snackbar.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../models/professional_profile_model.dart';
+import '../../utils/constants.dart';
+import '../../utils/session_manager.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class ProfessionalListController extends GetxController {
   final SessionManager _sessionManager = SessionManager();

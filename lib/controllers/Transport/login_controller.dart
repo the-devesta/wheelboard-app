@@ -1,10 +1,10 @@
 import 'package:get/get.dart';
 import 'dart:convert';
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../utils/error_handler.dart';
-import '../utils/app_logger.dart';
-import '../widgets/custom_snackbar.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../utils/error_handler.dart';
+import '../../utils/app_logger.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class LoginController extends GetxController {
   var isLoading = false.obs;

@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:get/get.dart';
-import '../apihelperclass/api_helper.dart';
-import '../models/user_profile_model.dart';
-import '../utils/constants.dart';
-import '../services/auth_service.dart';
-import '../widgets/custom_snackbar.dart';
-import '../utils/app_logger.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../models/user_profile_model.dart';
+import '../../utils/constants.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class UserProfileController extends GetxController {
   final Rx<UserProfileModel?> userProfile = Rx<UserProfileModel?>(null);

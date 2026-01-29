@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/CompanyTransport/complete_company_profile.dart';
 
-import '../../controllers/login_controller.dart';
+import '../../controllers/Transport/login_controller.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/navigation_helper.dart';

@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'dart:convert';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
-import '../../utils/app_logger.dart';
+import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 import 'booking_details_screen.dart';
 
 class BookingListScreen extends StatefulWidget {
@@ -20,81 +16,13 @@ class BookingListScreen extends StatefulWidget {
 }
 
 class _BookingListScreenState extends State<BookingListScreen> {
-  bool _isLoading = true;
-  List<Map<String, dynamic>> _allBookings = [];
-  List<Map<String, dynamic>> _filteredBookings = [];
-  String _selectedStatus = 'All';
+  late final ServiceProviderHomeController _controller;
 
   @override
   void initState() {
     super.initState();
-    _fetchBookings();
-  }
-
-  Future<void> _fetchBookings() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final sessionManager = SessionManager();
-      final token = await sessionManager.getString("authToken");
-
-      List<Map<String, dynamic>> collectedBookings = [];
-
-      for (String serviceId in widget.serviceIds) {
-        if (serviceId.isEmpty) continue;
-
-        final endpoint = '${API.serviceAssignList}?serviceId=$serviceId';
-        final response = await HttpHelper.getData(
-          endpoint: endpoint,
-          headers: {
-            if (token != null && token.isNotEmpty)
-              'Authorization': 'Bearer $token',
-            'Accept': '*/*',
-          },
-        );
-
-        if (response.statusCode == 200) {
-          final List<dynamic> data =
-              jsonDecode(response.body) as List<dynamic>? ?? [];
-          collectedBookings.addAll(
-            data.map((e) => e as Map<String, dynamic>).toList(),
-          );
-        }
-      }
-
-      // Sort by date (descending)
-      collectedBookings.sort((a, b) {
-        final dateA =
-            DateTime.tryParse(a['scheduledDate'] ?? '') ?? DateTime(0);
-        final dateB =
-            DateTime.tryParse(b['scheduledDate'] ?? '') ?? DateTime(0);
-        return dateB.compareTo(dateA);
-      });
-
-      setState(() {
-        _allBookings = collectedBookings;
-        _applyFilter();
-      });
-    } catch (e) {
-      AppLogger.d("Error fetching bookings: $e");
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _applyFilter() {
-    if (_selectedStatus == 'All') {
-      _filteredBookings = List.from(_allBookings);
-    } else {
-      _filteredBookings = _allBookings.where((booking) {
-        final status = (booking['status'] ?? '').toString().toLowerCase();
-        return status == _selectedStatus.toLowerCase();
-      }).toList();
-    }
+    _controller = Get.put(ServiceProviderHomeController());
+    _controller.fetchBookings(widget.serviceIds);
   }
 
   @override
@@ -122,11 +50,15 @@ class _BookingListScreenState extends State<BookingListScreen> {
         children: [
           _buildStatusFilter(),
           Expanded(
-            child: _isLoading
-                ? const CustomLoader(message: "Fetching leads...")
-                : _allBookings.isEmpty
-                ? _buildEmptyState()
-                : _buildBookingsList(),
+            child: Obx(() {
+              if (_controller.isLoadingBookings.value) {
+                return const CustomLoader(message: "Fetching leads...");
+              }
+              if (_controller.allBookings.isEmpty) {
+                return _buildEmptyState();
+              }
+              return _buildBookingsList();
+            }),
           ),
         ],
       ),
@@ -145,59 +77,62 @@ class _BookingListScreenState extends State<BookingListScreen> {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(vertical: 10),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: statuses.length,
-        itemBuilder: (context, index) {
-          final status = statuses[index];
-          final isSelected = _selectedStatus == status;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(status),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() {
-                    _selectedStatus = status;
-                    _applyFilter();
-                  });
-                }
-              },
-              selectedColor: const Color(0xFFF36969),
-              labelStyle: GoogleFonts.inter(
-                fontSize: 12,
-                color: isSelected ? Colors.white : const Color(0xFF6B7280),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected
-                      ? const Color(0xFFF36969)
-                      : const Color(0xFFE5E7EB),
+      child: Obx(() {
+        final selectedStatus = _controller.selectedStatus.value;
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: statuses.length,
+          itemBuilder: (context, index) {
+            final status = statuses[index];
+            final isSelected = selectedStatus == status;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(status),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) {
+                    _controller.setStatusFilter(status);
+                  }
+                },
+                selectedColor: const Color(0xFFF36969),
+                labelStyle: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: isSelected
+                        ? const Color(0xFFF36969)
+                        : const Color(0xFFE5E7EB),
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        );
+      }),
     );
   }
 
   Widget _buildBookingsList() {
     return RefreshIndicator(
-      onRefresh: _fetchBookings,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _filteredBookings.length,
-        itemBuilder: (context, index) {
-          final booking = _filteredBookings[index];
-          return _buildBookingCard(booking);
-        },
-      ),
+      onRefresh: () => _controller.fetchBookings(widget.serviceIds),
+      child: Obx(() {
+        final bookings = _controller.filteredBookings;
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: bookings.length,
+          itemBuilder: (context, index) {
+            final booking = bookings[index];
+            return _buildBookingCard(booking);
+          },
+        );
+      }),
     );
   }
 
@@ -220,9 +155,6 @@ class _BookingListScreenState extends State<BookingListScreen> {
 
     return GestureDetector(
       onTap: () {
-        // Navigate to details by providing serviceId
-        // The details screen fetches the list and takes [0], which is not ideal
-        // but we can try to improve it later or pass the specific data if we modify details screen.
         Get.to(
           () => BookingDetailsScreen(
             serviceId: booking['serviceId'] ?? '',

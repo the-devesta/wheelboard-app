@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:wheelboard/utils/error_handler.dart';
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../services/auth_service.dart';
-import '../models/job_model.dart';
-import '../models/job_application_model.dart';
-import '../widgets/custom_snackbar.dart';
-import '../utils/app_logger.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../services/auth_service.dart';
+import '../../models/job_model.dart';
+import '../../models/job_application_model.dart';
+import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class JobController extends GetxController {
   var isLoading = false.obs;

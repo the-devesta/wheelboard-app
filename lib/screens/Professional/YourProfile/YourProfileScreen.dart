@@ -6,7 +6,7 @@ import 'package:wheelboard/widgets/common_delete_button.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/profile_service.dart';
 import '../../../widgets/custom_snackbar.dart';
-import '../../../controllers/user_profile_controller.dart';
+import '../../../controllers/Transport/user_profile_controller.dart';
 import '../../../models/user_profile_model.dart';
 import '../../auth/onboarding_screen.dart' show RegisterScreen;
 import '../EditYourProfile01/EditYourProfile01Screen.dart';

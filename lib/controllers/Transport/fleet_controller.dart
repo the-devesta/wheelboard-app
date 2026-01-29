@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../models/get_driver_model.dart';
-import '../models/get_vehicle_model.dart';
-import '../models/vehicle_detail_response_model.dart';
-import '../utils/constants.dart';
-import '../apihelperclass/api_helper.dart'; // adjust import path if needed
-import '../utils/app_logger.dart';
+import '../../models/get_driver_model.dart';
+import '../../models/get_vehicle_model.dart';
+import '../../models/vehicle_detail_response_model.dart';
+import '../../utils/constants.dart';
+import '../../apihelperclass/api_helper.dart'; // adjust import path if needed
+import '../../utils/app_logger.dart';
 
 class DriverController extends GetxController {
   // 🚗 Drivers

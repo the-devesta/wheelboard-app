@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/add_new_trip_model.dart';
 import 'edit_trip_screen.dart';
-import '../../controllers/trip_expenses_controller.dart';
+import '../../controllers/Transport/trip_expenses_controller.dart';
 
 class TripDetailsScreen extends StatelessWidget {
   final Trip trip;

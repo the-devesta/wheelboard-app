@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:wheelboard/apihelperclass/api_helper.dart';
-import 'package:wheelboard/controllers/service_dashboard_controller.dart';
+import 'package:wheelboard/controllers/Transport/service_dashboard_controller.dart';
 import 'package:wheelboard/models/dashboard_model.dart';
 import 'package:wheelboard/models/myassign_sevice_list.dart';
 

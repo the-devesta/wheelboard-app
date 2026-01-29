@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:get/get.dart';
 
-import '../apihelperclass/api_helper.dart';
-import '../models/service_model.dart';
-import '../utils/constants.dart';
-import '../widgets/custom_snackbar.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../models/service_model.dart';
+import '../../utils/constants.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class ServiceController extends GetxController {
   final isLoading = false.obs;

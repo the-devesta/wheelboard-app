@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:country_picker/country_picker.dart';
-import '../../controllers/complete_profile_controller.dart';
+import '../../controllers/Transport/complete_profile_controller.dart';
 import '../../models/company_profilemodel.dart';
 import '../../constants/apps_colors.dart';
 import '../../utils/session_manager.dart';

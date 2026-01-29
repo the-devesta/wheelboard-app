@@ -4,7 +4,7 @@ import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../controllers/post_controller.dart';
+import '../../controllers/Transport/post_controller.dart';
 
 class NetworkPostScreen extends StatefulWidget {
   const NetworkPostScreen({super.key});

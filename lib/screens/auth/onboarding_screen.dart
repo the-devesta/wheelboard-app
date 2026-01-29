@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/register_controller.dart';
+import '../../controllers/Transport/register_controller.dart';
 
 import 'company_signup.dart';
 import 'professional_signup.dart';

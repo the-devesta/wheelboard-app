@@ -2,15 +2,15 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import '../models/service_provider_signup.dart';
-import '../models/add_service_model.dart';
-import '../models/update_service_model.dart';
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../utils/error_handler.dart';
-import '../widgets/custom_snackbar.dart';
-import '../screens/auth/login.dart';
-import '../utils/app_logger.dart';
+import '../../models/service_provider_signup.dart';
+import '../../models/add_service_model.dart';
+import '../../models/update_service_model.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../utils/error_handler.dart';
+import '../../widgets/custom_snackbar.dart';
+import '../../screens/auth/login.dart';
+import '../../utils/app_logger.dart';
 
 class ServiceProviderController extends GetxController {
   var isLoading = false.obs;

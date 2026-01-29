@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../controllers/user_profile_controller.dart';
+import '../../../controllers/Transport/user_profile_controller.dart';
 import '../../../models/user_profile_model.dart';
 import '../../../services/profile_service.dart';
 import '../../../widgets/custom_snackbar.dart';
