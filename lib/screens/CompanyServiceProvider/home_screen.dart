@@ -11,21 +11,19 @@ import 'service_details_screen.dart';
 import '../CompanyTransport/job_screen.dart';
 
 import '../CompanyTransport/notification_screen.dart';
-import '../../controllers/notification_controller.dart';
-import '../../controllers/user_profile_controller.dart';
+import '../../controllers/Transport/notification_controller.dart';
+import '../../controllers/Transport/user_profile_controller.dart';
 import '../../controllers/Professional/feeds_controller.dart';
-import '../../controllers/post_controller.dart';
+import '../../controllers/Transport/post_controller.dart';
 import '../CompanyTransport/feed_screen.dart';
 import '../../widgets/custom_loader.dart';
 import '../../models/service_model.dart';
-import '../../utils/session_manager.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
 import '../../utils/share_service.dart';
 import '../CompanyTransport/fleet_userprofile.dart';
-import 'dart:convert';
 import '../../utils/app_logger.dart';
 import 'booking_list_screen.dart';
+import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
+import '../../apihelperclass/api_helper.dart';
 
 class ServiceProviderHomeScreen extends StatefulWidget {
   const ServiceProviderHomeScreen({super.key});
@@ -39,195 +37,29 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   final notificationController = Get.put(NotificationController());
   final userProfileController = Get.put(UserProfileController());
   final feedsController = Get.put(FeedsController());
-  List<ServiceModel> _services = [];
-  bool _isLoadingServices = false;
-  int _totalLeads = 0;
-  List<String> _allServiceIds = [];
-  final Map<String, String> _serviceImages =
-      {}; // Store service images by serviceId
+  late final ServiceProviderHomeController _homeController;
 
   @override
   void initState() {
     super.initState();
+    _homeController = Get.put(ServiceProviderHomeController());
     // Fetch notifications and profile on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notificationController.fetchNotifications();
       userProfileController.fetchCurrentUserProfile();
-      _fetchMyServices();
     });
   }
 
-  Future<void> _fetchMyServices() async {
-    setState(() {
-      _isLoadingServices = true;
-    });
+  // Getters for controller data
+  List<ServiceModel> get _services => _homeController.services;
+  bool get _isLoadingServices => _homeController.isLoadingServices.value;
+  int get _totalLeads => _homeController.totalLeads.value;
+  List<String> get _allServiceIds => _homeController.allServiceIds;
+  Map<String, String> get _serviceImages => _homeController.serviceImages;
 
-    try {
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString("userId");
-      final token = await sessionManager.getString("authToken");
-
-      if (userId == null || userId.isEmpty) {
-        return;
-      }
-
-      final response = await HttpHelper.getData(
-        endpoint: '${API.serviceListByUser}$userId',
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // API returns array directly, not wrapped in data object
-        final List<dynamic> data =
-            jsonDecode(response.body) as List<dynamic>? ?? [];
-
-        // Map API response to ServiceModel
-        setState(() {
-          _services = data.map((e) {
-            final json = e as Map<String, dynamic>;
-            return ServiceModel(
-              serviceId: json['serviceId'] ?? '',
-              serviceTitle: json['title'] ?? json['serviceTitle'] ?? '',
-              city: json['city'] ?? '',
-              fullAddress: json['fullAddress'] ?? '',
-              isAvailable: json['isVisible'] ?? false,
-              businessName: json['businessName'] ?? '',
-              businessType: json['businessType'] ?? '',
-              serviceCategory: json['serviceCategory'],
-              contactNumber: json['contactNumber'],
-              whatsappNumber: json['whatsappNumber'],
-              description: json['description'],
-              pricingOption: json['isFlatPrice'] == true
-                  ? 'Flat Price'
-                  : 'Per Hour',
-              amount: json['price'],
-              businessHoursFrom: json['businessFrom'],
-              businessHoursTo: json['businessTo'],
-              daysOpen: json['daysOpen'],
-            );
-          }).toList();
-
-          // Store images separately for each service
-          for (int i = 0; i < data.length && i < _services.length; i++) {
-            final json = data[i] as Map<String, dynamic>;
-            final images = json['images'] as List<dynamic>? ?? [];
-            if (images.isNotEmpty) {
-              // Store first image URL in a way we can access it
-              // We'll use a Map to store service images
-              _serviceImages[_services[i].serviceId] = images[0].toString();
-            }
-          }
-        });
-      }
-    } catch (e) {
-      // Silently handle errors for home screen
-      AppLogger.d('Error fetching services: $e');
-    } finally {
-      setState(() {
-        _isLoadingServices = false;
-      });
-      // After services are fetched, fetch all assignments (leads)
-      if (_services.isNotEmpty) {
-        _allServiceIds = _services.map((s) => s.serviceId).toList();
-        _fetchTotalLeads();
-      }
-    }
-  }
-
-  Future<void> _fetchTotalLeads() async {
-    try {
-      final sessionManager = SessionManager();
-      final token = await sessionManager.getString("authToken");
-
-      int total = 0;
-      for (var service in _services) {
-        final endpoint =
-            '${API.serviceAssignList}?serviceId=${service.serviceId}';
-        final response = await HttpHelper.getData(
-          endpoint: endpoint,
-          headers: {
-            if (token != null && token.isNotEmpty)
-              'Authorization': 'Bearer $token',
-            'Accept': '*/*',
-          },
-        );
-
-        if (response.statusCode == 200) {
-          final List<dynamic> data =
-              jsonDecode(response.body) as List<dynamic>? ?? [];
-          total += data.length;
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _totalLeads = total;
-        });
-      }
-    } catch (e) {
-      AppLogger.d('Error fetching total leads: $e');
-    }
-  }
-
+  // Controller methods
   Future<void> _togglePublishStatus(String serviceId) async {
-    // Find current service to determine anticipated new state
-    final currentService = _services.firstWhere(
-      (s) => s.serviceId == serviceId,
-      orElse: () => _services.first,
-    );
-    final willBePublished = !currentService.isAvailable;
-
-    setState(() {
-      _isLoadingServices = true;
-    });
-
-    try {
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString("userId");
-      if (userId == null || userId.isEmpty) {
-        return;
-      }
-
-      final response = await HttpHelper.postData(
-        endpoint:
-            '${API.serviceTogglePublishUnpublish}?serviceId=$serviceId&userId=$userId',
-        data: {}, // Empty body
-      );
-
-      if (response.statusCode == 200) {
-        // Show toggle message based on new state
-        final statusText = willBePublished ? "Published" : "Unpublished";
-        Get.snackbar(
-          "Success",
-          "Service $statusText successfully",
-          backgroundColor: willBePublished ? Colors.green : Colors.orange,
-          colorText: Colors.white,
-        );
-        await _fetchMyServices(); // Refresh list to get new status
-      } else {
-        Get.snackbar(
-          "Error",
-          "Failed to update status",
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-      }
-    } catch (e) {
-      Get.snackbar(
-        "Error",
-        "An error occurred: $e",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    } finally {
-      setState(() {
-        _isLoadingServices = false;
-      });
-    }
+    await _homeController.togglePublishStatus(serviceId);
   }
 
   @override
@@ -393,43 +225,46 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               // Stats Cards (Services & Leads)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Get.to(() => const MyListingsScreen());
-                        },
-                        child: _buildStatCard(
-                          context,
-                          icon: Icons.work_outline,
-                          iconBgColor: const Color(0xFFFFE5C2),
-                          iconColor: const Color(0xFFFBAE4B),
-                          label: 'Services',
-                          value: '${_services.length}',
+                child: Obx(() {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Get.to(() => const MyListingsScreen());
+                          },
+                          child: _buildStatCard(
+                            context,
+                            icon: Icons.work_outline,
+                            iconBgColor: const Color(0xFFFFE5C2),
+                            iconColor: const Color(0xFFFBAE4B),
+                            label: 'Services',
+                            value: '${_services.length}',
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Get.to(
-                            () => BookingListScreen(serviceIds: _allServiceIds),
-                          );
-                        },
-                        child: _buildStatCard(
-                          context,
-                          icon: Icons.show_chart,
-                          iconBgColor: const Color(0xFFD0FAE6),
-                          iconColor: const Color(0xFF00B894),
-                          label: 'Leads',
-                          value: '$_totalLeads',
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Get.to(
+                              () =>
+                                  BookingListScreen(serviceIds: _allServiceIds),
+                            );
+                          },
+                          child: _buildStatCard(
+                            context,
+                            icon: Icons.show_chart,
+                            iconBgColor: const Color(0xFFD0FAE6),
+                            iconColor: const Color(0xFF00B894),
+                            label: 'Leads',
+                            value: '$_totalLeads',
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                }),
               ),
               const SizedBox(height: 16),
 
@@ -519,81 +354,87 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    if (_isLoadingServices)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: CustomLoader.small(),
-                        ),
-                      )
-                    else if (_services.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.inbox_outlined,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No services yet',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Create your first service to get started',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      ...List.generate(
-                        _services.length > 2 ? 2 : _services.length,
-                        (index) {
-                          final service = _services[index];
-                          // Get first image from stored images map
-                          final serviceImage =
-                              _serviceImages[service.serviceId] ?? '';
+                    Obx(() {
+                      if (_isLoadingServices) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20.0),
+                            child: CustomLoader.small(),
+                          ),
+                        );
+                      }
 
-                          return Column(
+                      if (_services.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Get.to(
-                                    () => ServiceDetailsScreen(
-                                      serviceId: service.serviceId,
-                                    ),
-                                  );
-                                },
-                                child: _buildServiceCardFromModel(
-                                  context,
-                                  service: service,
-                                  imageUrl: serviceImage,
+                              Icon(
+                                Icons.inbox_outlined,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No services yet',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
                                 ),
                               ),
-                              if (index <
-                                  (_services.length > 2
-                                      ? 1
-                                      : _services.length - 1))
-                                const SizedBox(height: 12),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Create your first service to get started',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ],
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        children: List.generate(
+                          _services.length > 2 ? 2 : _services.length,
+                          (index) {
+                            final service = _services[index];
+                            final serviceImage =
+                                _serviceImages[service.serviceId] ?? '';
+
+                            return Column(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Get.to(
+                                      () => ServiceDetailsScreen(
+                                        serviceId: service.serviceId,
+                                      ),
+                                    );
+                                  },
+                                  child: _buildServiceCardFromModel(
+                                    context,
+                                    service: service,
+                                    imageUrl: serviceImage,
+                                  ),
+                                ),
+                                if (index <
+                                    (_services.length > 2
+                                        ? 1
+                                        : _services.length - 1))
+                                  const SizedBox(height: 12),
+                              ],
+                            );
+                          },
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -1266,6 +1107,6 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     if (cleanPath.startsWith('/')) {
       cleanPath = cleanPath.substring(1);
     }
-    return '${ApiConstants.baseUrl}/$cleanPath';
+    return '${HttpHelper.baseUrl}/$cleanPath';
   }
 }

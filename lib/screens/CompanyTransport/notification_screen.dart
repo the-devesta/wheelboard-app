@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../controllers/notification_controller.dart';
+import '../../controllers/Transport/notification_controller.dart';
 import '../../models/notification_model.dart';
 import '../../widgets/custom_loader.dart';
 

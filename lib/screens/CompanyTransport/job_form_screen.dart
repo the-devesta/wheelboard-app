@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../controllers/job_controller.dart';
+import '../../controllers/Transport/job_controller.dart';
 import '../../models/job_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../enums/job_enums.dart';

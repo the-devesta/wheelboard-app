@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../models/service_model.dart';
-import '../../utils/session_manager.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
 import '../../widgets/custom_snackbar.dart';
-import '../../controllers/service_provider_controller.dart';
+import '../../controllers/Transport/service_provider_controller.dart';
+import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 import 'add_service_screen.dart';
 import 'service_details_screen.dart';
-import 'dart:convert';
 import '../../widgets/custom_loader.dart';
 
 class MyListingsScreen extends StatefulWidget {
@@ -24,16 +21,18 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
     ServiceProviderController(),
     permanent: false,
   );
+  late final ServiceProviderHomeController _homeController;
   String _selectedFilter = 'All';
-  bool _isLoading = false;
-  List<ServiceModel> _services = [];
-  List<ServiceModel> _filteredServices = [];
   String? _userId;
 
   @override
   void initState() {
     super.initState();
-    _fetchMyServices();
+    _homeController = Get.find<ServiceProviderHomeController>();
+    // Refresh services on screen open - delayed to avoid 'setState() during build' error
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _homeController.fetchMyServices();
+    });
   }
 
   @override
@@ -42,112 +41,41 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchMyServices() async {
-    setState(() {
-      _isLoading = true;
-    });
+  // Getters for controller data
+  bool get _isLoading => _homeController.isLoadingServices.value;
+  List<ServiceModel> get _services => _homeController.services;
 
-    try {
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString("userId");
-      final token = await sessionManager.getString("authToken");
+  List<ServiceModel> get _filteredServices {
+    List<ServiceModel> result = List.from(_services);
 
-      // Store userId for delete operations
-      _userId = userId;
-
-      if (userId == null || userId.isEmpty) {
-        if (mounted) {
-          SnackBarHelper.error("User not logged in.");
-        }
-        return;
-      }
-
-      final response = await HttpHelper.getData(
-        endpoint: '${API.serviceListByUser}$userId',
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // API returns array directly, not wrapped in data object
-        final List<dynamic> data =
-            jsonDecode(response.body) as List<dynamic>? ?? [];
-
-        // Map API response to ServiceModel
-        _services = data.map((e) {
-          final json = e as Map<String, dynamic>;
-          return ServiceModel(
-            serviceId: json['serviceId'] ?? '',
-            serviceTitle: json['title'] ?? json['serviceTitle'] ?? '',
-            city: json['city'] ?? '',
-            fullAddress: json['fullAddress'] ?? '',
-            isAvailable: json['isVisible'] ?? false,
-            businessName: json['businessName'] ?? '',
-            businessType: json['businessType'] ?? '',
-            serviceCategory: json['serviceCategory'],
-            contactNumber: json['contactNumber'],
-            whatsappNumber: json['whatsappNumber'],
-            description: json['description'],
-            pricingOption: json['isFlatPrice'] == true
-                ? 'Flat Price'
-                : 'Per Hour',
-            amount: json['price'],
-            businessHoursFrom: json['businessFrom'],
-            businessHoursTo: json['businessTo'],
-            daysOpen: json['daysOpen'],
-          );
-        }).toList();
-
-        // Apply current filter and search query
-        _applyFilters();
-      } else {
-        SnackBarHelper.error("Failed to load services");
-      }
-    } catch (e) {
-      SnackBarHelper.error("Error: ${e.toString()}");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    // Apply search filter
+    if (_searchController.text.isNotEmpty) {
+      result = result.where((service) {
+        final titleMatch = service.serviceTitle.toLowerCase().contains(
+          _searchController.text.toLowerCase(),
+        );
+        final descMatch =
+            service.description != null &&
+            service.description!.toLowerCase().contains(
+              _searchController.text.toLowerCase(),
+            );
+        return titleMatch || descMatch;
+      }).toList();
     }
-  }
 
-  void _applyFilters() {
-    setState(() {
-      // Apply search filter first
-      if (_searchController.text.isEmpty) {
-        _filteredServices = List.from(_services);
-      } else {
-        _filteredServices = _services.where((service) {
-          final titleMatch = service.serviceTitle.toLowerCase().contains(
-            _searchController.text.toLowerCase(),
-          );
-          final descMatch =
-              service.description != null &&
-              service.description!.toLowerCase().contains(
-                _searchController.text.toLowerCase(),
-              );
-          return titleMatch || descMatch;
-        }).toList();
-      }
+    // Apply status filter
+    if (_selectedFilter != 'All') {
+      final isVisible = _selectedFilter == 'Published';
+      result = result
+          .where((service) => service.isAvailable == isVisible)
+          .toList();
+    }
 
-      // Apply status filter
-      if (_selectedFilter != 'All') {
-        final isVisible = _selectedFilter == 'Visible';
-        _filteredServices = _filteredServices
-            .where((service) => service.isAvailable == isVisible)
-            .toList();
-      }
-    });
+    return result;
   }
 
   void _filterServices(String query) {
-    _applyFilters();
+    setState(() {}); // Trigger rebuild with new search query
   }
 
   void _onFilterChanged(String? value) {
@@ -155,7 +83,6 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       setState(() {
         _selectedFilter = value;
       });
-      _applyFilters();
     }
   }
 
@@ -204,11 +131,18 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             _buildSearchAndFilter(),
             // Services List
             Expanded(
-              child: _isLoading
-                  ? const CustomLoader(message: "Loading services...")
-                  : _filteredServices.isEmpty
-                  ? _buildEmptyState()
-                  : _buildServicesList(),
+              child: Obx(() {
+                if (_isLoading) {
+                  return const CustomLoader(message: "Loading services...");
+                }
+
+                final services = _filteredServices;
+                if (services.isEmpty) {
+                  return _buildEmptyState();
+                }
+
+                return _buildServicesList();
+              }),
             ),
           ],
         ),
@@ -421,7 +355,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
 
   Widget _buildServicesList() {
     return RefreshIndicator(
-      onRefresh: _fetchMyServices,
+      onRefresh: _homeController.fetchMyServices,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _filteredServices.length,
@@ -722,7 +656,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
 
                   // Refresh from server - backend should return updated list without deleted service
                   if (mounted) {
-                    await _fetchMyServices();
+                    await _homeController.fetchMyServices();
                   }
                 }
               } catch (e) {

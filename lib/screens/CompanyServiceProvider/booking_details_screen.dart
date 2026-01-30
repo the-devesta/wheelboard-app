@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../utils/session_manager.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
 import '../../widgets/custom_snackbar.dart';
-import 'dart:convert';
 import '../../widgets/custom_loader.dart';
-import '../../utils/app_logger.dart';
 import '../../utils/share_service.dart';
 import 'package:intl/intl.dart';
 import '../../utils/call_utils.dart';
+import '../../controllers/ServiceProvider/booking_details_controller.dart';
 
 class BookingDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -26,253 +22,168 @@ class BookingDetailsScreen extends StatefulWidget {
 }
 
 class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
-  bool _isLoading = true;
-  bool _isUpdating = false;
-  Map<String, dynamic>? _bookingData;
-  final TextEditingController _notesController = TextEditingController();
+  late final BookingDetailsController _controller;
 
   @override
   void initState() {
     super.initState();
-    AppLogger.d("🔍 BookingDetailsScreen initialized");
-    AppLogger.d("🔍 Received Service ID: ${widget.serviceId}");
-
-    if (widget.initialBookingData != null) {
-      _bookingData = widget.initialBookingData;
-      _isLoading = false;
-      AppLogger.d("✅ Data passed from previous screen. Skipping API fetch.");
-    } else {
-      _fetchBookingDetails();
-    }
+    // Initialize and put the controller with GetX
+    _controller = Get.put(
+      BookingDetailsController(
+        serviceId: widget.serviceId,
+        initialBookingData: widget.initialBookingData,
+      ),
+      tag: widget.serviceId, // Use serviceId as tag to avoid conflicts
+    );
   }
 
   @override
   void dispose() {
-    _notesController.dispose();
+    // Delete the controller when screen is disposed
+    Get.delete<BookingDetailsController>(tag: widget.serviceId);
     super.dispose();
   }
 
-  Future<void> _fetchBookingDetails() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final sessionManager = SessionManager();
-      final token = await sessionManager.getString("authToken");
-
-      AppLogger.d("==========================================");
-      AppLogger.d("🔍 FETCHING BOOKING DETAILS");
-      AppLogger.d("==========================================");
-      AppLogger.d("🔍 Service ID: ${widget.serviceId}");
-      AppLogger.d("🔍 Service ID Type: ${widget.serviceId.runtimeType}");
-      AppLogger.d("🔍 Service ID Length: ${widget.serviceId.length}");
-
-      final endpoint = '${API.serviceAssignList}?serviceId=${widget.serviceId}';
-      AppLogger.d("🔍 Endpoint: $endpoint");
-
-      final baseUrl = HttpHelper.baseUrl;
-      final fullUrl = '$baseUrl$endpoint';
-      AppLogger.d("🔍 Base URL: $baseUrl");
-      AppLogger.d("🔍 Full URL: $fullUrl");
-      AppLogger.d("==========================================");
-
-      // Fetch assigned service list for this serviceId
-      final response = await HttpHelper.getData(
-        endpoint: endpoint,
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
-      );
-
-      AppLogger.d("🔍 Response Status Code: ${response.statusCode}");
-      AppLogger.d("🔍 Response Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data =
-            jsonDecode(response.body) as List<dynamic>? ?? [];
-
-        AppLogger.d("🔍 Parsed Data Count: ${data.length}");
-        AppLogger.d("🔍 Parsed Data: $data");
-
-        if (data.isNotEmpty) {
-          // Use the first assignment (or you can show a list if multiple)
-          final bookingData = data[0] as Map<String, dynamic>;
-          AppLogger.d("✅ Booking Data Found:");
-          AppLogger.d("   - Assignment ID: ${bookingData['assignmentId']}");
-          AppLogger.d("   - Service Title: ${bookingData['serviceTitle']}");
-          AppLogger.d("   - Customer Name: ${bookingData['customerName']}");
-          AppLogger.d("   - Status: ${bookingData['status']}");
-          AppLogger.d("   - Scheduled Date: ${bookingData['scheduledDate']}");
-          AppLogger.d("   - Scheduled Time: ${bookingData['scheduledTime']}");
-          AppLogger.d("   - Vehicle Number: ${bookingData['vehicleNumber']}");
-          AppLogger.d("   - Amount: ${bookingData['amount']}");
-          AppLogger.d("   - Pricing Option: ${bookingData['pricingOption']}");
-          AppLogger.d("   - Description: ${bookingData['description']}");
-          AppLogger.d("   - Full Data: $bookingData");
-
-          setState(() {
-            _bookingData = bookingData;
-          });
-        } else {
-          AppLogger.d("⚠️ No assignments found in response");
-          SnackBarHelper.error("No assignments found for this service");
-          setState(() {
-            _bookingData = null;
-          });
-        }
-      } else {
-        AppLogger.d(
-          "❌ Failed to fetch booking details. Status: ${response.statusCode}",
-        );
-        AppLogger.d("❌ Response: ${response.body}");
-        SnackBarHelper.error("Failed to load booking details");
-        setState(() {
-          _bookingData = null;
-        });
-      }
-    } catch (e, stackTrace) {
-      AppLogger.d("❌ Error fetching booking details: $e");
-      AppLogger.d("❌ Stack Trace: $stackTrace");
-      SnackBarHelper.error("Error: ${e.toString()}");
-      setState(() {
-        _bookingData = null;
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-      AppLogger.d("🔍 Fetch completed. Loading: false");
-    }
-  }
+  // Getters that access controller properties
+  bool get _isLoading => _controller.isLoading.value;
+  bool get _isUpdating => _controller.isUpdating.value;
+  Map<String, dynamic>? get _bookingData => _controller.bookingData.value;
+  TextEditingController get _notesController => _controller.notesController;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3436)),
-          onPressed: () => Get.back(),
-        ),
-        title: const Text(
-          'Booking Details',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-            color: Color(0xFF2D3436),
+    return Obx(
+      () => Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3436)),
+            onPressed: () => Get.back(),
           ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share, color: Color(0xFF2D3436)),
-            onPressed: () {
-              if (_bookingData != null) {
-                final assignmentId = _bookingData!['assignmentId'] ?? '';
-                final serviceTitle = _bookingData!['serviceTitle'] ?? 'Service';
-                final customerName =
-                    _bookingData!['customerName'] ?? 'Customer';
-                final scheduledDate = _bookingData!['scheduledDate'] ?? '';
-                final scheduledTime = _bookingData!['scheduledTime'] ?? '';
+          title: const Text(
+            'Booking Details',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: Color(0xFF2D3436),
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.share, color: Color(0xFF2D3436)),
+              onPressed: () {
+                if (_bookingData != null) {
+                  final assignmentId = _bookingData!['assignmentId'] ?? '';
+                  final serviceTitle =
+                      _bookingData!['serviceTitle'] ?? 'Service';
+                  final customerName =
+                      _bookingData!['customerName'] ?? 'Customer';
+                  final scheduledDate = _bookingData!['scheduledDate'] ?? '';
+                  final scheduledTime = _bookingData!['scheduledTime'] ?? '';
 
-                String formattedDate = scheduledDate;
-                if (scheduledDate.isNotEmpty) {
-                  try {
-                    final dt = DateTime.parse(scheduledDate);
-                    formattedDate = DateFormat('dd MMM yyyy').format(dt);
-                  } catch (_) {}
+                  String formattedDate = scheduledDate;
+                  if (scheduledDate.isNotEmpty) {
+                    try {
+                      final dt = DateTime.parse(scheduledDate);
+                      formattedDate = DateFormat('dd MMM yyyy').format(dt);
+                    } catch (_) {}
+                  }
+
+                  ShareService.shareBooking(
+                    bookingId: assignmentId,
+                    serviceTitle: serviceTitle,
+                    customerName: customerName,
+                    scheduledDate: formattedDate,
+                    scheduledTime: scheduledTime,
+                  );
                 }
-
-                ShareService.shareBooking(
-                  bookingId: assignmentId,
-                  serviceTitle: serviceTitle,
-                  customerName: customerName,
-                  scheduledDate: formattedDate,
-                  scheduledTime: scheduledTime,
-                );
-              }
-            },
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const CustomLoader(message: "Loading booking details...")
-          : _bookingData == null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Booking details not found',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Service ID: ${widget.serviceId}',
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      _fetchBookingDetails();
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight - 32,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Booking Summary Card
-                        _buildBookingSummaryCard(),
-                        const SizedBox(height: 16),
-                        // Customer Details Card
-                        _buildCustomerDetailsCard(),
-                        const SizedBox(height: 16),
-                        // Service Details Card
-                        _buildServiceDetailsCard(),
-                        const SizedBox(height: 16),
-                        // Scheduling Details Card
-                        _buildSchedulingCard(),
-                        const SizedBox(height: 16),
-                        // Internal Notes Card
-                        _buildInternalNotesCard(),
-                        const SizedBox(height: 100), // Space for bottom buttons
-                      ],
-                    ),
-                  ),
-                );
               },
             ),
-      bottomNavigationBar: (_isLoading || _bookingData == null)
-          ? null
-          : _buildBottomButtons(),
+          ],
+        ),
+        body: _isLoading
+            ? const CustomLoader(message: "Loading booking details...")
+            : _bookingData == null
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Booking details not found',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Service ID: ${widget.serviceId}',
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        _controller.fetchBookingDetails();
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight - 32,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Booking Summary Card
+                          _buildBookingSummaryCard(),
+                          const SizedBox(height: 16),
+                          // Customer Details Card
+                          _buildCustomerDetailsCard(),
+                          const SizedBox(height: 16),
+                          // Service Details Card
+                          _buildServiceDetailsCard(),
+                          const SizedBox(height: 16),
+                          // Scheduling Details Card
+                          _buildSchedulingCard(),
+                          const SizedBox(height: 16),
+                          // Internal Notes Card
+                          _buildInternalNotesCard(),
+                          const SizedBox(
+                            height: 100,
+                          ), // Space for bottom buttons
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+        bottomNavigationBar: (_isLoading || _bookingData == null)
+            ? null
+            : _buildBottomButtons(),
+      ),
     );
   }
 
@@ -992,7 +903,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                       ? null
                       : () {
                           if (isStarted) {
-                            _completeService(assignmentId);
+                            _showCompleteServiceDialog(assignmentId);
                           } else {
                             _startService(assignmentId);
                           }
@@ -1065,126 +976,158 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   }
 
   Future<void> _startService(String assignmentId) async {
-    if (assignmentId.isEmpty) {
-      SnackBarHelper.error("Assignment ID not found");
-      return;
-    }
-
-    setState(() {
-      _isUpdating = true;
-    });
-
-    try {
-      final sessionManager = SessionManager();
-      final token = await sessionManager.getString("authToken");
-
-      // Call update-service-status API with status=start
-      final response = await HttpHelper.postData(
-        endpoint:
-            '${API.updateServiceStatus}?assignmentId=$assignmentId&status=start',
-        data: {},
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        SnackBarHelper.success('Service started successfully');
-        // Update local state to reflect the new status
-        if (_bookingData != null) {
-          setState(() {
-            _bookingData!['status'] = 'started';
-          });
-        }
-        // Only fetch if we have a valid serviceId
-        if (widget.serviceId.isNotEmpty) {
-          await _fetchBookingDetails();
-        }
-      } else {
-        String errorMessage = "Failed to start service";
-        try {
-          final body = json.decode(response.body);
-          errorMessage = body['message'] ?? body['error'] ?? errorMessage;
-        } catch (_) {
-          if (response.body.isNotEmpty) {
-            errorMessage = response.body;
-          }
-        }
-        SnackBarHelper.error(errorMessage);
-      }
-    } catch (e) {
-      SnackBarHelper.error("Something went wrong: ${e.toString()}");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUpdating = false;
-        });
-      }
-    }
+    await _controller.startService(assignmentId);
   }
 
-  Future<void> _completeService(String assignmentId) async {
-    if (assignmentId.isEmpty) {
-      SnackBarHelper.error("Assignment ID not found");
-      return;
+  void _showCompleteServiceDialog(String assignmentId) {
+    final TextEditingController amountController = TextEditingController();
+
+    // Pre-fill with existing amount if available
+    final existingAmount = _bookingData?['amount'];
+    if (existingAmount != null && existingAmount is num && existingAmount > 0) {
+      amountController.text = existingAmount.toStringAsFixed(0);
     }
 
-    setState(() {
-      _isUpdating = true;
-    });
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF27AE60).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.check_circle_outline,
+                color: Color(0xFF27AE60),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Complete Service',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter the final amount to complete this service',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14,
+                color: Color(0xFF828282),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: amountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Amount',
+                hintText: 'Enter amount',
+                prefixText: '₹ ',
+                prefixStyle: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: Color(0xFF2D3436),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF27AE60),
+                    width: 2,
+                  ),
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF8F9FA),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: Color(0xFF2D3436),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF828282),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final amountText = amountController.text.trim();
+              if (amountText.isEmpty) {
+                SnackBarHelper.error('Please enter an amount');
+                return;
+              }
+              final amount = double.tryParse(amountText);
+              if (amount == null || amount < 0) {
+                SnackBarHelper.error('Please enter a valid amount');
+                return;
+              }
+              Navigator.of(context).pop();
+              _completeService(assignmentId, amount);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF27AE60),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Complete',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    try {
-      final sessionManager = SessionManager();
-      final token = await sessionManager.getString("authToken");
-
-      // Call complete-service API
-      final response = await HttpHelper.postData(
-        endpoint: '${API.completeService}?assignmentId=$assignmentId',
-        data: {},
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        SnackBarHelper.success('Service completed successfully');
-        // Update local state to reflect the new status
-        if (_bookingData != null) {
-          setState(() {
-            _bookingData!['status'] = 'completed';
-          });
-        }
-        // Only fetch if we have a valid serviceId
-        if (widget.serviceId.isNotEmpty) {
-          await _fetchBookingDetails();
-        }
-      } else {
-        String errorMessage = "Failed to complete service";
-        try {
-          final body = json.decode(response.body);
-          errorMessage = body['message'] ?? body['error'] ?? errorMessage;
-        } catch (_) {
-          if (response.body.isNotEmpty) {
-            errorMessage = response.body;
-          }
-        }
-        SnackBarHelper.error(errorMessage);
-      }
-    } catch (e) {
-      SnackBarHelper.error("Something went wrong: ${e.toString()}");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUpdating = false;
-        });
-      }
-    }
+  Future<void> _completeService(String assignmentId, double amount) async {
+    await _controller.completeService(assignmentId, amount);
   }
 
   void _showCancelDialog() {
@@ -1223,63 +1166,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   }
 
   Future<void> _cancelService(String assignmentId) async {
-    setState(() {
-      _isUpdating = true;
-    });
-
-    try {
-      final sessionManager = SessionManager();
-      final token = await sessionManager.getString("authToken");
-
-      // Call cancel-service API
-      final response = await HttpHelper.postData(
-        endpoint: '${API.cancelService}?assignmentId=$assignmentId',
-        data: {},
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        SnackBarHelper.success('Appointment cancelled successfully');
-        // Update local state to reflect the new status
-        if (_bookingData != null) {
-          setState(() {
-            _bookingData!['status'] = 'cancelled';
-          });
-        }
-        // Only fetch if we have a valid serviceId
-        if (widget.serviceId.isNotEmpty) {
-          await _fetchBookingDetails();
-        }
-        // Optionally navigate back
-        if (mounted) {
-          Get.back();
-        }
-      } else {
-        String errorMessage = "Failed to cancel appointment";
-        try {
-          final body = json.decode(response.body);
-          errorMessage = body['message'] ?? body['error'] ?? errorMessage;
-        } catch (_) {
-          if (response.body.isNotEmpty) {
-            errorMessage = response.body;
-          }
-        }
-        SnackBarHelper.error(errorMessage);
-      }
-    } catch (e) {
-      SnackBarHelper.error("Something went wrong: ${e.toString()}");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUpdating = false;
-        });
-      }
-    }
+    await _controller.cancelService(assignmentId);
   }
 
   String _getMonthName(int month) {

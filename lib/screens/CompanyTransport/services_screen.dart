@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/service_controller.dart';
+import '../../controllers/Transport/service_controller.dart';
 import '../../models/service_model.dart';
 import 'service_details.dart';
 import '../../widgets/custom_loader.dart';

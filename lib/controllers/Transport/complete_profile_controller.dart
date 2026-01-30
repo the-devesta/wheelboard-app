@@ -4,13 +4,13 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import '../models/company_profilemodel.dart';
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../utils/error_handler.dart';
-import '../widgets/custom_snackbar.dart';
+import '../../models/company_profilemodel.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../utils/error_handler.dart';
+import '../../widgets/custom_snackbar.dart';
 import 'package:http/http.dart' as http;
-import '../utils/app_logger.dart';
+import '../../utils/app_logger.dart';
 
 class CompleteProfileController extends GetxController {
   var selectedDialCode = '+91'.obs;

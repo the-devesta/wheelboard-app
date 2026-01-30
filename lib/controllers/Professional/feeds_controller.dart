@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../apihelperclass/api_helper.dart';
 import '../../utils/constants.dart';
 import '../../services/auth_service.dart';
-import '../../controllers/post_controller.dart';
+import '../Transport/post_controller.dart';
 import '../../utils/app_logger.dart';
 
 class FeedsController extends GetxController {
@@ -14,7 +14,7 @@ class FeedsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchFeeds();
+    Future.microtask(() => fetchFeeds());
   }
 
   /// Fetch all feeds/posts

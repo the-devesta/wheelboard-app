@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../utils/session_manager.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../widgets/custom_snackbar.dart';
 import '../../models/service_model.dart';
 import 'add_service_screen.dart';
 import 'booking_details_screen.dart';
-import 'dart:convert';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/share_service.dart';
+import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -22,108 +18,76 @@ class ServiceDetailsScreen extends StatefulWidget {
 }
 
 class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
-  bool _isLoading = true;
-  Map<String, dynamic>? _serviceData;
+  late final ServiceProviderHomeController _homeController;
 
   @override
   void initState() {
     super.initState();
-    _fetchServiceDetails();
+    _homeController = Get.find<ServiceProviderHomeController>();
+    _homeController.fetchServiceDetails(widget.serviceId);
   }
 
-  Future<void> _fetchServiceDetails() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final sessionManager = SessionManager();
-      final token = await sessionManager.getString("authToken");
-
-      final response = await HttpHelper.getData(
-        endpoint: '${API.serviceDetail}${widget.serviceId}',
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        if (body['success'] == true && body['data'] != null) {
-          setState(() {
-            _serviceData = body['data'] as Map<String, dynamic>;
-          });
-        } else {
-          SnackBarHelper.error("Failed to load service details");
-        }
-      } else {
-        SnackBarHelper.error("Failed to load service details");
-      }
-    } catch (e) {
-      SnackBarHelper.error("Error: ${e.toString()}");
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+  // Getters for controller data
+  bool get _isLoading => _homeController.isLoadingServiceDetails.value;
+  Map<String, dynamic>? get _serviceData =>
+      _homeController.serviceDetails.value;
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFFFF4F4),
-        body: const CustomLoader(message: "Loading service details..."),
-      );
-    }
+    return Obx(() {
+      if (_isLoading) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFFF4F4),
+          body: const CustomLoader(message: "Loading service details..."),
+        );
+      }
 
-    if (_serviceData == null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFFFF4F4),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFFF36969),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Get.back(),
+      if (_serviceData == null) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFFF4F4),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFFF36969),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Get.back(),
+            ),
           ),
-        ),
-        body: const Center(child: Text('Service details not found')),
-      );
-    }
+          body: const Center(child: Text('Service details not found')),
+        );
+      }
 
-    final service = _serviceData!;
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF4F4),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(context, service),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildServiceInfoCard(service),
-                    const SizedBox(height: 24),
-                    _buildPricingAndHoursCard(service),
-                    const SizedBox(height: 24),
-                    _buildAboutServiceCard(service),
-                    const SizedBox(height: 24),
-                    _buildGalleryCard(service),
-                    const SizedBox(height: 24),
-                    _buildActionButtons(service),
-                  ],
+      final service = _serviceData!;
+      return Scaffold(
+        backgroundColor: const Color(0xFFFFF4F4),
+        body: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(context, service),
+            SliverList(
+              delegate: SliverChildListDelegate([
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildServiceInfoCard(service),
+                      const SizedBox(height: 24),
+                      _buildPricingAndHoursCard(service),
+                      const SizedBox(height: 24),
+                      _buildAboutServiceCard(service),
+                      const SizedBox(height: 24),
+                      _buildGalleryCard(service),
+                      const SizedBox(height: 24),
+                      _buildActionButtons(service),
+                    ],
+                  ),
                 ),
-              ),
-            ]),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomButton(context),
-    );
+              ]),
+            ),
+          ],
+        ),
+        bottomNavigationBar: _buildBottomButton(context),
+      );
+    });
   }
 
   SliverAppBar _buildSliverAppBar(

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../controllers/service_provider_controller.dart';
+import '../../controllers/Transport/service_provider_controller.dart';
 import '../../models/add_service_model.dart';
 import '../../models/update_service_model.dart';
 import '../../models/service_model.dart';
@@ -12,7 +12,7 @@ import '../../widgets/custom_snackbar.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
-import '../../controllers/user_profile_controller.dart';
+import '../../controllers/Transport/user_profile_controller.dart';
 
 class AddServiceScreen extends StatefulWidget {
   final ServiceModel? service; // Optional service for edit mode

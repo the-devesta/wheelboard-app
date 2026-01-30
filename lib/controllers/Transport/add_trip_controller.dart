@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import '../apihelperclass/api_helper.dart';
-import '../models/get_driver_model.dart';
-import '../models/get_vehicle_model.dart';
-import '../utils/constants.dart';
-import '../utils/session_manager.dart';
-import '../utils/navigation_helper.dart';
-import '../models/add_new_trip_model.dart';
-import '../utils/app_logger.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../models/get_driver_model.dart';
+import '../../models/get_vehicle_model.dart';
+import '../../utils/constants.dart';
+import '../../utils/session_manager.dart';
+import '../../utils/navigation_helper.dart';
+import '../../models/add_new_trip_model.dart';
+import '../../utils/app_logger.dart';
 
 class TripController extends GetxController {
   var drivers = <Driver>[].obs;

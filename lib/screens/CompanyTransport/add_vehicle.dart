@@ -7,8 +7,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart'; // ✅ for controller
 import '../../models/add_new_vehicle_model.dart';
 import '../../models/vehicle_details_model.dart';
-import '../../controllers/add_new_vehicle_controller.dart';
-import '../../controllers/fleet_controller.dart';
+import '../../controllers/Transport/add_new_vehicle_controller.dart';
+import '../../controllers/Transport/fleet_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../apihelperclass/api_helper.dart';
 import '../../widgets/custom_snackbar.dart';

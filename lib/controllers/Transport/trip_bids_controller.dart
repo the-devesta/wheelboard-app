@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:get/get.dart';
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../models/trip_bid_model.dart';
-import '../widgets/custom_snackbar.dart';
-import '../utils/app_logger.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../models/trip_bid_model.dart';
+import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class TripBidsController extends GetxController {
   var isLoading = false.obs;

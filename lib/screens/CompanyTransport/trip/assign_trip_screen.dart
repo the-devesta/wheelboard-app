@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-import '../../../controllers/assign_trip_controller.dart';
+import '../../../controllers/Transport/assign_trip_controller.dart';
 import '../../../models/assign_trip_model.dart';
 import '../../../models/trip_confirmation_model.dart';
 import '../../../services/razorpay_service.dart';

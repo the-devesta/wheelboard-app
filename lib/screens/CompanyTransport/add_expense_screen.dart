@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 import '../../controllers/Professional/expense_controller.dart';
-import '../../controllers/add_trip_controller.dart';
+import '../../controllers/Transport/add_trip_controller.dart';
 import '../../controllers/Professional/assigned_trip_controller.dart';
 import '../../models/expense_purpose_model.dart';
 import '../../models/add_new_trip_model.dart';

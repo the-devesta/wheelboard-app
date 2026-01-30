@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/controllers/company_profile_controller.dart';
+import 'package:wheelboard/controllers/Transport/company_profile_controller.dart';
 import '../../utils/placeservices.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';

@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import '../models/professional_signupmodel.dart';
-import '../apihelperclass/api_helper.dart';
-import '../screens/auth/login.dart';
-import '../utils/constants.dart';
-import '../utils/error_handler.dart';
-import '../widgets/custom_snackbar.dart';
+import '../../models/professional_signupmodel.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../screens/auth/login.dart';
+import '../../utils/constants.dart';
+import '../../utils/error_handler.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class ProfessionalController extends GetxController {
   var isLoading = false.obs;

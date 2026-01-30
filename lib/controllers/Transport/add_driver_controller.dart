@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../models/add_drivermodel.dart';
-import '../widgets/custom_snackbar.dart';
-import '../utils/app_logger.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../models/add_drivermodel.dart';
+import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class AddDriverController extends GetxController {
   var isLoading = false.obs;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
-import '../../controllers/job_controller.dart';
+import '../../controllers/Transport/job_controller.dart';
 import '../../models/job_application_model.dart';
 import '../../models/applied_user_profile_model.dart';
 import '../../widgets/custom_loader.dart';

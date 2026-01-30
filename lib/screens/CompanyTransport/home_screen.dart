@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/CompanyTransport/dashboard.dart';
 import 'package:wheelboard/screens/CompanyTransport/notification_screen.dart';
-import '../../controllers/notification_controller.dart';
+import '../../controllers/Transport/notification_controller.dart';
 import 'banner_carousel.dart';
 import 'fleet_userprofile.dart';
 import 'package:get/get.dart';
@@ -16,14 +16,14 @@ import 'job_form_screen.dart';
 import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
 import 'professional_list.dart';
 import 'fleet_screen.dart';
-import '../../controllers/user_profile_controller.dart';
+import '../../controllers/Transport/user_profile_controller.dart';
 import '../../utils/constants.dart';
-import 'package:wheelboard/controllers/job_controller.dart';
+import 'package:wheelboard/controllers/Transport/job_controller.dart';
 import 'package:wheelboard/screens/CompanyTransport/job_screen.dart';
 import '../../controllers/Professional/feeds_controller.dart';
 import 'feed_screen.dart';
 import '../../services/auth_service.dart';
-import '../../controllers/post_controller.dart';
+import '../../controllers/Transport/post_controller.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
 
@@ -113,7 +113,7 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          Get.to(CompanyProfileScreen());
+                          Get.to(() => CompanyProfileScreen());
                         },
                         child: CircleAvatar(
                           radius: 25,
@@ -152,7 +152,7 @@ class HomeScreen extends StatelessWidget {
 
                         return GestureDetector(
                           onTap: () {
-                            Get.to(const NotificationScreen());
+                            Get.to(() => const NotificationScreen());
                           },
                           child: Stack(
                             clipBehavior: Clip.none,
@@ -246,12 +246,12 @@ class HomeScreen extends StatelessWidget {
                             // Vehicles tab
                             if (index == 0) {
                               // Navigate to Fleet Vehicles Screen
-                              Get.to(FleetVehiclesScreen());
+                              Get.to(() => FleetVehiclesScreen());
                             }
                             // Professional tab
                             if (index == 1) {
                               // Navigate to Professional List Screen
-                              Get.to(const ProfessionalListScreen());
+                              Get.to(() => const ProfessionalListScreen());
                             }
                             if (index == 2) {
                               // Expenses - Navigate to Transaction Summary Screen
@@ -259,7 +259,7 @@ class HomeScreen extends StatelessWidget {
                             }
                             if (index == 3) {
                               // Hire - Navigate to Post Job Screen
-                              Get.to(PostJobScreen());
+                              Get.to(() => PostJobScreen());
                             }
                             if (index == 4) {
                               // Navigate, show dialog, etc.
@@ -268,7 +268,7 @@ class HomeScreen extends StatelessWidget {
 
                             if (index == 5) {
                               // Navigate, show dialog, etc.
-                              Get.to(DashboardScreen());
+                              Get.to(() => DashboardScreen());
                             }
                           },
                           child: Container(
@@ -614,7 +614,7 @@ class HomeScreen extends StatelessWidget {
         children: [
           ElevatedButton(
             onPressed: () {
-              Get.to(ServicesScreen());
+              Get.to(() => ServicesScreen());
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF5252),
@@ -649,7 +649,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 8),
           ElevatedButton(
             onPressed: () {
-              Get.to(PostJobScreen());
+              Get.to(() => PostJobScreen());
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF5252),
@@ -705,7 +705,7 @@ class HomeScreen extends StatelessWidget {
           InkWell(
             onTap: () {
               // Navigate to dynamic profile screen
-              Get.to(FleetUserprofile(companyId: post.companyId));
+              Get.to(() => FleetUserprofile(companyId: post.companyId));
             },
             borderRadius: BorderRadius.circular(50),
             child: Row(

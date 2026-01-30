@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io' show File, Directory; // only available on mobile
-import '../../controllers/professional_signup_controller.dart';
+import '../../controllers/Transport/professional_signup_controller.dart';
 import '../../models/professional_signupmodel.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';

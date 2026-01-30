@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../utils/error_handler.dart';
-import '../services/auth_service.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../utils/error_handler.dart';
+import '../../services/auth_service.dart';
 import 'package:http/http.dart' as http;
-import '../utils/app_logger.dart';
+import '../../utils/app_logger.dart';
 
 class PostController extends GetxController {
   var isLoading = false.obs;

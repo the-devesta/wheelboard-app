@@ -5,14 +5,13 @@ import 'package:wheelboard/screens/CompanyTransport/newtripscreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/schedulescreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/bids_screen.dart';
 import 'package:wheelboard/screens/CompanyTransport/trip_details_screen.dart';
-import 'package:wheelboard/controllers/add_trip_controller.dart';
-import 'package:wheelboard/controllers/trip_page_controller.dart';
+import 'package:wheelboard/controllers/Transport/add_trip_controller.dart';
+import 'package:wheelboard/controllers/Transport/trip_page_controller.dart';
 import 'package:wheelboard/utils/session_manager.dart';
 
 import 'package:wheelboard/models/add_new_trip_model.dart';
 import '../../widgets/custom_loader.dart';
 import 'TripExpenses/TripExpensesScreen.dart';
-import '../../controllers/trip_expenses_controller.dart';
 import '../../services/auth_service.dart';
 
 class TripPage extends StatefulWidget {
@@ -49,7 +48,9 @@ class _TripPageState extends State<TripPage>
     );
     // Register tab controller with GetX controller
     tabPageController.setTabController(_tabController);
-    _fetchTrips();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchTrips();
+    });
 
     // Listen to tab changes from GetX controller
     ever(tabPageController.currentTabIndex, (int index) {
@@ -1288,36 +1289,6 @@ class _UpcomingTripCard extends StatelessWidget {
                       label: 'Share',
                       color: const Color(0xFFF36969),
                       onTap: () => _shareTrip(trip),
-                    ),
-                    // Delete Button
-                    _actionButton(
-                      icon: Icons.delete_outline,
-                      label: 'Delete',
-                      color: Colors.red,
-                      onTap: () {
-                        Get.defaultDialog(
-                          title: "Delete Trip",
-                          middleText:
-                              "Are you sure you want to delete this trip?",
-                          textConfirm: "Delete",
-                          textCancel: "Cancel",
-                          confirmTextColor: Colors.white,
-                          buttonColor: Colors.red,
-                          onConfirm: () async {
-                            Get.back(); // close dialog
-                            final controller = Get.put(
-                              TripExpensesController(),
-                            );
-                            bool success = await controller.deleteTrip(tripId);
-                            if (success) {
-                              // Refresh the trip list to remove deleted trip from UI
-                              final tripCtrl = Get.find<TripController>();
-                              final userId = AuthService.to.currentUserId;
-                              await tripCtrl.refreshTrips(userId);
-                            }
-                          },
-                        );
-                      },
                     ),
                     if (trip.driverId.isEmpty &&
                         (trip.driverName == null || trip.driverName!.isEmpty))

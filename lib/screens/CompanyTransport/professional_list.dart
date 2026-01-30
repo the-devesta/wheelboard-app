@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/professional_list_controller.dart';
+import '../../controllers/Transport/professional_list_controller.dart';
 import '../../models/professional_profile_model.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_loader.dart';

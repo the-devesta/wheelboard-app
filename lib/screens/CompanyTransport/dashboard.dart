@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
-import '../../controllers/dashboard_controller.dart';
+import '../../controllers/Transport/dashboard_controller.dart';
 import '../../models/dashboard_model.dart';
 import '../../widgets/custom_loader.dart';
 import 'job_screen.dart';
@@ -281,19 +281,18 @@ class DashboardScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _sectionTitle("Top Rated Professionals"),
-                    Obx(() {
-                      if (data.topProfessionals.length <= 3)
-                        return const SizedBox.shrink();
-                      return TextButton(
-                        onPressed: () =>
-                            controller.showAllProfessionals.toggle(),
-                        child: Text(
-                          controller.showAllProfessionals.value
-                              ? "Show Less"
-                              : "View All",
+                    if (data.topProfessionals.length > 3)
+                      Obx(
+                        () => TextButton(
+                          onPressed: () =>
+                              controller.showAllProfessionals.toggle(),
+                          child: Text(
+                            controller.showAllProfessionals.value
+                                ? "Show Less"
+                                : "View All",
+                          ),
                         ),
-                      );
-                    }),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -522,19 +521,18 @@ class DashboardScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _sectionTitle("Assigned Services"),
-                    Obx(() {
-                      if (data.assignedServices.length <= 3)
-                        return const SizedBox.shrink();
-                      return TextButton(
-                        onPressed: () =>
-                            controller.showAllAssignedServices.toggle(),
-                        child: Text(
-                          controller.showAllAssignedServices.value
-                              ? "Show Less"
-                              : "View All",
+                    if (data.assignedServices.length > 3)
+                      Obx(
+                        () => TextButton(
+                          onPressed: () =>
+                              controller.showAllAssignedServices.toggle(),
+                          child: Text(
+                            controller.showAllAssignedServices.value
+                                ? "Show Less"
+                                : "View All",
+                          ),
                         ),
-                      );
-                    }),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),

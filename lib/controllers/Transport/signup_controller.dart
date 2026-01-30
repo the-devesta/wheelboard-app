@@ -1,12 +1,12 @@
 import 'package:get/get.dart';
 import 'dart:convert';
-import '../models/company_signupmodel.dart';
-import '../apihelperclass/api_helper.dart';
-import '../utils/constants.dart';
-import '../utils/session_manager.dart';
-import '../utils/error_handler.dart';
-import '../widgets/custom_snackbar.dart';
-import '../utils/app_logger.dart';
+import '../../models/company_signupmodel.dart';
+import '../../apihelperclass/api_helper.dart';
+import '../../utils/constants.dart';
+import '../../utils/session_manager.dart';
+import '../../utils/error_handler.dart';
+import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class SignupController extends GetxController {
   var isLoading = false.obs;

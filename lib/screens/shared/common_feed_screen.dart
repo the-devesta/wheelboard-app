@@ -5,7 +5,7 @@ import 'package:wheelboard/screens/CompanyTransport/fleet_userprofile.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:wheelboard/services/auth_service.dart';
 import '../CompanyTransport/new_post_screen.dart';
-import '../../controllers/post_controller.dart';
+import '../../controllers/Transport/post_controller.dart';
 import '../../controllers/Professional/feeds_controller.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/share_service.dart';

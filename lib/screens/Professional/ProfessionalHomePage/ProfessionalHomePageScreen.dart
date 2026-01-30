@@ -16,7 +16,7 @@ import '../TripProgress/TripProgressScreen.dart';
 import '../SOS/SOSScreen.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
-import '../../../controllers/notification_controller.dart';
+import '../../../controllers/Transport/notification_controller.dart';
 import '../../../widgets/custom_loader.dart';
 import '../../../widgets/custom_snackbar.dart';
 

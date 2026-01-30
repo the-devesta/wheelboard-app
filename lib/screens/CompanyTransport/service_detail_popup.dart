@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/service_controller.dart';
-import '../../controllers/fleet_controller.dart';
+import '../../controllers/Transport/service_controller.dart';
+import '../../controllers/Transport/fleet_controller.dart';
 import '../../models/service_assignment_summary.dart';
 import '../../models/service_model.dart';
 import '../../models/get_vehicle_model.dart';
@@ -47,9 +47,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
     _dateController = TextEditingController();
     _timeController = TextEditingController();
     _vehicleController = TextEditingController();
-    _descriptionController = TextEditingController(
-      text: widget.service.description ?? '',
-    );
+    _descriptionController = TextEditingController();
 
     // Initialize fleet controller and fetch vehicles
     _fleetController = Get.put(DriverController());
