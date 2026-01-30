@@ -220,54 +220,54 @@ class ProfessionLogin extends StatelessWidget {
                           const SizedBox(height: 16),
 
                           /// Quick Login Buttons (for testing)
-                          Text(
-                            "--- Quick Logins for Testing ---",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildTestLoginButton(
-                                  "Transport",
-                                  () async {
-                                    phoneController.text = "9304514788";
-                                    await loginController.sendOTP(
-                                      phoneController.text,
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildTestLoginButton(
-                                  "Professional",
-                                  () async {
-                                    phoneController.text = "9304514789";
-                                    await loginController.sendOTP(
-                                      phoneController.text,
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildTestLoginButton(
-                                  "Service Provider",
-                                  () async {
-                                    phoneController.text = "9304593045";
-                                    await loginController.sendOTP(
-                                      phoneController.text,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
+                          // Text(
+                          //   "--- Quick Logins for Testing ---",
+                          //   style: TextStyle(
+                          //     fontSize: 12,
+                          //     color: Colors.grey.shade500,
+                          //     fontWeight: FontWeight.w500,
+                          //   ),
+                          // ),
+                          // const SizedBox(height: 12),
+                          // Row(
+                          //   children: [
+                          //     Expanded(
+                          //       child: _buildTestLoginButton(
+                          //         "Transport",
+                          //         () async {
+                          //           phoneController.text = "9304514788";
+                          //           await loginController.sendOTP(
+                          //             phoneController.text,
+                          //           );
+                          //         },
+                          //       ),
+                          //     ),
+                          //     const SizedBox(width: 8),
+                          //     Expanded(
+                          //       child: _buildTestLoginButton(
+                          //         "Professional",
+                          //         () async {
+                          //           phoneController.text = "9304514789";
+                          //           await loginController.sendOTP(
+                          //             phoneController.text,
+                          //           );
+                          //         },
+                          //       ),
+                          //     ),
+                          //     const SizedBox(width: 8),
+                          //     Expanded(
+                          //       child: _buildTestLoginButton(
+                          //         "Service Provider",
+                          //         () async {
+                          //           phoneController.text = "9304593045";
+                          //           await loginController.sendOTP(
+                          //             phoneController.text,
+                          //           );
+                          //         },
+                          //       ),
+                          //     ),
+                          //   ],
+                          // ),
                           const SizedBox(height: 16),
                         ],
                       ),
