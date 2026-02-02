@@ -13,6 +13,7 @@ import '../EditYourProfile01/EditYourProfile01Screen.dart';
 import '../../../widgets/custom_loader.dart';
 import '../AddReferral/AddReferralScreen.dart';
 import '../../../utils/app_logger.dart';
+import '../../../controllers/Transport/driver_details_controller.dart';
 
 class YourProfileScreen extends StatelessWidget {
   const YourProfileScreen({super.key});
@@ -21,10 +22,19 @@ class YourProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Initialize controller
     final controller = Get.put(UserProfileController());
+    final driverController = Get.put(DriverDetailsController());
 
     // Fetch profile on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchCurrentUserProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await controller.fetchCurrentUserProfile();
+
+      // Fetch driver details if user is a driver
+      final profile = controller.userProfile.value;
+      if (profile != null &&
+          (profile.professionalType?.toLowerCase().contains('driver') ??
+              false)) {
+        driverController.fetchDriverDetails(profile.userId);
+      }
     });
 
     return Scaffold(
@@ -76,7 +86,7 @@ class YourProfileScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       _buildContactInfo(profile),
                       const SizedBox(height: 16),
-                      _buildWorkOverview(),
+                      // _buildWorkOverview(),
                       const SizedBox(height: 16),
                       _buildCompleteKyc(),
                       const SizedBox(height: 16),
@@ -580,16 +590,34 @@ Widget _buildCompleteKyc() {
     children: [
       // Show Driving License for Drivers only
       if (isDriver)
-        Builder(
-          builder: (context) {
-            return _buildKycItem(
-              'Driving License',
-              'Missing',
-              Colors.red,
-              onTap: () => _showDrivingLicenseDialog(context),
-            );
-          },
-        ),
+        Obx(() {
+          final driverController = Get.find<DriverDetailsController>();
+          final driver = driverController.driverDetails.value;
+
+          String status = 'Missing';
+          Color statusColor = Colors.red;
+
+          if (driver?.dlNumber != null && driver!.dlNumber!.isNotEmpty) {
+            if (driver.isVerified) {
+              status = 'Verified';
+              statusColor = Colors.green;
+            } else {
+              status = 'Pending';
+              statusColor = Colors.orange;
+            }
+          }
+
+          return Builder(
+            builder: (context) {
+              return _buildKycItem(
+                'Driving License',
+                status,
+                statusColor,
+                onTap: () => _showDrivingLicenseDialog(context),
+              );
+            },
+          );
+        }),
 
       // Show PAN Card for Technician/Helper
       if (!isDriver)
@@ -1249,10 +1277,7 @@ Widget _buildEditableItem(IconData icon, String label, String value) {
 /// Contact support via phone
 void _contactUs() async {
   try {
-    final Uri phoneUri = Uri(
-      scheme: 'tel',
-      path: '+919876543210', // Replace with actual support number
-    );
+    final Uri phoneUri = Uri(scheme: 'tel', path: '+917420861942');
 
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
@@ -1384,15 +1409,15 @@ void _showDrivingLicenseDialog(BuildContext context) {
                       if (picked != null) {
                         setState(() {
                           selectedDob = picked;
-                          // Format as DD/MM/YYYY for API (15/05/2000)
+                          // Format as yyyy-MM-dd for API (2000-05-15)
                           dobController.text =
-                              '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+                              '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
                         });
                       }
                     },
                     decoration: InputDecoration(
                       labelText: 'Date of Birth',
-                      hintText: 'DD/MM/YYYY',
+                      hintText: 'YYYY-MM-DD',
                       suffixIcon: const Icon(Icons.calendar_today, size: 20),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -1463,13 +1488,31 @@ Future<void> _verifyDrivingLicense(
       SnackBarHelper.success(result['message'] ?? 'Verification successful');
       // Refresh profile to get updated KYC status
       final controller = Get.find<UserProfileController>();
-      controller.fetchCurrentUserProfile();
+      await controller.fetchCurrentUserProfile();
+
+      // Also refresh driver details to show updated status
+      try {
+        final driverController = Get.find<DriverDetailsController>();
+        await driverController.fetchDriverDetails(userId);
+      } catch (e) {
+        AppLogger.d("Error refreshing driver details: $e");
+      }
     } else {
       SnackBarHelper.error('Verification failed');
     }
   } catch (e) {
     AppLogger.d('Error verifying driving license: $e');
-    SnackBarHelper.error('Failed to verify: ${e.toString()}');
+
+    String errorMessage = e.toString();
+    // Sanitize huge HTML errors
+    if (errorMessage.contains("<!DOCTYPE html>") ||
+        errorMessage.contains("<html>")) {
+      errorMessage = "Server error occurred. Please check your inputs.";
+    } else if (errorMessage.length > 200) {
+      errorMessage = errorMessage.substring(0, 200) + "...";
+    }
+
+    SnackBarHelper.error('Failed to verify: $errorMessage');
   }
 }
 
@@ -1591,7 +1634,7 @@ Future<void> _verifyPanCard(String userId, String panNumber) async {
       );
       // Refresh profile to get updated KYC status
       final controller = Get.find<UserProfileController>();
-      controller.fetchCurrentUserProfile();
+      await controller.fetchCurrentUserProfile();
     } else {
       SnackBarHelper.error('Verification failed');
     }

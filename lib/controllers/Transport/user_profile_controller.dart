@@ -59,6 +59,13 @@ class UserProfileController extends GetxController {
         AppLogger.d("✅ Profile loaded successfully");
         AppLogger.d("👉 User Type: ${userProfile.value?.userType}");
         AppLogger.d("👉 Display Name: ${userProfile.value?.displayName}");
+        AppLogger.d("👉 KYC Status: ${userProfile.value?.isKYCCompleted}");
+
+        // Update AuthService KYC status
+        if (userProfile.value?.isKYCCompleted != null) {
+          AuthService.to.updateKYCStatus(userProfile.value!.isKYCCompleted!);
+        }
+
         AppLogger.d("==================================");
 
         return true;

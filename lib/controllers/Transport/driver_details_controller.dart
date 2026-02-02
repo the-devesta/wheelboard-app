@@ -6,6 +6,7 @@ import '../../widgets/custom_snackbar.dart';
 import '../../utils/session_manager.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
+import '../../services/auth_service.dart';
 
 class DriverDetailsController extends GetxController {
   var isLoading = false.obs;
@@ -52,6 +53,16 @@ class DriverDetailsController extends GetxController {
             // If data is directly the driver object
             if (data.containsKey('driverId')) {
               driverDetails.value = DriverDetailsModel.fromJson(data);
+              // Update AuthService KYC status based on driver details
+              if (driverDetails.value != null) {
+                final isVerified =
+                    driverDetails.value!.isVerified ||
+                    driverDetails.value!.isKYCCompleted;
+                AuthService.to.updateKYCStatus(isVerified);
+                AppLogger.d(
+                  "✅ Updated AuthService KYC Status from Driver Details: $isVerified",
+                );
+              }
               AppLogger.d(
                 "✅ Driver details loaded successfully: ${driverDetails.value?.fullName}",
               );
@@ -61,6 +72,16 @@ class DriverDetailsController extends GetxController {
               final result = data['result'];
               if (result is Map<String, dynamic>) {
                 driverDetails.value = DriverDetailsModel.fromJson(result);
+                // Update AuthService KYC status based on driver details
+                if (driverDetails.value != null) {
+                  final isVerified =
+                      driverDetails.value!.isVerified ||
+                      driverDetails.value!.isKYCCompleted;
+                  AuthService.to.updateKYCStatus(isVerified);
+                  AppLogger.d(
+                    "✅ Updated AuthService KYC Status from Driver Details: $isVerified",
+                  );
+                }
                 AppLogger.d(
                   "✅ Driver details loaded successfully: ${driverDetails.value?.fullName}",
                 );
@@ -77,9 +98,12 @@ class DriverDetailsController extends GetxController {
           AppLogger.d("❌ JSON Parse Error: $parseError");
           SnackBarHelper.error("Failed to parse driver details");
         }
+      } else if (response.statusCode == 204) {
+        AppLogger.d("ℹ️ No driver details found (204 - No Content)");
+        driverDetails.value = null; // Valid state, just no data yet
       } else if (response.statusCode == 404) {
         AppLogger.d("❌ Driver not found (404)");
-        SnackBarHelper.warning("Driver details not found. Please try again.");
+        // SnackBarHelper.warning("Driver details not found. Please try again.");
       } else {
         AppLogger.d("❌ Failed to load driver details: ${response.statusCode}");
         SnackBarHelper.error(

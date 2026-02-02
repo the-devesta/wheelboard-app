@@ -30,7 +30,7 @@ import 'utils/app_logger.dart';
 void main() async {
   // HttpOverrides.global = MyHttpOverrides();
   // Set the environment here: change to Environment.testing for test server
-  AppConfig.currentEnvironment = Environment.testing;
+  AppConfig.currentEnvironment = Environment.production;
   // Initialize GetX services
   Get.put(AuthService());
 
