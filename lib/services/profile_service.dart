@@ -97,11 +97,19 @@ class ProfileService {
     required String dlNumber,
     required String dob,
   }) async {
+    AppLogger.d('🔐 [ProfileService] Verify DL Request:');
+    AppLogger.d('🔐 [ProfileService] - userId: $userId');
+    AppLogger.d('🔐 [ProfileService] - dlNumber: $dlNumber');
+    AppLogger.d('🔐 [ProfileService] - dob: $dob');
+
     final response = await HttpHelper.postData(
       endpoint: API.verifyDrivingLicence,
       headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
       data: {'userId': userId, 'dlNumber': dlNumber, 'dob': dob},
     );
+
+    AppLogger.d('🔐 [ProfileService] Response Status: ${response.statusCode}');
+    AppLogger.d('🔐 [ProfileService] Response Body: ${response.body}');
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       // Parse the response
@@ -111,8 +119,27 @@ class ProfileService {
           responseData = Map<String, dynamic>.from(
             jsonDecode(response.body) as Map,
           );
+          AppLogger.d(
+            '🔐 [ProfileService] Parsed Response Data: $responseData',
+          );
+
+          // Check if response contains KYC status
+          if (responseData.containsKey('isKYCCompleted')) {
+            AppLogger.d(
+              '🔐 [ProfileService] Response contains isKYCCompleted: ${responseData['isKYCCompleted']}',
+            );
+          }
+          if (responseData.containsKey('result') &&
+              responseData['result'] is Map) {
+            final result = responseData['result'] as Map<String, dynamic>;
+            if (result.containsKey('isKYCCompleted')) {
+              AppLogger.d(
+                '🔐 [ProfileService] Result contains isKYCCompleted: ${result['isKYCCompleted']}',
+              );
+            }
+          }
         } catch (e) {
-          AppLogger.d('Error parsing response: $e');
+          AppLogger.d('🔐 [ProfileService] Error parsing response: $e');
         }
       }
 
@@ -135,7 +162,9 @@ class ProfileService {
     required String userId,
     required String panNumber,
   }) async {
-    AppLogger.d('🔐 PAN KYC Request - userId: $userId, panNumber: $panNumber');
+    AppLogger.d('🔐 [ProfileService] Verify PAN Request:');
+    AppLogger.d('🔐 [ProfileService] - userId: $userId');
+    AppLogger.d('🔐 [ProfileService] - panNumber: $panNumber');
 
     final response = await HttpHelper.postData(
       endpoint: API.verifyPanKYC,
@@ -143,8 +172,10 @@ class ProfileService {
       data: {'panNumber': panNumber, 'userId': userId},
     );
 
-    AppLogger.d('🔐 PAN KYC Response Status: ${response.statusCode}');
-    AppLogger.d('🔐 PAN KYC Response Body: ${response.body}');
+    AppLogger.d(
+      '🔐 [ProfileService] PAN Response Status: ${response.statusCode}',
+    );
+    AppLogger.d('🔐 [ProfileService] PAN Response Body: ${response.body}');
 
     // Parse response body
     Map<String, dynamic> responseData = {};
@@ -153,8 +184,27 @@ class ProfileService {
         responseData = Map<String, dynamic>.from(
           jsonDecode(response.body) as Map,
         );
+        AppLogger.d(
+          '🔐 [ProfileService] Parsed PAN Response Data: $responseData',
+        );
+
+        // Check if response contains KYC status
+        if (responseData.containsKey('isKYCCompleted')) {
+          AppLogger.d(
+            '🔐 [ProfileService] PAN Response contains isKYCCompleted: ${responseData['isKYCCompleted']}',
+          );
+        }
+        if (responseData.containsKey('result') &&
+            responseData['result'] is Map) {
+          final result = responseData['result'] as Map<String, dynamic>;
+          if (result.containsKey('isKYCCompleted')) {
+            AppLogger.d(
+              '🔐 [ProfileService] PAN Result contains isKYCCompleted: ${result['isKYCCompleted']}',
+            );
+          }
+        }
       } catch (e) {
-        AppLogger.d('Error parsing response: $e');
+        AppLogger.d('🔐 [ProfileService] Error parsing PAN response: $e');
       }
     }
 

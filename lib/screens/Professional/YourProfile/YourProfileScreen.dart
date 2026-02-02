@@ -1409,15 +1409,15 @@ void _showDrivingLicenseDialog(BuildContext context) {
                       if (picked != null) {
                         setState(() {
                           selectedDob = picked;
-                          // Format as yyyy-MM-dd for API (2000-05-15)
+                          // Format as dd/mm/yyyy for API (15/05/2000)
                           dobController.text =
-                              '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                              '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
                         });
                       }
                     },
                     decoration: InputDecoration(
                       labelText: 'Date of Birth',
-                      hintText: 'YYYY-MM-DD',
+                      hintText: 'DD/MM/YYYY',
                       suffixIcon: const Icon(Icons.calendar_today, size: 20),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -1475,6 +1475,11 @@ Future<void> _verifyDrivingLicense(
   String dob,
 ) async {
   try {
+    AppLogger.d('🔐 ============ STARTING DL VERIFICATION ============');
+    AppLogger.d('🔐 UserId: $userId');
+    AppLogger.d('🔐 DL Number: $dlNumber');
+    AppLogger.d('🔐 DOB: $dob');
+
     SnackBarHelper.info('Verifying Driving License...');
 
     final profileService = ProfileService();
@@ -1484,24 +1489,59 @@ Future<void> _verifyDrivingLicense(
       dob: dob,
     );
 
+    AppLogger.d('🔐 Verification Result: $result');
+
     if (result['success'] == true) {
+      AppLogger.d('✅ DL Verification SUCCESSFUL!');
+
+      // ✅ IMMEDIATELY update KYC status locally
+      AppLogger.d('🔐 Setting KYC status to TRUE in AuthService...');
+      await AuthService.to.updateKYCStatus(true);
+      AppLogger.d('🔐 KYC Status updated in AuthService');
+
       SnackBarHelper.success(result['message'] ?? 'Verification successful');
-      // Refresh profile to get updated KYC status
+
+      // Wait a bit for backend to process
+      AppLogger.d('🔐 Waiting 2 seconds for backend to process...');
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Refresh profile to get updated KYC status from backend
+      AppLogger.d('🔐 Refreshing user profile...');
       final controller = Get.find<UserProfileController>();
-      await controller.fetchCurrentUserProfile();
+      final profileRefreshed = await controller.fetchCurrentUserProfile();
+      AppLogger.d('🔐 Profile refresh result: $profileRefreshed');
+
+      // Check KYC status after refresh
+      final kycStatus = AuthService.to.isUserKYCCompleted;
+      AppLogger.d('🔐 KYC Status after profile refresh: $kycStatus');
 
       // Also refresh driver details to show updated status
       try {
+        AppLogger.d('🔐 Refreshing driver details...');
         final driverController = Get.find<DriverDetailsController>();
         await driverController.fetchDriverDetails(userId);
+        AppLogger.d('🔐 Driver details refreshed');
       } catch (e) {
-        AppLogger.d("Error refreshing driver details: $e");
+        AppLogger.d("⚠️ Error refreshing driver details: $e");
+      }
+
+      AppLogger.d('🔐 ============ DL VERIFICATION COMPLETE ============');
+
+      // If KYC is still false after all this, warn the user
+      if (!AuthService.to.isUserKYCCompleted) {
+        AppLogger.d(
+          '⚠️ WARNING: KYC status is still false after verification!',
+        );
+        SnackBarHelper.info(
+          'Verification successful! Please restart the app to see updated status.',
+        );
       }
     } else {
+      AppLogger.d('❌ DL Verification FAILED');
       SnackBarHelper.error('Verification failed');
     }
   } catch (e) {
-    AppLogger.d('Error verifying driving license: $e');
+    AppLogger.d('❌ Error verifying driving license: $e');
 
     String errorMessage = e.toString();
     // Sanitize huge HTML errors
@@ -1611,9 +1651,9 @@ void _showPanCardDialog(BuildContext context) {
 /// Verify PAN Card via API
 Future<void> _verifyPanCard(String userId, String panNumber) async {
   try {
-    AppLogger.d(
-      '🔐 Starting PAN verification - userId: $userId, pan: $panNumber',
-    );
+    AppLogger.d('🔐 ============ STARTING PAN VERIFICATION ============');
+    AppLogger.d('🔐 UserId: $userId');
+    AppLogger.d('🔐 PAN Number: $panNumber');
 
     if (userId.isEmpty) {
       SnackBarHelper.error('User ID not found. Please try again.');
@@ -1628,18 +1668,51 @@ Future<void> _verifyPanCard(String userId, String panNumber) async {
       panNumber: panNumber,
     );
 
+    AppLogger.d('🔐 Verification Result: $result');
+
     if (result['success'] == true) {
+      AppLogger.d('✅ PAN Verification SUCCESSFUL!');
+
+      // ✅ IMMEDIATELY update KYC status locally
+      AppLogger.d('🔐 Setting KYC status to TRUE in AuthService...');
+      await AuthService.to.updateKYCStatus(true);
+      AppLogger.d('🔐 KYC Status updated in AuthService');
+
       SnackBarHelper.success(
         result['message'] ?? 'PAN Card verified successfully!',
       );
-      // Refresh profile to get updated KYC status
+
+      // Wait a bit for backend to process
+      AppLogger.d('🔐 Waiting 2 seconds for backend to process...');
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Refresh profile to get updated KYC status from backend
+      AppLogger.d('🔐 Refreshing user profile...');
       final controller = Get.find<UserProfileController>();
-      await controller.fetchCurrentUserProfile();
+      final profileRefreshed = await controller.fetchCurrentUserProfile();
+      AppLogger.d('🔐 Profile refresh result: $profileRefreshed');
+
+      // Check KYC status after refresh
+      final kycStatus = AuthService.to.isUserKYCCompleted;
+      AppLogger.d('🔐 KYC Status after profile refresh: $kycStatus');
+
+      AppLogger.d('🔐 ============ PAN VERIFICATION COMPLETE ============');
+
+      // If KYC is still false after all this, warn the user
+      if (!AuthService.to.isUserKYCCompleted) {
+        AppLogger.d(
+          '⚠️ WARNING: KYC status is still false after verification!',
+        );
+        SnackBarHelper.info(
+          'Verification successful! Please restart the app to see updated status.',
+        );
+      }
     } else {
+      AppLogger.d('❌ PAN Verification FAILED');
       SnackBarHelper.error('Verification failed');
     }
   } catch (e) {
-    AppLogger.d('Error verifying PAN card: $e');
+    AppLogger.d('❌ Error verifying PAN card: $e');
     // Extract clean error message
     String errorMsg = e.toString();
     if (errorMsg.contains('Exception:')) {

@@ -201,8 +201,22 @@ class AuthService extends GetxService {
 
   /// Update KYC status
   Future<void> updateKYCStatus(bool status) async {
+    AppLogger.d("🔐 [AuthService] updateKYCStatus called");
+    AppLogger.d("🔐 [AuthService] Current KYC status: ${isKYCCompleted.value}");
+    AppLogger.d("🔐 [AuthService] New KYC status: $status");
+
     await _sessionManager.saveBool("isKYCCompleted", status);
     isKYCCompleted.value = status;
-    AppLogger.d("✅ KYC Status Updated: $status");
+
+    AppLogger.d("✅ [AuthService] KYC Status Updated and Saved: $status");
+    AppLogger.d(
+      "🔐 [AuthService] isKYCCompleted.value is now: ${isKYCCompleted.value}",
+    );
+
+    // Verify it was saved correctly
+    final savedStatus = await _sessionManager.getBool("isKYCCompleted");
+    AppLogger.d(
+      "🔐 [AuthService] Verified saved status in session: ${savedStatus ?? false}",
+    );
   }
 }
