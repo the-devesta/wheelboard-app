@@ -579,7 +579,14 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                   child: Container(
                                     height: 37,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF00B894),
+                                      color:
+                                          currentStatus.toLowerCase() ==
+                                              'assigned'
+                                          ? const Color(0xFF0984E3)
+                                          : currentStatus.toLowerCase() ==
+                                                'in-transit'
+                                          ? const Color(0xFF00B894)
+                                          : const Color(0xFF10E445),
                                       borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
                                         BoxShadow(
@@ -589,10 +596,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                         ),
                                       ],
                                     ),
-                                    child: const Center(
+                                    child: Center(
                                       child: Text(
-                                        'Available',
-                                        style: TextStyle(
+                                        currentStatus,
+                                        style: const TextStyle(
                                           fontFamily: 'Poppins',
                                           fontWeight: FontWeight.w600,
                                           fontSize: 12,
@@ -603,84 +610,87 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                   ),
                                 ),
                                 // OFF Lease Toggle (Right side)
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      // Navigate to Add Vehicle Lease Screen
-                                      Get.to(
-                                        () => AddVehicleLeaseScreen(
-                                          preselectedVehicle: widget.vehicle,
+                                if (currentStatus.toLowerCase() == 'available')
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        // Navigate to Add Vehicle Lease Screen
+                                        Get.to(
+                                          () => AddVehicleLeaseScreen(
+                                            preselectedVehicle: widget.vehicle,
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        height: 37,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
                                         ),
-                                      );
-                                    },
-                                    child: Container(
-                                      height: 37,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(24),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            'OFF Lease',
-                                            style: TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 12,
-                                              color: Color(0xFFF26868),
-                                            ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.transparent,
+                                          borderRadius: BorderRadius.circular(
+                                            24,
                                           ),
-                                          const SizedBox(width: 8),
-                                          // Toggle Switch
-                                          Container(
-                                            width: 40,
-                                            height: 22,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFE0E0E0),
-                                              borderRadius:
-                                                  BorderRadius.circular(11),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Text(
+                                              'OFF Lease',
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 12,
+                                                color: Color(0xFFF26868),
+                                              ),
                                             ),
-                                            child: Stack(
-                                              children: [
-                                                Positioned(
-                                                  left: 2,
-                                                  top: 2,
-                                                  child: Container(
-                                                    width: 18,
-                                                    height: 18,
-                                                    decoration:
-                                                        const BoxDecoration(
-                                                          color: Colors.white,
-                                                          shape:
-                                                              BoxShape.circle,
-                                                          boxShadow: [
-                                                            BoxShadow(
-                                                              color: Color(
-                                                                0x29000000,
+                                            const SizedBox(width: 8),
+                                            // Toggle Switch
+                                            Container(
+                                              width: 40,
+                                              height: 22,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFE0E0E0),
+                                                borderRadius:
+                                                    BorderRadius.circular(11),
+                                              ),
+                                              child: Stack(
+                                                children: [
+                                                  Positioned(
+                                                    left: 2,
+                                                    top: 2,
+                                                    child: Container(
+                                                      width: 18,
+                                                      height: 18,
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                            color: Colors.white,
+                                                            shape:
+                                                                BoxShape.circle,
+                                                            boxShadow: [
+                                                              BoxShadow(
+                                                                color: Color(
+                                                                  0x29000000,
+                                                                ),
+                                                                blurRadius: 2,
+                                                                offset: Offset(
+                                                                  0,
+                                                                  1,
+                                                                ),
                                                               ),
-                                                              blurRadius: 2,
-                                                              offset: Offset(
-                                                                0,
-                                                                1,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
+                                                            ],
+                                                          ),
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
@@ -860,7 +870,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                         trip.tripCode,
                                         trip.getRoute(),
                                         driverInfo?.driverImage ??
-                                            'assets/google.png',
+                                            'assets/truckImg.png',
                                       );
                                     }).toList(),
                                   ),

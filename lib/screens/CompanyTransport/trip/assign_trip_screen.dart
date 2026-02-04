@@ -12,6 +12,7 @@ import '../../../widgets/custom_snackbar.dart';
 import '../../../widgets/custom_loader.dart';
 import 'trip_accepted.dart';
 import '../../../utils/app_logger.dart';
+import '../../../controllers/Transport/user_profile_controller.dart';
 
 class AssignTripScreen extends StatefulWidget {
   final String tripId;
@@ -870,6 +871,23 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
         orderId: order.orderId,
       );
 
+      String prefillEmail = 'hello@wheelboard.in';
+      String prefillContact = '7420861942';
+
+      try {
+        if (Get.isRegistered<UserProfileController>()) {
+          final profile = Get.find<UserProfileController>().userProfile.value;
+          if (profile != null) {
+            prefillEmail = profile.email ?? profile.mobileNo ?? prefillEmail;
+            prefillContact = profile.mobileNo ?? prefillContact;
+          }
+        }
+      } catch (e) {
+        AppLogger.d(
+          '[AssignTrip] Could not fetch user profile for prefill: $e',
+        );
+      }
+
       await _razorpayService.openCheckout(
         amountInPaise: order.amountInPaise,
         orderId: order.orderId,
@@ -878,6 +896,8 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
         description:
             'Trip payment for ${bid.driverName.isNotEmpty ? bid.driverName : 'WheelBoard driver'}',
         customerName: 'WheelBoard',
+        prefillEmail: prefillEmail,
+        prefillContact: prefillContact,
         notes: {
           'tripId': widget.tripId,
           'bidId': bid.bidId,

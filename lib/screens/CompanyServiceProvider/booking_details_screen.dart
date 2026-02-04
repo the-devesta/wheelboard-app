@@ -446,72 +446,22 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              // Start Service Button - Full width below customer info
-              if (assignment['status']?.toString().toLowerCase() != 'started' &&
-                  assignment['status']?.toString().toLowerCase() !=
-                      'completed' &&
-                  assignment['status']?.toString().toLowerCase() != 'cancelled')
-                Row(
-                  children: [
-                    if (contactNumber.isNotEmpty) ...[
-                      Expanded(
-                        flex: 1,
-                        child: OutlinedButton.icon(
-                          onPressed: () => CallUtils.makeCall(contactNumber),
-                          icon: const Icon(Icons.phone, size: 18),
-                          label: const Text('Call'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF00AAFF),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: const BorderSide(color: Color(0xFF00AAFF)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: _isUpdating
-                            ? null
-                            : () {
-                                final assignmentId =
-                                    assignment['assignmentId'] ?? '';
-                                if (assignmentId.isNotEmpty) {
-                                  _startService(assignmentId);
-                                }
-                              },
-                        icon: const Icon(
-                          Icons.play_arrow,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          'Start Service',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF27AE60),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          disabledBackgroundColor: Colors.grey[300],
-                        ),
+              if (contactNumber.isNotEmpty)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => CallUtils.makeCall(contactNumber),
+                    icon: const Icon(Icons.phone, size: 18),
+                    label: const Text('Call Customer'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF00AAFF),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Color(0xFF00AAFF)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                  ],
+                  ),
                 ),
             ],
           ),
@@ -848,7 +798,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     final assignmentId = _bookingData?['assignmentId'] ?? '';
     final status = _bookingData?['status']?.toString().toLowerCase() ?? '';
 
-    if (status == 'completed' || status == 'cancelled') {
+    if (status == 'completed' || status == 'cancelled' || status == 'paid') {
       return const SizedBox.shrink();
     }
 

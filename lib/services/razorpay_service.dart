@@ -36,8 +36,8 @@ class RazorpayService {
     String? receipt,
     String currency = 'INR',
     String customerName = 'WheelBoard',
-    String prefillContact = '9999999999',
-    String prefillEmail = 'payments@wheelboard.app',
+    String prefillContact = '7420861942',
+    String prefillEmail = 'hello@wheelboard.in',
     String? image,
     Map<String, dynamic>? notes,
   }) async {
@@ -64,6 +64,7 @@ class RazorpayService {
       'order_id': orderId,
       'timeout': 120,
       'prefill': {'contact': prefillContact, 'email': prefillEmail},
+      'readonly': {'contact': true, 'email': true},
       'notes': notes ?? {},
       'theme': {'color': '#F36969'},
       'image': image ?? '${ApiConstants.baseUrl}images/logo.png',

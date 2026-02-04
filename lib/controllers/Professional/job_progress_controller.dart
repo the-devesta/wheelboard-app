@@ -49,9 +49,19 @@ class JobProgressController extends GetxController {
       AppLogger.d("📋 Applied jobs response body: ${response.body}");
 
       if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        appliedJobs.value = data.map((e) => AppliedJob.fromJson(e)).toList();
-        AppLogger.d("✅ Fetched ${appliedJobs.length} applied jobs");
+        final decoded = json.decode(response.body);
+        if (decoded is List) {
+          appliedJobs.value = decoded
+              .map((e) => AppliedJob.fromJson(e))
+              .toList();
+          AppLogger.d("✅ Fetched ${appliedJobs.length} applied jobs");
+        } else {
+          // Handle Map response (e.g., {"message": "No applied jobs found."})
+          appliedJobs.value = [];
+          if (decoded is Map && decoded.containsKey('message')) {
+            AppLogger.d("ℹ️ API Message: ${decoded['message']}");
+          }
+        }
       } else {
         AppLogger.d("❌ Failed to fetch applied jobs: ${response.statusCode}");
         SnackBarHelper.error("Failed to load applied jobs");

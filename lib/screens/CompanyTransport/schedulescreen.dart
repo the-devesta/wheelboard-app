@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../controllers/Transport/add_trip_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../utils/distance_service.dart';
@@ -80,14 +81,12 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Schedule Your Trip',
-          style: TextStyle(
-            color: Color(0xFF1E1E1E),
-            fontSize: 14,
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF2D3436),
+            fontSize: 18,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-            letterSpacing: -0.14,
           ),
         ),
         leading: const BackButton(color: Colors.black),
@@ -156,6 +155,29 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                         final userId = await SessionManager().getString(
                           "userId",
                         );
+                        // Validation: Check if vehicle is selected
+                        if (tripController.selectedVehicle.value == null ||
+                            tripController.selectedVehicle.value!.isEmpty) {
+                          Get.snackbar(
+                            "Required",
+                            "Please select a vehicle",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                          return;
+                        }
+
+                        // Validation: Check if driver is selected
+                        if (tripController.selectedDriver.value == null ||
+                            tripController.selectedDriver.value!.isEmpty) {
+                          Get.snackbar(
+                            "Required",
+                            "Please select a driver",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                          return;
+                        }
 
                         if (userId == null || userId.isEmpty) {
                           Get.snackbar("Error", "User not logged in");

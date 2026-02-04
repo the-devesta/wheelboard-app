@@ -28,7 +28,7 @@ class JobDetailsScreen extends StatelessWidget {
             ),
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                "Job Detailsss",
+                "Job Details",
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   fontSize: 18,

@@ -14,7 +14,8 @@ import '../../utils/app_logger.dart';
 /// Common Feed Screen
 /// Used across Transport, Service Provider, and Professional modules
 class CommonFeedScreen extends StatelessWidget {
-  const CommonFeedScreen({super.key});
+  final bool showNewPostButton;
+  const CommonFeedScreen({super.key, this.showNewPostButton = true});
 
   Widget buildPostCard(Post post) {
     // Use company logo if available, otherwise use a placeholder
@@ -492,36 +493,51 @@ class CommonFeedScreen extends StatelessWidget {
           ),
         );
       }),
-      floatingActionButton: Obx(() {
-        final userType = AuthService.to.userType.value;
-        AppLogger.d("👤 Current User Type in Feed: '$userType'");
+      floatingActionButton: !showNewPostButton
+          ? null
+          : Obx(() {
+              final userType = AuthService.to.userType.value
+                  .toLowerCase()
+                  .trim();
+              final isProfessional =
+                  userType == 'professional' ||
+                  userType == 'driver' ||
+                  userType == 'technician' ||
+                  userType == 'helper';
 
-        // Hide "New Post" button for Professional users (case-insensitive check)
-        if (userType.toLowerCase().trim() == 'professional') {
-          return const SizedBox.shrink();
-        }
+              AppLogger.d(
+                "👤 Current User Type in Feed: '$userType' | isProfessional: $isProfessional | showParam: $showNewPostButton",
+              );
 
-        return ElevatedButton(
-          onPressed: () {
-            Get.to(const NetworkPostScreen())?.then((result) {
-              if (result == true) {
-                postController.refreshPosts();
+              // Hide "New Post" button for Professional users
+              if (isProfessional) {
+                return const SizedBox.shrink();
               }
-            });
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFFFD6C6C),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 4,
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-            child: Text("New Post ", style: TextStyle(color: AppColors.white)),
-          ),
-        );
-      }),
+
+              return ElevatedButton(
+                onPressed: () {
+                  Get.to(const NetworkPostScreen())?.then((result) {
+                    if (result == true) {
+                      postController.refreshPosts();
+                    }
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFD6C6C),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+                  child: Text(
+                    "New Post ",
+                    style: TextStyle(color: AppColors.white),
+                  ),
+                ),
+              );
+            }),
     );
   }
 }

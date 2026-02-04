@@ -65,16 +65,26 @@ class OpenJobsController extends GetxController {
 
       if (response.statusCode == 200) {
         try {
-          final List data = json.decode(response.body);
+          final decoded = json.decode(response.body);
 
-          // 🔍 Debug: Print first job raw data to see all fields
-          if (data.isNotEmpty) {
-            AppLogger.d("🔍 First job raw data keys: ${data[0].keys.toList()}");
-            AppLogger.d("🔍 First job raw data: ${data[0]}");
+          if (decoded is List) {
+            // 🔍 Debug: Print first job raw data to see all fields
+            if (decoded.isNotEmpty) {
+              AppLogger.d(
+                "🔍 First job raw data keys: ${decoded[0].keys.toList()}",
+              );
+              AppLogger.d("🔍 First job raw data: ${decoded[0]}");
+            }
+
+            openJobs.value = decoded.map((e) => OpenJob.fromJson(e)).toList();
+            AppLogger.d("✅ Fetched ${openJobs.length} open jobs");
+          } else {
+            // Case where server returns a message object instead of a list
+            openJobs.value = [];
+            if (decoded is Map && decoded.containsKey('message')) {
+              AppLogger.d("ℹ️ API Message: ${decoded['message']}");
+            }
           }
-
-          openJobs.value = data.map((e) => OpenJob.fromJson(e)).toList();
-          AppLogger.d("✅ Fetched ${openJobs.length} open jobs");
 
           // 🔍 Debug: Print first parsed job's companyName
           if (openJobs.isNotEmpty) {

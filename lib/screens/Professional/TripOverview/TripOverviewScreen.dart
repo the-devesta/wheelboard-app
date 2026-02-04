@@ -21,6 +21,8 @@ import 'package:get/get.dart';
 import '../../../utils/call_utils.dart';
 import '../BidSubmit/BidSubmitScreen.dart';
 import '../../../models/unassigned_trip_model.dart';
+import '../../../controllers/Transport/user_profile_controller.dart';
+import '../../../widgets/custom_snackbar.dart';
 
 class TripOverviewPopup {
   static void show(
@@ -254,29 +256,95 @@ class TripOverviewSheet extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Submit button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Get.to(
-                    () => BidSubmissionScreen(
-                      tripId: tripId,
-                      tripDetails: tripDetails,
+            Obx(() {
+              final userProfileController = Get.find<UserProfileController>();
+              final profile = userProfileController.userProfile.value;
+              final isProfessional = profile?.isProfessional ?? false;
+              final professionalType =
+                  profile?.professionalType?.toLowerCase() ?? '';
+              final isDriver = professionalType == 'driver';
+
+              // If it's a professional but not a driver, show warning and disable bid
+              if (isProfessional && !isDriver) {
+                return Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.orange.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              "Only Drivers can place bids on trips. Technicians and Helpers are restricted.",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF856404),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          SnackBarHelper.error(
+                            "Only Drivers can place bids on trips.",
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade400,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("Bidding Restricted"),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Get.to(
+                      () => BidSubmissionScreen(
+                        tripId: tripId,
+                        tripDetails: tripDetails,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  child: const Text("Submit Bid"),
                 ),
-                child: const Text("Submit Bid"),
-              ),
-            ),
+              );
+            }),
 
             const SizedBox(height: 16),
 

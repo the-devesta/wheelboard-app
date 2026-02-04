@@ -60,11 +60,20 @@ class UnassignedTripsController extends GetxController {
       AppLogger.d("🚚 Unassigned trips response body: ${response.body}");
 
       if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        unassignedTrips.value = data
-            .map((e) => UnassignedTrip.fromJson(e))
-            .toList();
-        AppLogger.d("✅ Fetched ${unassignedTrips.length} unassigned trips");
+        final decoded = json.decode(response.body);
+
+        if (decoded is List) {
+          unassignedTrips.value = decoded
+              .map((e) => UnassignedTrip.fromJson(e))
+              .toList();
+          AppLogger.d("✅ Fetched ${unassignedTrips.length} unassigned trips");
+        } else {
+          // If it's a Map (e.g., {"message": "No unassigned trips found."})
+          unassignedTrips.value = [];
+          if (decoded is Map && decoded.containsKey('message')) {
+            AppLogger.d("ℹ️ API Message: ${decoded['message']}");
+          }
+        }
       } else {
         AppLogger.d(
           "❌ Failed to fetch unassigned trips: ${response.statusCode}",
