@@ -31,8 +31,11 @@ class AssignedTripController extends GetxController {
 
       AppLogger.d("🚗 Fetching assigned trips for userId: $userId");
 
+      final fullUrl = '${API.getTripListByDriver}$userId';
+      AppLogger.d("🚗 FULL URL: ${ApiConstants.baseUrl}$fullUrl");
+
       final response = await HttpHelper.getData(
-        endpoint: '${API.getTripListByDriver}$userId',
+        endpoint: fullUrl,
         headers: {
           'Authorization': 'Bearer ${_authService.currentToken}',
           'Accept': 'application/json',
@@ -40,9 +43,7 @@ class AssignedTripController extends GetxController {
       );
 
       AppLogger.d("🚗 Assigned trips response status: ${response.statusCode}");
-      AppLogger.d(
-        "🚗 Assigned trips response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
-      );
+      AppLogger.d("🚗 Assigned trips response body: ${response.body}");
 
       // Check if response is HTML (error page)
       if (response.body.trim().startsWith('<!DOCTYPE') ||

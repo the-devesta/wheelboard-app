@@ -225,30 +225,12 @@ class DriverController extends GetxController {
       AppLogger.d("==================================");
 
       if (response.statusCode == 200) {
-        Get.snackbar(
-          "Success",
-          "Vehicle deleted successfully",
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
         return true;
       } else {
-        Get.snackbar(
-          "Error",
-          "Failed to delete vehicle",
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
         return false;
       }
     } catch (e) {
       AppLogger.d("❌ Exception in deleteVehicle: $e");
-      Get.snackbar(
-        "Error",
-        "Exception: $e",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
       return false;
     }
   }
@@ -278,30 +260,12 @@ class DriverController extends GetxController {
       );
 
       if (response.statusCode == 200) {
-        Get.snackbar(
-          "Success",
-          "Driver deleted successfully",
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
         return true;
       } else {
-        Get.snackbar(
-          "Error",
-          "Failed to delete driver",
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
         return false;
       }
     } catch (e) {
       AppLogger.d("❌ Exception in deleteDriver: $e");
-      Get.snackbar(
-        "Error",
-        "Exception: $e",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
       return false;
     }
   }

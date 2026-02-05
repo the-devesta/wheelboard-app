@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/services/config.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConstants {
   static String baseUrl = AppConfig.baseUrl;
 }
 
 class MapsConstants {
-  static const String googleMapsApiKey =
-      'AIzaSyDdLQMrmWeYCxIZMOm7Ogrh7cwow3cS_NE';
+  /// Google Maps API Key loaded from .env file
+  static String get googleMapsApiKey => dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
 }
 
 class API {

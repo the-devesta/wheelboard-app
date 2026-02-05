@@ -441,8 +441,7 @@ class CommonFeedScreen extends StatelessWidget {
         titleSpacing: 16,
         title: Image.asset(
           'assets/headingImg.png',
-          width: 180,
-          height: 30,
+          height: 40,
           fit: BoxFit.contain,
         ),
         actions: [

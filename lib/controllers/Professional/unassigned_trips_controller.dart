@@ -142,35 +142,176 @@ class UnassignedTripsController extends GetxController {
         return false;
       }
 
-      AppLogger.d("💰 Submitting bid for trip: $tripId");
+      final requestData = {
+        'createdBy': userId,
+        'partnerId': partnerId ?? 0,
+        'tripId': tripId,
+        'userId': userId,
+        'bidAmount': bidAmount,
+        'bidDescription': bidDescription,
+      };
+
+      AppLogger.d(
+        "═══════════════════════════════════════════════════════════",
+      );
+      AppLogger.d("💰 BID SUBMISSION REQUEST");
+      AppLogger.d(
+        "═══════════════════════════════════════════════════════════",
+      );
+      AppLogger.d("📍 Trip ID: $tripId");
+      AppLogger.d("👤 User ID: $userId");
+      AppLogger.d("💵 Bid Amount: ₹$bidAmount");
+      AppLogger.d("📝 Description: $bidDescription");
+      AppLogger.d("📤 Full Request Data: ${json.encode(requestData)}");
+      AppLogger.d(
+        "═══════════════════════════════════════════════════════════",
+      );
 
       final response = await HttpHelper.postData(
         endpoint: API.submitBid,
-        data: {
-          'createdBy': userId,
-          'partnerId': partnerId ?? 0,
-          'tripId': tripId,
-          'userId': userId,
-          'bidAmount': bidAmount,
-          'bidDescription': bidDescription,
-        },
+        data: requestData,
         headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
       );
 
-      AppLogger.d("💰 Submit bid response status: ${response.statusCode}");
-      AppLogger.d("💰 Submit bid response body: ${response.body}");
+      AppLogger.d(
+        "═══════════════════════════════════════════════════════════",
+      );
+      AppLogger.d("💰 BID SUBMISSION RESPONSE");
+      AppLogger.d(
+        "═══════════════════════════════════════════════════════════",
+      );
+      AppLogger.d("📊 Status Code: ${response.statusCode}");
+      AppLogger.d("📥 Response Body: ${response.body}");
+      AppLogger.d(
+        "═══════════════════════════════════════════════════════════",
+      );
 
+      // Parse the response body to get the server message
+      String serverMessage = "";
+      bool isDuplicateBid = false;
+      bool isServerStatusFalse = false;
+
+      try {
+        final responseData = json.decode(response.body);
+        if (responseData is Map) {
+          // Check for status field in response body
+          if (responseData.containsKey('status')) {
+            final status = responseData['status'];
+            if (status == false || status == 'false' || status == 0) {
+              isServerStatusFalse = true;
+              AppLogger.d("⚠️ SERVER RETURNED status: false");
+            }
+          }
+
+          // Check for various possible message fields
+          serverMessage =
+              responseData['message'] ??
+              responseData['Message'] ??
+              responseData['error'] ??
+              responseData['Error'] ??
+              responseData['msg'] ??
+              "";
+
+          // Check if it's a duplicate bid - common patterns
+          final responseLower = response.body.toLowerCase();
+          if (responseLower.contains('already') ||
+              responseLower.contains('duplicate') ||
+              responseLower.contains('exist') ||
+              responseLower.contains('placed a bid')) {
+            isDuplicateBid = true;
+            AppLogger.d("⚠️ DUPLICATE BID DETECTED!");
+          }
+        }
+      } catch (parseError) {
+        AppLogger.d("⚠️ Could not parse response as JSON: $parseError");
+        serverMessage = response.body;
+      }
+
+      // Check if server returned status: false (even with HTTP 200)
       if (response.statusCode == 200 || response.statusCode == 201) {
-        AppLogger.d("✅ Bid submitted successfully");
-        SnackBarHelper.success("Bid submitted successfully");
+        if (isServerStatusFalse || isDuplicateBid) {
+          // Server returned 200 but status is false - this is an error case
+          AppLogger.d("❌ SERVER RETURNED SUCCESS CODE BUT status: false");
+          AppLogger.d("📄 Server Message: $serverMessage");
+          AppLogger.d(
+            "═══════════════════════════════════════════════════════════",
+          );
+
+          if (isDuplicateBid) {
+            SnackBarHelper.warning(
+              serverMessage.isNotEmpty
+                  ? serverMessage
+                  : "Aapne is trip ke liye pehle se bid submit ki hai!",
+            );
+          } else {
+            SnackBarHelper.error(
+              serverMessage.isNotEmpty
+                  ? serverMessage
+                  : "Bid submit nahi ho paayi. Please try again.",
+            );
+          }
+          return false;
+        }
+
+        // Actual success case
+        AppLogger.d("✅ BID SUBMITTED SUCCESSFULLY!");
+        AppLogger.d(
+          "═══════════════════════════════════════════════════════════",
+        );
+        SnackBarHelper.success(
+          serverMessage.isNotEmpty
+              ? serverMessage
+              : "Bid submitted successfully",
+        );
         return true;
+      } else if (response.statusCode == 409 || isDuplicateBid) {
+        // 409 Conflict typically means duplicate
+        AppLogger.d(
+          "⚠️ DUPLICATE BID - User already submitted bid for this trip",
+        );
+        AppLogger.d(
+          "═══════════════════════════════════════════════════════════",
+        );
+        SnackBarHelper.warning(
+          serverMessage.isNotEmpty
+              ? serverMessage
+              : "Aapne is trip ke liye pehle se bid submit ki hai!",
+        );
+        return false;
+      } else if (response.statusCode == 400) {
+        AppLogger.d("❌ BAD REQUEST: $serverMessage");
+        AppLogger.d(
+          "═══════════════════════════════════════════════════════════",
+        );
+        SnackBarHelper.error(
+          serverMessage.isNotEmpty
+              ? serverMessage
+              : "Invalid bid request. Please check your input.",
+        );
+        return false;
       } else {
-        AppLogger.d("❌ Failed to submit bid: ${response.statusCode}");
-        SnackBarHelper.error("Failed to submit bid");
+        AppLogger.d("❌ FAILED TO SUBMIT BID");
+        AppLogger.d("📊 Status: ${response.statusCode}");
+        AppLogger.d("📄 Server Message: $serverMessage");
+        AppLogger.d(
+          "═══════════════════════════════════════════════════════════",
+        );
+        SnackBarHelper.error(
+          serverMessage.isNotEmpty
+              ? serverMessage
+              : "Failed to submit bid (Error: ${response.statusCode})",
+        );
         return false;
       }
     } catch (e) {
-      AppLogger.d("❌ Error submitting bid: $e");
+      AppLogger.d(
+        "═══════════════════════════════════════════════════════════",
+      );
+      AppLogger.d("❌ EXCEPTION DURING BID SUBMISSION");
+      AppLogger.d("Error: $e");
+      AppLogger.d(
+        "═══════════════════════════════════════════════════════════",
+      );
       SnackBarHelper.error("Failed to submit bid: ${e.toString()}");
       return false;
     } finally {

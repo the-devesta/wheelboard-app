@@ -453,14 +453,20 @@ class TransactionSummaryScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       // 🔧 FIX: Dynamically determine user type instead of hardcoding
+                      // 🔧 FIX: Dynamically determine user type instead of hardcoding
                       // Check if user is Professional/Driver or Transport Company
-                      final userType = Get.find<AuthService>().userType;
+                      final userType = Get.find<AuthService>()
+                          .userType
+                          .value; // Access .value for RxString
                       final isProfessional =
-                          userType == 'Professional' || userType == 'Driver';
+                          userType.toLowerCase().trim() == 'professional' ||
+                          userType.toLowerCase().trim() == 'driver';
 
                       AppLogger.d("🔍 Opening Add Expense Screen");
-                      AppLogger.d("🔍 User Type: $userType");
-                      AppLogger.d("🔍 isProfessional: $isProfessional");
+                      AppLogger.d("🔍 User Type (Raw): '$userType'");
+                      AppLogger.d(
+                        "🔍 isProfessional Calculated: $isProfessional",
+                      );
 
                       Get.to(
                         () => AddExpenseScreen(isProfessional: isProfessional),

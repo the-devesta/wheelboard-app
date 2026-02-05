@@ -346,7 +346,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                       ),
                                       TextButton(
                                         onPressed: () async {
-                                          Get.back(); // close dialog
+                                          Get.back(); // close confirmation dialog
                                           // show loading
                                           Get.dialog(
                                             const Center(
@@ -355,21 +355,51 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                             barrierDismissible: false,
                                           );
 
-                                          final success = await _fleetController
-                                              .deleteVehicle(
-                                                widget.vehicle.vehicleId,
+                                          try {
+                                            final success =
+                                                await _fleetController
+                                                    .deleteVehicle(
+                                                      widget.vehicle.vehicleId,
+                                                      userId,
+                                                      token,
+                                                    );
+
+                                            // Close loading dialog
+                                            if (Get.isDialogOpen ?? false) {
+                                              Get.back();
+                                            }
+
+                                            if (success) {
+                                              Get.back(); // close screen
+                                              _fleetController.fetchVehicles(
                                                 userId,
                                                 token,
+                                              ); // refresh list
+                                              Get.snackbar(
+                                                "Success",
+                                                "Vehicle deleted successfully",
+                                                backgroundColor: Colors.green,
+                                                colorText: Colors.white,
                                               );
-
-                                          Get.back(); // close loading
-
-                                          if (success) {
-                                            Get.back(); // close screen
-                                            _fleetController.fetchVehicles(
-                                              userId,
-                                              token,
-                                            ); // refresh list
+                                            } else {
+                                              Get.snackbar(
+                                                "Error",
+                                                "Failed to delete vehicle",
+                                                backgroundColor: Colors.red,
+                                                colorText: Colors.white,
+                                              );
+                                            }
+                                          } catch (e) {
+                                            // Close loading dialog if open
+                                            if (Get.isDialogOpen ?? false) {
+                                              Get.back();
+                                            }
+                                            Get.snackbar(
+                                              "Error",
+                                              "An error occurred: $e",
+                                              backgroundColor: Colors.red,
+                                              colorText: Colors.white,
+                                            );
                                           }
                                         },
                                         child: const Text(

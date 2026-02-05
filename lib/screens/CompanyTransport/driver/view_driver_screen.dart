@@ -69,7 +69,7 @@ class ViewDriverScreen extends StatelessWidget {
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                         child: const Icon(
-                          Icons.help_outline,
+                          Icons.verified,
                           color: Colors.white,
                           size: 18,
                         ),
@@ -87,49 +87,163 @@ class ViewDriverScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    address,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Poppins',
-                      color: Colors.grey[600],
+                  if (address.isNotEmpty)
+                    Text(
+                      address,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Poppins',
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  const SizedBox(height: 24),
+
+                  // Contact Info Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        if (phoneNumber.isNotEmpty)
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF00B894,
+                                  ).withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.phone,
+                                  color: Color(0xFF00B894),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Phone Number',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontFamily: 'Poppins',
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                    Text(
+                                      phoneNumber,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Poppins',
+                                        color: Color(0xFF2D3436),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (phoneNumber.isNotEmpty && email.isNotEmpty)
+                          const SizedBox(height: 16),
+                        if (email.isNotEmpty)
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF00B894,
+                                  ).withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.email,
+                                  color: Color(0xFF00B894),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Email',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontFamily: 'Poppins',
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                    Text(
+                                      email,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Poppins',
+                                        color: Color(0xFF2D3436),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
                     ),
                   ),
+
                   const SizedBox(height: 24),
+
                   // Contact Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00B894),
-                          shape: BoxShape.circle,
+                      if (phoneNumber.isNotEmpty)
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF00B894),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.phone, color: Colors.white),
+                            onPressed: () {
+                              // Handle phone call
+                            },
+                          ),
                         ),
-                        child: IconButton(
-                          icon: const Icon(Icons.phone, color: Colors.white),
-                          onPressed: () {
-                            // Handle phone call
-                          },
+                      if (phoneNumber.isNotEmpty && email.isNotEmpty)
+                        const SizedBox(width: 16),
+                      if (email.isNotEmpty)
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: IconButton(
+                            icon: Icon(Icons.email, color: Colors.grey[600]),
+                            onPressed: () {
+                              // Handle email
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.email, color: Colors.grey[600]),
-                          onPressed: () {
-                            // Handle email
-                          },
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -162,316 +276,6 @@ class ViewDriverScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-
-            // Verification Badges
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildVerificationBadge(
-                    icon: Icons.help_outline,
-                    label: 'Identity',
-                    color: const Color(0xFF00B894),
-                  ),
-                  _buildVerificationBadge(
-                    icon: Icons.description,
-                    label: 'License',
-                    color: const Color(0xFF00B894),
-                  ),
-                  _buildVerificationBadge(
-                    icon: Icons.shield,
-                    label: 'Background',
-                    color: const Color(0xFF00B894),
-                  ),
-                  _buildVerificationBadge(
-                    icon: Icons.workspace_premium,
-                    label: '6 year Exp',
-                    color: Colors.amber,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Driver Performance Overview
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Driver Performance Overview',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
-                      color: Color(0xFF2D3436),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildPerformanceMetric('Timely Delivery', 92, Colors.green),
-                  const SizedBox(height: 12),
-                  _buildPerformanceMetric('Trip Efficiency', 85, Colors.green),
-                  const SizedBox(height: 12),
-                  _buildPerformanceMetric('Safety', 80, Colors.orange),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 20),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Customer Feedback',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF2D3436),
-                        ),
-                      ),
-                      const Spacer(),
-                      const Text(
-                        '4.4',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF2D3436),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Trip & Service Stats
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Trip & Service Stats',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
-                      color: Color(0xFF2D3436),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.55,
-                    children: [
-                      _buildStatCard(
-                        icon: Icons.route,
-                        value: '162',
-                        label: 'Total Trips',
-                        color: const Color(0xFF00B894),
-                      ),
-                      _buildStatCard(
-                        icon: Icons.access_time,
-                        value: '2h 18m',
-                        label: 'Avg. Duration',
-                        color: const Color(0xFF00B894),
-                      ),
-                      _buildStatCard(
-                        icon: Icons.person,
-                        value: '9h 40m',
-                        label: 'Longest Trip',
-                        color: const Color(0xFF00B894),
-                      ),
-                      _buildStatCard(
-                        icon: Icons.location_on,
-                        value: '28',
-                        label: 'Cities Covered',
-                        color: const Color(0xFF00B894),
-                      ),
-                      _buildStatCard(
-                        icon: Icons.star,
-                        value: '4.5',
-                        label: 'Current Rating',
-                        color: Colors.amber,
-                      ),
-                      _buildStatCard(
-                        icon: Icons.calendar_today,
-                        value: '320',
-                        label: 'Days Active',
-                        color: const Color(0xFF00B894),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Availability Calendar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'May 2025',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF2D3436),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.chevron_left),
-                            onPressed: () {},
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.chevron_right),
-                            onPressed: () {},
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Calendar Grid
-                  _buildCalendar(),
-                  const SizedBox(height: 12),
-                  // Legend
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF00B894),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Available',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Poppins',
-                              color: Color(0xFF2D3436),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 24),
-                      Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Unavailable',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Poppins',
-                              color: Color(0xFF2D3436),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Recent Reviews
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Recent Reviews',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
-                      color: Color(0xFF2D3436),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildReviewCard(
-                    reviewerName: 'Alex Sharma',
-                    reviewerImage: 'https://i.pravatar.cc/150?img=5',
-                    date: 'Aug 6, 2019',
-                    location: 'Mesa, AZ',
-                    platform: 'Google',
-                    rating: 5,
-                    review:
-                        'Deepak is always prompt and professional. He made our urgent delivery with no issues. Definitely recommended!',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildReviewCard(
-                    reviewerName: 'Samantha Jones',
-                    reviewerImage: 'https://i.pravatar.cc/150?img=6',
-                    date: 'Jul 15, 2019',
-                    location: 'Orlando, FL',
-                    platform: 'BBB',
-                    rating: 4,
-                    review:
-                        'Courteous and quick to respond. Would book again for sure. Vehicle was clean and comfortable.',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildReviewCard(
-                    reviewerName: 'Michael Lee',
-                    reviewerImage: 'https://i.pravatar.cc/150?img=7',
-                    date: 'Jun 21, 2019',
-                    location: 'Houston, TX',
-                    platform: 'Dispatch',
-                    rating: 5,
-                    review:
-                        'Punctual and efficient. All updates were timely. No complaints from the client!',
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        'See All Reviews',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF00B894),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
