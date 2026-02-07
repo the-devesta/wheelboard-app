@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../services/auth_service.dart';
+import '../../controllers/Professional/assigned_trip_controller.dart';
 import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
 import 'FindJobs/FindJobsScreen.dart';
 import 'FeedsProfessional/FeedsProfessionalScreen.dart';
@@ -27,12 +29,25 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
     super.initState();
     _currentIndex = widget.initialIndex;
 
+    // ✅ Initialize AssignedTripController globally so all screens can access it
+    if (!Get.isRegistered<AssignedTripController>()) {
+      Get.put(AssignedTripController(), permanent: true);
+      AppLogger.d("✅ AssignedTripController initialized in wrapper");
+    }
+
     // ✅ Refresh login status to load KYC and other data from session
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         final authService = AuthService.to;
         await authService.refreshLoginStatus();
         AppLogger.d("✅ AuthService refreshed in Professional wrapper");
+
+        // ✅ Fetch assigned trips after auth is ready
+        final tripController = Get.find<AssignedTripController>();
+        await tripController.fetchAssignedTrips();
+        AppLogger.d(
+          "✅ AssignedTripController fetched trips after auth refresh",
+        );
       } catch (e) {
         AppLogger.d("⚠️ Could not refresh AuthService: $e");
       }

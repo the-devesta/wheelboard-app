@@ -43,6 +43,8 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
   bool _isLoadingLocation = false;
   double? _pickupLat;
   double? _pickupLng;
+  double? _deliveryLat;
+  double? _deliveryLng;
 
   @override
   void initState() {
@@ -197,8 +199,8 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                           tripStatus: "Pending", // Default status
                           isScheduledTrip:
                               false, // ❌ This is a POST trip - no driver assigned
-                          latitude: _pickupLat,
-                          longitude: _pickupLng,
+                          latitude: _deliveryLat,
+                          longitude: _deliveryLng,
                           distance: _distanceResult != null
                               ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
                               : "",
@@ -597,10 +599,19 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
                       deliverySuggestions.clear();
                     });
 
-                    final loc = await placesService.fetchPlaceLocation(
-                      s.placeId,
-                    );
-                    AppLogger.d("Delivery LatLng: $loc");
+                    try {
+                      final loc = await placesService.fetchPlaceLocation(
+                        s.placeId,
+                      );
+                      AppLogger.d("Delivery LatLng: $loc");
+
+                      setState(() {
+                        _deliveryLat = loc['lat'];
+                        _deliveryLng = loc['lng'];
+                      });
+                    } catch (e) {
+                      AppLogger.e("Error fetching delivery location: $e");
+                    }
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();

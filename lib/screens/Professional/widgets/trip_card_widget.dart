@@ -7,6 +7,9 @@ class TripCardWidget extends StatelessWidget {
   final String destinationAddress;
   final String dateTime;
   final List<String> tags;
+  final String? distance;
+  final String? eta;
+  final String? tripDistance;
   final VoidCallback? onTap;
 
   const TripCardWidget({
@@ -15,6 +18,9 @@ class TripCardWidget extends StatelessWidget {
     required this.destinationAddress,
     required this.dateTime,
     this.tags = const [],
+    this.distance,
+    this.eta,
+    this.tripDistance,
     this.onTap,
   });
 
@@ -121,6 +127,104 @@ class TripCardWidget extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (distance != null ||
+                    eta != null ||
+                    tripDistance != null) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    children: [
+                      if (distance != null) ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.straighten,
+                              size: 16,
+                              color: Color(0xFF003366),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Away to Destination: ",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              distance!,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF003366),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (eta != null) ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.access_time,
+                              size: 16,
+                              color: Color(0xFF27AE60),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "ETA: ",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              eta!,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF27AE60),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (tripDistance != null) ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.local_shipping_outlined,
+                              size: 16,
+                              color: Color(0xFFF2994A),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Trip: ",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              tripDistance!,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFF2994A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 16),
                 // Tags
                 Wrap(

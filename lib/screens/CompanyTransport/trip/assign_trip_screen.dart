@@ -31,6 +31,8 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
   AssignTripBid? _bidInPayment;
   TripPaymentVerificationPayload? _pendingVerificationPayload;
   bool _isPaymentProcessing = false;
+  bool _showLoader = false;
+  String _loaderMessage = "Confirming payment...";
 
   @override
   void initState() {
@@ -115,7 +117,16 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
           );
         }
 
-        return _buildContent(context, bid);
+        return Stack(
+          children: [
+            _buildContent(context, bid),
+            if (_showLoader)
+              Container(
+                color: Colors.black.withOpacity(0.5),
+                child: CustomLoader(message: _loaderMessage),
+              ),
+          ],
+        );
       }),
     );
   }
@@ -327,7 +338,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => _startPayment(bid, isPartial: false),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF00B894),
                         foregroundColor: Colors.white,
@@ -834,6 +845,8 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
 
     setState(() {
       _isPaymentProcessing = true;
+      _showLoader = true;
+      _loaderMessage = "Initializing payment...";
       _bidInPayment = bid;
     });
 
@@ -888,6 +901,12 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
         );
       }
 
+      if (mounted) {
+        setState(() {
+          _showLoader = false;
+        });
+      }
+
       await _razorpayService.openCheckout(
         amountInPaise: order.amountInPaise,
         orderId: order.orderId,
@@ -906,7 +925,10 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() => _isPaymentProcessing = false);
+        setState(() {
+          _isPaymentProcessing = false;
+          _showLoader = false;
+        });
       }
       _bidInPayment = null;
       _pendingVerificationPayload = null;
@@ -916,7 +938,11 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
 
   Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
     if (mounted) {
-      setState(() => _isPaymentProcessing = true);
+      setState(() {
+        _isPaymentProcessing = true;
+        _showLoader = true;
+        _loaderMessage = "Verifying payment...";
+      });
     }
     AppLogger.d(
       '[AssignTrip] Razorpay success paymentId=${response.paymentId} orderId=${response.orderId}',
@@ -928,59 +954,104 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
 
     try {
       if (verificationPayload != null) {
-        AppLogger.d(
-          '[AssignTrip] Verifying payment on server orderId=${verificationPayload.orderId}',
-        );
         final enrichedPayload = verificationPayload.copyWith(
           orderId: response.orderId ?? verificationPayload.orderId,
           paymentId: response.paymentId ?? '',
           signature: response.signature ?? '',
         );
-        await _tripPaymentService.verifyPayment(enrichedPayload);
 
-        // ✅ Fetch trip confirmation after payment verification
-        AppLogger.d(
-          '[AssignTrip] Fetching trip confirmation for tripId=${verificationPayload.tripId}',
-        );
-        final confirmation = await _tripPaymentService.getTripConfirmation(
-          verificationPayload.tripId,
-        );
-        AppLogger.d(
-          '[AssignTrip] Confirmation received: ${confirmation.tripCode}',
-        );
+        // 1. Verify Payment with timeout
+        AppLogger.d('[AssignTrip] Verifying payment on server...');
+        await _tripPaymentService
+            .verifyPayment(enrichedPayload)
+            .timeout(
+              const Duration(seconds: 15),
+              onTimeout: () => throw Exception(
+                'Verification timed out after 15s. We will update your status shortly.',
+              ),
+            );
 
-        SnackBarHelper.success(
-          'Payment successful (Ref: ${response.paymentId ?? 'N/A'})',
-        );
+        // 2. Fetch Trip Confirmation (Optional/Low priority)
+        TripConfirmationModel? confirmation;
+        try {
+          AppLogger.d('[AssignTrip] Fetching trip confirmation...');
+          confirmation = await _tripPaymentService
+              .getTripConfirmation(verificationPayload.tripId)
+              .timeout(const Duration(seconds: 10));
+        } catch (e) {
+          AppLogger.e(
+            '[AssignTrip] Confirmation fetch failed (non-critical): $e',
+          );
+        }
+
+        SnackBarHelper.success('Payment verified successfully!');
 
         if (bid != null) {
           _navigateToTripAccepted(bid, confirmation);
+          if (mounted) {
+            setState(() {
+              _isPaymentProcessing = false;
+              _showLoader = false;
+            });
+          }
+          return;
         }
       } else {
-        SnackBarHelper.success(
-          'Payment successful (Ref: ${response.paymentId ?? 'N/A'})',
-        );
+        SnackBarHelper.success('Payment successful!');
         if (bid != null) {
           _navigateToTripAccepted(bid, null);
+          if (mounted) {
+            setState(() {
+              _isPaymentProcessing = false;
+              _showLoader = false;
+            });
+          }
+          return;
         }
       }
     } catch (e) {
-      AppLogger.d('[AssignTrip] Verification/Confirmation failed: $e');
-      SnackBarHelper.error('Payment verification failed: $e');
-      // Still navigate even if confirmation fails
-      if (bid != null) {
-        _navigateToTripAccepted(bid, null);
+      AppLogger.e('[AssignTrip] Payment handling failed: $e');
+      if (mounted) {
+        setState(() {
+          _isPaymentProcessing = false;
+          _showLoader = false;
+        });
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('Payment Status'),
+            content: Text(
+              'Your payment was processed, but we had trouble confirming it: $e. Your trip status will be updated automatically.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  if (bid != null) _navigateToTripAccepted(bid, null);
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     } finally {
       if (mounted) {
-        setState(() => _isPaymentProcessing = false);
+        setState(() {
+          if (_isPaymentProcessing) _isPaymentProcessing = false;
+          if (_showLoader) _showLoader = false;
+        });
       }
     }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
     if (mounted) {
-      setState(() => _isPaymentProcessing = false);
+      setState(() {
+        _isPaymentProcessing = false;
+        _showLoader = false;
+      });
     }
     _bidInPayment = null;
     _pendingVerificationPayload = null;
@@ -1201,7 +1272,8 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
 
   double _nonNegative(double value) => value.isFinite && value > 0 ? value : 0;
 
-  String _formatCurrency(double value) => '₹${value.toStringAsFixed(0)}';
+  String _formatCurrency(double value) =>
+      '₹${value.toStringAsFixed(2).replaceAll(RegExp(r'\.00$'), '')}';
 
   String _formatPickupDateTime(DateTime? date, String time) {
     final dateText = _formatDateOnly(date);

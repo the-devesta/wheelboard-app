@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/controllers/Transport/main_wrapper_controller.dart';
+import 'package:wheelboard/controllers/Transport/notification_controller.dart';
+import 'package:wheelboard/controllers/Transport/user_profile_controller.dart';
+import 'package:wheelboard/controllers/Transport/job_controller.dart';
+import 'package:wheelboard/controllers/Professional/feeds_controller.dart';
 import 'home_screen.dart';
 import 'fleet_screen.dart';
 import 'trips_screen.dart';
 import 'feed_screen.dart';
 import 'job_screen.dart';
+import '../../utils/app_logger.dart';
 
 /// Main Wrapper for Company Transport User Type
 /// This wrapper contains bottom navigation and manages all Company Transport screens
@@ -30,20 +35,26 @@ class _CompanyTransportMainWrapperState
   @override
   void initState() {
     super.initState();
-    // _currentIndex = widget.initialIndex;
-    // _wrapperController.currentTabIndex.value = widget.initialIndex;
+
+    // Initialize common controllers globally
+    if (!Get.isRegistered<NotificationController>()) {
+      Get.put(NotificationController(), permanent: true);
+    }
+    if (!Get.isRegistered<UserProfileController>()) {
+      Get.put(UserProfileController(), permanent: true);
+    }
+    if (!Get.isRegistered<JobController>()) {
+      Get.put(JobController(), permanent: true);
+    }
+    if (!Get.isRegistered<FeedsController>()) {
+      Get.put(FeedsController(), permanent: true);
+    }
+
+    AppLogger.d("✅ Common controllers initialized in Company wrapper");
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _wrapperController.currentTabIndex.value = widget.initialIndex;
     });
-
-    // Listen to tab changes from controller
-    // ever(_wrapperController.currentTabIndex, (int index) {
-    //   if (mounted && _currentIndex != index) {
-    //     setState(() {
-    //       _currentIndex = index;
-    //     });
-    //   }
-    // });
   }
 
   final List<Widget> _screens = [

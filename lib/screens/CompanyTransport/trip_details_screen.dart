@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:wheelboard/utils/app_logger.dart';
 import '../../models/add_new_trip_model.dart';
 import 'edit_trip_screen.dart';
-import '../../controllers/Transport/trip_expenses_controller.dart';
+import '../../utils/session_manager.dart';
+import '../../controllers/Transport/add_trip_controller.dart';
 
 class TripDetailsScreen extends StatelessWidget {
   final Trip trip;
@@ -189,14 +191,40 @@ class TripDetailsScreen extends StatelessWidget {
                             buttonColor: Colors.red,
                             onConfirm: () async {
                               Get.back(); // close dialog
-                              final controller = Get.put(
-                                TripExpensesController(),
+                              final controller = Get.find<TripController>();
+                              final sessionManager = SessionManager();
+                              final userId = await sessionManager.getString(
+                                "userId",
                               );
-                              bool success = await controller.deleteTrip(
-                                trip.tripId,
-                              );
-                              if (success) {
-                                Get.back(); // go back to list
+
+                              if (userId != null) {
+                                bool success = await controller.deleteTrip(
+                                  trip.tripId,
+                                  userId,
+                                );
+                                AppLogger.d(
+                                  "🗑️ Deletion success result: $success",
+                                );
+                                if (success) {
+                                  // Go back to trips screen first
+                                  Get.back();
+
+                                  // Then show success message on the list screen
+                                  Get.snackbar(
+                                    "Success",
+                                    "Trip deleted successfully",
+                                    snackPosition: SnackPosition.TOP,
+                                    backgroundColor: Colors.green,
+                                    colorText: Colors.white,
+                                    duration: const Duration(seconds: 3),
+                                  );
+                                }
+                              } else {
+                                Get.snackbar(
+                                  "Error",
+                                  "User not found",
+                                  snackPosition: SnackPosition.TOP,
+                                );
                               }
                             },
                           );

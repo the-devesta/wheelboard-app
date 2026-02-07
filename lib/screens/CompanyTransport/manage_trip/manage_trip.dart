@@ -258,9 +258,8 @@ class ManageTrip extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: () {
                           Get.to(
-                            () => ViewDriverScreen(
-                              driverName: driverName,
-                              driverImage: driverImage,
+                            () => const ViewDriverScreen(
+                              driverId: '', // Placeholder ID for static trip
                             ),
                           );
                         },

@@ -40,6 +40,10 @@ class AssignedTrip {
   final double? latitude;
   final double? longitude;
 
+  // Fields for calculations (not in API)
+  double? calculatedDistance;
+  String? estimatedEta;
+
   AssignedTrip({
     required this.tripId,
     required this.userId,

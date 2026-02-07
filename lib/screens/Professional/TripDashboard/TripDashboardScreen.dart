@@ -20,9 +20,9 @@ class TripDashboardScreen extends StatefulWidget {
 class _TripDashboardScreenState extends State<TripDashboardScreen> {
   String _selectedChartType = 'Trips'; // 'Trips', 'Earnings', 'Distance'
 
-  final AssignedTripController tripController = Get.put(
-    AssignedTripController(),
-  );
+  // Use Get.find to access the existing controller from wrapper
+  final AssignedTripController tripController =
+      Get.find<AssignedTripController>();
   final TripDashboardController dashboardController = Get.put(
     TripDashboardController(),
   );
@@ -541,9 +541,43 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "ID: ${trip.tripId.substring(0, 8)}...",
+                "ID: ${trip.tripCode}",
                 style: const TextStyle(fontSize: 11, color: Colors.grey),
               ),
+              if (trip.calculatedDistance != null)
+                Row(
+                  children: [
+                    const Icon(Icons.straighten, size: 12, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${trip.calculatedDistance!.toStringAsFixed(1)} km",
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.access_time, size: 12, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      trip.estimatedEta ?? "--",
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    if (trip.distance != null) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.local_shipping_outlined,
+                        size: 12,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        trip.distance!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               Text(
                 HttpHelper.formatAmount(trip.bidAmount ?? 0),
                 style: const TextStyle(

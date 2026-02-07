@@ -1,26 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../controllers/Transport/driver_details_controller.dart';
+import '../../../utils/constants.dart';
+import '../../../widgets/custom_loader.dart';
 import '../trip/assign_trip_screen.dart';
 
-class ViewDriverScreen extends StatelessWidget {
-  final String driverName;
-  final String driverImage;
-  final String address;
-  final String phoneNumber;
-  final String email;
+class ViewDriverScreen extends StatefulWidget {
+  final String driverId;
   final String? tripId;
   final String? bidId;
 
   const ViewDriverScreen({
     super.key,
-    this.driverName = 'Jon Doe',
-    this.driverImage = 'https://i.pravatar.cc/150?img=1',
-    this.address = '750 Sarangpur, GJ 70663',
-    this.phoneNumber = '+91 9876543210',
-    this.email = 'jondoe@example.com',
+    required this.driverId,
     this.tripId,
     this.bidId,
   });
+
+  @override
+  State<ViewDriverScreen> createState() => _ViewDriverScreenState();
+}
+
+class _ViewDriverScreenState extends State<ViewDriverScreen> {
+  final DriverDetailsController controller = Get.put(DriverDetailsController());
+
+  @override
+  void initState() {
+    super.initState();
+    controller.fetchDriverDetails(widget.driverId);
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    try {
+      final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      final Uri phoneUri = Uri.parse('tel:$cleanNumber');
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to make phone call.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> _sendEmail(String driverName, String contactNumber) async {
+    try {
+      final Uri emailUri = Uri(
+        scheme: 'mailto',
+        queryParameters: {
+          'subject': 'Contact regarding driver: $driverName',
+          'body':
+              'Hello,\n\nI would like to get in touch regarding driver $driverName.\nContact Number: $contactNumber\n\nThank you.',
+        },
+      );
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri);
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to open email client.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,72 +97,108 @@ class ViewDriverScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Picture and Basic Info
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundImage: NetworkImage(driverImage),
-                        onBackgroundImageError: (_, __) {},
-                      ),
-                      Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00B894),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CustomLoader.small());
+        }
+
+        final driver = controller.driverDetails.value;
+        if (driver == null) {
+          return const Center(
+            child: Text(
+              "Driver details not found",
+              style: TextStyle(fontFamily: 'Poppins'),
+            ),
+          );
+        }
+
+        // Get driver image URL
+        String? driverImageUrl;
+        if (driver.driverImagePath != null &&
+            driver.driverImagePath!.isNotEmpty) {
+          final imagePath = driver.driverImagePath!.trim();
+          if (imagePath.isNotEmpty && imagePath != '${ApiConstants.baseUrl}') {
+            driverImageUrl = imagePath.startsWith('http')
+                ? imagePath
+                : ApiConstants.baseUrl + imagePath;
+          }
+        }
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              // Profile Picture and Basic Info
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[200],
+                          backgroundImage: driverImageUrl != null
+                              ? NetworkImage(driverImageUrl)
+                              : null,
+                          child: driverImageUrl == null
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Colors.grey,
+                                )
+                              : null,
                         ),
-                        child: const Icon(
-                          Icons.verified,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    driverName,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Poppins',
-                      color: Color(0xFF2D3436),
+                        if (driver.isVerified || driver.isKYCCompleted)
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00B894),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(
+                              Icons.verified,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (address.isNotEmpty)
+                    const SizedBox(height: 16),
                     Text(
-                      address,
+                      driver.fullName,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins',
+                        color: Color(0xFF2D3436),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      driver.vehicleType,
                       style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Poppins',
                         color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Contact Info Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
-                      children: [
-                        if (phoneNumber.isNotEmpty)
+                    // Contact Info Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        children: [
                           Row(
                             children: [
                               Container(
@@ -141,7 +230,7 @@ class ViewDriverScreen extends StatelessWidget {
                                       ),
                                     ),
                                     Text(
-                                      phoneNumber,
+                                      driver.contactNumber,
                                       style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,
@@ -154,9 +243,7 @@ class ViewDriverScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                        if (phoneNumber.isNotEmpty && email.isNotEmpty)
                           const SizedBox(height: 16),
-                        if (email.isNotEmpty)
                           Row(
                             children: [
                               Container(
@@ -169,7 +256,7 @@ class ViewDriverScreen extends StatelessWidget {
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
-                                  Icons.email,
+                                  Icons.directions_car,
                                   color: Color(0xFF00B894),
                                   size: 20,
                                 ),
@@ -180,7 +267,7 @@ class ViewDriverScreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Email',
+                                      'Vehicle Number',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontFamily: 'Poppins',
@@ -188,7 +275,7 @@ class ViewDriverScreen extends StatelessWidget {
                                       ),
                                     ),
                                     Text(
-                                      email,
+                                      driver.vehicleNumber,
                                       style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,
@@ -201,17 +288,16 @@ class ViewDriverScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Contact Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (phoneNumber.isNotEmpty)
+                    // Contact Buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         Container(
                           width: 50,
                           height: 50,
@@ -221,14 +307,11 @@ class ViewDriverScreen extends StatelessWidget {
                           ),
                           child: IconButton(
                             icon: const Icon(Icons.phone, color: Colors.white),
-                            onPressed: () {
-                              // Handle phone call
-                            },
+                            onPressed: () =>
+                                _makePhoneCall(driver.contactNumber),
                           ),
                         ),
-                      if (phoneNumber.isNotEmpty && email.isNotEmpty)
                         const SizedBox(width: 16),
-                      if (email.isNotEmpty)
                         Container(
                           width: 50,
                           height: 50,
@@ -239,51 +322,158 @@ class ViewDriverScreen extends StatelessWidget {
                           ),
                           child: IconButton(
                             icon: Icon(Icons.email, color: Colors.grey[600]),
-                            onPressed: () {
-                              // Handle email
-                            },
+                            onPressed: () => _sendEmail(
+                              driver.fullName,
+                              driver.contactNumber,
+                            ),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  if (tripId != null && tripId!.isNotEmpty)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Get.to(
-                            () =>
-                                AssignTripScreen(tripId: tripId!, bidId: bidId),
-                          );
-                        },
-                        icon: const Icon(Icons.directions_car, size: 20),
-                        label: const Text(
-                          'Assign to Trip',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Poppins',
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Stats/Performance Section
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: Icons.star,
+                            value: "5.0",
+                            label: "Rating",
+                            color: Colors.amber,
                           ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00B894),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: Icons.timer,
+                            value: "92%",
+                            label: "On Time",
+                            color: const Color(0xFF00B894),
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: Icons.route,
+                            value: "150",
+                            label: "Trips",
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Performance Overview
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Performance Overview',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins',
+                          color: Color(0xFF2D3436),
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
+                    const SizedBox(height: 16),
+                    _buildPerformanceMetric(
+                      'Timely Delivery',
+                      92,
+                      Colors.green,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPerformanceMetric(
+                      'Trip Efficiency',
+                      85,
+                      const Color(0xFF00B894),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPerformanceMetric('Safety Rating', 98, Colors.blue),
 
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
+                    const SizedBox(height: 32),
+
+                    // Recent Reviews
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Recent Reviews',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins',
+                          color: Color(0xFF2D3436),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildReviewCard(
+                      reviewerName: 'Alice Thompson',
+                      reviewerImage: 'https://i.pravatar.cc/150?u=alice',
+                      date: '2 Oct 2024',
+                      location: 'New York, NY',
+                      platform: 'WheelBoard',
+                      rating: 5,
+                      review:
+                          'Excellent driver! Very professional and punctual. The cargo arrived in perfect condition.',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildReviewCard(
+                      reviewerName: 'Bob Wilson',
+                      reviewerImage: 'https://i.pravatar.cc/150?u=bob',
+                      date: '25 Sep 2024',
+                      location: 'Los Angeles, CA',
+                      platform: 'WheelBoard',
+                      rating: 4,
+                      review:
+                          'Good experience, though there was a slight delay due to traffic. Overall very satisfied.',
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    if (widget.tripId != null && widget.tripId!.isNotEmpty)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Get.to(
+                              () => AssignTripScreen(
+                                tripId: widget.tripId!,
+                                bidId: widget.bidId,
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.directions_car, size: 20),
+                          label: const Text(
+                            'Assign to Trip',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00B894),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      }),
     );
   }
 

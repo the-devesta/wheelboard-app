@@ -42,8 +42,9 @@ class _EditTripScreenState extends State<EditTripScreen> {
   DistanceResult? _distanceResult;
   bool _isCalculatingDistance = false;
   bool _isLoadingLocation = false;
-  double? _pickupLat;
-  double? _pickupLng;
+
+  double? _deliveryLat;
+  double? _deliveryLng;
 
   @override
   void initState() {
@@ -87,8 +88,8 @@ class _EditTripScreenState extends State<EditTripScreen> {
       tripController.selectedDriver.value = trip.driverId;
     }
 
-    _pickupLat = trip.latitude;
-    _pickupLng = trip.longitude;
+    _deliveryLat = trip.latitude;
+    _deliveryLng = trip.longitude;
     _distanceResult = trip.distance != null && trip.distance!.isNotEmpty
         ? DistanceResult(
             distanceKm:
@@ -233,44 +234,6 @@ class _EditTripScreenState extends State<EditTripScreen> {
                                   return;
                                 }
 
-                                // 🔍 DEBUG: Log values before updating trip
-                                AppLogger.d(
-                                  "=================================",
-                                );
-                                AppLogger.d("🚚 EDIT TRIP - DEBUG INFO");
-                                AppLogger.d(
-                                  "=================================",
-                                );
-                                AppLogger.d("👤 User ID: $userId");
-                                AppLogger.d(
-                                  "🎫 Trip ID: ${widget.trip.tripId}",
-                                );
-                                AppLogger.d(
-                                  "🚗 Selected Vehicle ID: ${tripController.selectedVehicle.value ?? 'NOT SELECTED'}",
-                                );
-                                AppLogger.d(
-                                  "👨‍✈️ Selected Driver ID: ${tripController.selectedDriver.value ?? 'NOT SELECTED'}",
-                                );
-                                AppLogger.d(
-                                  "📍 Pickup Location: ${pickupController.text}",
-                                );
-                                AppLogger.d(
-                                  "📍 Delivery Location: ${deliveryController.text}",
-                                );
-                                AppLogger.d("📅 Pickup Date: $selectedDate");
-                                AppLogger.d(
-                                  "⏰ Pickup Time: ${selectedTime != null ? _formatTimeOfDay(selectedTime!) : '00:00:00'}",
-                                );
-                                AppLogger.d(
-                                  "📝 Special Instructions: ${specialInstructionsController.text.trim()}",
-                                );
-                                AppLogger.d(
-                                  "💰 Pay Range: ${payRangeController.text.trim()}",
-                                );
-                                AppLogger.d(
-                                  "=================================",
-                                );
-
                                 // ✅ Build updated Trip object
                                 final updatedTrip = Trip(
                                   tripId: widget.trip.tripId,
@@ -293,8 +256,8 @@ class _EditTripScreenState extends State<EditTripScreen> {
                                   tripCode: widget.trip.tripCode,
                                   tripStatus: widget.trip.tripStatus,
                                   isScheduledTrip: true,
-                                  latitude: _pickupLat,
-                                  longitude: _pickupLng,
+                                  latitude: _deliveryLat,
+                                  longitude: _deliveryLng,
                                   distance: _distanceResult != null
                                       ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
                                       : widget.trip.distance,
@@ -365,7 +328,6 @@ class _EditTripScreenState extends State<EditTripScreen> {
           if (tripController.vehicles.isEmpty) {
             return const Text("No vehicles available");
           }
-          // Safety check: ensure the selected value is actually in the list of vehicles
           final String? currentValue =
               tripController.vehicles.any(
                 (v) => v.vehicleId == tripController.selectedVehicle.value,
@@ -433,7 +395,6 @@ class _EditTripScreenState extends State<EditTripScreen> {
           if (tripController.drivers.isEmpty) {
             return const Text("No drivers available");
           }
-          // Safety check: ensure the selected value is actually in the list of drivers
           final String? currentValue =
               tripController.drivers.any(
                 (d) => d.driverId == tripController.selectedDriver.value,
@@ -494,7 +455,6 @@ class _EditTripScreenState extends State<EditTripScreen> {
         "${dt.minute.toString().padLeft(2, '0')}:00";
   }
 
-  /// Get current location and fill in the controller
   Future<void> _getCurrentLocation(TextEditingController controller) async {
     setState(() => _isLoadingLocation = true);
 
@@ -510,13 +470,8 @@ class _EditTripScreenState extends State<EditTripScreen> {
       if (address != null && address.isNotEmpty) {
         setState(() {
           controller.text = address;
-          if (controller == pickupController) {
-            _pickupLat = position?.latitude;
-            _pickupLng = position?.longitude;
-          }
         });
 
-        // Auto-calculate distance if both locations are set
         _autoCalculateDistance();
 
         Get.snackbar(
@@ -530,7 +485,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
       } else {
         Get.snackbar(
           '❌ Error',
-          'Could not get current location. Please check permissions.',
+          'Could not get current location.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.withOpacity(0.8),
           colorText: Colors.white,
@@ -609,27 +564,12 @@ class _EditTripScreenState extends State<EditTripScreen> {
                       pickupController.text = s.description;
                       pickupSuggestions.clear();
                     });
-
-                    final loc = await placesService.fetchPlaceLocation(
-                      s.placeId,
-                    );
-                    AppLogger.d("Pickup LatLng: $loc");
-
-                    if (loc != null) {
-                      setState(() {
-                        _pickupLat = loc['lat'];
-                        _pickupLng = loc['lng'];
-                      });
-                    }
-
-                    // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();
                   },
                 );
               },
             ),
           ),
-        // Current Location Button for Pickup
         const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
@@ -722,12 +662,21 @@ class _EditTripScreenState extends State<EditTripScreen> {
                       deliverySuggestions.clear();
                     });
 
-                    final loc = await placesService.fetchPlaceLocation(
-                      s.placeId,
-                    );
-                    AppLogger.d("Delivery LatLng: $loc");
+                    try {
+                      final loc = await placesService.fetchPlaceLocation(
+                        s.placeId,
+                      );
+                      AppLogger.d("Delivery LatLng: $loc");
 
-                    // Auto-calculate distance if both locations are set
+                      if (loc != null) {
+                        setState(() {
+                          _deliveryLat = loc['lat'];
+                          _deliveryLng = loc['lng'];
+                        });
+                      }
+                    } catch (e) {
+                      AppLogger.e("Error fetching delivery location: $e");
+                    }
                     _autoCalculateDistance();
                   },
                 );
@@ -756,10 +705,8 @@ class _EditTripScreenState extends State<EditTripScreen> {
         TextFormField(
           readOnly: true,
           onTap: () async {
-            // For editing existing trips, allow selecting the original date even if it's in the past
             final now = DateTime.now();
             final initialDate = selectedDate ?? now;
-            // Use the earlier of selectedDate or now as firstDate to avoid assertion error
             final firstDate =
                 selectedDate != null && selectedDate!.isBefore(now)
                 ? selectedDate!
@@ -952,7 +899,6 @@ class _EditTripScreenState extends State<EditTripScreen> {
     );
   }
 
-  // Estimated Distance Widget
   Widget _buildEstimatedDistanceWidget() {
     final hasLocations =
         pickupController.text.isNotEmpty && deliveryController.text.isNotEmpty;
@@ -1049,7 +995,6 @@ class _EditTripScreenState extends State<EditTripScreen> {
     }
   }
 
-  /// Auto-calculate distance when both locations are selected
   void _autoCalculateDistance() {
     if (pickupController.text.isNotEmpty &&
         deliveryController.text.isNotEmpty) {
@@ -1058,7 +1003,6 @@ class _EditTripScreenState extends State<EditTripScreen> {
   }
 }
 
-// Suggestion class for Google Places
 class Suggestion {
   final String placeId;
   final String description;
@@ -1087,7 +1031,6 @@ class Suggestion {
   }
 }
 
-// Google Places Service
 class PlacesService {
   final String apiKey;
 
