@@ -75,7 +75,7 @@ class TripProgressScreen extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(28),
             child: SizedBox(
-              height: 220,
+              height: 180,
               width: double.infinity,
               child: Image.network(
                 imageUrl,
@@ -220,8 +220,8 @@ class TripProgressScreen extends StatelessWidget {
 
   Widget _buildInfoGrid(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
@@ -257,11 +257,15 @@ class TripProgressScreen extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            childAspectRatio: 2.2,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
+            childAspectRatio: 2.5,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
             children: [
-              _buildSmallCard('Driver', trip.driverName, Icons.person_outline),
+              _buildSmallCard(
+                'Company',
+                trip.companyName ?? "WSPL Transport",
+                Icons.business,
+              ),
               _buildSmallCard(
                 'Status',
                 trip.tripStatus,
@@ -304,17 +308,17 @@ class TripProgressScreen extends StatelessWidget {
               Text(
                 label,
                 style: GoogleFonts.poppins(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: Colors.grey[500],
                   fontWeight: FontWeight.w500,
                 ),
               ),
               Text(
                 address,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
-                  fontSize: 15,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1F2937),
                 ),
@@ -354,7 +358,7 @@ class TripProgressScreen extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF1F2937),
                   ),

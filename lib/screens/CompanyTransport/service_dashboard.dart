@@ -745,33 +745,63 @@ class _TaskProgress extends StatelessWidget {
         if (data.status.toLowerCase().contains("cancelled"))
           _progressItem("Cancelled", false),
         if (data.status.toLowerCase().contains("completed"))
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: InkWell(
-              onTap: () {
-                if (data.model != null) {
-                  controller.initiatePayment(data.model!);
-                }
-              },
-              child: Container(
-                width: Get.width,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00B894),
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
+          Column(
+            children: [
+              if (data.model?.paymentAmount != null &&
+                  data.model!.paymentAmount > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Actual Amount:",
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+                      Text(
+                        "₹${data.model!.paymentAmount}",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF00B894),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Center(
-                  child: Text(
-                    'Complete payment',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: InkWell(
+                  onTap: () {
+                    if (data.model != null) {
+                      controller.initiatePayment(data.model!);
+                    }
+                  },
+                  child: Container(
+                    width: Get.width,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00B894),
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Complete payment',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
       ],
     );

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../widgets/custom_loader.dart';
 import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 import 'booking_details_screen.dart';
+import '../../models/service_booking_model.dart';
 
 class BookingListScreen extends StatefulWidget {
   final List<String> serviceIds;
@@ -136,13 +137,13 @@ class _BookingListScreenState extends State<BookingListScreen> {
     );
   }
 
-  Widget _buildBookingCard(Map<String, dynamic> booking) {
-    final status = (booking['status'] ?? 'Pending').toString();
-    final serviceTitle = booking['serviceTitle'] ?? 'Service';
-    final customerName = booking['customerName'] ?? 'Customer';
-    final scheduledDate = booking['scheduledDate'] ?? '';
-    final scheduledTime = booking['scheduledTime'] ?? '';
-    final amount = booking['amount'] ?? 0;
+  Widget _buildBookingCard(ServiceBookingModel booking) {
+    final status = booking.status;
+    final serviceTitle = booking.serviceTitle;
+    final customerName = booking.customerName;
+    final scheduledDate = booking.scheduledDate;
+    final scheduledTime = booking.scheduledTime;
+    final amount = booking.amount;
 
     // Format date
     String formattedDate = scheduledDate;
@@ -157,7 +158,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
       onTap: () {
         Get.to(
           () => BookingDetailsScreen(
-            serviceId: booking['serviceId'] ?? '',
+            serviceId: booking.serviceId,
             initialBookingData: booking,
           ),
         );
@@ -232,9 +233,16 @@ class _BookingListScreenState extends State<BookingListScreen> {
                   ),
                 ),
                 const Spacer(),
-                if (amount > 0)
+                if (amount > 0 ||
+                    (booking.paymentAmount != null &&
+                        booking.paymentAmount! > 0))
                   Text(
-                    "₹$amount",
+                    (status.toLowerCase() == 'completed' ||
+                                status.toLowerCase() == 'paid') &&
+                            booking.paymentAmount != null &&
+                            booking.paymentAmount! > 0
+                        ? "₹${booking.paymentAmount}"
+                        : "₹$amount",
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

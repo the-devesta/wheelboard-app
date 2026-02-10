@@ -118,6 +118,49 @@ class DriverDetailsController extends GetxController {
     }
   }
 
+  Future<void> fetchProfessionalDetails(String driverId) async {
+    try {
+      isLoading.value = true;
+
+      AppLogger.d("👤 Fetching professional details for ID: $driverId");
+
+      final sessionManager = SessionManager();
+      final token = await sessionManager.getString("authToken");
+
+      Map<String, String> headers = {'accept': '*/*'};
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await HttpHelper.getProfessionalDetails(
+        driverId: driverId,
+        headers: headers,
+      );
+
+      AppLogger.d("👤 Professional Response Status: ${response.statusCode}");
+      AppLogger.d("👤 Professional Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is Map<String, dynamic>) {
+          if (data.containsKey('driverId')) {
+            driverDetails.value = DriverDetailsModel.fromJson(data);
+          } else if (data.containsKey('result')) {
+            driverDetails.value = DriverDetailsModel.fromJson(data['result']);
+          }
+        }
+      } else {
+        AppLogger.d(
+          "❌ Failed to load professional details: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      AppLogger.d("❌ Error fetching professional details: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<bool> deleteDriver(
     String driverId,
     String userId,

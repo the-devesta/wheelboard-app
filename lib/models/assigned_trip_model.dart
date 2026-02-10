@@ -39,6 +39,11 @@ class AssignedTrip {
   final String? distance;
   final double? latitude;
   final double? longitude;
+  final String? companyName;
+  final String? companyMobileNo;
+  final String? companyLogoPath;
+  final String? companyEmail;
+  final String? companyAddress;
 
   // Fields for calculations (not in API)
   double? calculatedDistance;
@@ -74,6 +79,11 @@ class AssignedTrip {
     this.distance,
     this.latitude,
     this.longitude,
+    this.companyName,
+    this.companyMobileNo,
+    this.companyLogoPath,
+    this.companyEmail,
+    this.companyAddress,
   });
 
   factory AssignedTrip.fromJson(Map<String, dynamic> json) => AssignedTrip(
@@ -111,6 +121,26 @@ class AssignedTrip {
     distance: json["distance"]?.toString(),
     latitude: json["latitude"]?.toDouble(),
     longitude: json["longitude"]?.toDouble(),
+    companyName:
+        json["companyName"] ?? json["CompanyName"] ?? json["company_name"],
+    companyMobileNo:
+        json["companyMobileNo"] ??
+        json["CompanyMobileNo"] ??
+        json["company_mobile_no"] ??
+        json["companyContact"] ??
+        json["company_contact"],
+    companyLogoPath:
+        json["companyLogoPath"] ??
+        json["CompanyLogoPath"] ??
+        json["company_logo_path"] ??
+        json["companyLogo"] ??
+        json["company_logo"],
+    companyEmail:
+        json["companyEmail"] ?? json["CompanyEmail"] ?? json["company_email"],
+    companyAddress:
+        json["companyAddress"] ??
+        json["CompanyAddress"] ??
+        json["company_address"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -144,6 +174,11 @@ class AssignedTrip {
     if (distance != null) "distance": distance,
     if (latitude != null) "latitude": latitude,
     if (longitude != null) "longitude": longitude,
+    if (companyName != null) "companyName": companyName,
+    if (companyMobileNo != null) "companyMobileNo": companyMobileNo,
+    if (companyLogoPath != null) "companyLogoPath": companyLogoPath,
+    if (companyEmail != null) "companyEmail": companyEmail,
+    if (companyAddress != null) "companyAddress": companyAddress,
   };
 
   AssignedTrip copyWith({
@@ -176,6 +211,11 @@ class AssignedTrip {
     String? distance,
     double? latitude,
     double? longitude,
+    String? companyName,
+    String? companyMobileNo,
+    String? companyLogoPath,
+    String? companyEmail,
+    String? companyAddress,
   }) {
     return AssignedTrip(
       tripId: tripId ?? this.tripId,
@@ -207,6 +247,11 @@ class AssignedTrip {
       distance: distance ?? this.distance,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      companyName: companyName ?? this.companyName,
+      companyMobileNo: companyMobileNo ?? this.companyMobileNo,
+      companyLogoPath: companyLogoPath ?? this.companyLogoPath,
+      companyEmail: companyEmail ?? this.companyEmail,
+      companyAddress: companyAddress ?? this.companyAddress,
     );
   }
 }

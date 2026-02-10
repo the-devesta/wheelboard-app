@@ -181,6 +181,7 @@ class _BidsScreenState extends State<BidsScreen> {
                               driverId: bid.driverId,
                               tripId: widget.tripId,
                               bidId: bid.bidId,
+                              isProfessional: true,
                             ),
                           );
                         },

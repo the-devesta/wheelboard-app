@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wheelboard/screens/CompanyTransport/newtripscreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/schedulescreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/bids_screen.dart';
@@ -986,6 +987,7 @@ class _TripsTabViews extends StatelessWidget {
                   chip: trip.vehicleType ?? "Standard",
                   vehicle: trip.vehicleNumber ?? '',
                   driver: trip.driverName ?? 'Not assigned',
+                  driverContact: trip.driverContact ?? '',
                 ),
               );
             }).toList(),
@@ -1014,6 +1016,7 @@ class _TripsTabViews extends StatelessWidget {
                 chip: trip.vehicleType ?? "Standard",
                 vehicle: trip.vehicleNumber ?? '',
                 driver: trip.driverName ?? 'Not assigned',
+                driverContact: trip.driverContact ?? '',
               );
             }).toList(),
           );
@@ -1387,6 +1390,7 @@ class _TripTile extends StatelessWidget {
   final String chip;
   final String vehicle;
   final String driver;
+  final String driverContact;
 
   const _TripTile({
     required this.title,
@@ -1397,7 +1401,15 @@ class _TripTile extends StatelessWidget {
     required this.chip,
     this.vehicle = '',
     this.driver = '',
+    this.driverContact = '',
   });
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri phoneUri = Uri.parse('tel:$phoneNumber');
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1537,6 +1549,22 @@ class _TripTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (driverContact.isNotEmpty)
+                    GestureDetector(
+                      onTap: () => _makePhoneCall(driverContact),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.phone,
+                          size: 14,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ],

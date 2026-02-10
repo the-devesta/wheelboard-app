@@ -12,6 +12,7 @@ class DriverDetailsModel {
   final String? driverImagePath;
   final String? dlNumber;
   final DateTime? dateOfBirth;
+  final String? driverType;
 
   DriverDetailsModel({
     required this.driverId,
@@ -27,6 +28,7 @@ class DriverDetailsModel {
     this.driverImagePath,
     this.dlNumber,
     this.dateOfBirth,
+    this.driverType,
   });
 
   factory DriverDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class DriverDetailsModel {
       dateOfBirth: json['dateOfBirth'] != null
           ? DateTime.tryParse(json['dateOfBirth'])
           : null,
+      driverType: json['driverType'],
     );
   }
 
@@ -68,6 +71,7 @@ class DriverDetailsModel {
       'driverImagePath': driverImagePath,
       'dlNumber': dlNumber,
       'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'driverType': driverType,
     };
   }
 }

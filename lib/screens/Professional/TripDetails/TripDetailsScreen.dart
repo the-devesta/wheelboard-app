@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wheelboard/screens/Professional/TrackTrip/TrackTripScreen.dart';
 import 'package:wheelboard/utils/app_logger.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:wheelboard/utils/call_utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../controllers/Professional/track_trip_controller.dart';
@@ -395,76 +395,60 @@ class TripDetailsScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Driver Information
-            if (trip.driverName.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+            // Company Information
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Company Information',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1F2937),
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Driver Information',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1F2937),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        if (trip.driverImagePath != null &&
-                            trip.driverImagePath!.isNotEmpty)
-                          CachedNetworkImage(
-                            imageUrl: trip.driverImagePath!,
-                            imageBuilder: (context, imageProvider) =>
-                                CircleAvatar(
-                                  radius: 30,
-                                  backgroundImage: imageProvider,
-                                ),
-                            placeholder: (context, url) => CircleAvatar(
-                              radius: 30,
-                              backgroundColor: const Color(0xFFEBF4FF),
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFF2F80ED),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      if (trip.companyLogoPath != null &&
+                          trip.companyLogoPath!.isNotEmpty)
+                        CachedNetworkImage(
+                          imageUrl: trip.companyLogoPath!,
+                          imageBuilder: (context, imageProvider) =>
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundImage: imageProvider,
                               ),
+                          placeholder: (context, url) => const CircleAvatar(
+                            radius: 30,
+                            backgroundColor: Color(0xFFEBF4FF),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF2F80ED),
                             ),
-                            errorWidget: (context, url, error) => CircleAvatar(
-                              radius: 30,
-                              backgroundColor: const Color(0xFFEBF4FF),
-                              child: Text(
-                                trip.driverName.trim().isNotEmpty
-                                    ? trip.driverName.trim()[0].toUpperCase()
-                                    : 'D',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF2F80ED),
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          CircleAvatar(
+                          ),
+                          errorWidget: (context, url, error) => CircleAvatar(
                             radius: 30,
                             backgroundColor: const Color(0xFFEBF4FF),
                             child: Text(
-                              trip.driverName.trim().isNotEmpty
-                                  ? trip.driverName.trim()[0].toUpperCase()
-                                  : 'D',
+                              (trip.companyName != null &&
+                                      trip.companyName!.trim().isNotEmpty)
+                                  ? trip.companyName!.trim()[0].toUpperCase()
+                                  : 'C',
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -472,84 +456,101 @@ class TripDetailsScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                trip.driverName,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1F2937),
-                                ),
-                              ),
-                              if (trip.driverContact.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.phone,
-                                      size: 14,
-                                      color: Color(0xFF6B7280),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      trip.driverContact,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF6B7280),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: const Color(0xFFEBF4FF),
+                          child: Text(
+                            (trip.companyName != null &&
+                                    trip.companyName!.trim().isNotEmpty)
+                                ? trip.companyName!.trim()[0].toUpperCase()
+                                : 'C',
+                            style: GoogleFonts.poppins(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF2F80ED),
+                            ),
                           ),
                         ),
-                        if (trip.driverContact.isNotEmpty)
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEBF4FF),
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.phone,
-                                color: Color(0xFF2F80ED),
-                                size: 20,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              trip.companyName ?? "WSPL Transport",
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1F2937),
                               ),
-                              onPressed: () async {
-                                final Uri launchUri = Uri(
-                                  scheme: 'tel',
-                                  path: trip.driverContact,
-                                );
-                                try {
-                                  if (await canLaunchUrl(launchUri)) {
-                                    await launchUrl(launchUri);
-                                  } else {
-                                    // Fallback for some devices or simulators
-                                    await launchUrl(launchUri);
-                                  }
-                                } catch (e) {
-                                  AppLogger.d("❌ Error launching dialer: $e");
-                                  Get.snackbar(
-                                    "Error",
-                                    "Could not launch dialer",
-                                    backgroundColor: Colors.red,
-                                    colorText: Colors.white,
-                                  );
-                                }
-                              },
                             ),
+                            if (trip.companyMobileNo != null &&
+                                trip.companyMobileNo!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.phone,
+                                    size: 14,
+                                    color: Color(0xFF6B7280),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    trip.companyMobileNo!,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF6B7280),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (trip.companyMobileNo != null &&
+                          trip.companyMobileNo!.isNotEmpty)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEBF4FF),
+                            borderRadius: BorderRadius.circular(50),
                           ),
-                      ],
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.phone,
+                              color: Color(0xFF2F80ED),
+                              size: 20,
+                            ),
+                            onPressed: () =>
+                                CallUtils.makeCall(trip.companyMobileNo!),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (trip.companyEmail != null &&
+                      trip.companyEmail!.isNotEmpty) ...[
+                    const Divider(height: 32),
+                    _buildInfoRow(
+                      icon: Icons.email_outlined,
+                      label: 'Company Email',
+                      value: trip.companyEmail!,
                     ),
                   ],
-                ),
+                  if (trip.companyAddress != null &&
+                      trip.companyAddress!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildInfoRow(
+                      icon: Icons.location_city_outlined,
+                      label: 'Company Address',
+                      value: trip.companyAddress!,
+                    ),
+                  ],
+                ],
               ),
+            ),
 
             const SizedBox(height: 24),
 

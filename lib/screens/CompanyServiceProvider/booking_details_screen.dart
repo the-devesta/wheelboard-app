@@ -6,10 +6,11 @@ import '../../utils/share_service.dart';
 import 'package:intl/intl.dart';
 import '../../utils/call_utils.dart';
 import '../../controllers/ServiceProvider/booking_details_controller.dart';
+import '../../models/service_booking_model.dart';
 
 class BookingDetailsScreen extends StatefulWidget {
   final String serviceId;
-  final Map<String, dynamic>? initialBookingData;
+  final ServiceBookingModel? initialBookingData;
 
   const BookingDetailsScreen({
     super.key,
@@ -47,7 +48,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   // Getters that access controller properties
   bool get _isLoading => _controller.isLoading.value;
   bool get _isUpdating => _controller.isUpdating.value;
-  Map<String, dynamic>? get _bookingData => _controller.bookingData.value;
+  ServiceBookingModel? get _bookingData => _controller.bookingData.value;
   TextEditingController get _notesController => _controller.notesController;
 
   @override
@@ -77,13 +78,11 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
               icon: const Icon(Icons.share, color: Color(0xFF2D3436)),
               onPressed: () {
                 if (_bookingData != null) {
-                  final assignmentId = _bookingData!['assignmentId'] ?? '';
-                  final serviceTitle =
-                      _bookingData!['serviceTitle'] ?? 'Service';
-                  final customerName =
-                      _bookingData!['customerName'] ?? 'Customer';
-                  final scheduledDate = _bookingData!['scheduledDate'] ?? '';
-                  final scheduledTime = _bookingData!['scheduledTime'] ?? '';
+                  final assignmentId = _bookingData!.assignmentId;
+                  final serviceTitle = _bookingData!.serviceTitle;
+                  final customerName = _bookingData!.customerName;
+                  final scheduledDate = _bookingData!.scheduledDate;
+                  final scheduledTime = _bookingData!.scheduledTime;
 
                   String formattedDate = scheduledDate;
                   if (scheduledDate.isNotEmpty) {
@@ -189,11 +188,11 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
   Widget _buildBookingSummaryCard() {
     final assignment = _bookingData!;
-    final serviceTitle = assignment['serviceTitle'] ?? 'Service';
-    final String status = (assignment['status'] ?? 'Pending').toString();
-    final scheduledDate = assignment['scheduledDate'] ?? '';
-    final scheduledTime = assignment['scheduledTime'] ?? '';
-    final assignmentId = assignment['assignmentId'] ?? '';
+    final serviceTitle = assignment.serviceTitle;
+    final String status = assignment.status;
+    final scheduledDate = assignment.scheduledDate;
+    final scheduledTime = assignment.scheduledTime;
+    final assignmentId = assignment.assignmentId;
 
     // Format date
     String formattedDate = 'Date not available';
@@ -342,14 +341,10 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
   Widget _buildCustomerDetailsCard() {
     final assignment = _bookingData!;
-    final customerName = assignment['customerName'] ?? 'Customer';
-    final vehicleNumber = assignment['vehicleNumber'] ?? '';
-    final description = assignment['description'] ?? '';
-    final contactNumber =
-        assignment['contactNumber'] ??
-        assignment['customerMobile'] ??
-        assignment['mobileNumber'] ??
-        '';
+    final customerName = assignment.customerName;
+    final vehicleNumber = assignment.vehicleNumber ?? '';
+    final description = assignment.description ?? '';
+    final contactNumber = assignment.customerMobile ?? '';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -492,12 +487,12 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
   Widget _buildServiceDetailsCard() {
     final assignment = _bookingData!;
-    final serviceTitle = assignment['serviceTitle'] ?? 'Service';
+    final serviceTitle = assignment.serviceTitle;
 
     // Handle pricing option - convert boolean/string to readable text
     String pricingType = 'Per Hour'; // Default
-    if (assignment['pricingOption'] != null) {
-      final option = assignment['pricingOption'];
+    if (assignment.pricingOption != null) {
+      final option = assignment.pricingOption;
       if (option is bool) {
         pricingType = option ? 'Flat Rate' : 'Per Hour';
       } else if (option is String) {
@@ -517,13 +512,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     }
 
     // Handle price - ensure it's a number
-    dynamic priceValue = assignment['amount'] ?? 0;
-    if (priceValue is bool) {
-      priceValue = 0;
-    }
-    final price = (priceValue is num)
-        ? priceValue
-        : (double.tryParse(priceValue.toString()) ?? 0);
+    final price = assignment.amount;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -556,7 +545,12 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 ),
               ),
               Text(
-                price > 0 ? '₹${price.toStringAsFixed(0)}' : 'N/A',
+                (assignment.status.toLowerCase() == 'completed' ||
+                            assignment.status.toLowerCase() == 'paid') &&
+                        assignment.paymentAmount != null &&
+                        assignment.paymentAmount! > 0
+                    ? '₹${assignment.paymentAmount}'
+                    : (price > 0 ? '₹${price.toStringAsFixed(0)}' : 'N/A'),
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w600,
@@ -606,9 +600,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
 
   Widget _buildSchedulingCard() {
     final assignment = _bookingData!;
-    final scheduledDate = assignment['scheduledDate'] ?? '';
-    final scheduledTime = assignment['scheduledTime'] ?? '';
-    final String status = (assignment['status'] ?? 'Pending').toString();
+    final scheduledDate = assignment.scheduledDate;
+    final scheduledTime = assignment.scheduledTime;
+    final String status = assignment.status;
 
     // Format scheduled date and time
     String formattedDateTime = 'Not scheduled';
@@ -795,8 +789,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   }
 
   Widget _buildBottomButtons() {
-    final assignmentId = _bookingData?['assignmentId'] ?? '';
-    final status = _bookingData?['status']?.toString().toLowerCase() ?? '';
+    final assignmentId = _bookingData?.assignmentId ?? '';
+    final status = _bookingData?.status.toLowerCase() ?? '';
 
     if (status == 'completed' || status == 'cancelled' || status == 'paid') {
       return const SizedBox.shrink();
@@ -816,21 +810,12 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           Row(
             children: [
               if (!isStarted &&
-                  (_bookingData?['contactNumber'] ??
-                          _bookingData?['customerMobile'] ??
-                          _bookingData?['mobileNumber'] ??
-                          '')
-                      .toString()
-                      .isNotEmpty) ...[
+                  (_bookingData?.customerMobile ?? '').isNotEmpty) ...[
                 Expanded(
                   flex: 1,
                   child: OutlinedButton.icon(
                     onPressed: () => CallUtils.makeCall(
-                      (_bookingData?['contactNumber'] ??
-                              _bookingData?['customerMobile'] ??
-                              _bookingData?['mobileNumber'] ??
-                              '')
-                          .toString(),
+                      (_bookingData?.customerMobile ?? '').toString(),
                     ),
                     icon: const Icon(Icons.phone, size: 18),
                     label: const Text('Call'),
@@ -933,8 +918,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     final TextEditingController amountController = TextEditingController();
 
     // Pre-fill with existing amount if available
-    final existingAmount = _bookingData?['amount'];
-    if (existingAmount != null && existingAmount is num && existingAmount > 0) {
+    final existingAmount = _bookingData?.amount;
+    if (existingAmount != null && existingAmount > 0) {
       amountController.text = existingAmount.toStringAsFixed(0);
     }
 
@@ -1081,7 +1066,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
   }
 
   void _showCancelDialog() {
-    final assignmentId = _bookingData?['assignmentId'] ?? '';
+    final assignmentId = _bookingData?.assignmentId ?? '';
 
     if (assignmentId.isEmpty) {
       SnackBarHelper.error("Assignment ID not found");

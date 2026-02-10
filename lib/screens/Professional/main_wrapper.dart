@@ -67,6 +67,18 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
     setState(() {
       _currentIndex = index;
     });
+
+    // ✅ Refetch assigned trips when navigating to Trips tab (index 2)
+    // or when returning to Home (index 0) to keep data fresh
+    if (index == 0 || index == 2) {
+      try {
+        final tripController = Get.find<AssignedTripController>();
+        tripController.fetchAssignedTrips();
+        AppLogger.d("🔄 Refetching trips on tab change (index: $index)");
+      } catch (e) {
+        AppLogger.d("⚠️ Could not refetch trips: $e");
+      }
+    }
   }
 
   @override

@@ -9,6 +9,7 @@ import '../TrackTrip/TrackTripScreen.dart';
 import '../TripProgress/TripProgressScreen.dart';
 import '../../../widgets/custom_loader.dart';
 import '../../../apihelperclass/api_helper.dart';
+import '../../../utils/call_utils.dart';
 
 class TripDashboardScreen extends StatefulWidget {
   const TripDashboardScreen({super.key});
@@ -538,46 +539,78 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           ),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "ID: ${trip.tripCode}",
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
-              ),
-              if (trip.calculatedDistance != null)
-                Row(
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.straighten, size: 12, color: Colors.grey),
-                    const SizedBox(width: 4),
                     Text(
-                      "${trip.calculatedDistance!.toStringAsFixed(1)} km",
+                      "ID: ${trip.tripCode}",
                       style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.access_time, size: 12, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      trip.estimatedEta ?? "--",
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                    if (trip.distance != null) ...[
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.local_shipping_outlined,
-                        size: 12,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        trip.distance!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
+                    if (trip.calculatedDistance != null ||
+                        trip.distance != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              if (trip.calculatedDistance != null) ...[
+                                const Icon(
+                                  Icons.straighten,
+                                  size: 12,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${trip.calculatedDistance!.toStringAsFixed(1)} km",
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                              if (trip.estimatedEta != null) ...[
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.access_time,
+                                  size: 12,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  trip.estimatedEta!,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                              if (trip.distance != null) ...[
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.local_shipping_outlined,
+                                  size: 12,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  trip.distance!,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
-                    ],
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
               Text(
                 HttpHelper.formatAmount(trip.bidAmount ?? 0),
                 style: const TextStyle(
@@ -591,8 +624,83 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Company Information
+              Expanded(
+                child: Row(
+                  children: [
+                    if (trip.companyLogoPath != null &&
+                        trip.companyLogoPath!.isNotEmpty)
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundImage: NetworkImage(trip.companyLogoPath!),
+                        backgroundColor: Colors.grey[200],
+                      )
+                    else
+                      const CircleAvatar(
+                        radius: 14,
+                        backgroundColor: Color(0xFFF36969),
+                        child: Icon(
+                          Icons.business,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            trip.companyName ?? "WSPL Transport",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF374151),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (trip.companyMobileNo != null)
+                            Text(
+                              trip.companyMobileNo!,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Call Company Button
+              if (trip.companyMobileNo != null &&
+                  trip.companyMobileNo!.isNotEmpty)
+                IconButton(
+                  onPressed: () => CallUtils.makeCall(trip.companyMobileNo!),
+                  icon: const Icon(
+                    Icons.phone_in_talk,
+                    size: 20,
+                    color: Color(0xFF2F80ED),
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFFEBF4FF),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               TextButton(
                 onPressed: () => Get.to(() => TripDetailsScreen(trip: trip)),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: const Text(
                   "View Details",
                   style: TextStyle(fontSize: 12),
@@ -618,7 +726,11 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                     backgroundColor: const Color(0xFFEBF4FF),
                     foregroundColor: const Color(0xFF2F80ED),
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    minimumSize: const Size(0, 0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),

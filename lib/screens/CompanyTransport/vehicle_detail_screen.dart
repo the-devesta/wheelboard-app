@@ -6,6 +6,7 @@ import '../../controllers/Transport/main_wrapper_controller.dart';
 import '../../controllers/Transport/fleet_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
+import '../../utils/call_utils.dart';
 import 'Lease/add_vehicle_lease_screen.dart';
 import 'schedulescreen.dart';
 
@@ -550,14 +551,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                 // Contact Driver Button
                                 InkWell(
                                   onTap: () {
-                                    final wrapperController =
-                                        Get.find<MainWrapperController>();
-                                    wrapperController.currentTabIndex.value =
-                                        1; // Navigate to Fleet tab
-                                    Navigator.popUntil(
-                                      context,
-                                      (route) => route.isFirst,
-                                    );
+                                    CallUtils.makeCall(driverInfo.driverMobile);
                                   },
                                   child: Container(
                                     height: 28,

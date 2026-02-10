@@ -224,6 +224,25 @@ class HttpHelper {
     return await http.get(uri, headers: headers ?? {'accept': '*/*'});
   }
 
+  /// Get professional driver details by driver ID
+  static Future<http.Response> getProfessionalDetails({
+    required String driverId,
+    Map<String, String>? headers,
+  }) async {
+    final cleanBaseUrl = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    Uri uri = Uri.parse(
+      '$cleanBaseUrl/api/Transport/professional-details/$driverId',
+    );
+
+    AppLogger.d("👤 Professional Driver Details API Request:");
+    AppLogger.d("👤 URL: $uri");
+    AppLogger.d("👤 Headers: ${headers ?? {'accept': '*/*'}}");
+
+    return await http.get(uri, headers: headers ?? {'accept': '*/*'});
+  }
+
   //date format common fucntion
   static String formatDate(
     dynamic date, {

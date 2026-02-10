@@ -186,7 +186,9 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                                 : null,
                             eta: trip.estimatedEta,
                             tripDistance: trip.distance,
-                            onTap: () {
+                            onTap: () async {
+                              // ✅ Refetch trips first to ensure we have latest status
+                              await assignedTripController.fetchAssignedTrips();
                               final trips =
                                   assignedTripController.assignedTrips;
 
