@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../utils/constants.dart';
 import '../../../controllers/Professional/track_trip_controller.dart';
 import '../../../models/assigned_trip_model.dart';
 import '../TrackTrip/TrackTripScreen.dart';
@@ -81,36 +82,7 @@ class TripProgressScreen extends StatelessWidget {
                 imageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.local_shipping_outlined,
-                            size: 60,
-                            color: Colors.blue.withOpacity(0.5),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Ready to Move",
-                            style: GoogleFonts.poppins(
-                              color: Colors.blue.shade700,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                  return Image.asset(AppImages.trip, fit: BoxFit.cover);
                 },
               ),
             ),

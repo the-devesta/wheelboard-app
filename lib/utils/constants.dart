@@ -164,6 +164,13 @@ class API {
   static const String completePayment = 'api/Service/complete-payment';
 }
 
+class AppImages {
+  static const String mechanics = 'assets/mechanics.jpeg';
+  static const String driver = 'assets/truck_driver.jpeg';
+  static const String service = 'assets/service_page.jpeg';
+  static const String trip = 'assets/trip_post_schedule.jpg';
+}
+
 String formatDateShort(String? dateString) {
   if (dateString == null || dateString.isEmpty) {
     return "-";

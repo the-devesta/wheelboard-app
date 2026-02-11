@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../controllers/Transport/driver_details_controller.dart';
@@ -126,19 +127,32 @@ class _ViewDriverScreenState extends State<ViewDriverScreen> {
                     Stack(
                       alignment: Alignment.bottomRight,
                       children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[200],
-                          backgroundImage: driverImageUrl != null
-                              ? NetworkImage(driverImageUrl)
-                              : null,
-                          child: driverImageUrl == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 60,
-                                  color: Colors.grey,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(60),
+                          child: driverImageUrl != null
+                              ? CachedNetworkImage(
+                                  imageUrl: driverImageUrl,
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: Colors.grey[200],
+                                    child: const CustomLoader.small(),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      Image.asset(
+                                        AppImages.driver,
+                                        width: 120,
+                                        height: 120,
+                                        fit: BoxFit.cover,
+                                      ),
                                 )
-                              : null,
+                              : Image.asset(
+                                  AppImages.driver,
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                         if (driver.isVerified || driver.isKYCCompleted)
                           Container(

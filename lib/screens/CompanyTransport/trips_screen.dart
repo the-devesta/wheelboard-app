@@ -14,6 +14,7 @@ import 'package:wheelboard/models/add_new_trip_model.dart';
 import '../../widgets/custom_loader.dart';
 import 'TripExpenses/TripExpensesScreen.dart';
 import '../../services/auth_service.dart';
+import '../../utils/constants.dart';
 
 class TripPage extends StatefulWidget {
   final int initialTabIndex;
@@ -66,6 +67,16 @@ class _TripPageState extends State<TripPage>
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant TripPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTabIndex != oldWidget.initialTabIndex) {
+      if (_tabController.index != widget.initialTabIndex) {
+        _tabController.animateTo(widget.initialTabIndex);
+      }
+    }
   }
 
   @override
@@ -131,15 +142,6 @@ class _TripPageState extends State<TripPage>
 
   @override
   Widget build(BuildContext context) {
-    // Update tab controller if initialTabIndex changed
-    if (_tabController.index != widget.initialTabIndex) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _tabController.index != widget.initialTabIndex) {
-          _tabController.animateTo(widget.initialTabIndex);
-        }
-      });
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
 
@@ -251,13 +253,13 @@ class _TripPageState extends State<TripPage>
 
                       if (tripController.isTripsLoading.value) {
                         return const SizedBox(
-                          height: 185,
+                          height: 280,
                           child: CustomLoader.small(),
                         );
                       }
                       if (recentTrips.isEmpty) {
                         return SizedBox(
-                          height: 185,
+                          height: 280,
                           child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -282,7 +284,7 @@ class _TripPageState extends State<TripPage>
                         );
                       }
                       return SizedBox(
-                        height: 185,
+                        height: 280,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
                           children: recentTrips.asMap().entries.map((entry) {
@@ -573,6 +575,18 @@ class _TripPageState extends State<TripPage>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Trip Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              AppImages.trip,
+              height: 100,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(height: 10),
+
           // ✔ Completed pill with icon
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -978,6 +992,8 @@ class _TripsTabViews extends StatelessWidget {
                   Get.to(() => TripExpensesScreen(tripId: trip.tripId));
                 },
                 child: _TripTile(
+                  tripId: trip.tripId,
+                  userId: trip.userId,
                   title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
                   subtitle:
                       "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
@@ -1007,6 +1023,8 @@ class _TripsTabViews extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
             children: inProcessTrips.map((trip) {
               return _TripTile(
+                tripId: trip.tripId,
+                userId: trip.userId,
                 title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
                 subtitle:
                     "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
@@ -1017,6 +1035,9 @@ class _TripsTabViews extends StatelessWidget {
                 vehicle: trip.vehicleNumber ?? '',
                 driver: trip.driverName ?? 'Not assigned',
                 driverContact: trip.driverContact ?? '',
+                onComplete: () {
+                  tripController.completeTrip(trip.tripId, trip.userId);
+                },
               );
             }).toList(),
           );
@@ -1107,7 +1128,7 @@ class _UpcomingTripCard extends StatelessWidget {
                   topRight: Radius.circular(16),
                 ),
                 child: Image.asset(
-                  'assets/tripImage.png',
+                  AppImages.trip,
                   height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -1237,7 +1258,7 @@ class _UpcomingTripCard extends StatelessWidget {
                     if (assignedTo != 'Not assigned' && assignedTo.isNotEmpty)
                       CircleAvatar(
                         radius: 12,
-                        backgroundImage: NetworkImage(assignedToImage),
+                        backgroundImage: AssetImage(AppImages.driver),
                       ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -1392,7 +1413,13 @@ class _TripTile extends StatelessWidget {
   final String driver;
   final String driverContact;
 
+  final String tripId;
+  final String userId;
+  final VoidCallback? onComplete;
+
   const _TripTile({
+    required this.tripId,
+    required this.userId,
     required this.title,
     required this.subtitle,
     required this.statusText,
@@ -1402,6 +1429,7 @@ class _TripTile extends StatelessWidget {
     this.vehicle = '',
     this.driver = '',
     this.driverContact = '',
+    this.onComplete,
   });
 
   Future<void> _makePhoneCall(String phoneNumber) async {
@@ -1430,6 +1458,18 @@ class _TripTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Trip Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                AppImages.trip,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 12),
+
             // Status pill
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1566,6 +1606,61 @@ class _TripTile extends StatelessWidget {
                       ),
                     ),
                 ],
+              ),
+            ],
+            // Complete Trip Button (Only for In-Process trips)
+            if (statusText.toLowerCase().contains('process') ||
+                statusText.toLowerCase().contains('progress') ||
+                statusText.toLowerCase().contains('ongoing')) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Get.dialog(
+                      AlertDialog(
+                        title: const Text("Complete Trip"),
+                        content: const Text(
+                          "Are you sure you want to end this trip?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text("Cancel"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Get.back();
+                              if (onComplete != null) {
+                                onComplete!();
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text("Confirm"),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  label: const Text(
+                    "Complete Trip",
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
               ),
             ],
           ],

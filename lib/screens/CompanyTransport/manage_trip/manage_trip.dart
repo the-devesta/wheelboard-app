@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../utils/constants.dart';
 import '../../../widgets/common_header_widget.dart';
 import '../driver/view_driver_screen.dart';
 import '../../../widgets/custom_loader.dart';
@@ -174,14 +175,11 @@ class ManageTrip extends StatelessWidget {
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    return Container(
+                    return Image.asset(
+                      AppImages.driver,
                       height: 147,
-                      color: Colors.grey[300],
-                      child: const Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     );
                   },
                   loadingBuilder: (context, child, loadingProgress) {

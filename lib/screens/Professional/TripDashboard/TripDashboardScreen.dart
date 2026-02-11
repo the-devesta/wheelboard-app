@@ -9,6 +9,7 @@ import '../TrackTrip/TrackTripScreen.dart';
 import '../TripProgress/TripProgressScreen.dart';
 import '../../../widgets/custom_loader.dart';
 import '../../../apihelperclass/api_helper.dart';
+import '../../../controllers/Professional/track_trip_controller.dart';
 import '../../../utils/call_utils.dart';
 
 class TripDashboardScreen extends StatefulWidget {
@@ -504,6 +505,13 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
   }
 
   Widget _buildTripCard(AssignedTrip trip, {bool isCompleted = false}) {
+    final status = trip.tripStatus.toLowerCase();
+    final bool isInProgress = [
+      'in progress',
+      'active',
+      'ongoing',
+    ].contains(status);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -707,38 +715,92 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
                 ),
               ),
               if (!isCompleted)
-                ElevatedButton(
-                  onPressed: () {
-                    final status = trip.tripStatus.toLowerCase();
-                    final bool isInProgress = [
-                      'in progress',
-                      'active',
-                      'ongoing',
-                    ].contains(status);
-
-                    if (isInProgress) {
-                      Get.to(() => TrackTripScreen(tripId: trip.tripId));
-                    } else {
-                      Get.to(() => TripProgressScreen(trip: trip));
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEBF4FF),
-                    foregroundColor: const Color(0xFF2F80ED),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                Row(
+                  children: [
+                    if (isInProgress) ...[
+                      ElevatedButton(
+                        onPressed: () {
+                          final TrackTripController trackController = Get.put(
+                            TrackTripController(),
+                          );
+                          Get.dialog(
+                            AlertDialog(
+                              title: const Text("Complete Trip"),
+                              content: const Text(
+                                "Are you sure you want to complete this trip?",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Get.back(),
+                                  child: const Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Get.back();
+                                    trackController.endTrip(trip.tripId);
+                                  },
+                                  child: const Text(
+                                    "Complete",
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE8F5E9),
+                          foregroundColor: const Color(0xFF27AE60),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          minimumSize: const Size(0, 0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text(
+                          "Complete",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    ElevatedButton(
+                      onPressed: () {
+                        if (isInProgress) {
+                          Get.to(() => TrackTripScreen(tripId: trip.tripId));
+                        } else {
+                          Get.to(() => TripProgressScreen(trip: trip));
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEBF4FF),
+                        foregroundColor: const Color(0xFF2F80ED),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        minimumSize: const Size(0, 0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text(
+                        isInProgress ? "Track" : "Start Trip",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    minimumSize: const Size(0, 0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: const Text(
-                    "Track Trip",
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+                  ],
                 ),
             ],
           ),

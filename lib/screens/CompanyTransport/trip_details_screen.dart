@@ -6,6 +6,7 @@ import '../../models/add_new_trip_model.dart';
 import 'edit_trip_screen.dart';
 import '../../utils/session_manager.dart';
 import '../../controllers/Transport/add_trip_controller.dart';
+import '../../utils/constants.dart';
 
 class TripDetailsScreen extends StatelessWidget {
   final Trip trip;
@@ -99,7 +100,7 @@ class TripDetailsScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
-                    "assets/tripImage.png",
+                    AppImages.trip,
                     height: 150,
                     width: double.infinity,
                     fit: BoxFit.cover,
