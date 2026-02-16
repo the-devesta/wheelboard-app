@@ -187,8 +187,11 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                 child: Row(
                   children: [
                     Expanded(
+                      flex: 2,
                       child: OutlinedButton(
-                        onPressed: () => CallUtils.makeCall(trip.driverContact),
+                        onPressed: () => CallUtils.makeCall(
+                          trip.companyMobileNo ?? trip.driverContact,
+                        ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -196,12 +199,34 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                           ),
                           side: BorderSide(color: Colors.grey[200]!),
                         ),
-                        child: const Icon(Icons.call, color: Color(0xFF1F2937)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.call,
+                              color: Color(0xFF1F2937),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                'Call Company',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1F2937),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      flex: 4,
+                      flex: 3,
                       child: Obx(
                         () => ElevatedButton(
                           onPressed: trackController.isLoading.value
@@ -427,9 +452,9 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
         ),
         const SizedBox(height: 10),
         _buildInfoCard(
-          'Driver',
-          '${trip.driverName} • ${trip.driverContact}',
-          Icons.person_pin_circle_outlined,
+          'Company',
+          '${trip.companyName ?? "Unknown"} • ${trip.companyMobileNo ?? trip.driverContact}',
+          Icons.business_outlined,
         ),
 
         const SizedBox(height: 12),

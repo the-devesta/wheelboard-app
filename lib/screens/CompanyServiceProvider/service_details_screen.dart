@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../utils/constants.dart';
 import '../../models/service_model.dart';
 import 'add_service_screen.dart';
 import 'booking_details_screen.dart';
@@ -144,23 +145,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 ? Image.network(
                     firstImage,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: const Color(0xFFF36969),
-                      child: const Icon(
-                        Icons.image,
-                        size: 64,
-                        color: Colors.white70,
-                      ),
-                    ),
+                    errorBuilder: (context, error, stackTrace) =>
+                        Image.asset(AppImages.service, fit: BoxFit.cover),
                   )
-                : Container(
-                    color: const Color(0xFFF36969),
-                    child: const Icon(
-                      Icons.image,
-                      size: 64,
-                      color: Colors.white70,
-                    ),
-                  ),
+                : Image.asset(AppImages.service, fit: BoxFit.cover),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

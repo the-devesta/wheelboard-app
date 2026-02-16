@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../controllers/Transport/add_trip_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../utils/distance_service.dart';
@@ -43,6 +44,8 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
   bool _isLoadingLocation = false;
   double? _pickupLat;
   double? _pickupLng;
+  double? _deliveryLat;
+  double? _deliveryLng;
 
   @override
   void initState() {
@@ -80,14 +83,12 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Schedule Your Trip',
-          style: TextStyle(
-            color: Color(0xFF1E1E1E),
-            fontSize: 14,
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF2D3436),
+            fontSize: 18,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-            letterSpacing: -0.14,
           ),
         ),
         leading: const BackButton(color: Colors.black),
@@ -156,6 +157,79 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                         final userId = await SessionManager().getString(
                           "userId",
                         );
+                        // Validation: Check if vehicle is selected
+                        if (tripController.selectedVehicle.value == null ||
+                            tripController.selectedVehicle.value!.isEmpty) {
+                          Get.snackbar(
+                            "Required",
+                            "Please select a vehicle",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                          return;
+                        }
+
+                        // Validation: Check if driver is selected
+                        if (tripController.selectedDriver.value == null ||
+                            tripController.selectedDriver.value!.isEmpty) {
+                          Get.snackbar(
+                            "Required",
+                            "Please select a driver",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                          return;
+                        }
+
+                        // Validation: Check if pickup location is entered
+                        if (pickupController.text.trim().isEmpty) {
+                          Get.snackbar(
+                            "Required",
+                            "Please enter a pickup location",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                          return;
+                        }
+
+                        // Validation: Check if delivery location is entered
+                        if (deliveryController.text.trim().isEmpty) {
+                          Get.snackbar(
+                            "Required",
+                            "Please enter a delivery location",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                          return;
+                        }
+
+                        // Validation: Check if date is selected
+                        if (selectedDate == null) {
+                          Get.snackbar(
+                            "Required",
+                            "Please select a pickup date",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                          return;
+                        }
+
+                        // Validation: Check if time is selected
+                        if (selectedTime == null) {
+                          Get.snackbar(
+                            "Required",
+                            "Please select a pickup time",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                          return;
+                        }
 
                         if (userId == null || userId.isEmpty) {
                           Get.snackbar("Error", "User not logged in");
@@ -212,8 +286,8 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                           tripStatus: "Pending",
                           isScheduledTrip:
                               true, // ✅ This is a scheduled trip with driver selection
-                          latitude: _pickupLat,
-                          longitude: _pickupLng,
+                          latitude: _deliveryLat,
+                          longitude: _deliveryLng,
                           distance: _distanceResult != null
                               ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
                               : "",
@@ -228,6 +302,9 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                         AppLogger.d("Vehicle ID: ${trip.vehicleId}");
                         AppLogger.d(
                           "👨‍✈️ Driver ID: ${trip.driverId} ${trip.driverId.isEmpty ? '❌ EMPTY!' : '✅ HAS VALUE'}",
+                        );
+                        AppLogger.d(
+                          "🌐 Destination Coords: ${trip.latitude}, ${trip.longitude}",
                         );
                         AppLogger.d("Pickup Location: ${trip.pickupLocation}");
                         AppLogger.d(
@@ -420,8 +497,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
         setState(() {
           controller.text = address;
           if (controller == pickupController) {
-            _pickupLat = position?.latitude;
-            _pickupLng = position?.longitude;
+            // No longer storing pickup coordinates as they aren't used for trip destination
           }
         });
 
@@ -431,7 +507,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
         Get.snackbar(
           '✅ Success',
           'Current location filled successfully',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.green.withOpacity(0.8),
           colorText: Colors.white,
           duration: const Duration(seconds: 2),
@@ -440,7 +516,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
         Get.snackbar(
           '❌ Error',
           'Could not get current location. Please check permissions.',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.red.withOpacity(0.8),
           colorText: Colors.white,
         );
@@ -449,7 +525,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
       Get.snackbar(
         '❌ Error',
         'Failed to get location: $e',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.withOpacity(0.8),
         colorText: Colors.white,
       );
@@ -530,8 +606,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                       AppLogger.d("Pickup LatLng: $loc");
 
                       setState(() {
-                        _pickupLat = loc['lat'];
-                        _pickupLng = loc['lng'];
+                        // Not storing pickup coordinates
                       });
                     } catch (e) {
                       AppLogger.e("Error fetching place location: $e");
@@ -637,10 +712,19 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
                       deliverySuggestions.clear();
                     });
 
-                    final loc = await placesService.fetchPlaceLocation(
-                      s.placeId,
-                    );
-                    AppLogger.d("Delivery LatLng: $loc");
+                    try {
+                      final loc = await placesService.fetchPlaceLocation(
+                        s.placeId,
+                      );
+                      AppLogger.d("Delivery LatLng: $loc");
+
+                      setState(() {
+                        _deliveryLat = loc['lat'];
+                        _deliveryLng = loc['lng'];
+                      });
+                    } catch (e) {
+                      AppLogger.e("Error fetching delivery location: $e");
+                    }
 
                     // Auto-calculate distance if both locations are set
                     _autoCalculateDistance();

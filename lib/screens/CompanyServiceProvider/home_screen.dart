@@ -21,6 +21,7 @@ import '../../models/service_model.dart';
 import '../../utils/share_service.dart';
 import '../CompanyTransport/fleet_userprofile.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/constants.dart';
 import 'booking_list_screen.dart';
 import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 import '../../apihelperclass/api_helper.dart';
@@ -684,25 +685,11 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       : null,
                 ),
                 child: imageUrl.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'IMG',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: const Color(0xFF999999),
-                              ),
-                            ),
-                            Text(
-                              '60×60',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: const Color(0xFF999999),
-                              ),
-                            ),
-                          ],
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          AppImages.service,
+                          fit: BoxFit.cover,
                         ),
                       )
                     : ClipRRect(
@@ -711,12 +698,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                           imageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: const Color(0xFFF0F0F0),
-                              child: const Icon(
-                                Icons.image,
-                                color: Color(0xFF999999),
-                              ),
+                            return Image.asset(
+                              AppImages.service,
+                              fit: BoxFit.cover,
                             );
                           },
                         ),

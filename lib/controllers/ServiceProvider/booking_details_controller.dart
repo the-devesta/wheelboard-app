@@ -8,17 +8,18 @@ import '../../utils/constants.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
+import '../../models/service_booking_model.dart';
 
 class BookingDetailsController extends GetxController {
   final String serviceId;
-  final Map<String, dynamic>? initialBookingData;
+  final ServiceBookingModel? initialBookingData;
 
   BookingDetailsController({required this.serviceId, this.initialBookingData});
 
   // Observable states
   final isLoading = false.obs;
   final isUpdating = false.obs;
-  final bookingData = Rxn<Map<String, dynamic>>();
+  final bookingData = Rxn<ServiceBookingModel>();
   final notesController = TextEditingController();
 
   @override
@@ -77,7 +78,9 @@ class BookingDetailsController extends GetxController {
         AppLogger.d("🔍 Parsed Data Count: ${data.length}");
 
         if (data.isNotEmpty) {
-          bookingData.value = data[0] as Map<String, dynamic>;
+          bookingData.value = ServiceBookingModel.fromJson(
+            data[0] as Map<String, dynamic>,
+          );
           AppLogger.d("✅ Successfully fetched booking details");
         } else {
           SnackBarHelper.error("No booking details found");
@@ -122,9 +125,9 @@ class BookingDetailsController extends GetxController {
         SnackBarHelper.success('Service started successfully');
         // Update local state to reflect the new status
         if (bookingData.value != null) {
-          bookingData.update((data) {
-            data?['status'] = 'started';
-          });
+          final updatedData = bookingData.value!.toJson();
+          updatedData['status'] = 'started';
+          bookingData.value = ServiceBookingModel.fromJson(updatedData);
         }
         // Refresh data if we have a valid serviceId
         if (serviceId.isNotEmpty) {
@@ -179,10 +182,10 @@ class BookingDetailsController extends GetxController {
         SnackBarHelper.success('Service completed successfully');
         // Update local state to reflect the new status
         if (bookingData.value != null) {
-          bookingData.update((data) {
-            data?['status'] = 'completed';
-            data?['amount'] = amount;
-          });
+          final updatedData = bookingData.value!.toJson();
+          updatedData['status'] = 'completed';
+          updatedData['amount'] = amount;
+          bookingData.value = ServiceBookingModel.fromJson(updatedData);
         }
         // Refresh data if we have a valid serviceId
         if (serviceId.isNotEmpty) {
@@ -235,9 +238,9 @@ class BookingDetailsController extends GetxController {
         SnackBarHelper.success('Appointment cancelled successfully');
         // Update local state to reflect the new status
         if (bookingData.value != null) {
-          bookingData.update((data) {
-            data?['status'] = 'cancelled';
-          });
+          final updatedData = bookingData.value!.toJson();
+          updatedData['status'] = 'cancelled';
+          bookingData.value = ServiceBookingModel.fromJson(updatedData);
         }
         // Refresh data if we have a valid serviceId
         if (serviceId.isNotEmpty) {
@@ -265,8 +268,7 @@ class BookingDetailsController extends GetxController {
   }
 
   /// Get current status
-  String get currentStatus =>
-      bookingData.value?['status']?.toString().toLowerCase() ?? '';
+  String get currentStatus => bookingData.value?.status.toLowerCase() ?? '';
 
   /// Check if service is started
   bool get isStarted => currentStatus == 'started' || currentStatus == 'start';
@@ -278,22 +280,14 @@ class BookingDetailsController extends GetxController {
   bool get isCancelled => currentStatus == 'cancelled';
 
   /// Get assignment ID
-  String get assignmentId => bookingData.value?['assignmentId'] ?? '';
+  String get assignmentId => bookingData.value?.assignmentId ?? '';
 
   /// Get contact number
   String get contactNumber =>
-      (bookingData.value?['contactNumber'] ??
-              bookingData.value?['customerMobile'] ??
-              bookingData.value?['mobileNumber'] ??
-              '')
-          .toString();
+      (bookingData.value?.customerMobile ?? '').toString();
 
   /// Get existing amount
   num get existingAmount {
-    final amount = bookingData.value?['amount'];
-    if (amount != null && amount is num) {
-      return amount;
-    }
-    return 0;
+    return bookingData.value?.amount ?? 0;
   }
 }

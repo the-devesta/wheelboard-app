@@ -744,4 +744,107 @@ class TripController extends GetxController {
   Future<void> refreshTrips(String userId) async {
     await fetchTrips(userId);
   }
+
+  /// Delete a trip
+  Future<bool> deleteTrip(String tripId, String userId) async {
+    try {
+      isLoading.value = true;
+      final queryParams = {'tripId': tripId, 'userId': userId};
+
+      AppLogger.d('📡 Deleting trip with ID: $tripId, UserID: $userId');
+
+      final response = await HttpHelper.postWithQuery(
+        endpoint: 'api/Trip/delete-trip',
+        queryParams: queryParams,
+        headers: {'accept': '*/*'},
+      );
+
+      AppLogger.d('📡 Delete response status: ${response.statusCode}');
+      AppLogger.d('📡 Delete response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Refresh local list
+        await fetchTrips(userId);
+        return true;
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to delete trip: ${response.statusCode}',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+        return false;
+      }
+    } catch (e) {
+      AppLogger.e('❌ Error deleting trip: $e');
+      Get.snackbar(
+        'Error',
+        'Error deleting trip',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Complete a trip
+  Future<bool> completeTrip(String tripId, String userId) async {
+    try {
+      isLoading.value = true;
+      final body = {"tripId": tripId};
+
+      AppLogger.d('📡 Ending trip with ID: $tripId');
+
+      final response = await HttpHelper.postData(
+        endpoint: API.endTrip,
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          'UserId': userId,
+        },
+        data: body,
+      );
+
+      AppLogger.d('📡 End trip response status: ${response.statusCode}');
+      AppLogger.d('📡 End trip response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.snackbar(
+          'Success',
+          'Trip completed successfully!',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+        // Refresh local list
+        await fetchTrips(userId);
+        return true;
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to complete trip: ${response.statusCode}',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+        return false;
+      }
+    } catch (e) {
+      AppLogger.e('❌ Error ending trip: $e');
+      Get.snackbar(
+        'Error',
+        'Error ending trip',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }

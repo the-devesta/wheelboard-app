@@ -79,4 +79,22 @@ class SessionManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }
+
+  /// Log all session data for debugging
+  static Future<void> logAllSessionData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys();
+
+    // Using print directly here to ensure it bypasses any potential logger filtering/issues during critical debug
+    print("📋 ---------------- SESSION DUMP ----------------");
+    if (keys.isEmpty) {
+      print("📋 No data found in session.");
+    } else {
+      for (String key in keys) {
+        final value = prefs.get(key);
+        print("📋 Key: '$key' | Value: '$value' (${value.runtimeType})");
+      }
+    }
+    print("📋 ------------------------------------------------");
+  }
 }

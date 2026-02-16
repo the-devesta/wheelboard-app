@@ -249,7 +249,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -263,7 +263,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF36969).withOpacity(0.1),
+                  color: const Color(0xFFF36969).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -291,7 +291,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               color: const Color(0xFFFFF5F5),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: const Color(0xFFF36969).withOpacity(0.2),
+                color: const Color(0xFFF36969).withValues(alpha: 0.2),
               ),
             ),
             child: Text(
@@ -349,6 +349,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 10),
+          // Price row
           Row(
             children: [
               const Icon(
@@ -357,38 +358,90 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 color: Color(0xFF00B894),
               ),
               const SizedBox(width: 4),
-              Text(
-                (amount != null && amount > 0)
-                    ? '₹$amount'
-                    : 'Contact for pricing',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const Spacer(),
-              if (pricingOption.isNotEmpty) ...[
-                const Icon(
-                  Icons.info_outline,
-                  size: 18,
-                  color: Color(0xFF00B894),
+              Flexible(
+                child: Text(
+                  (amount != null && amount > 0)
+                      ? '₹$amount'
+                      : 'Contact for pricing',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 4),
-                Text(pricingOption),
+              ),
+              if (pricingOption.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00B894).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: Color(0xFF00B894),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        pricingOption,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF00B894),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ],
           ),
           const SizedBox(height: 10),
-          Row(
+          // Days and time - use Wrap for better responsiveness
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              const Icon(
-                Icons.calendar_month,
-                size: 18,
-                color: Color(0xFF00B894),
+              // Days row
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.calendar_month,
+                    size: 18,
+                    color: Color(0xFF00B894),
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      daysOpen.isNotEmpty ? daysOpen : 'Days not specified',
+                      style: const TextStyle(fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Text(daysOpen.isNotEmpty ? daysOpen : 'Days not specified'),
-              const Spacer(),
-              const Icon(Icons.access_time, size: 18, color: Color(0xFF00B894)),
-              const SizedBox(width: 4),
-              Text(_formatHours(hoursFrom, hoursTo)),
+              // Time row
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.access_time,
+                    size: 18,
+                    color: Color(0xFF00B894),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatHours(hoursFrom, hoursTo),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
             ],
           ),
         ],

@@ -20,8 +20,12 @@ import '../../utils/constants.dart';
 class TrackTripController extends GetxController {
   final isLoading = false.obs;
   final AuthService _authService = Get.find<AuthService>();
-  final AssignedTripController _assignedTripController =
-      Get.find<AssignedTripController>();
+  AssignedTripController get _assignedTripController {
+    if (!Get.isRegistered<AssignedTripController>()) {
+      return Get.put(AssignedTripController());
+    }
+    return Get.find<AssignedTripController>();
+  }
 
   // Tracking Data
   final currentPosition = Rxn<Position>();

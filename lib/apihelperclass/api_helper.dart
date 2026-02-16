@@ -22,7 +22,9 @@ class HttpHelper {
       baseUrl + endpoint,
     ).replace(queryParameters: queryParams);
     debugPrint('requested urlll===> $uri');
-    return await http.get(uri, headers: headers);
+    return await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
   }
 
   static Future<http.Response> postData({
@@ -41,11 +43,13 @@ class HttpHelper {
     AppLogger.d("🌐 Data: ${jsonEncode(data)}");
 
     try {
-      final response = await http.post(
-        uri,
-        headers: headers ?? {'Content-Type': 'application/json'},
-        body: jsonEncode(data),
-      );
+      final response = await http
+          .post(
+            uri,
+            headers: headers ?? {'Content-Type': 'application/json'},
+            body: jsonEncode(data),
+          )
+          .timeout(const Duration(seconds: 30));
 
       AppLogger.d("🌐 Response Status: ${response.statusCode}");
       AppLogger.d("🌐 Response Body: ${response.body}");
@@ -80,11 +84,13 @@ class HttpHelper {
     Map<String, String>? headers,
   }) async {
     Uri uri = Uri.parse(baseUrl + endpoint);
-    return await http.put(
-      uri,
-      headers: headers ?? {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
+    return await http
+        .put(
+          uri,
+          headers: headers ?? {'Content-Type': 'application/json'},
+          body: jsonEncode(data),
+        )
+        .timeout(const Duration(seconds: 30));
   }
 
   static Future<http.Response> deleteData({
@@ -92,7 +98,9 @@ class HttpHelper {
     Map<String, String>? headers,
   }) async {
     Uri uri = Uri.parse(baseUrl + endpoint);
-    return await http.delete(uri, headers: headers);
+    return await http
+        .delete(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
   }
 
   static Future<http.StreamedResponse> uploadMultipart({
@@ -154,7 +162,7 @@ class HttpHelper {
     AppLogger.d("==================================");
 
     // Send request
-    return await request.send();
+    return await request.send().timeout(const Duration(seconds: 60));
   }
 
   /// Get vehicle details by vehicle number
@@ -173,11 +181,13 @@ class HttpHelper {
       "🚗 Headers: ${headers ?? {'Content-Type': 'application/json'}}",
     );
 
-    return await http.post(
-      uri,
-      headers: headers ?? {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
+    return await http
+        .post(
+          uri,
+          headers: headers ?? {'Content-Type': 'application/json'},
+          body: jsonEncode(requestBody),
+        )
+        .timeout(const Duration(seconds: 30));
   }
 
   /// Get driver license details by license number and DOB
@@ -208,6 +218,25 @@ class HttpHelper {
     );
 
     AppLogger.d("👤 Driver Details API Request:");
+    AppLogger.d("👤 URL: $uri");
+    AppLogger.d("👤 Headers: ${headers ?? {'accept': '*/*'}}");
+
+    return await http.get(uri, headers: headers ?? {'accept': '*/*'});
+  }
+
+  /// Get professional driver details by driver ID
+  static Future<http.Response> getProfessionalDetails({
+    required String driverId,
+    Map<String, String>? headers,
+  }) async {
+    final cleanBaseUrl = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    Uri uri = Uri.parse(
+      '$cleanBaseUrl/api/Transport/professional-details/$driverId',
+    );
+
+    AppLogger.d("👤 Professional Driver Details API Request:");
     AppLogger.d("👤 URL: $uri");
     AppLogger.d("👤 Headers: ${headers ?? {'accept': '*/*'}}");
 

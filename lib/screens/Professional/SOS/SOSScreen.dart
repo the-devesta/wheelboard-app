@@ -325,15 +325,6 @@ class _SOSScreenState extends State<SOSScreen>
               iconColor: const Color(0xFF2E7D32),
               onTap: () => _makePhoneCall('1800-123-4567'),
             ),
-            const SizedBox(height: 16),
-            _buildContactCard(
-              title: 'Company Emergency',
-              number: '+91 98765 43210',
-              icon: Icons.business_outlined,
-              color: const Color(0xFFF3E5F5),
-              iconColor: const Color(0xFF6A1B9A),
-              onTap: () => _makePhoneCall('+919876543210'),
-            ),
 
             const SizedBox(height: 32),
             // Safety Tips Section

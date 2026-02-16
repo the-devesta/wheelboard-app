@@ -9,6 +9,7 @@ import 'job_screen.dart';
 import 'job_form_screen.dart';
 import 'job_application_screen.dart';
 import 'trips_screen.dart';
+import 'fleet_screen.dart';
 import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
 import '../../utils/app_logger.dart';
 
@@ -107,12 +108,16 @@ class DashboardScreen extends StatelessWidget {
                           "${data.tripSummary.scheduledToday} Scheduled Today",
                           Colors.green,
                         ),
-                        _statCard(
-                          Icons.local_shipping,
-                          "Active Vehicles",
-                          "${data.activeVehicles.activeVehicles} Active",
-                          "${data.activeVehicles.inMaintenance} in Maintenance",
-                          Colors.blue,
+                        GestureDetector(
+                          onTap: () =>
+                              Get.to(() => const FleetVehiclesScreen()),
+                          child: _statCard(
+                            Icons.local_shipping,
+                            "Active Vehicles",
+                            "${data.activeVehicles.activeVehicles} Active",
+                            "${data.activeVehicles.inMaintenance} in Maintenance",
+                            Colors.blue,
+                          ),
                         ),
                         _statCard(
                           Icons.wallet,

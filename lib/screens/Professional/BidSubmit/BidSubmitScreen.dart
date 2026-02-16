@@ -6,6 +6,8 @@ import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
 import '../../../widgets/custom_loader.dart';
 import '../../../services/auth_service.dart';
+import '../../../controllers/Transport/user_profile_controller.dart';
+import '../../../widgets/custom_snackbar.dart';
 
 class BidSubmissionScreen extends StatefulWidget {
   final String tripId;
@@ -261,6 +263,14 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
               final isHired = AuthService.to.isUserHired;
               final isSubmitting = controller.isSubmittingBid.value;
 
+              final userProfileController = Get.find<UserProfileController>();
+              final profile = userProfileController.userProfile.value;
+              final isProfessional = profile?.isProfessional ?? false;
+              final professionalType =
+                  profile?.professionalType?.toLowerCase() ?? '';
+              final isDriver = professionalType == 'driver';
+              final isRestricted = isProfessional && !isDriver;
+
               return Column(
                 children: [
                   if (isHired)
@@ -296,8 +306,14 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: isHired || isSubmitting
-                          ? null
+                      onPressed: isHired || isSubmitting || isRestricted
+                          ? () {
+                              if (isRestricted) {
+                                SnackBarHelper.error(
+                                  "Only Drivers can place bids on trips.",
+                                );
+                              }
+                            }
                           : () async {
                               final amount = double.tryParse(
                                 amountController.text.trim(),
@@ -329,16 +345,20 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                             )
                           : const Icon(Icons.send, size: 18),
                       label: Text(
-                        isHired
-                            ? "Bidding Disabled (Hired)"
-                            : (isSubmitting ? "Submitting..." : "Submit Bid"),
+                        isRestricted
+                            ? "Bidding Restricted"
+                            : (isHired
+                                  ? "Bidding Disabled (Hired)"
+                                  : (isSubmitting
+                                        ? "Submitting..."
+                                        : "Submit Bid")),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isHired
+                        backgroundColor: (isHired || isRestricted)
                             ? Colors.grey.shade400
                             : Colors.tealAccent.shade700,
                         foregroundColor: Colors.white,

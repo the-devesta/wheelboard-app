@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/services/config.dart';
-import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import './services/auth_service.dart';
 import './utils/navigation_helper.dart';
@@ -28,9 +28,15 @@ import 'utils/app_logger.dart';
 // }
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables from .env file
+  await dotenv.load(fileName: ".env");
+  AppLogger.d("🔐 Environment variables loaded successfully");
+
   // HttpOverrides.global = MyHttpOverrides();
   // Set the environment here: change to Environment.testing for test server
-  AppConfig.currentEnvironment = Environment.testing;
+  AppConfig.currentEnvironment = Environment.production;
   // Initialize GetX services
   Get.put(AuthService());
 

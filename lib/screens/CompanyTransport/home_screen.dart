@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:wheelboard/screens/CompanyTransport/dashboard.dart';
@@ -58,7 +57,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize controllers
+    // Use Get.put to be safe - it will return existing instance if already registered
     final profileController = Get.put(UserProfileController());
     final jobController = Get.put(JobController());
     final feedsController = Get.put(FeedsController());
@@ -67,7 +66,7 @@ class HomeScreen extends StatelessWidget {
     // Fetch profile and notifications on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       profileController.fetchCurrentUserProfile();
-      notificationController.fetchNotifications();
+      notificationController.refreshNotifications();
     });
 
     return Scaffold(
@@ -77,10 +76,7 @@ class HomeScreen extends StatelessWidget {
       appBar: null,
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: BouncingScrollPhysics(),
-          hitTestBehavior: HitTestBehavior.translucent,
-          dragStartBehavior: DragStartBehavior.down,
-
+          physics: const BouncingScrollPhysics(),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -120,7 +116,7 @@ class HomeScreen extends StatelessWidget {
                           backgroundColor: const Color(0xFFF25C5C),
                           backgroundImage: NetworkImage(profileImageUrl),
                           onBackgroundImageError: (exception, stackTrace) {
-                            // Fallback to another random image if first fails
+                            // Link fails
                           },
                         ),
                       ),
@@ -128,11 +124,14 @@ class HomeScreen extends StatelessWidget {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'Welcome!',
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               companyName,
@@ -141,13 +140,13 @@ class HomeScreen extends StatelessWidget {
                                     fontWeight: FontWeight.bold,
                                     color: Colors.teal,
                                   ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
                       Obx(() {
-                        final notificationController =
-                            Get.find<NotificationController>();
                         final unreadCount = notificationController.unreadCount;
 
                         return GestureDetector(

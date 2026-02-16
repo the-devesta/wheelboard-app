@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/services/config.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConstants {
   static String baseUrl = AppConfig.baseUrl;
 }
 
 class MapsConstants {
-  static const String googleMapsApiKey =
-      'AIzaSyDdLQMrmWeYCxIZMOm7Ogrh7cwow3cS_NE';
+  /// Google Maps API Key loaded from .env file
+  static String get googleMapsApiKey => dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
 }
 
 class API {
@@ -161,6 +162,13 @@ class API {
       'api/Service/service-earnings-dashboard';
   static const String createPayment = 'api/Service/create-payment';
   static const String completePayment = 'api/Service/complete-payment';
+}
+
+class AppImages {
+  static const String mechanics = 'assets/mechanics.jpeg';
+  static const String driver = 'assets/truck_driver.jpeg';
+  static const String service = 'assets/service_page.jpeg';
+  static const String trip = 'assets/trip_post_schedule.jpg';
 }
 
 String formatDateShort(String? dateString) {

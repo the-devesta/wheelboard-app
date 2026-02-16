@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../apihelperclass/api_helper.dart';
 import '../models/trip_confirmation_model.dart';
 import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 class TripOrderResponse {
   TripOrderResponse({
@@ -75,9 +76,9 @@ class TripPaymentVerificationPayload {
     };
   }
 
-  int _roundCurrency(double value) {
-    if (!value.isFinite) return 0;
-    return value.round();
+  double _roundCurrency(double value) {
+    if (!value.isFinite) return 0.0;
+    return double.parse(value.toStringAsFixed(2));
   }
 }
 
@@ -85,7 +86,7 @@ class TripPaymentService {
   Future<TripOrderResponse> createOrder({required double totalAmount}) async {
     final response = await HttpHelper.postData(
       endpoint: API.createTripOrder,
-      data: {'totalAmount': _currencyToInt(totalAmount)},
+      data: {'totalAmount': _currencyToNum(totalAmount)},
       headers: const {'accept': '*/*', 'Content-Type': 'application/json'},
     );
 
@@ -100,7 +101,29 @@ class TripPaymentService {
     final data = _extractData(payload);
     final orderId = _stringField(data, ['orderId', 'order_id', 'id']);
     final keyId = _stringField(data, ['key', 'keyId', 'key_id']);
-    final amountPaise = _amountToPaise(data['amount'] ?? totalAmount);
+    final rawServerAmount = data['amount'];
+    int amountPaise;
+
+    if (rawServerAmount != null) {
+      double parsedAmount = double.tryParse(rawServerAmount.toString()) ?? 0;
+      // If the server returns a value that is already close to totalAmount * 100,
+      // it is likely already in Paise.
+      if (parsedAmount >= (totalAmount * 100) - 5 &&
+          parsedAmount <= (totalAmount * 100) + 5) {
+        amountPaise = parsedAmount.round();
+        AppLogger.d(
+          "PaymentService: Using server amount as Paise: $amountPaise",
+        );
+      } else {
+        amountPaise = (parsedAmount * 100).round();
+        AppLogger.d(
+          "PaymentService: Converted server amount to Paise: $amountPaise",
+        );
+      }
+    } else {
+      amountPaise = (totalAmount * 100).round();
+      AppLogger.d("PaymentService: Using calculated Paise: $amountPaise");
+    }
     final receipt = _stringField(data, ['receipt'], allowNull: true);
 
     if (orderId == null || orderId.isEmpty) {
@@ -167,22 +190,7 @@ class TripPaymentService {
     return null;
   }
 
-  int _amountToPaise(dynamic amount) {
-    double value;
-    if (amount is int) {
-      value = amount.toDouble();
-    } else if (amount is double) {
-      value = amount;
-    } else {
-      value = double.tryParse(amount.toString()) ?? 0;
-    }
-    if (value == 0) {
-      throw Exception('Server returned invalid amount for order');
-    }
-    return (value * 100).round();
-  }
-
-  int _currencyToInt(double value) => value.round();
+  double _currencyToNum(double value) => double.parse(value.toStringAsFixed(2));
 
   /// Fetch trip confirmation details after payment
   Future<TripConfirmationModel> getTripConfirmation(String tripId) async {

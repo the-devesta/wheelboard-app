@@ -8,6 +8,7 @@ import 'job_application_screen.dart';
 import 'package:wheelboard/utils/share_service.dart';
 import '../../controllers/Transport/job_controller.dart';
 import '../../models/job_model.dart';
+import '../../utils/constants.dart';
 import '../../widgets/custom_loader.dart';
 
 class JobsScreen extends StatefulWidget {
@@ -130,6 +131,13 @@ class JobCard extends StatelessWidget {
     this.onCardTap,
   });
 
+  String _getDefaultImage(String role) {
+    if (role.toLowerCase().contains('driver')) {
+      return AppImages.driver;
+    }
+    return AppImages.mechanics;
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -164,13 +172,13 @@ class JobCard extends StatelessWidget {
                             height: 140,
                             color: Colors.grey[200],
                             child: Image.asset(
-                              "assets/jobdescription.png",
+                              _getDefaultImage(job.role),
                               fit: BoxFit.cover,
                             ),
                           ),
                         )
                       : Image.asset(
-                          "assets/jobdescription.png",
+                          _getDefaultImage(job.role),
                           width: double.infinity,
                           height: 140,
                           fit: BoxFit.cover,

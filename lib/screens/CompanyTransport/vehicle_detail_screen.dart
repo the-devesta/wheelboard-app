@@ -6,6 +6,7 @@ import '../../controllers/Transport/main_wrapper_controller.dart';
 import '../../controllers/Transport/fleet_controller.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
+import '../../utils/call_utils.dart';
 import 'Lease/add_vehicle_lease_screen.dart';
 import 'schedulescreen.dart';
 
@@ -346,7 +347,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                       ),
                                       TextButton(
                                         onPressed: () async {
-                                          Get.back(); // close dialog
+                                          Get.back(); // close confirmation dialog
                                           // show loading
                                           Get.dialog(
                                             const Center(
@@ -355,21 +356,51 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                             barrierDismissible: false,
                                           );
 
-                                          final success = await _fleetController
-                                              .deleteVehicle(
-                                                widget.vehicle.vehicleId,
+                                          try {
+                                            final success =
+                                                await _fleetController
+                                                    .deleteVehicle(
+                                                      widget.vehicle.vehicleId,
+                                                      userId,
+                                                      token,
+                                                    );
+
+                                            // Close loading dialog
+                                            if (Get.isDialogOpen ?? false) {
+                                              Get.back();
+                                            }
+
+                                            if (success) {
+                                              Get.back(); // close screen
+                                              _fleetController.fetchVehicles(
                                                 userId,
                                                 token,
+                                              ); // refresh list
+                                              Get.snackbar(
+                                                "Success",
+                                                "Vehicle deleted successfully",
+                                                backgroundColor: Colors.green,
+                                                colorText: Colors.white,
                                               );
-
-                                          Get.back(); // close loading
-
-                                          if (success) {
-                                            Get.back(); // close screen
-                                            _fleetController.fetchVehicles(
-                                              userId,
-                                              token,
-                                            ); // refresh list
+                                            } else {
+                                              Get.snackbar(
+                                                "Error",
+                                                "Failed to delete vehicle",
+                                                backgroundColor: Colors.red,
+                                                colorText: Colors.white,
+                                              );
+                                            }
+                                          } catch (e) {
+                                            // Close loading dialog if open
+                                            if (Get.isDialogOpen ?? false) {
+                                              Get.back();
+                                            }
+                                            Get.snackbar(
+                                              "Error",
+                                              "An error occurred: $e",
+                                              backgroundColor: Colors.red,
+                                              colorText: Colors.white,
+                                            );
                                           }
                                         },
                                         child: const Text(
@@ -520,14 +551,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                 // Contact Driver Button
                                 InkWell(
                                   onTap: () {
-                                    final wrapperController =
-                                        Get.find<MainWrapperController>();
-                                    wrapperController.currentTabIndex.value =
-                                        1; // Navigate to Fleet tab
-                                    Navigator.popUntil(
-                                      context,
-                                      (route) => route.isFirst,
-                                    );
+                                    CallUtils.makeCall(driverInfo.driverMobile);
                                   },
                                   child: Container(
                                     height: 28,
@@ -579,7 +603,14 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                   child: Container(
                                     height: 37,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF00B894),
+                                      color:
+                                          currentStatus.toLowerCase() ==
+                                              'assigned'
+                                          ? const Color(0xFF0984E3)
+                                          : currentStatus.toLowerCase() ==
+                                                'in-transit'
+                                          ? const Color(0xFF00B894)
+                                          : const Color(0xFF10E445),
                                       borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
                                         BoxShadow(
@@ -589,10 +620,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                         ),
                                       ],
                                     ),
-                                    child: const Center(
+                                    child: Center(
                                       child: Text(
-                                        'Available',
-                                        style: TextStyle(
+                                        currentStatus,
+                                        style: const TextStyle(
                                           fontFamily: 'Poppins',
                                           fontWeight: FontWeight.w600,
                                           fontSize: 12,
@@ -603,84 +634,87 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                   ),
                                 ),
                                 // OFF Lease Toggle (Right side)
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      // Navigate to Add Vehicle Lease Screen
-                                      Get.to(
-                                        () => AddVehicleLeaseScreen(
-                                          preselectedVehicle: widget.vehicle,
+                                if (currentStatus.toLowerCase() == 'available')
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        // Navigate to Add Vehicle Lease Screen
+                                        Get.to(
+                                          () => AddVehicleLeaseScreen(
+                                            preselectedVehicle: widget.vehicle,
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        height: 37,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
                                         ),
-                                      );
-                                    },
-                                    child: Container(
-                                      height: 37,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(24),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            'OFF Lease',
-                                            style: TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 12,
-                                              color: Color(0xFFF26868),
-                                            ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.transparent,
+                                          borderRadius: BorderRadius.circular(
+                                            24,
                                           ),
-                                          const SizedBox(width: 8),
-                                          // Toggle Switch
-                                          Container(
-                                            width: 40,
-                                            height: 22,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFE0E0E0),
-                                              borderRadius:
-                                                  BorderRadius.circular(11),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Text(
+                                              'OFF Lease',
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 12,
+                                                color: Color(0xFFF26868),
+                                              ),
                                             ),
-                                            child: Stack(
-                                              children: [
-                                                Positioned(
-                                                  left: 2,
-                                                  top: 2,
-                                                  child: Container(
-                                                    width: 18,
-                                                    height: 18,
-                                                    decoration:
-                                                        const BoxDecoration(
-                                                          color: Colors.white,
-                                                          shape:
-                                                              BoxShape.circle,
-                                                          boxShadow: [
-                                                            BoxShadow(
-                                                              color: Color(
-                                                                0x29000000,
+                                            const SizedBox(width: 8),
+                                            // Toggle Switch
+                                            Container(
+                                              width: 40,
+                                              height: 22,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFE0E0E0),
+                                                borderRadius:
+                                                    BorderRadius.circular(11),
+                                              ),
+                                              child: Stack(
+                                                children: [
+                                                  Positioned(
+                                                    left: 2,
+                                                    top: 2,
+                                                    child: Container(
+                                                      width: 18,
+                                                      height: 18,
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                            color: Colors.white,
+                                                            shape:
+                                                                BoxShape.circle,
+                                                            boxShadow: [
+                                                              BoxShadow(
+                                                                color: Color(
+                                                                  0x29000000,
+                                                                ),
+                                                                blurRadius: 2,
+                                                                offset: Offset(
+                                                                  0,
+                                                                  1,
+                                                                ),
                                                               ),
-                                                              blurRadius: 2,
-                                                              offset: Offset(
-                                                                0,
-                                                                1,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
+                                                            ],
+                                                          ),
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
@@ -757,7 +791,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                             Expanded(
                               child: _buildStatCard(
                                 'Avg. Run',
-                                '${vehicleDetails?.data.monthlyUsageKM ?? 0} KM',
+                                '${(vehicleDetails?.data.monthlyUsageKM ?? 0).round()} KM',
                                 const Color(0xFF00B894),
                                 Icons.speed,
                               ),
@@ -766,7 +800,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                             Expanded(
                               child: _buildStatCard(
                                 'Trip Efficiency',
-                                'Rs. ${vehicleDetails?.data.costPerKM ?? 0} / KM',
+                                'Rs. ${(vehicleDetails?.data.costPerKM ?? 0).round()} / KM',
                                 const Color(0xFFFF6B6B),
                                 Icons.trending_up,
                               ),
@@ -860,7 +894,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                         trip.tripCode,
                                         trip.getRoute(),
                                         driverInfo?.driverImage ??
-                                            'assets/google.png',
+                                            'assets/truckImg.png',
                                       );
                                     }).toList(),
                                   ),

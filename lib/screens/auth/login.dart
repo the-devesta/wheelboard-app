@@ -10,7 +10,6 @@ import '../../utils/navigation_helper.dart';
 import '../../utils/session_manager.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../auth/forget_password_screen.dart';
 import '../auth/service_provider_login.dart';
 
 import 'onboarding_screen.dart';
@@ -220,54 +219,54 @@ class ProfessionLogin extends StatelessWidget {
                           const SizedBox(height: 16),
 
                           /// Quick Login Buttons (for testing)
-                          // Text(
-                          //   "--- Quick Logins for Testing ---",
-                          //   style: TextStyle(
-                          //     fontSize: 12,
-                          //     color: Colors.grey.shade500,
-                          //     fontWeight: FontWeight.w500,
-                          //   ),
-                          // ),
-                          // const SizedBox(height: 12),
-                          // Row(
-                          //   children: [
-                          //     Expanded(
-                          //       child: _buildTestLoginButton(
-                          //         "Transport",
-                          //         () async {
-                          //           phoneController.text = "9304514788";
-                          //           await loginController.sendOTP(
-                          //             phoneController.text,
-                          //           );
-                          //         },
-                          //       ),
-                          //     ),
-                          //     const SizedBox(width: 8),
-                          //     Expanded(
-                          //       child: _buildTestLoginButton(
-                          //         "Professional",
-                          //         () async {
-                          //           phoneController.text = "9304514789";
-                          //           await loginController.sendOTP(
-                          //             phoneController.text,
-                          //           );
-                          //         },
-                          //       ),
-                          //     ),
-                          //     const SizedBox(width: 8),
-                          //     Expanded(
-                          //       child: _buildTestLoginButton(
-                          //         "Service Provider",
-                          //         () async {
-                          //           phoneController.text = "9304593045";
-                          //           await loginController.sendOTP(
-                          //             phoneController.text,
-                          //           );
-                          //         },
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
+                          Text(
+                            "--- Quick Logins for Testing ---",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTestLoginButton(
+                                  "Transport",
+                                  () async {
+                                    phoneController.text = "8600202678";
+                                    await loginController.sendOTP(
+                                      phoneController.text,
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildTestLoginButton(
+                                  "Professional",
+                                  () async {
+                                    phoneController.text = "7420861942";
+                                    await loginController.sendOTP(
+                                      phoneController.text,
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildTestLoginButton(
+                                  "Service Provider",
+                                  () async {
+                                    phoneController.text = "8210447299";
+                                    await loginController.sendOTP(
+                                      phoneController.text,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 16),
                         ],
                       ),
@@ -337,11 +336,20 @@ class ProfessionLogin extends StatelessWidget {
 
     if (responseData != null && responseData.isNotEmpty) {
       final businessCategory = responseData['businessCategory'] ?? '';
+      final userTypeFromApi = responseData['userType'] ?? '';
       final isProfileComplete = responseData['isProfileComplete'] ?? false;
       final isKYCCompleted = responseData['isKYCCompleted'] ?? false;
       final isHired = responseData['isHired'] ?? false;
       final token = responseData['token'] ?? '';
       final userId = responseData['userId'] ?? '';
+
+      // Determine effective user type
+      // API returns "userType": "Professional" but empty "businessCategory" for professionals
+      // Determine effective user type
+      // Prioritize businessCategory to match original app flow
+      final effectiveUserType = (businessCategory.toString().isNotEmpty)
+          ? businessCategory
+          : userTypeFromApi;
 
       if (token.isEmpty || userId.isEmpty) {
         SnackBarHelper.error("Login failed: Invalid response from server");
@@ -352,7 +360,7 @@ class ProfessionLogin extends StatelessWidget {
       final loginSuccess = await authService.login(
         token: token,
         userId: userId,
-        userType: businessCategory,
+        userType: effectiveUserType,
         isKYCCompleted: isKYCCompleted,
         isHired: isHired,
       );

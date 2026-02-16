@@ -13,6 +13,7 @@ import '../EditYourProfile01/EditYourProfile01Screen.dart';
 import '../../../widgets/custom_loader.dart';
 import '../AddReferral/AddReferralScreen.dart';
 import '../../../utils/app_logger.dart';
+import '../../../controllers/Transport/driver_details_controller.dart';
 
 class YourProfileScreen extends StatelessWidget {
   const YourProfileScreen({super.key});
@@ -21,10 +22,19 @@ class YourProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Initialize controller
     final controller = Get.put(UserProfileController());
+    final driverController = Get.put(DriverDetailsController());
 
     // Fetch profile on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchCurrentUserProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await controller.fetchCurrentUserProfile();
+
+      // Fetch driver details if user is a driver
+      final profile = controller.userProfile.value;
+      if (profile != null &&
+          (profile.professionalType?.toLowerCase().contains('driver') ??
+              false)) {
+        driverController.fetchDriverDetails(profile.userId);
+      }
     });
 
     return Scaffold(
@@ -76,7 +86,7 @@ class YourProfileScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       _buildContactInfo(profile),
                       const SizedBox(height: 16),
-                      _buildWorkOverview(),
+                      // _buildWorkOverview(),
                       const SizedBox(height: 16),
                       _buildCompleteKyc(),
                       const SizedBox(height: 16),
@@ -580,16 +590,34 @@ Widget _buildCompleteKyc() {
     children: [
       // Show Driving License for Drivers only
       if (isDriver)
-        Builder(
-          builder: (context) {
-            return _buildKycItem(
-              'Driving License',
-              'Missing',
-              Colors.red,
-              onTap: () => _showDrivingLicenseDialog(context),
-            );
-          },
-        ),
+        Obx(() {
+          final driverController = Get.find<DriverDetailsController>();
+          final driver = driverController.driverDetails.value;
+
+          String status = 'Missing';
+          Color statusColor = Colors.red;
+
+          if (driver?.dlNumber != null && driver!.dlNumber!.isNotEmpty) {
+            if (driver.isVerified) {
+              status = 'Verified';
+              statusColor = Colors.green;
+            } else {
+              status = 'Pending';
+              statusColor = Colors.orange;
+            }
+          }
+
+          return Builder(
+            builder: (context) {
+              return _buildKycItem(
+                'Driving License',
+                status,
+                statusColor,
+                onTap: () => _showDrivingLicenseDialog(context),
+              );
+            },
+          );
+        }),
 
       // Show PAN Card for Technician/Helper
       if (!isDriver)
@@ -1249,10 +1277,7 @@ Widget _buildEditableItem(IconData icon, String label, String value) {
 /// Contact support via phone
 void _contactUs() async {
   try {
-    final Uri phoneUri = Uri(
-      scheme: 'tel',
-      path: '+919876543210', // Replace with actual support number
-    );
+    final Uri phoneUri = Uri(scheme: 'tel', path: '+917420861942');
 
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
@@ -1384,7 +1409,7 @@ void _showDrivingLicenseDialog(BuildContext context) {
                       if (picked != null) {
                         setState(() {
                           selectedDob = picked;
-                          // Format as DD/MM/YYYY for API (15/05/2000)
+                          // Format as dd/mm/yyyy for API (15/05/2000)
                           dobController.text =
                               '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
                         });
@@ -1450,6 +1475,11 @@ Future<void> _verifyDrivingLicense(
   String dob,
 ) async {
   try {
+    AppLogger.d('🔐 ============ STARTING DL VERIFICATION ============');
+    AppLogger.d('🔐 UserId: $userId');
+    AppLogger.d('🔐 DL Number: $dlNumber');
+    AppLogger.d('🔐 DOB: $dob');
+
     SnackBarHelper.info('Verifying Driving License...');
 
     final profileService = ProfileService();
@@ -1459,17 +1489,70 @@ Future<void> _verifyDrivingLicense(
       dob: dob,
     );
 
+    AppLogger.d('🔐 Verification Result: $result');
+
     if (result['success'] == true) {
+      AppLogger.d('✅ DL Verification SUCCESSFUL!');
+
+      // ✅ IMMEDIATELY update KYC status locally
+      AppLogger.d('🔐 Setting KYC status to TRUE in AuthService...');
+      await AuthService.to.updateKYCStatus(true);
+      AppLogger.d('🔐 KYC Status updated in AuthService');
+
       SnackBarHelper.success(result['message'] ?? 'Verification successful');
-      // Refresh profile to get updated KYC status
+
+      // Wait a bit for backend to process
+      AppLogger.d('🔐 Waiting 2 seconds for backend to process...');
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Refresh profile to get updated KYC status from backend
+      AppLogger.d('🔐 Refreshing user profile...');
       final controller = Get.find<UserProfileController>();
-      controller.fetchCurrentUserProfile();
+      final profileRefreshed = await controller.fetchCurrentUserProfile();
+      AppLogger.d('🔐 Profile refresh result: $profileRefreshed');
+
+      // Check KYC status after refresh
+      final kycStatus = AuthService.to.isUserKYCCompleted;
+      AppLogger.d('🔐 KYC Status after profile refresh: $kycStatus');
+
+      // Also refresh driver details to show updated status
+      try {
+        AppLogger.d('🔐 Refreshing driver details...');
+        final driverController = Get.find<DriverDetailsController>();
+        await driverController.fetchDriverDetails(userId);
+        AppLogger.d('🔐 Driver details refreshed');
+      } catch (e) {
+        AppLogger.d("⚠️ Error refreshing driver details: $e");
+      }
+
+      AppLogger.d('🔐 ============ DL VERIFICATION COMPLETE ============');
+
+      // If KYC is still false after all this, warn the user
+      if (!AuthService.to.isUserKYCCompleted) {
+        AppLogger.d(
+          '⚠️ WARNING: KYC status is still false after verification!',
+        );
+        SnackBarHelper.info(
+          'Verification successful! Please restart the app to see updated status.',
+        );
+      }
     } else {
+      AppLogger.d('❌ DL Verification FAILED');
       SnackBarHelper.error('Verification failed');
     }
   } catch (e) {
-    AppLogger.d('Error verifying driving license: $e');
-    SnackBarHelper.error('Failed to verify: ${e.toString()}');
+    AppLogger.d('❌ Error verifying driving license: $e');
+
+    String errorMessage = e.toString();
+    // Sanitize huge HTML errors
+    if (errorMessage.contains("<!DOCTYPE html>") ||
+        errorMessage.contains("<html>")) {
+      errorMessage = "Server error occurred. Please check your inputs.";
+    } else if (errorMessage.length > 200) {
+      errorMessage = errorMessage.substring(0, 200) + "...";
+    }
+
+    SnackBarHelper.error('Failed to verify: $errorMessage');
   }
 }
 
@@ -1568,9 +1651,9 @@ void _showPanCardDialog(BuildContext context) {
 /// Verify PAN Card via API
 Future<void> _verifyPanCard(String userId, String panNumber) async {
   try {
-    AppLogger.d(
-      '🔐 Starting PAN verification - userId: $userId, pan: $panNumber',
-    );
+    AppLogger.d('🔐 ============ STARTING PAN VERIFICATION ============');
+    AppLogger.d('🔐 UserId: $userId');
+    AppLogger.d('🔐 PAN Number: $panNumber');
 
     if (userId.isEmpty) {
       SnackBarHelper.error('User ID not found. Please try again.');
@@ -1585,18 +1668,51 @@ Future<void> _verifyPanCard(String userId, String panNumber) async {
       panNumber: panNumber,
     );
 
+    AppLogger.d('🔐 Verification Result: $result');
+
     if (result['success'] == true) {
+      AppLogger.d('✅ PAN Verification SUCCESSFUL!');
+
+      // ✅ IMMEDIATELY update KYC status locally
+      AppLogger.d('🔐 Setting KYC status to TRUE in AuthService...');
+      await AuthService.to.updateKYCStatus(true);
+      AppLogger.d('🔐 KYC Status updated in AuthService');
+
       SnackBarHelper.success(
         result['message'] ?? 'PAN Card verified successfully!',
       );
-      // Refresh profile to get updated KYC status
+
+      // Wait a bit for backend to process
+      AppLogger.d('🔐 Waiting 2 seconds for backend to process...');
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Refresh profile to get updated KYC status from backend
+      AppLogger.d('🔐 Refreshing user profile...');
       final controller = Get.find<UserProfileController>();
-      controller.fetchCurrentUserProfile();
+      final profileRefreshed = await controller.fetchCurrentUserProfile();
+      AppLogger.d('🔐 Profile refresh result: $profileRefreshed');
+
+      // Check KYC status after refresh
+      final kycStatus = AuthService.to.isUserKYCCompleted;
+      AppLogger.d('🔐 KYC Status after profile refresh: $kycStatus');
+
+      AppLogger.d('🔐 ============ PAN VERIFICATION COMPLETE ============');
+
+      // If KYC is still false after all this, warn the user
+      if (!AuthService.to.isUserKYCCompleted) {
+        AppLogger.d(
+          '⚠️ WARNING: KYC status is still false after verification!',
+        );
+        SnackBarHelper.info(
+          'Verification successful! Please restart the app to see updated status.',
+        );
+      }
     } else {
+      AppLogger.d('❌ PAN Verification FAILED');
       SnackBarHelper.error('Verification failed');
     }
   } catch (e) {
-    AppLogger.d('Error verifying PAN card: $e');
+    AppLogger.d('❌ Error verifying PAN card: $e');
     // Extract clean error message
     String errorMsg = e.toString();
     if (errorMsg.contains('Exception:')) {

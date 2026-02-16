@@ -178,10 +178,10 @@ class _BidsScreenState extends State<BidsScreen> {
                         onViewProfile: () {
                           Get.to(
                             () => ViewDriverScreen(
-                              driverName: bid.name,
-                              driverImage: _getDriverImage(bid),
+                              driverId: bid.driverId,
                               tripId: widget.tripId,
                               bidId: bid.bidId,
+                              isProfessional: true,
                             ),
                           );
                         },

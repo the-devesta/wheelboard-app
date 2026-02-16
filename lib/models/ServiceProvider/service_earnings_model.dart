@@ -1,19 +1,26 @@
 class ServiceEarningsModel {
   final double totalEarnings;
+  final double cashEarnings;
   final List<ServiceBreakdown> serviceBreakdown;
   final List<EarningsChartData> earningsChart;
   final List<PaymentHistory> paymentHistory;
 
   ServiceEarningsModel({
     required this.totalEarnings,
+    this.cashEarnings = 0.0,
     required this.serviceBreakdown,
     required this.earningsChart,
     required this.paymentHistory,
   });
 
   factory ServiceEarningsModel.fromJson(Map<String, dynamic> json) {
+    final total = (json['totalEarnings'] ?? 0.0).toDouble();
+    // Use cashEarnings from JSON if present, otherwise default to 0.0
+    final cash = (json['cashEarnings'] ?? 0.0).toDouble();
+
     return ServiceEarningsModel(
-      totalEarnings: (json['totalEarnings'] ?? 0.0).toDouble(),
+      totalEarnings: total,
+      cashEarnings: cash,
       serviceBreakdown: (json['serviceBreakdown'] as List? ?? [])
           .map((i) => ServiceBreakdown.fromJson(i))
           .toList(),

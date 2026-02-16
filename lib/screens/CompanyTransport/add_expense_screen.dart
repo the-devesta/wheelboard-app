@@ -25,9 +25,10 @@ class AddExpenseScreen extends StatefulWidget {
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final ExpenseController expenseController = Get.put(ExpenseController());
-  late final dynamic tripController;
+  late dynamic tripController;
 
-  bool get isProfessional => widget.isProfessional;
+  // 🔍 TRUBLESHOOT: Force professional check here as well if needed
+  bool get isProfessional => _localIsProfessional;
 
   ExpensePurpose? _selectedExpensePurpose;
   dynamic _selectedTrip; // Can be Trip or AssignedTrip
@@ -37,6 +38,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   DateTime? _selectedDate;
   File? _uploadedFile;
   bool _isSaving = false; // Local flag to prevent duplicate calls
+  bool _localIsProfessional =
+      false; // State-based source of truth ensuring API consistency
 
   // Color mapping for expense types
   final Map<String, Color> _expenseColors = {
@@ -73,13 +76,39 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       "🔍 User Type: ${isProfessional ? 'Professional/Driver' : 'Transport Company'}",
     );
 
-    // Initialize appropriate controller based on user type
-    if (isProfessional) {
-      AppLogger.d("🔍 Using: AssignedTripController");
+    AppLogger.d("🔍 ========================================");
+
+    // 📋 DEBUG: Dump all session data to see what is actually stored
+    SessionManager.logAllSessionData();
+
+    // Verify user type directly from AuthService to prevent stale router arguments
+    final authUserType = Get.find<AuthService>().userType.value;
+
+    // Default to widget passed value
+    _localIsProfessional = widget.isProfessional;
+
+    bool effectiveIsProfessional = _localIsProfessional;
+
+    // Double check: if AuthService says Professional, we MUST treat as Professional
+    if (authUserType.toLowerCase().trim() == 'professional' ||
+        authUserType.toLowerCase().trim() == 'driver') {
+      effectiveIsProfessional = true;
+    }
+
+    // Store for build usage
+    _localIsProfessional = effectiveIsProfessional;
+
+    if (_localIsProfessional) {
+      AppLogger.d("🔍 Using: AssignedTripController (Access: Professional)");
       AppLogger.d("🔍 API: api/Trip/assign-trip-list/{userId}");
       tripController = Get.put(AssignedTripController());
+
+      // Ensure we fetch data specifically for this controller
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        (tripController as AssignedTripController).fetchAssignedTrips();
+      });
     } else {
-      AppLogger.d("🔍 Using: TripController");
+      AppLogger.d("🔍 Using: TripController (Access: Transport/Company)");
       AppLogger.d("🔍 API: api/Trip/trip-list/{userId}");
       tripController = Get.put(TripController());
     }
@@ -92,14 +121,57 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Future<void> _fetchTrips() async {
-    if (isProfessional) {
-      // AssignedTripController automatically fetches on init
-      return;
+    if (_localIsProfessional) {
+      if (tripController is AssignedTripController) {
+        (tripController as AssignedTripController).fetchAssignedTrips();
+      } else {
+        // Should not happen, but safe fallback
+        tripController = Get.put(AssignedTripController());
+        (tripController as AssignedTripController).fetchAssignedTrips();
+      }
     } else {
       final sessionManager = SessionManager();
       final userId = await sessionManager.getString("userId");
+
       if (userId != null && userId.isNotEmpty) {
-        tripController.fetchTrips(userId);
+        // Try Transport flow first
+        if (tripController is! TripController) {
+          tripController = Get.put(TripController());
+        }
+        await (tripController as TripController).fetchTrips(userId);
+
+        // SELF-HEALING LOGIC:
+        // If Transport returns 0 trips, check if they are actually a Professional
+        if ((tripController as TripController).trips.isEmpty) {
+          AppLogger.d(
+            "⚠️ No transport trips found. Checking if user is secretly a Professional...",
+          );
+
+          // Create a temporary controller to check
+          final tempAssignedController = Get.put(
+            AssignedTripController(),
+            tag: 'temp_check',
+          );
+          await tempAssignedController.fetchAssignedTrips();
+
+          if (tempAssignedController.assignedTrips.isNotEmpty) {
+            AppLogger.d(
+              "🚨 SELF-HEAL TRIGGERED: Found assigned trips! Switching mode to Professional.",
+            );
+
+            setState(() {
+              _localIsProfessional = true;
+
+              // Promote temp controller to main controller
+              tripController = Get.put(AssignedTripController());
+              // Copy data over if needed or just refetch (refetch is cleaner)
+              (tripController as AssignedTripController).assignedTrips
+                  .assignAll(tempAssignedController.assignedTrips);
+            });
+          }
+          // Cleanup temp
+          Get.delete<AssignedTripController>(tag: 'temp_check');
+        }
       }
     }
   }
@@ -266,383 +338,391 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   void _showTripSelectionModal() {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Obx(() {
-        if (isProfessional) {
-          final assignedTripController =
-              tripController as AssignedTripController;
-
-          // 🔍 DEBUG: Log loading state and trip count
-          AppLogger.d("🔍 === PROFESSIONAL TRIP SELECTION DEBUG ===");
-          AppLogger.d(
-            "🔍 Is Loading: ${assignedTripController.isLoading.value}",
-          );
-          AppLogger.d(
-            "🔍 Trip Count: ${assignedTripController.assignedTrips.length}",
-          );
-          if (assignedTripController.assignedTrips.isNotEmpty) {
-            AppLogger.d(
-              "🔍 First Trip: ${assignedTripController.assignedTrips.first.pickupLocation} → ${assignedTripController.assignedTrips.first.deliveryLocation}",
-            );
-          }
-          AppLogger.d("🔍 ========================================");
-
-          if (assignedTripController.isLoading.value) {
-            return const CustomLoader.small(message: "Loading trips...");
-          }
-          final allTrips = assignedTripController.assignedTrips;
-
-          return Container(
-            padding: const EdgeInsets.all(20),
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE3F2FD),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.check_circle,
-                        color: Color(0xFF2196F3),
-                        size: 24,
-                      ),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          width: MediaQuery.of(context).size.width * 0.95,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            minHeight: MediaQuery.of(context).size.height * 0.5,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F2FD),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Select Trip (${allTrips.length})',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
+                    child: const Icon(
+                      Icons.directions_car,
+                      color: Color(0xFF2196F3),
+                      size: 20,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // Trip List
-                Expanded(
-                  child: allTrips.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.inbox_outlined,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No trips available',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Assigned trips will appear here',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: allTrips.length,
-                          itemBuilder: (context, index) {
-                            final trip = allTrips[index];
-                            final isSelected =
-                                _selectedTrip != null &&
-                                (_selectedTrip as AssignedTrip).bidId ==
-                                    trip.bidId;
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Select Trip',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
 
-                            return InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _selectedTrip = trip;
-                                });
-                                AppLogger.d(
-                                  "✅ Selected trip: ${trip.pickupLocation} → ${trip.deliveryLocation}",
-                                );
-                                Navigator.pop(context);
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: isSelected
-                                      ? Border.all(
-                                          color: const Color(0xFF2196F3),
-                                          width: 2,
-                                        )
-                                      : Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Route
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.location_on,
-                                          color: Color(0xFF2196F3),
-                                          size: 18,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            '${trip.pickupLocation} → ${trip.deliveryLocation}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                        Flexible(
-                                          child: Text(
-                                            'Trip ID: ${(trip.bidId ?? trip.tripId).length > 12 ? '${(trip.bidId ?? trip.tripId).substring(0, 12)}...' : (trip.bidId ?? trip.tripId)}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    // Date
-                                    Text(
-                                      'Date: ${trip.pickupDate.day}/${trip.pickupDate.month}/${trip.pickupDate.year}',
-                                      style: GoogleFonts.inter(
+              // Content
+              Expanded(
+                child: Obx(() {
+                  if (isProfessional) {
+                    final assignedTripController =
+                        tripController as AssignedTripController;
+
+                    if (assignedTripController.isLoading.value) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final allTrips = assignedTripController.assignedTrips;
+
+                    if (allTrips.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.no_transfer,
+                              size: 48,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No trips found',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: allTrips.length,
+                      separatorBuilder: (context, index) => Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+                      itemBuilder: (context, index) {
+                        final trip = allTrips[index];
+                        final isSelected =
+                            _selectedTrip != null &&
+                            (_selectedTrip as AssignedTrip).bidId == trip.bidId;
+
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedTrip = trip;
+                            });
+                            Navigator.pop(context);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(
+                                      0xFF2196F3,
+                                    ).withValues(alpha: 0.1)
+                                  : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFF2196F3)
+                                    : Colors.grey.shade200,
+                                width: isSelected ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Trip Index Badge
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF2196F3)
+                                        : const Color(0xFFF36969),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          );
-        } else {
-          final tripControllerTyped = tripController as TripController;
-
-          // 🔍 DEBUG: Log loading state and trip count for Transport
-          AppLogger.d("🔍 === TRANSPORT TRIP SELECTION DEBUG ===");
-          AppLogger.d(
-            "🔍 Is Loading: ${tripControllerTyped.isTripsLoading.value}",
-          );
-          AppLogger.d("🔍 Trip Count: ${tripControllerTyped.trips.length}");
-          if (tripControllerTyped.trips.isNotEmpty) {
-            AppLogger.d(
-              "🔍 First Trip: ${tripControllerTyped.trips.first.pickupLocation} → ${tripControllerTyped.trips.first.deliveryLocation}",
-            );
-          }
-          AppLogger.d("🔍 ========================================");
-
-          if (tripControllerTyped.isTripsLoading.value) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final allTrips = tripControllerTyped.trips;
-
-          return Container(
-            padding: const EdgeInsets.all(20),
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE3F2FD),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.check_circle,
-                        color: Color(0xFF2196F3),
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Select Trip (${allTrips.length})',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // Trip List
-                Expanded(
-                  child: allTrips.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.inbox_outlined,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No trips available',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[600],
+                                const SizedBox(width: 10),
+                                // Trip Details - Full text visible
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Pickup Location
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(
+                                            Icons.radio_button_checked,
+                                            size: 14,
+                                            color: Colors.green.shade600,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              trip.pickupLocation,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      // Delivery Location
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            size: 14,
+                                            color: Colors.red.shade600,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              trip.deliveryLocation,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      // Date
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today,
+                                            size: 12,
+                                            color: Colors.grey[500],
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${trip.pickupDate.day}/${trip.pickupDate.month}/${trip.pickupDate.year}',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Create trips to add expenses',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
+                                // Check Icon
+                                if (isSelected)
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 8),
+                                    child: Icon(
+                                      Icons.check_circle,
+                                      color: Color(0xFF2196F3),
+                                      size: 22,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: allTrips.length,
-                          itemBuilder: (context, index) {
-                            final trip = allTrips[index];
-                            final isSelected =
-                                _selectedTrip != null &&
-                                (_selectedTrip as Trip).tripId == trip.tripId;
+                        );
+                      },
+                    );
+                  } else {
+                    final tripControllerTyped =
+                        tripController as TripController;
+                    final allTrips = tripControllerTyped.trips;
 
-                            return InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _selectedTrip = trip;
-                                });
-                                AppLogger.d(
-                                  "✅ Selected trip: ${trip.pickupLocation} → ${trip.deliveryLocation}",
-                                );
-                                Navigator.pop(context);
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: isSelected
-                                      ? Border.all(
-                                          color: const Color(0xFF2196F3),
-                                          width: 2,
-                                        )
-                                      : Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Route
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.location_on,
-                                          color: Color(0xFF2196F3),
-                                          size: 18,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            '${trip.pickupLocation} → ${trip.deliveryLocation}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                        Flexible(
-                                          child: Text(
-                                            'Trip ID: ${trip.tripId.length > 12 ? '${trip.tripId.substring(0, 12)}...' : trip.tripId}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    // Vehicle Type and Date
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            'Vehicle Type: ${trip.vehicleType ?? "N/A"}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        Text(
-                                          trip.pickupDate != null
-                                              ? 'Date: ${trip.pickupDate!.day}/${trip.pickupDate!.month}/${trip.pickupDate!.year}'
-                                              : 'Date: N/A',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                    if (tripControllerTyped.isTripsLoading.value) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (allTrips.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.no_transfer,
+                              size: 48,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No trips available',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
                               ),
-                            );
-                          },
+                            ),
+                          ],
                         ),
-                ),
-              ],
-            ),
-          );
-        }
-      }),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: allTrips.length,
+                      separatorBuilder: (context, index) => Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+                      itemBuilder: (context, index) {
+                        final trip = allTrips[index];
+                        final isSelected =
+                            _selectedTrip != null &&
+                            (_selectedTrip as Trip).tripId == trip.tripId;
+
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedTrip = trip;
+                            });
+                            Navigator.pop(context);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(
+                                      0xFF2196F3,
+                                    ).withValues(alpha: 0.1)
+                                  : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFF2196F3)
+                                    : Colors.grey.shade200,
+                                width: isSelected ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Trip Index Badge
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF2196F3)
+                                        : const Color(0xFFF36969),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                // Trip Details
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${trip.pickupLocation} → ${trip.deliveryLocation}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        'Trip #${trip.tripId.substring(0, 8)}...',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Check Icon
+                                if (isSelected)
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Color(0xFF2196F3),
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

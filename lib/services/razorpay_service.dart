@@ -4,7 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:wheelboard/utils/constants.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../utils/app_logger.dart';
 
 typedef PaymentSuccessHandler = void Function(PaymentSuccessResponse response);
@@ -24,7 +24,14 @@ class RazorpayService {
       ..on(Razorpay.EVENT_EXTERNAL_WALLET, onExternalWallet);
   }
 
-  static const String _keyId = 'rzp_test_P3ApmD21Le7iZa';
+  /// Razorpay Key ID loaded from .env file
+  static String get _keyId => dotenv.env['RAZORPAY_KEY_ID'] ?? '';
+
+  /// WheelBoard company logo URL for Razorpay checkout (from .env file)
+  /// Note: Razorpay requires HTTPS URL for the logo
+  static String get _companyLogoUrl =>
+      dotenv.env['COMPANY_LOGO_URL'] ??
+      'https://wheelboardapi.addonshareware.com/images/logo.png';
 
   Razorpay? _razorpay;
 
@@ -36,8 +43,8 @@ class RazorpayService {
     String? receipt,
     String currency = 'INR',
     String customerName = 'WheelBoard',
-    String prefillContact = '9999999999',
-    String prefillEmail = 'payments@wheelboard.app',
+    String prefillContact = '7420861942',
+    String prefillEmail = 'hello@wheelboard.in',
     String? image,
     Map<String, dynamic>? notes,
   }) async {
@@ -64,9 +71,10 @@ class RazorpayService {
       'order_id': orderId,
       'timeout': 120,
       'prefill': {'contact': prefillContact, 'email': prefillEmail},
+      'readonly': {'contact': true, 'email': true},
       'notes': notes ?? {},
       'theme': {'color': '#F36969'},
-      'image': image ?? '${ApiConstants.baseUrl}images/logo.png',
+      'image': image ?? _companyLogoUrl,
     };
 
     if (_razorpay == null) {

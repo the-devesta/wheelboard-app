@@ -19,6 +19,7 @@ import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../controllers/Transport/notification_controller.dart';
 import '../../../widgets/custom_loader.dart';
 import '../../../widgets/custom_snackbar.dart';
+import '../../../utils/app_logger.dart';
 
 /// Professional Homepage Screen
 /// Main screen matching Figma design exactly
@@ -51,9 +52,9 @@ class ProfessionalHomePageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AssignedTripController assignedTripController = Get.put(
-      AssignedTripController(),
-    );
+    // Use Get.find to use the existing controller from wrapper (don't create new instance)
+    final AssignedTripController assignedTripController =
+        Get.find<AssignedTripController>();
     final notificationController = Get.put(NotificationController());
 
     // Fetch notifications on first build
@@ -134,14 +135,24 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                           }
 
                           // Filter trips to only show those that are NOT completed or cancelled
-                          final activeTrips = assignedTripController
-                              .assignedTrips
-                              .where((trip) {
-                                final status = trip.tripStatus.toLowerCase();
-                                return status != 'completed' &&
-                                    status != 'cancelled';
-                              })
-                              .toList();
+                          final allTrips = assignedTripController.assignedTrips;
+                          AppLogger.d(
+                            "🔍 Total trips in controller: ${allTrips.length}",
+                          );
+
+                          final activeTrips = allTrips.where((trip) {
+                            final status = trip.tripStatus.toLowerCase();
+                            final isActive =
+                                status != 'completed' && status != 'cancelled';
+                            AppLogger.d(
+                              "  🔹 Trip ${trip.tripCode}: status='$status' -> isActive=$isActive",
+                            );
+                            return isActive;
+                          }).toList();
+
+                          AppLogger.d(
+                            "🔍 Active trips after filter: ${activeTrips.length}",
+                          );
 
                           if (activeTrips.isEmpty) {
                             return TripCardWidget(
@@ -170,7 +181,14 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                               trip.pickupTime,
                             ),
                             tags: tags,
-                            onTap: () {
+                            distance: trip.calculatedDistance != null
+                                ? "${trip.calculatedDistance!.toStringAsFixed(1)} km"
+                                : null,
+                            eta: trip.estimatedEta,
+                            tripDistance: trip.distance,
+                            onTap: () async {
+                              // ✅ Refetch trips first to ensure we have latest status
+                              await assignedTripController.fetchAssignedTrips();
                               final trips =
                                   assignedTripController.assignedTrips;
 

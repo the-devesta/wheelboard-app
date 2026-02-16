@@ -913,10 +913,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   /// Contact support via phone
   void _contactUs() async {
     try {
-      final Uri phoneUri = Uri(
-        scheme: 'tel',
-        path: '+919876543210', // Replace with actual support number
-      );
+      final Uri phoneUri = Uri(scheme: 'tel', path: '+917420861942');
 
       if (await canLaunchUrl(phoneUri)) {
         await launchUrl(phoneUri);

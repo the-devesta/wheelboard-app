@@ -9,6 +9,7 @@ import '../../utils/constants.dart';
 import '../../utils/session_manager.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../models/service_booking_model.dart';
 
 /// Controller for ServiceProvider Home, BookingList, MyListings screens
 class ServiceProviderHomeController extends GetxController {
@@ -23,8 +24,8 @@ class ServiceProviderHomeController extends GetxController {
   final allServiceIds = <String>[].obs;
 
   // Bookings data
-  final allBookings = <Map<String, dynamic>>[].obs;
-  final filteredBookings = <Map<String, dynamic>>[].obs;
+  final allBookings = <ServiceBookingModel>[].obs;
+  final filteredBookings = <ServiceBookingModel>[].obs;
   final selectedStatus = 'All'.obs;
   final totalLeads = 0.obs;
 
@@ -151,7 +152,7 @@ class ServiceProviderHomeController extends GetxController {
       final sessionManager = SessionManager();
       final token = await sessionManager.getString("authToken");
 
-      List<Map<String, dynamic>> collectedBookings = [];
+      List<ServiceBookingModel> collectedBookings = [];
 
       for (String serviceId in serviceIds) {
         if (serviceId.isEmpty) continue;
@@ -170,17 +171,20 @@ class ServiceProviderHomeController extends GetxController {
           final List<dynamic> data =
               jsonDecode(response.body) as List<dynamic>? ?? [];
           collectedBookings.addAll(
-            data.map((e) => e as Map<String, dynamic>).toList(),
+            data
+                .map(
+                  (e) =>
+                      ServiceBookingModel.fromJson(e as Map<String, dynamic>),
+                )
+                .toList(),
           );
         }
       }
 
       // Sort by date (descending)
       collectedBookings.sort((a, b) {
-        final dateA =
-            DateTime.tryParse(a['scheduledDate'] ?? '') ?? DateTime(0);
-        final dateB =
-            DateTime.tryParse(b['scheduledDate'] ?? '') ?? DateTime(0);
+        final dateA = DateTime.tryParse(a.scheduledDate) ?? DateTime(0);
+        final dateB = DateTime.tryParse(b.scheduledDate) ?? DateTime(0);
         return dateB.compareTo(dateA);
       });
 
@@ -199,7 +203,7 @@ class ServiceProviderHomeController extends GetxController {
       filteredBookings.value = List.from(allBookings);
     } else {
       filteredBookings.value = allBookings.where((booking) {
-        final status = (booking['status'] ?? '').toString().toLowerCase();
+        final status = booking.status.toLowerCase();
         return status == selectedStatus.value.toLowerCase();
       }).toList();
     }

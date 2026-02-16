@@ -18,3 +18,7 @@ ios/Pods/
 .vscode/
 .DS_Store
 .metadata
+
+# Environment variables (contains sensitive keys)
+# .env
+# *.env.local

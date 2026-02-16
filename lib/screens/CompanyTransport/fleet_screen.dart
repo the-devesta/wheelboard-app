@@ -381,6 +381,9 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
   // Actually, we are inserting it into the Stack children list.
 
   Widget _buildHeader(double screenHeight) {
+    // Check if we can pop the current route (i.e., we are not at the root/tab)
+    final canPop = Navigator.canPop(context);
+
     return Positioned(
       top: screenHeight * 0.08,
       left: 0,
@@ -389,40 +392,60 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: SizedBox(
           height: 60,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Center(
-                child: Text(
-                  "Fleet",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          child: Material(
+            type: MaterialType.transparency,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Center(
+                  child: Text(
+                    "Fleet",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  width: 53,
-                  height: 53,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: canPop
+                      ? GestureDetector(
+                          onTap: () => Get.back(),
+                          child: Container(
+                            width: 45,
+                            height: 45,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.black87,
+                              size: 20,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          width: 53,
+                          height: 53,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          padding: const EdgeInsets.all(6),
+                          child: Image.asset('assets/logobg.png'),
+                        ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    onPressed: () => _showSearchDialog(),
+                    icon: const Icon(Icons.search, color: Colors.white),
                   ),
-                  padding: const EdgeInsets.all(6),
-                  child: Image.asset('assets/logobg.png'),
                 ),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  onPressed: () => _showSearchDialog(),
-                  icon: const Icon(Icons.search, color: Colors.white),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

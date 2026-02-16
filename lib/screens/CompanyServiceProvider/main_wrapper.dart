@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:get/get.dart';
+import 'package:wheelboard/controllers/Transport/notification_controller.dart';
+import 'package:wheelboard/controllers/Transport/user_profile_controller.dart';
+import 'package:wheelboard/controllers/Transport/job_controller.dart';
+import 'package:wheelboard/controllers/Professional/feeds_controller.dart';
 import 'home_screen.dart';
 import 'my_listings_screen.dart';
 import 'add_service_screen.dart';
 import '../CompanyTransport/feed_screen.dart';
 import '../CompanyTransport/job_screen.dart';
+import '../../utils/app_logger.dart';
 
 /// Main Wrapper for Company Service Provider User Type
 /// This wrapper contains bottom navigation and manages all Service Provider screens
@@ -26,6 +31,22 @@ class _CompanyServiceProviderMainWrapperState
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+
+    // Initialize common controllers globally
+    if (!Get.isRegistered<NotificationController>()) {
+      Get.put(NotificationController(), permanent: true);
+    }
+    if (!Get.isRegistered<UserProfileController>()) {
+      Get.put(UserProfileController(), permanent: true);
+    }
+    if (!Get.isRegistered<JobController>()) {
+      Get.put(JobController(), permanent: true);
+    }
+    if (!Get.isRegistered<FeedsController>()) {
+      Get.put(FeedsController(), permanent: true);
+    }
+
+    AppLogger.d("✅ Common controllers initialized in Service Provider wrapper");
   }
 
   final List<Widget> _screens = [
