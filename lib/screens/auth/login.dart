@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:wheelboard/constants/apps_colors.dart';
@@ -219,55 +220,60 @@ class ProfessionLogin extends StatelessWidget {
                           const SizedBox(height: 16),
 
                           /// Quick Login Buttons (for testing)
-                          Text(
-                            "--- Quick Logins for Testing ---",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                              fontWeight: FontWeight.w500,
+                          if (kDebugMode)
+                            Column(
+                              children: [
+                                Text(
+                                  "--- Quick Logins for Testing ---",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade500,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildTestLoginButton(
+                                        "Transport",
+                                        () async {
+                                          phoneController.text = "8600202678";
+                                          await loginController.sendOTP(
+                                            phoneController.text,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildTestLoginButton(
+                                        "Professional",
+                                        () async {
+                                          phoneController.text = "7420861942";
+                                          await loginController.sendOTP(
+                                            phoneController.text,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildTestLoginButton(
+                                        "Service Provider",
+                                        () async {
+                                          phoneController.text = "8210447299";
+                                          await loginController.sendOTP(
+                                            phoneController.text,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildTestLoginButton(
-                                  "Transport",
-                                  () async {
-                                    phoneController.text = "8600202678";
-                                    await loginController.sendOTP(
-                                      phoneController.text,
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildTestLoginButton(
-                                  "Professional",
-                                  () async {
-                                    phoneController.text = "7420861942";
-                                    await loginController.sendOTP(
-                                      phoneController.text,
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildTestLoginButton(
-                                  "Service Provider",
-                                  () async {
-                                    phoneController.text = "8210447299";
-                                    await loginController.sendOTP(
-                                      phoneController.text,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
