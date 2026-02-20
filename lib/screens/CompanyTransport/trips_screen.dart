@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
@@ -15,6 +16,88 @@ import '../../widgets/custom_loader.dart';
 import 'TripExpenses/TripExpensesScreen.dart';
 import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
+
+// ---------------------------------------------------------------------------
+// Reusable safe avatar widget – handles null/empty URL and network errors.
+// Uses CachedNetworkImage to handle extension-less URLs (e.g. from API).
+// Falls back to asset, and if asset also fails, shows a person icon.
+// ---------------------------------------------------------------------------
+class _SafeAvatar extends StatelessWidget {
+  final String? imageUrl;
+  final double radius;
+  final String fallbackAsset;
+
+  const _SafeAvatar({
+    this.imageUrl,
+    this.radius = 12,
+    this.fallbackAsset = 'assets/driver.png',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasUrl = imageUrl != null && imageUrl!.isNotEmpty;
+
+    // Ultimate fallback widget — shown when both network and asset fail
+    final Widget iconFallback = CircleAvatar(
+      radius: radius,
+      backgroundColor: Colors.grey.shade300,
+      child: Icon(Icons.person, size: radius, color: Colors.grey.shade600),
+    );
+
+    if (hasUrl) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl!,
+        imageBuilder: (context, imageProvider) => CircleAvatar(
+          radius: radius,
+          backgroundImage: imageProvider,
+          backgroundColor: Colors.grey.shade200,
+        ),
+        placeholder: (context, url) => CircleAvatar(
+          radius: radius,
+          backgroundColor: Colors.grey.shade200,
+          child: SizedBox(
+            width: radius,
+            height: radius,
+            child: const CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+        ),
+        errorWidget: (context, url, error) => CircleAvatar(
+          radius: radius,
+          backgroundColor: Colors.grey.shade200,
+          child: ClipOval(
+            child: Image.asset(
+              fallbackAsset,
+              width: radius * 2,
+              height: radius * 2,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => iconFallback,
+            ),
+          ),
+        ),
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+      );
+    }
+
+    // No URL → try asset with safe fallback to icon
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: Colors.grey.shade200,
+      child: ClipOval(
+        child: Image.asset(
+          fallbackAsset,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => iconFallback,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 class TripPage extends StatefulWidget {
   final int initialTabIndex;
@@ -232,9 +315,9 @@ class _TripPageState extends State<TripPage>
                     const SizedBox(height: 24),
 
                     // Recent Trips
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Text(
                           "Recent Trips",
                           style: TextStyle(
@@ -338,7 +421,7 @@ class _TripPageState extends State<TripPage>
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Color(0xFFCCF6DE),
+                      color: const Color(0xFFCCF6DE),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: TabBar(
@@ -1055,6 +1138,7 @@ class _TripsTabViews extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
             children: upcomingTrips.map((trip) {
+              print('Driver Image Path: ${trip.driverImagePath}'); 
               return _UpcomingTripCard(
                 trip: trip,
                 tripId: trip.tripId,
@@ -1066,7 +1150,8 @@ class _TripsTabViews extends StatelessWidget {
                 date: _formatDate(trip.pickupDate, trip.pickupTime),
                 chip: trip.vehicleType ?? "Standard",
                 assignedTo: trip.driverName ?? 'Not assigned',
-                assignedToImage: "https://i.pravatar.cc/150?img=4",
+                // assignedToImage: "https://i.pravatar.cc/150?img=4",
+                assignedToImage: trip.driverImagePath,
                 bidsAvailable: trip.totalBidCount,
               );
             }).toList(),
@@ -1088,8 +1173,9 @@ class _UpcomingTripCard extends StatelessWidget {
   final String date;
   final String chip;
   final String assignedTo;
-  final String assignedToImage;
+  // final String assignedToImage;
   final int bidsAvailable;
+  final String? assignedToImage;
 
   const _UpcomingTripCard({
     required this.trip,
@@ -1107,6 +1193,10 @@ class _UpcomingTripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Determine whether the driver is truly assigned
+    final bool isDriverAssigned =
+        assignedTo.isNotEmpty && assignedTo != 'Not assigned';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -1255,24 +1345,23 @@ class _UpcomingTripCard extends StatelessWidget {
                       style: TextStyle(fontSize: 13, color: Colors.black87),
                     ),
                     const SizedBox(width: 6),
-                    if (assignedTo != 'Not assigned' && assignedTo.isNotEmpty)
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundImage: AssetImage(AppImages.driver),
-                      ),
+                    // Safe avatar using CachedNetworkImage –
+                    // handles extension-less URLs and network failures gracefully
+                    _SafeAvatar(
+                      imageUrl: isDriverAssigned ? assignedToImage : null,
+                      radius: 12,
+                      fallbackAsset: 'assets/driver.png',
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        assignedTo == 'Not assigned' || assignedTo.isEmpty
-                            ? 'Unassigned'
-                            : assignedTo,
+                        isDriverAssigned ? assignedTo : 'Unassigned',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color:
-                              assignedTo == 'Not assigned' || assignedTo.isEmpty
-                              ? Colors.orange
-                              : Colors.black87,
+                          color: isDriverAssigned
+                              ? Colors.black87
+                              : Colors.orange,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

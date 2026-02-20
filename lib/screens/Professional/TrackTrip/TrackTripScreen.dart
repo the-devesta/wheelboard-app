@@ -140,7 +140,8 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
           return Column(
             children: [
               // 1. Top Bar
-              _buildTopBar(context, widget.tripId, trackController),
+              // _buildTopBar(context, widget.tripId, trackController),
+              _buildTopBar(context, trip, trackController),
 
               // 2. Map Container with Compact Height (30% of screen)
               Container(
@@ -276,7 +277,8 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
 
   Widget _buildTopBar(
     BuildContext context,
-    String tripId,
+    // String tripId,
+    AssignedTrip trip,
     TrackTripController controller,
   ) {
     return Container(
@@ -315,8 +317,21 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                     letterSpacing: 1.2,
                   ),
                 ),
+                // Text(
+                //   'ID: ${tripId.toUpperCase()}',
+                //   textAlign: TextAlign.center,
+                //   maxLines: 1,
+                //   overflow: TextOverflow.ellipsis,
+                //   style: GoogleFonts.poppins(
+                //     fontSize: 14,
+                //     fontWeight: FontWeight.w700,
+                //     color: const Color(0xFF1F2937),
+                //   ),
+                // ),
                 Text(
-                  'ID: ${tripId.toUpperCase()}',
+                  trip.tripCode?.isNotEmpty == true
+                      ? trip.tripCode!
+                      : trip.tripId,
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -325,7 +340,7 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF1F2937),
                   ),
-                ),
+                )
               ],
             ),
           ),
@@ -335,7 +350,8 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              onPressed: () => controller.startLocationUpdates(tripId),
+              // onPressed: () => controller.startLocationUpdates(tripId),
+               onPressed: () => controller.startLocationUpdates(trip.tripId),
               icon: const Icon(
                 Icons.refresh,
                 color: Color(0xFFFF5E5E),

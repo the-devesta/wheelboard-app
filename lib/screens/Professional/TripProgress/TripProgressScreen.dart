@@ -229,7 +229,7 @@ class TripProgressScreen extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            childAspectRatio: 2.5,
+            childAspectRatio: 1.9,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
             children: [
@@ -245,7 +245,8 @@ class TripProgressScreen extends StatelessWidget {
               ),
               _buildSmallCard(
                 'Trip ID',
-                trip.tripId.substring(0, 8).toUpperCase(),
+                // trip.tripId.substring(0, 8).toUpperCase(),
+                trip.tripCode.toUpperCase(),
                 Icons.numbers,
               ),
               _buildSmallCard('Date', 'Today', Icons.calendar_today_outlined),
@@ -327,7 +328,7 @@ class TripProgressScreen extends StatelessWidget {
                 ),
                 Text(
                   value,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 12,

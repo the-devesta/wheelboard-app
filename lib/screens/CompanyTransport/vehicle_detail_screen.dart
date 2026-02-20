@@ -791,7 +791,8 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                             Expanded(
                               child: _buildStatCard(
                                 'Avg. Run',
-                                '${(vehicleDetails?.data.monthlyUsageKM ?? 0).round()} KM',
+                                // '${(vehicleDetails?.data.monthlyUsageKM ?? 0).round()} KM',
+                                '${(vehicleDetails?.data.monthlyUsageKM ?? 0).toStringAsFixed(2)} KM',
                                 const Color(0xFF00B894),
                                 Icons.speed,
                               ),
@@ -800,7 +801,8 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                             Expanded(
                               child: _buildStatCard(
                                 'Trip Efficiency',
-                                'Rs. ${(vehicleDetails?.data.costPerKM ?? 0).round()} / KM',
+                                // 'Rs. ${(vehicleDetails?.data.costPerKM ?? 0).round()} / KM',
+                                'Rs. ${(vehicleDetails?.data.costPerKM ?? 0).toStringAsFixed(2)} / KM',
                                 const Color(0xFFFF6B6B),
                                 Icons.trending_up,
                               ),

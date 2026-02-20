@@ -100,7 +100,7 @@ class TripDetailsScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
-                    AppImages.trip,
+                    "assets/driver.png",
                     height: 150,
                     width: double.infinity,
                     fit: BoxFit.cover,

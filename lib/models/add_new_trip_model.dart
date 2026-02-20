@@ -9,6 +9,7 @@ class Trip {
   final String? driverName;
   final String? driverContact;
   final String pickupLocation;
+  final String? driverImagePath;
   final String deliveryLocation;
   final DateTime? pickupDate;
   final String pickupTime;
@@ -35,6 +36,7 @@ class Trip {
     this.driverName,
     this.driverContact,
     required this.pickupLocation,
+    this.driverImagePath,
     required this.deliveryLocation,
     required this.pickupDate,
     required this.pickupTime,
@@ -62,6 +64,7 @@ class Trip {
       driverName: json['driverName'] ?? json['DriverName'],
       driverContact: json['driverContact'] ?? json['DriverContact'],
       pickupLocation: json['pickupLocation'] ?? json['PickupLocation'] ?? '',
+      driverImagePath: json['driverImagePath'] ?? json['DriverImagePath'],
       deliveryLocation:
           json['deliveryLocation'] ?? json['DeliveryLocation'] ?? '',
       pickupDate:

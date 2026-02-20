@@ -1,5 +1,6 @@
 class AssignTripBid {
   final String bidId;
+  final String? tripCode; 
   final double bidAmount;
   final String bidDescription;
   final String pickupLocation;
@@ -15,6 +16,7 @@ class AssignTripBid {
 
   AssignTripBid({
     required this.bidId,
+    this.tripCode,
     required this.bidAmount,
     required this.bidDescription,
     required this.pickupLocation,
@@ -45,6 +47,7 @@ class AssignTripBid {
 
     return AssignTripBid(
       bidId: json['bidId'] ?? '',
+      tripCode: json['tripCode'],
       bidAmount: parseDouble(json['bidAmount']),
       bidDescription: json['bidDescription'] ?? '',
       pickupLocation: json['pickupLocation'] ?? '',

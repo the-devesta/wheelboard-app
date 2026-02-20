@@ -402,35 +402,35 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8FAF4),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Column(
-                          children: [
-                            Text(
-                              '20% upfront, 80% on-',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Poppins',
-                                color: Color(0xFF00B894),
-                              ),
-                            ),
-                            Text(
-                              'trip',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Poppins',
-                                color: Color(0xFF00B894),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // Container(
+                      //   padding: const EdgeInsets.all(8),
+                      //   decoration: BoxDecoration(
+                      //     color: const Color(0xFFE8FAF4),
+                      //     borderRadius: BorderRadius.circular(6),
+                      //   ),
+                      //   child: const Column(
+                      //     children: [
+                      //       Text(
+                      //         '20% upfront, 80% on-',
+                      //         style: TextStyle(
+                      //           fontSize: 12,
+                      //           fontWeight: FontWeight.w600,
+                      //           fontFamily: 'Poppins',
+                      //           color: Color(0xFF00B894),
+                      //         ),
+                      //       ),
+                      //       Text(
+                      //         'trip',
+                      //         style: TextStyle(
+                      //           fontSize: 12,
+                      //           fontWeight: FontWeight.w600,
+                      //           fontFamily: 'Poppins',
+                      //           color: Color(0xFF00B894),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                     ],
                   ),
                   const SizedBox(height: 24),
