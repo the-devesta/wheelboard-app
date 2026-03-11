@@ -64,6 +64,11 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
       driverNameController.text = driver.fullName ?? '';
       contactNumberController.text = driver.contactNumber ?? '';
       descriptionController.text = driver.description ?? '';
+      licenseNumberController.text = driver.dlNo ?? '';
+      _selectedDob = driver.dateOfBirth;
+      String dob = _formatDate(_selectedDob!);
+      debugPrint('${dob} dob===>>>');
+      dobController.text = dob;
       // ✅ Only set selectedVehicleType if it's in the valid list
       final vehicleType = driver.vehicleType;
       if (vehicleType != null && validVehicleTypes.contains(vehicleType)) {
@@ -243,6 +248,14 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
       Get.snackbar("Error", "UserId not found. Please log in again.");
       return;
     }
+    if (dobController.text.isEmpty) {
+      Get.snackbar("Error", "Please select dob");
+      return;
+    }
+    if (licenseNumberController.text.isEmpty) {
+      Get.snackbar("Error", "Please enter license no.");
+      return;
+    }
 
     AppLogger.d("👉 Using Token: $token");
     AppLogger.d("👉 Using UserId: $userId");
@@ -266,6 +279,9 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
       dlNo: licenseNumberController.text.trim(), // ✅ Driver License Number
       dateOfBirth: _selectedDob, // ✅ Date of Birth
     );
+
+    AppLogger.d("Driver Fields Payload => ${driverModel.toJsonFields()}");
+    AppLogger.d("Driver Image Path => ${driverModel.image?.path}");
 
     // 🔹 Add small delay (ensures async values + file stream ready)
     await Future.delayed(const Duration(milliseconds: 200));
@@ -392,182 +408,242 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
                   ),
 
                   // ✅ Driver License Search Section
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF90CAF9),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.search,
-                              color: Color(0xFF1976D2),
-                              size: 18,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              "Quick License Search",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Poppins',
-                                color: const Color(0xFF1976D2),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Enter license details to auto-fill driver info",
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'Poppins',
-                            color: const Color(0xFF1565C0),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
+                  // Container(
+                  //   padding: const EdgeInsets.all(12),
+                  //   decoration: BoxDecoration(
+                  //     color: const Color(0xFFE3F2FD),
+                  //     borderRadius: BorderRadius.circular(10),
+                  //     border: Border.all(
+                  //       color: const Color(0xFF90CAF9),
+                  //       width: 1,
+                  //     ),
+                  //   ),
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       Row(
+                  //         children: [
+                  //           const Icon(
+                  //             Icons.search,
+                  //             color: Color(0xFF1976D2),
+                  //             size: 18,
+                  //           ),
+                  //           const SizedBox(width: 6),
+                  //           Text(
+                  //             "Quick License Search",
+                  //             style: TextStyle(
+                  //               fontSize: 14,
+                  //               fontWeight: FontWeight.w600,
+                  //               fontFamily: 'Poppins',
+                  //               color: const Color(0xFF1976D2),
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //       const SizedBox(height: 8),
+                  //       Text(
+                  //         "Enter license details to auto-fill driver info",
+                  //         style: TextStyle(
+                  //           fontSize: 11,
+                  //           fontFamily: 'Poppins',
+                  //           color: const Color(0xFF1565C0),
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 12),
 
-                        // License Number Field
-                        Container(
-                          width: double.infinity,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: const Color(0xFFEDF1F3),
-                              width: 1,
-                            ),
-                          ),
-                          child: TextField(
-                            controller: licenseNumberController,
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Poppins',
-                              color: const Color(0xFF6C7278),
-                            ),
-                            decoration: InputDecoration(
-                              hintText:
-                                  "License Number (e.g., HR-2620140187259)",
-                              hintStyle: TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Poppins',
-                                color: const Color(0xFF6C7278),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                  //       // License Number Field
+                  //       Container(
+                  //         width: double.infinity,
+                  //         height: 48,
+                  //         decoration: BoxDecoration(
+                  //           color: Colors.white,
+                  //           borderRadius: BorderRadius.circular(10),
+                  //           border: Border.all(
+                  //             color: const Color(0xFFEDF1F3),
+                  //             width: 1,
+                  //           ),
+                  //         ),
+                  //         child: TextField(
+                  //           controller: licenseNumberController,
+                  //           textAlign: TextAlign.left,
+                  //           style: TextStyle(
+                  //             fontSize: 14,
+                  //             fontFamily: 'Poppins',
+                  //             color: const Color(0xFF6C7278),
+                  //           ),
+                  //           decoration: InputDecoration(
+                  //             hintText:
+                  //                 "License Number (e.g., HR-2620140187259)",
+                  //             hintStyle: TextStyle(
+                  //               fontSize: 14,
+                  //               fontFamily: 'Poppins',
+                  //               color: const Color(0xFF6C7278),
+                  //             ),
+                  //             border: InputBorder.none,
+                  //             contentPadding: const EdgeInsets.symmetric(
+                  //               horizontal: 14,
+                  //               vertical: 14,
+                  //             ),
+                  //           ),
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 8),
 
-                        // Date of Birth Field with Calendar
-                        GestureDetector(
-                          onTap: _selectDateOfBirth,
-                          child: Container(
-                            width: double.infinity,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: const Color(0xFFEDF1F3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Text(
-                                    _selectedDob != null
-                                        ? _formatDate(_selectedDob!)
-                                        : "Date of Birth (DD/MM/YYYY)",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontFamily: 'Poppins',
-                                      color: _selectedDob != null
-                                          ? const Color(0xFF1E1E1E)
-                                          : const Color(0xFF6C7278),
-                                    ),
-                                  ),
-                                ),
-                                const Padding(
-                                  padding: EdgeInsets.only(right: 14),
-                                  child: Icon(
-                                    Icons.calendar_today,
-                                    size: 18,
-                                    color: Color(0xFF1976D2),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
+                  //       // Date of Birth Field with Calendar
+                  //       GestureDetector(
+                  //         onTap: _selectDateOfBirth,
+                  //         child: Container(
+                  //           width: double.infinity,
+                  //           height: 48,
+                  //           decoration: BoxDecoration(
+                  //             color: Colors.white,
+                  //             borderRadius: BorderRadius.circular(10),
+                  //             border: Border.all(
+                  //               color: const Color(0xFFEDF1F3),
+                  //               width: 1,
+                  //             ),
+                  //           ),
+                  //           child: Row(
+                  //             children: [
+                  //               const SizedBox(width: 14),
+                  //               Expanded(
+                  //                 child: Text(
+                  //                   _selectedDob != null
+                  //                       ? _formatDate(_selectedDob!)
+                  //                       : "Date of Birth (DD/MM/YYYY)",
+                  //                   style: TextStyle(
+                  //                     fontSize: 14,
+                  //                     fontFamily: 'Poppins',
+                  //                     color: _selectedDob != null
+                  //                         ? const Color(0xFF1E1E1E)
+                  //                         : const Color(0xFF6C7278),
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //               const Padding(
+                  //                 padding: EdgeInsets.only(right: 14),
+                  //                 child: Icon(
+                  //                   Icons.calendar_today,
+                  //                   size: 18,
+                  //                   color: Color(0xFF1976D2),
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //           ),
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 12),
 
-                        // Search Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: _isSearchingDriver
-                                ? null
-                                : _searchDriverLicense,
-                            icon: _isSearchingDriver
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const Icon(Icons.search, size: 20),
-                            label: Text(
-                              _isSearchingDriver
-                                  ? "Searching..."
-                                  : "Search License Details",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1976D2),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
+                  //       // Search Button
+                  //       SizedBox(
+                  //         width: double.infinity,
+                  //         height: 48,
+                  //         child: ElevatedButton.icon(
+                  //           onPressed: _isSearchingDriver
+                  //               ? null
+                  //               : _searchDriverLicense,
+                  //           icon: _isSearchingDriver
+                  //               ? const SizedBox(
+                  //                   width: 18,
+                  //                   height: 18,
+                  //                   child: CircularProgressIndicator(
+                  //                     strokeWidth: 2,
+                  //                     valueColor: AlwaysStoppedAnimation<Color>(
+                  //                       Colors.white,
+                  //                     ),
+                  //                   ),
+                  //                 )
+                  //               : const Icon(Icons.search, size: 20),
+                  //           label: Text(
+                  //             _isSearchingDriver
+                  //                 ? "Searching..."
+                  //                 : "Search License Details",
+                  //             style: TextStyle(
+                  //               fontSize: 14,
+                  //               fontFamily: 'Poppins',
+                  //               fontWeight: FontWeight.w600,
+                  //             ),
+                  //           ),
+                  //           style: ElevatedButton.styleFrom(
+                  //             backgroundColor: const Color(0xFF1976D2),
+                  //             foregroundColor: Colors.white,
+                  //             shape: RoundedRectangleBorder(
+                  //               borderRadius: BorderRadius.circular(10),
+                  //             ),
+                  //           ),
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
                   const SizedBox(height: 17),
-
                   _buildTextField(
                     "Driver Name",
                     "Enter Driver Name",
                     controller: driverNameController,
                   ),
+                  const SizedBox(height: 17),
+                  _buildTextField(
+                    "License No.",
+                    "Enter License No.",
+                    controller: licenseNumberController,
+                  ),
+                  const SizedBox(height: 17),
+                  Text(
+                    "Select DOB",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Plus Jakarta Sans',
+                      color: const Color(0xFF6C7278),
+                      letterSpacing: -0.24,
+                    ),
+                  ),
+
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: _selectDateOfBirth,
+                    child: Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFFEDF1F3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              _selectedDob != null
+                                  ? _formatDate(_selectedDob!)
+                                  : "Date of Birth (DD/MM/YYYY)",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Poppins',
+                                color: _selectedDob != null
+                                    ? const Color(0xFF1E1E1E)
+                                    : const Color(0xFF6C7278),
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(right: 14),
+                            child: Icon(
+                              Icons.calendar_today,
+                              size: 18,
+                              color: Color(0xFF1976D2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 17),
 
                   _buildTextField(

@@ -797,6 +797,8 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen> {
                           isDeclarationAccepted:
                               driverData.isDeclarationAccepted,
                           modifiedUserId: userId,
+                          dlNo: driverData.dlNo,
+                          dateOfBirth: driverData.dateOfBirth,
                         );
 
                         Get.to(

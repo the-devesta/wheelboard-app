@@ -8,7 +8,8 @@ class Driver {
   final String description;
   final bool isDeclarationAccepted;
   final String driverImagePath;
-
+  final String dlNo;
+  DateTime? dateOfBirth;
   Driver({
     required this.driverId,
     required this.userId,
@@ -19,6 +20,8 @@ class Driver {
     required this.description,
     required this.isDeclarationAccepted,
     required this.driverImagePath,
+    required this.dlNo,
+    required this.dateOfBirth,
   });
 
   factory Driver.fromJson(Map<String, dynamic> json) {
@@ -32,6 +35,10 @@ class Driver {
       description: json['description'],
       isDeclarationAccepted: json['isDeclarationAccepted'],
       driverImagePath: json['driverImagePath'],
+      dlNo: json['dlNo'],
+      dateOfBirth: json['dateOfBirth'] != null && json['dateOfBirth'] != ""
+          ? DateTime.parse(json['dateOfBirth'])
+          : null,
     );
   }
 }
