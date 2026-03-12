@@ -267,14 +267,29 @@ class _ServiceProviderProfileScreenState
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            profile?.businessName ?? 'Business Name',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF535353),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                profile?.businessName ?? 'Business Name',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF535353),
+                ),
+              ),
+              Text(
+                ' (Free account)',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF535353),
+                ),
+              ),
+            ],
           ),
+
           const SizedBox(height: 8),
           if (profile?.businessCategory != null &&
               profile!.businessCategory!.isNotEmpty)

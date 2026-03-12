@@ -309,13 +309,27 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           ),
           const SizedBox(height: 8),
           // Name
-          Text(
-            profile?.fullName ?? profile?.name ?? 'N/A',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF535353),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                profile?.fullName ?? profile?.name ?? 'N/A',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF535353),
+                ),
+              ),
+              Text(
+                ' (Free account)',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF535353),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
         ],

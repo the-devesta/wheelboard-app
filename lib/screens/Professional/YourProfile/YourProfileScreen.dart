@@ -78,9 +78,9 @@ class YourProfileScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       _buildProfileCard(profile),
                       const SizedBox(height: 24),
-                      _buildKycBanner(),
-                      const SizedBox(height: 20),
 
+                      // _buildKycBanner(),
+                      // const SizedBox(height: 20),
                       const SizedBox(height: 20),
                       _buildPersonalDetails(profile),
                       const SizedBox(height: 16),
@@ -255,14 +255,30 @@ class YourProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            profile?.name ?? 'N/A',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF535353),
-            ),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                profile?.name ?? 'N/A',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF535353),
+                ),
+              ),
+              Text(
+                ' (Free account)',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF535353),
+                ),
+              ),
+            ],
           ),
+
           const SizedBox(height: 8),
           if (profile?.professionalType != null &&
               profile!.professionalType!.isNotEmpty)
