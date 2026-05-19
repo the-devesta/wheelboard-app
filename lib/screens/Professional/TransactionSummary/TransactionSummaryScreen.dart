@@ -39,7 +39,7 @@ class TransactionSummaryScreen extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                       ),
                       child: const Icon(Icons.arrow_back_ios_new, size: 18),
                     ),
@@ -63,7 +63,7 @@ class TransactionSummaryScreen extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                       ),
                       child: const Icon(Icons.more_vert, size: 20),
                     ),
@@ -249,7 +249,7 @@ class TransactionSummaryScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -389,8 +389,9 @@ class TransactionSummaryScreen extends StatelessWidget {
                                 ),
                                 Expanded(
                                   child: Obx(() {
-                                    if (controller.pieData.isEmpty)
+                                    if (controller.pieData.isEmpty) {
                                       return const SizedBox();
+                                    }
 
                                     // Sort by amount descending and take top 3
                                     final top3 =
@@ -439,7 +440,7 @@ class TransactionSummaryScreen extends StatelessWidget {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),
@@ -791,8 +792,7 @@ class PieChartPainter extends CustomPainter {
 class ExpenseFilterDialog extends StatelessWidget {
   final TransactionSummaryController controller;
 
-  const ExpenseFilterDialog({Key? key, required this.controller})
-    : super(key: key);
+  const ExpenseFilterDialog({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {

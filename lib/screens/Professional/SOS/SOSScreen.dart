@@ -79,7 +79,7 @@ class _SOSScreenState extends State<SOSScreen>
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
             ),
             child: const Icon(
               Icons.arrow_back_ios,
@@ -138,7 +138,7 @@ class _SOSScreenState extends State<SOSScreen>
                     boxShadow: _isActivated
                         ? [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.3),
+                              color: Colors.red.withValues(alpha: 0.3),
                               blurRadius: 15,
                               spreadRadius: 5,
                             ),
@@ -176,7 +176,7 @@ class _SOSScreenState extends State<SOSScreen>
                                   shape: BoxShape.circle,
                                   color: const Color(
                                     0xFFE53935,
-                                  ).withOpacity(0.3 * (1 - _controller.value)),
+                                  ).withValues(alpha: 0.3 * (1 - _controller.value)),
                                 ),
                               ),
                               // Ripple Effect 2 (Delayed)
@@ -191,7 +191,7 @@ class _SOSScreenState extends State<SOSScreen>
                                       shape: BoxShape.circle,
                                       color: const Color(
                                         0xFFE53935,
-                                      ).withOpacity(0.3 * (1 - value)),
+                                      ).withValues(alpha: 0.3 * (1 - value)),
                                     ),
                                   );
                                 },
@@ -207,7 +207,7 @@ class _SOSScreenState extends State<SOSScreen>
                                     BoxShadow(
                                       color: const Color(
                                         0xFFE53935,
-                                      ).withOpacity(0.5),
+                                      ).withValues(alpha: 0.5),
                                       blurRadius: 20,
                                       spreadRadius: 5,
                                     ),
@@ -382,7 +382,7 @@ class _SOSScreenState extends State<SOSScreen>
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.5)),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [

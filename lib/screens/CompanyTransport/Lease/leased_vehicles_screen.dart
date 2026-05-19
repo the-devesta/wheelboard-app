@@ -313,7 +313,7 @@ class _LeasedVehiclesScreenState extends State<LeasedVehiclesScreen> {
         border: Border.all(width: 1, color: const Color(0xFFE0E0E0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

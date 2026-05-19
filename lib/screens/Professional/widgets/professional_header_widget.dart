@@ -84,7 +84,7 @@ class ProfessionalHeaderWidget extends StatelessWidget {
                             0.1, // Responsive width (10% of screen width)
                         height: screenWidth * 0.1, // Responsive height
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(

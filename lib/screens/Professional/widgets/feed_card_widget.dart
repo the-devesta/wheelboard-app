@@ -181,7 +181,7 @@ class FeedCardWidget extends StatelessWidget {
                     height: 25,
                     decoration: BoxDecoration(
                       color: isLiked
-                          ? const Color(0xFFFF5E5E).withOpacity(0.1)
+                          ? const Color(0xFFFF5E5E).withValues(alpha: 0.1)
                           : Colors.transparent,
                       shape: BoxShape.circle,
                     ),

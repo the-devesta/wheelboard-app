@@ -215,7 +215,7 @@ class ServiceDashboardController extends GetxController {
 
       final response = await HttpHelper.postData(
         endpoint:
-            '${API.completePayment}', // Need to ensure this API constant exists
+            API.completePayment, // Need to ensure this API constant exists
         data: payload,
         headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
       );

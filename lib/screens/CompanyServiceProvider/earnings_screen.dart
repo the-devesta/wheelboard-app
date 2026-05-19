@@ -69,7 +69,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                 const SizedBox(height: 16),
                 ...data.serviceBreakdown
                     .map((s) => _buildServiceBreakdownCard(s))
-                    .toList(),
+                    ,
 
                 const SizedBox(height: 24),
 
@@ -88,7 +88,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                 const SizedBox(height: 16),
                 ...data.paymentHistory
                     .map((p) => _buildPaymentHistoryCard(p))
-                    .toList(),
+                    ,
 
                 const SizedBox(height: 24),
 
@@ -149,7 +149,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -162,7 +162,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
             'Total Earnings',
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: 4),
@@ -197,7 +197,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.white.withOpacity(0.2)
+              ? Colors.white.withValues(alpha: 0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -262,7 +262,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -455,8 +455,8 @@ class _EarningsScreenState extends State<EarningsScreen> {
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF438883).withOpacity(0.3),
-                    const Color(0xFF438883).withOpacity(0.0),
+                    const Color(0xFF438883).withValues(alpha: 0.3),
+                    const Color(0xFF438883).withValues(alpha: 0.0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,

@@ -144,7 +144,7 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
               _buildTopBar(context, trip, trackController),
 
               // 2. Map Container with Compact Height (30% of screen)
-              Container(
+              SizedBox(
                 height: MediaQuery.of(context).size.height * 0.30,
                 width: double.infinity,
                 child: GoogleMap(
@@ -179,7 +179,7 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -5),
                     ),
@@ -287,7 +287,7 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -329,8 +329,8 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
                 //   ),
                 // ),
                 Text(
-                  trip.tripCode?.isNotEmpty == true
-                      ? trip.tripCode!
+                  trip.tripCode.isNotEmpty == true
+                      ? trip.tripCode
                       : trip.tripId,
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -549,7 +549,7 @@ class _TrackTripScreenState extends State<TrackTripScreen> {
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
-                border: Border.all(color: color.withOpacity(0.2), width: 4),
+                border: Border.all(color: color.withValues(alpha: 0.2), width: 4),
               ),
             ),
             if (isStart)

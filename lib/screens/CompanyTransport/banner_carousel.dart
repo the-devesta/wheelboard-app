@@ -133,7 +133,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
               decoration: BoxDecoration(
                 color: _currentPage == index
                     ? Colors.teal
-                    : Colors.teal.withOpacity(0.4),
+                    : Colors.teal.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(20),
               ),
             );

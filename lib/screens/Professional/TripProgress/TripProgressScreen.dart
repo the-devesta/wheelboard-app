@@ -143,7 +143,7 @@ class TripProgressScreen extends StatelessWidget {
                       (isInProgress
                               ? const Color(0xFF2F80ED)
                               : const Color(0xFFFF5E5E))
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                 ),
                 child: controller.isLoading.value
                     ? const SizedBox(
@@ -199,7 +199,7 @@ class TripProgressScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -268,7 +268,7 @@ class TripProgressScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
+            color: iconColor.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: iconColor, size: 20),

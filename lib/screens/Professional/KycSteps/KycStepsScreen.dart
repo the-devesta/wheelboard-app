@@ -134,7 +134,7 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
               ),
               child: const Icon(Icons.arrow_back_ios, size: 16),
             ),
@@ -165,7 +165,7 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
             ),
             child: const Icon(Icons.notifications_outlined, size: 20),
           ),
@@ -203,7 +203,7 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
             Container(
               height: 2,
               width: 48,
-              color: const Color(0xFFFF5E5E).withOpacity(0.5),
+              color: const Color(0xFFFF5E5E).withValues(alpha: 0.5),
             ),
             // Step 2 Circle (Inactive)
             Container(
@@ -770,7 +770,7 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -874,7 +874,7 @@ class _KycStepsScreenState extends State<KycStepsScreen> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.white, const Color(0xFFF5F6FA).withOpacity(0.5)],
+          colors: [Colors.white, const Color(0xFFF5F6FA).withValues(alpha: 0.5)],
         ),
       ),
       padding: EdgeInsets.only(

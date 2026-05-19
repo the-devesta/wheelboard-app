@@ -122,7 +122,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
             _buildContent(context, bid),
             if (_showLoader)
               Container(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 child: CustomLoader(message: _loaderMessage),
               ),
           ],

@@ -128,7 +128,7 @@ class _ServiceProviderProfileScreenState
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
               ),
               child: const Icon(Icons.arrow_back_ios, size: 16),
             ),
@@ -179,7 +179,7 @@ class _ServiceProviderProfileScreenState
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
               ),
               child: const Icon(Icons.edit, size: 22),
             ),
@@ -524,7 +524,7 @@ class _ServiceProviderProfileScreenState
               ),
               borderRadius: BorderRadius.circular(28.5),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10),
               ],
             ),
             child: const Center(

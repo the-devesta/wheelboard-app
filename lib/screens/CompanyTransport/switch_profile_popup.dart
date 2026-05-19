@@ -9,7 +9,7 @@ Future<void> showSwitchProfilePopup(
     context: context,
     barrierLabel: 'Switch Profile',
     barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.35), // dim background
+    barrierColor: Colors.black.withValues(alpha: 0.35), // dim background
     pageBuilder: (_, __, ___) => const SizedBox.shrink(),
     transitionBuilder: (context, anim, _, __) {
       final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
@@ -63,7 +63,7 @@ class _SwitchProfileCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16), // rounded like screenshot
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.10),
+              color: Colors.black.withValues(alpha: 0.10),
               blurRadius: 18,
               offset: const Offset(0, 6),
             ),

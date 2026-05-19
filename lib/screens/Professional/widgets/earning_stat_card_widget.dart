@@ -34,7 +34,7 @@ class EarningStatCardWidget extends StatelessWidget {
             decoration: BoxDecoration(
               color:
                   iconBackgroundColor ??
-                  const Color(0xFF2F80ED).withOpacity(0.1),
+                  const Color(0xFF2F80ED).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 18, color: const Color(0xFF2F80ED)),

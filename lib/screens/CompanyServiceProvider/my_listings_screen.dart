@@ -162,7 +162,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.09),
+            color: Colors.black.withValues(alpha: 0.09),
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),
@@ -195,11 +195,11 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -259,7 +259,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1F2937).withOpacity(0.06),
+                        color: const Color(0xFF1F2937).withValues(alpha: 0.06),
                         blurRadius: 16,
                         offset: const Offset(0, 2),
                       ),
@@ -304,7 +304,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF1F2937).withOpacity(0.06),
+                      color: const Color(0xFF1F2937).withValues(alpha: 0.06),
                       blurRadius: 16,
                       offset: const Offset(0, 2),
                     ),
@@ -392,7 +392,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 2,
               offset: const Offset(0, 1),
             ),

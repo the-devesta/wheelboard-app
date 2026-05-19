@@ -466,7 +466,7 @@ class Signup extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFF25C5C).withOpacity(0.1),
+                    color: const Color(0xFFF25C5C).withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -640,7 +640,7 @@ class Signup extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             elevation: 0,
-            disabledBackgroundColor: const Color(0xFFF25C5C).withOpacity(0.6),
+            disabledBackgroundColor: const Color(0xFFF25C5C).withValues(alpha: 0.6),
           ),
           child: controller.isLoading.value
               ? const SizedBox(

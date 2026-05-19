@@ -365,7 +365,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
           '✅ Success',
           'Current location filled successfully',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.withOpacity(0.8),
+          backgroundColor: Colors.green.withValues(alpha: 0.8),
           colorText: Colors.white,
           duration: const Duration(seconds: 2),
         );
@@ -374,7 +374,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
           '❌ Error',
           'Could not get current location. Please check permissions.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.8),
+          backgroundColor: Colors.red.withValues(alpha: 0.8),
           colorText: Colors.white,
         );
       }
@@ -383,7 +383,7 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
         '❌ Error',
         'Failed to get location: $e',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withValues(alpha: 0.8),
         colorText: Colors.white,
       );
     } finally {

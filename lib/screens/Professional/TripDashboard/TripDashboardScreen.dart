@@ -149,7 +149,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -300,7 +300,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFDADADA).withOpacity(0.5)),
+            border: Border.all(color: const Color(0xFFDADADA).withValues(alpha: 0.5)),
           ),
           child: Column(
             children: [
@@ -436,8 +436,9 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             status == 'in progress';
       }).toList();
 
-      if (activeTrips.isEmpty && !tripController.isLoading.value)
+      if (activeTrips.isEmpty && !tripController.isLoading.value) {
         return const SizedBox.shrink();
+      }
 
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -465,8 +466,9 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
             status == 'done';
       }).toList();
 
-      if (completedTrips.isEmpty && !tripController.isLoading.value)
+      if (completedTrips.isEmpty && !tripController.isLoading.value) {
         return const SizedBox.shrink();
+      }
 
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -520,7 +522,7 @@ class _TripDashboardScreenState extends State<TripDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -835,7 +837,7 @@ class TripChartPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [color.withOpacity(0.3), color.withOpacity(0.01)],
+        colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.01)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 

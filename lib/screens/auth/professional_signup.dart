@@ -1081,7 +1081,7 @@ class _ProfessionalRegisterScreenState
               borderRadius: BorderRadius.circular(10),
             ),
             elevation: 0,
-            disabledBackgroundColor: const Color(0xFFF25C5C).withOpacity(0.6),
+            disabledBackgroundColor: const Color(0xFFF25C5C).withValues(alpha: 0.6),
           ),
           child: controller.isLoading.value
               ? const SizedBox(

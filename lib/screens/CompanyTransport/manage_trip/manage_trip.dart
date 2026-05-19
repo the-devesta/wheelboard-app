@@ -148,12 +148,12 @@ class ManageTrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(4, 0),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.29),
+            color: Colors.black.withValues(alpha: 0.29),
             blurRadius: 4,
             offset: const Offset(0, 4),
           ),
@@ -206,7 +206,7 @@ class ManageTrip extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.21),
+                        color: Colors.black.withValues(alpha: 0.21),
                         blurRadius: 4,
                         offset: const Offset(0, 6),
                       ),

@@ -112,8 +112,9 @@ class AssignedTripController extends GetxController {
 
             // Sort trips by distance (nearest first)
             trips.sort((a, b) {
-              if (a.calculatedDistance == null && b.calculatedDistance == null)
+              if (a.calculatedDistance == null && b.calculatedDistance == null) {
                 return 0;
+              }
               if (a.calculatedDistance == null) return 1;
               if (b.calculatedDistance == null) return -1;
               return a.calculatedDistance!.compareTo(b.calculatedDistance!);

@@ -348,9 +348,4 @@ class LeaseController extends GetxController {
     };
   }
 
-  @override
-  void onInit() {
-    super.onInit();
-    // fetchLeaseList(); // Optional: fetch on init if needed
-  }
 }

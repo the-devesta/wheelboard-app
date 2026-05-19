@@ -36,7 +36,7 @@ class TransactionSummaryController extends GetxController {
   Future<void> getTransactionData({int? purposeId}) async {
     try {
       isLoading.value = true;
-      selectedPurposeId?.value = purposeId;
+      selectedPurposeId.value = purposeId;
       final userId = _authService.userId;
 
       final response = await HttpHelper.getData(

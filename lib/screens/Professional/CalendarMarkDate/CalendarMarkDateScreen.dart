@@ -399,7 +399,7 @@ class _CalendarMarkDateScreenState extends State<CalendarMarkDateScreen> {
                                                     ? const Color(0xFF34C759)
                                                     : const Color(
                                                         0xFF787880,
-                                                      ).withOpacity(0.16),
+                                                      ).withValues(alpha: 0.16),
                                                 borderRadius:
                                                     BorderRadius.circular(100),
                                               ),

@@ -336,7 +336,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
               : null;
 
           return DropdownButtonFormField<String>(
-            value: currentValue,
+            initialValue: currentValue,
             hint: Text(
               "Select Vehicle",
               style: TextStyle(
@@ -403,7 +403,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
               : null;
 
           return DropdownButtonFormField<String>(
-            value: currentValue,
+            initialValue: currentValue,
             hint: Text(
               "Select Driver",
               style: TextStyle(
@@ -478,7 +478,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
           '✅ Success',
           'Current location filled successfully',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.withOpacity(0.8),
+          backgroundColor: Colors.green.withValues(alpha: 0.8),
           colorText: Colors.white,
           duration: const Duration(seconds: 2),
         );
@@ -487,7 +487,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
           '❌ Error',
           'Could not get current location.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.8),
+          backgroundColor: Colors.red.withValues(alpha: 0.8),
           colorText: Colors.white,
         );
       }
@@ -496,7 +496,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
         '❌ Error',
         'Failed to get location: $e',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withValues(alpha: 0.8),
         colorText: Colors.white,
       );
     } finally {

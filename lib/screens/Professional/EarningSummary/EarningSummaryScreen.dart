@@ -96,7 +96,7 @@ class EarningSummaryScreen extends StatelessWidget {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2F80ED).withOpacity(0.1),
+                                color: const Color(0xFF2F80ED).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(

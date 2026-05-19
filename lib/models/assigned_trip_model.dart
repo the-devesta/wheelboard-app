@@ -240,7 +240,7 @@ class AssignedTrip {
       bidId: bidId ?? this.bidId,
       bidAmount: bidAmount ?? this.bidAmount,
       bidDescription: bidDescription ?? this.bidDescription,
-      driverImagePath: driverImagePath ?? this.driverImagePath,
+      driverImagePath: driverImagePath ?? driverImagePath,
       platformFee: platformFee ?? this.platformFee,
       amountToDriver: amountToDriver ?? this.amountToDriver,
       totalTripCost: totalTripCost ?? this.totalTripCost,

@@ -154,7 +154,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
                 ),
               ),
             ),
@@ -224,7 +224,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           const SizedBox(height: 8),
           Chip(
             label: Text(businessType),
-            backgroundColor: const Color(0xFFF36969).withOpacity(0.1),
+            backgroundColor: const Color(0xFFF36969).withValues(alpha: 0.1),
             labelStyle: const TextStyle(color: Color(0xFFF36969)),
           ),
         ],
@@ -368,7 +368,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF36969).withOpacity(0.05),
+            color: const Color(0xFFF36969).withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

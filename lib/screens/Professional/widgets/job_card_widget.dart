@@ -41,7 +41,7 @@ class JobCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -186,7 +186,7 @@ class JobCardWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: isApplying
-              ? const Color(0xFFFFD500).withOpacity(0.6)
+              ? const Color(0xFFFFD500).withValues(alpha: 0.6)
               : const Color(0xFFFFD500), // Yellow
           borderRadius: BorderRadius.circular(9999),
         ),

@@ -15,9 +15,9 @@ class BannerHeaderWidget extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF003366).withOpacity(0.9), // Dark blue
-            const Color(0xFF003366).withOpacity(0.7),
-            Colors.black.withOpacity(0),
+            const Color(0xFF003366).withValues(alpha: 0.9), // Dark blue
+            const Color(0xFF003366).withValues(alpha: 0.7),
+            Colors.black.withValues(alpha: 0),
           ],
         ),
       ),
@@ -40,8 +40,8 @@ class BannerHeaderWidget extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.topRight,
                 colors: [
-                  const Color(0xFF003366).withOpacity(0.9),
-                  Colors.black.withOpacity(0),
+                  const Color(0xFF003366).withValues(alpha: 0.9),
+                  Colors.black.withValues(alpha: 0),
                 ],
               ),
             ),

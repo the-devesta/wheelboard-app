@@ -109,7 +109,7 @@ class _ViewDriverScreenState extends State<ViewDriverScreen> {
         if (driver.driverImagePath != null &&
             driver.driverImagePath!.isNotEmpty) {
           final imagePath = driver.driverImagePath!.trim();
-          if (imagePath.isNotEmpty && imagePath != '${ApiConstants.baseUrl}') {
+          if (imagePath.isNotEmpty && imagePath != ApiConstants.baseUrl) {
             driverImageUrl = imagePath.startsWith('http')
                 ? imagePath
                 : ApiConstants.baseUrl + imagePath;
@@ -201,7 +201,7 @@ class _ViewDriverScreenState extends State<ViewDriverScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF36969).withOpacity(0.1),
+                          color: const Color(0xFFF36969).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -235,7 +235,7 @@ class _ViewDriverScreenState extends State<ViewDriverScreen> {
                                 decoration: BoxDecoration(
                                   color: const Color(
                                     0xFF00B894,
-                                  ).withOpacity(0.1),
+                                  ).withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -280,7 +280,7 @@ class _ViewDriverScreenState extends State<ViewDriverScreen> {
                                 decoration: BoxDecoration(
                                   color: const Color(
                                     0xFF00B894,
-                                  ).withOpacity(0.1),
+                                  ).withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(

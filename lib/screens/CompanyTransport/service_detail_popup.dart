@@ -303,7 +303,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: !_isManualEntry
-                                      ? const Color(0xFFF36969).withOpacity(0.1)
+                                      ? const Color(0xFFF36969).withValues(alpha: 0.1)
                                       : Colors.grey.shade100,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
@@ -339,7 +339,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: _isManualEntry
-                                      ? const Color(0xFFF36969).withOpacity(0.1)
+                                      ? const Color(0xFFF36969).withValues(alpha: 0.1)
                                       : Colors.grey.shade100,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(

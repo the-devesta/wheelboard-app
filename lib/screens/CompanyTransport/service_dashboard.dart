@@ -104,12 +104,12 @@ class ServiceDashboardScreen extends StatelessWidget {
 
 ServiceCardData mapToCard(AssignedServiceModel s) {
   return ServiceCardData(
-    title: s.serviceTitle!,
+    title: s.serviceTitle,
     subtitle: s.description,
     tag: s.category,
     tagColor: s.category == "" ? Colors.white : Colors.cyan.shade200,
     tagTextColor: Colors.black,
-    meta: "${s.scheduledDate.toLocal().toString().split(' ').first}",
+    meta: s.scheduledDate.toLocal().toString().split(' ').first,
     status: s.status,
     assignedId: s.assignmentId,
     model: s,
@@ -514,7 +514,7 @@ class _TimelineCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -709,7 +709,6 @@ class _TaskProgress extends StatelessWidget {
   final ServiceDashboardController controller;
 
   const _TaskProgress({
-    super.key,
     required this.data,
     required this.controller,
   });

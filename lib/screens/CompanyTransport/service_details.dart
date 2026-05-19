@@ -125,7 +125,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
             ),
             if (isLoading)
               Container(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 child: const CustomLoader.small(),
               ),
           ],
@@ -211,7 +211,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00B894).withOpacity(0.15),
+                  color: const Color(0xFF00B894).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

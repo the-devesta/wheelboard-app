@@ -330,7 +330,7 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                               color: _selectedCategory == 'Trip'
                                                   ? const Color(
                                                       0xFF735BF2,
-                                                    ).withOpacity(0.07)
+                                                    ).withValues(alpha: 0.07)
                                                   : Colors.transparent,
                                               borderRadius:
                                                   BorderRadius.circular(11),
@@ -380,7 +380,7 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                               color: _selectedCategory == 'Job'
                                                   ? const Color(
                                                       0xFF735BF2,
-                                                    ).withOpacity(0.07)
+                                                    ).withValues(alpha: 0.07)
                                                   : Colors.transparent,
                                               borderRadius:
                                                   BorderRadius.circular(11),
@@ -457,7 +457,7 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                                     ? const Color(0xFF34C759)
                                                     : const Color(
                                                         0xFF787880,
-                                                      ).withOpacity(0.16),
+                                                      ).withValues(alpha: 0.16),
                                                 borderRadius:
                                                     BorderRadius.circular(100),
                                               ),

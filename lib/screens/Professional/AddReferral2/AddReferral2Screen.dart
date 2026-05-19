@@ -65,7 +65,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                       ),
                       child: const Icon(Icons.arrow_back_ios, size: 16),
                     ),
@@ -88,7 +88,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withValues(alpha: 0.1),
                     ),
                     child: const Icon(Icons.more_vert, size: 22),
                   ),
@@ -239,7 +239,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(
                                   0xFFEC0000,
-                                ).withOpacity(0.6),
+                                ).withValues(alpha: 0.6),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),

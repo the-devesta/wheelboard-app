@@ -225,7 +225,7 @@ class _BidsScreenState extends State<BidsScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -276,7 +276,7 @@ class _BidsScreenState extends State<BidsScreen> {
                       borderRadius: BorderRadius.circular(4),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.21),
+                          color: Colors.black.withValues(alpha: 0.21),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -365,7 +365,7 @@ class _BidsScreenState extends State<BidsScreen> {
                     color: const Color(0xFFF4E3E3),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: Colors.grey.withOpacity(0.44),
+                      color: Colors.grey.withValues(alpha: 0.44),
                       width: 0.5,
                     ),
                   ),

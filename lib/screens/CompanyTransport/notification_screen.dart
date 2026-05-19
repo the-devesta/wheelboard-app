@@ -54,7 +54,7 @@ class NotificationScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -114,7 +114,7 @@ class NotificationScreen extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: controller.unreadCount > 0
-                              ? const Color(0xFFFF6B6B).withOpacity(0.1)
+                              ? const Color(0xFFFF6B6B).withValues(alpha: 0.1)
                               : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -190,15 +190,15 @@ class NotificationScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isUnread
-                ? const Color(0xFFFF6B6B).withOpacity(0.3)
+                ? const Color(0xFFFF6B6B).withValues(alpha: 0.3)
                 : const Color(0xFFF3F4F6),
             width: isUnread ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color: isUnread
-                  ? const Color(0xFFFF6B6B).withOpacity(0.08)
-                  : Colors.black.withOpacity(0.03),
+                  ? const Color(0xFFFF6B6B).withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -215,7 +215,7 @@ class NotificationScreen extends StatelessWidget {
                 height: 52,
                 decoration: BoxDecoration(
                   color: isUnread
-                      ? const Color(0xFFFF6B6B).withOpacity(0.1)
+                      ? const Color(0xFFFF6B6B).withValues(alpha: 0.1)
                       : Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(14),
                 ),

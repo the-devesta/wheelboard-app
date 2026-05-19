@@ -59,7 +59,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 driver.driverImagePath!.isNotEmpty) {
               final imagePath = driver.driverImagePath!.trim();
               if (imagePath.isNotEmpty &&
-                  imagePath != '${ApiConstants.baseUrl}') {
+                  imagePath != ApiConstants.baseUrl) {
                 driverImageUrl = imagePath.startsWith('http')
                     ? imagePath
                     : ApiConstants.baseUrl + imagePath;
@@ -397,7 +397,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.orange.withOpacity(0.2),
+                                  color: Colors.orange.withValues(alpha: 0.2),
                                   blurRadius: 6,
                                   offset: const Offset(0, 4),
                                 ),

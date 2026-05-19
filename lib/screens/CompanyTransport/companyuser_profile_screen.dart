@@ -176,7 +176,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
               ),
               child: const Icon(Icons.arrow_back_ios, size: 16),
             ),
@@ -200,7 +200,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
               ),
               child: const Icon(Icons.edit, size: 22),
             ),

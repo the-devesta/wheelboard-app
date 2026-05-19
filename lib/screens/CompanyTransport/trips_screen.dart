@@ -674,7 +674,7 @@ class _TripPageState extends State<TripPage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: tagColor.withOpacity(0.1),
+              color: tagColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: tagColor),
             ),
@@ -806,7 +806,7 @@ class _TripPageState extends State<TripPage>
                     border: Border.all(color: Colors.grey[300]!),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -912,7 +912,7 @@ class _TripPageState extends State<TripPage>
                         '✅ Filters Applied',
                         'Showing filtered trips',
                         snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: Colors.green.withOpacity(0.8),
+                        backgroundColor: Colors.green.withValues(alpha: 0.8),
                         colorText: Colors.white,
                         duration: const Duration(seconds: 2),
                       );
@@ -956,7 +956,7 @@ class _TripPageState extends State<TripPage>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -1233,7 +1233,7 @@ class _UpcomingTripCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.9),
+                    color: statusColor.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -1563,7 +1563,7 @@ class _TripTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: statusColor),
               ),
@@ -1684,7 +1684,7 @@ class _TripTile extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: Colors.green.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

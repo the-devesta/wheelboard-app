@@ -114,7 +114,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF6C7278).withOpacity(0.87),
+                      color: const Color(0xFF6C7278).withValues(alpha: 0.87),
                       letterSpacing: -0.24,
                     ),
                   ),
@@ -247,7 +247,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                 fontWeight: FontWeight.w500,
                                 color: const Color(
                                   0xFF6C7278,
-                                ).withOpacity(0.87),
+                                ).withValues(alpha: 0.87),
                                 letterSpacing: -0.24,
                               ),
                               textAlign: TextAlign.right,
@@ -263,7 +263,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                             borderRadius: BorderRadius.circular(50),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: Colors.black.withValues(alpha: 0.3),
                                 blurRadius: 3,
                                 offset: const Offset(3, 3),
                               ),
@@ -308,7 +308,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                   fontWeight: FontWeight.w500,
                                   color: const Color(
                                     0xFF6C7278,
-                                  ).withOpacity(0.87),
+                                  ).withValues(alpha: 0.87),
                                   letterSpacing: -0.24,
                                   height: 1.6,
                                 ),

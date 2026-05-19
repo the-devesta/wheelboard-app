@@ -535,7 +535,7 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
               borderRadius: BorderRadius.circular(10),
             ),
             elevation: 0,
-            disabledBackgroundColor: const Color(0xFFF25C5C).withOpacity(0.6),
+            disabledBackgroundColor: const Color(0xFFF25C5C).withValues(alpha: 0.6),
           ),
           child: profileController.isLoading.value
               ? const SizedBox(

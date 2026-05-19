@@ -161,11 +161,11 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.87),
+                        color: Colors.white.withValues(alpha: 0.87),
                         borderRadius: BorderRadius.circular(9999),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -233,7 +233,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 2,
                             offset: const Offset(0, 1),
                           ),
@@ -563,7 +563,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.white.withOpacity(0.5),
+                                          color: Colors.white.withValues(alpha: 0.5),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -614,7 +614,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                       borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.white.withOpacity(0.5),
+                                          color: Colors.white.withValues(alpha: 0.5),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -748,7 +748,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                 borderRadius: BorderRadius.circular(9999),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
+                                    color: Colors.black.withValues(alpha: 0.05),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   ),
@@ -930,7 +930,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.25),
+                      color: Colors.black.withValues(alpha: 0.25),
                       blurRadius: 4,
                       offset: const Offset(0, 3),
                     ),
@@ -1044,10 +1044,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           decoration: BoxDecoration(
             color: isSelected
                 ? (index == 1
-                      ? color.withOpacity(0.1)
+                      ? color.withValues(alpha: 0.1)
                       : index == 0
                       ? Colors.transparent
-                      : color.withOpacity(0.1))
+                      : color.withValues(alpha: 0.1))
                 : Colors.transparent,
             border: isSelected && index == 1
                 ? Border.all(color: color, width: 1)
@@ -1123,7 +1123,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1147,7 +1147,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 18, color: color),
@@ -1180,7 +1180,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1255,7 +1255,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         border: Border.all(color: const Color(0xFFE4E8EB), width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.09),
+            color: Colors.black.withValues(alpha: 0.09),
             blurRadius: 6,
             offset: const Offset(0, -1),
           ),

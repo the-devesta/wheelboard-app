@@ -143,7 +143,7 @@ class YourProfileScreen extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
               ),
               child: const Icon(Icons.arrow_back_ios, size: 16),
             ),
@@ -169,7 +169,7 @@ class YourProfileScreen extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
               ),
               child: const Icon(Icons.edit, size: 22),
             ),
@@ -719,7 +719,7 @@ Widget _buildKycItem(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
@@ -741,7 +741,7 @@ Widget _buildKycItem(
             height: 36,
             decoration: BoxDecoration(
               color: status == 'Missing'
-                  ? Colors.red.withOpacity(0.1)
+                  ? Colors.red.withValues(alpha: 0.1)
                   : const Color(0xFFF5F5F5),
               shape: BoxShape.circle,
             ),
@@ -927,7 +927,7 @@ Widget _buildQuickActions() {
                 height: 88,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF5E5E).withOpacity(0.1),
+                  color: const Color(0xFFFF5E5E).withValues(alpha: 0.1),
                   border: Border.all(color: const Color(0xFFFF5E5E)),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1565,7 +1565,7 @@ Future<void> _verifyDrivingLicense(
         errorMessage.contains("<html>")) {
       errorMessage = "Server error occurred. Please check your inputs.";
     } else if (errorMessage.length > 200) {
-      errorMessage = errorMessage.substring(0, 200) + "...";
+      errorMessage = "${errorMessage.substring(0, 200)}...";
     }
 
     SnackBarHelper.error('Failed to verify: $errorMessage');

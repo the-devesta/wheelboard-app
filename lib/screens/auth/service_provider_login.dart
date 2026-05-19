@@ -925,7 +925,7 @@ class _AlliedBusinessRegistrationScreenState
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF5A5F),
-              disabledBackgroundColor: const Color(0xFFFF5A5F).withOpacity(0.6),
+              disabledBackgroundColor: const Color(0xFFFF5A5F).withValues(alpha: 0.6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

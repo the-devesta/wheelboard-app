@@ -67,7 +67,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
       licenseNumberController.text = driver.dlNo ?? '';
       _selectedDob = driver.dateOfBirth;
       String dob = _formatDate(_selectedDob!);
-      debugPrint('${dob} dob===>>>');
+      debugPrint('$dob dob===>>>');
       dobController.text = dob;
       // ✅ Only set selectedVehicleType if it's in the valid list
       final vehicleType = driver.vehicleType;

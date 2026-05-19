@@ -96,7 +96,7 @@ class NewReferralController extends GetxController {
         "referralDate": DateTime.now().toIso8601String(),
       };
 
-      debugPrint('data===>>>${requestData}');
+      debugPrint('data===>>>$requestData');
       AppLogger.d(requestData.toString());
 
       debugPrint('hereeeee22====>>');
