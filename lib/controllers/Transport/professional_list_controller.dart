@@ -1,16 +1,13 @@
-import 'dart:convert';
-
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-
-import '../../apihelperclass/api_helper.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
 import '../../models/professional_profile_model.dart';
-import '../../utils/constants.dart';
-import '../../utils/session_manager.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
 
 class ProfessionalListController extends GetxController {
-  final SessionManager _sessionManager = SessionManager();
-
   final professionals = <ProfessionalProfile>[].obs;
   final isLoading = false.obs;
   final isDetailsLoading = false.obs;
@@ -27,11 +24,12 @@ class ProfessionalListController extends GetxController {
   }
 
   Future<void> _loadCompanyAndFetch() async {
-    _companyId ??= await _sessionManager.getString('userId');
-    if (_companyId == null) {
+    final userId = AuthService.to.currentUserId;
+    if (userId.isEmpty) {
       SnackBarHelper.error('User information missing. Please login again.');
       return;
     }
+    _companyId = userId;
     await fetchProfessionalList();
   }
 
@@ -40,30 +38,25 @@ class ProfessionalListController extends GetxController {
 
     try {
       isLoading.value = true;
-      final response = await HttpHelper.getData(
-        endpoint: '${API.professionalList}${_companyId!}',
-        headers: const {'accept': '*/*'},
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.fleet.professionalList(_companyId!),
       );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        final items = data
-            .map(
-              (json) =>
-                  ProfessionalProfile.fromJson(json as Map<String, dynamic>),
-            )
-            .toList();
+      final items = data
+          .map(
+            (json) =>
+                ProfessionalProfile.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
 
-        professionals.assignAll(items);
+      professionals.assignAll(items);
 
-        for (final professional in items) {
-          favoriteStatus.putIfAbsent(professional.driverId, () => false);
-        }
-      } else {
-        SnackBarHelper.error(
-          'Failed to load professionals (${response.statusCode})',
-        );
+      for (final professional in items) {
+        favoriteStatus.putIfAbsent(professional.driverId, () => false);
       }
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load professionals';
+      SnackBarHelper.error(msg);
     } catch (e) {
       SnackBarHelper.error('Unable to load professionals: $e');
     } finally {
@@ -74,14 +67,12 @@ class ProfessionalListController extends GetxController {
   Future<ProfessionalProfile?> fetchProfessionalDetails(String driverId) async {
     try {
       isDetailsLoading.value = true;
-      final response = await HttpHelper.getData(
-        endpoint: '${API.professionalDetails}$driverId',
-        headers: const {'accept': '*/*'},
+      final data = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.fleet.professionalDetails(driverId),
       );
 
-      if (response.statusCode == 200 && response.body.isNotEmpty) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return ProfessionalProfile.fromJson(data);
+      if (data != null && data != "") {
+        return ProfessionalProfile.fromJson(data as Map<String, dynamic>);
       } else {
         SnackBarHelper.error('Failed to load professional details');
       }

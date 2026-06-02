@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/core/network/api_client.dart';
+import 'package:wheelboard/core/network/api_endpoints.dart';
 import 'package:wheelboard/utils/constants.dart';
 import 'package:wheelboard/widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
@@ -37,20 +37,12 @@ class _FleetUserprofileState extends State<FleetUserprofile> {
     }
 
     try {
-      final endpoint = 'api/Post/CompProfile/${widget.companyId}';
-      AppLogger.d('📡 Calling API: $endpoint');
-
-      final response = await HttpHelper.getData(
-        endpoint: endpoint,
-        headers: {'Accept': '*/*'},
+      final data = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.users.publicProfile(widget.companyId!),
       );
 
-      AppLogger.d('📥 Response Status: ${response.statusCode}');
-      AppLogger.d('📥 Response Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        AppLogger.d('✅ Profile data decoded successfully: $data');
+      if (data is Map<String, dynamic>) {
+        AppLogger.d('✅ Profile data loaded successfully');
         if (mounted) {
           setState(() {
             _profileData = data;
@@ -58,8 +50,7 @@ class _FleetUserprofileState extends State<FleetUserprofile> {
           });
         }
       } else {
-        AppLogger.d('❌ Failed to fetch profile: ${response.statusCode}');
-        AppLogger.d('❌ Error Body: ${response.body}');
+        AppLogger.d('❌ Failed to fetch profile format');
         if (mounted) setState(() => _isLoading = false);
       }
     } catch (e, stackTrace) {
@@ -84,13 +75,18 @@ class _FleetUserprofileState extends State<FleetUserprofile> {
       );
     }
 
-    // Extract data
-    final profileName = _profileData!['profileName'] ?? 'Unknown';
-    final email = _profileData!['email'] ?? '';
-    final phone = _profileData!['phone'] ?? '';
-    final address = _profileData!['address'] ?? '';
-    final rawImage = _profileData!['profileImage'] ?? '';
-    final profileType = _profileData!['profileType'] ?? 'Company';
+    // Backend returns { id, email, role, profile: { companyName, address, logo, ... } }
+    final profile = _profileData!['profile'] as Map<String, dynamic>? ?? {};
+    final profileName = profile['companyName']?.toString()
+        ?? profile['businessName']?.toString()
+        ?? profile['fullName']?.toString()
+        ?? _profileData!['profileName']?.toString()
+        ?? 'Unknown';
+    final email = _profileData!['email']?.toString() ?? profile['email']?.toString() ?? '';
+    final phone = profile['mobileNo']?.toString() ?? profile['phoneNumber']?.toString() ?? _profileData!['phone']?.toString() ?? '';
+    final address = profile['address']?.toString() ?? _profileData!['address']?.toString() ?? '';
+    final rawImage = profile['logo']?.toString() ?? profile['profileImage']?.toString() ?? profile['avatar']?.toString() ?? _profileData!['profileImage']?.toString() ?? '';
+    final profileType = _profileData!['role']?.toString() ?? _profileData!['profileType']?.toString() ?? 'Company';
 
     // Process Image URL
     String profileImageUrl = 'https://i.pravatar.cc/150?img=12';

@@ -1,18 +1,35 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../utils/error_handler.dart';
-import '../../services/auth_service.dart';
-import 'package:http/http.dart' as http;
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
+import '../../models/feed_model.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/custom_snackbar.dart';
 
+// Re-export the feed models so existing `import '.../post_controller.dart'`
+// consumers keep seeing `Post` / `FeedComment` / `FeedAuthor`.
+export '../../models/feed_model.dart';
+
+/// Canonical feed controller. A 1:1 mirror of the FE `feedsAPI`
+/// (`wheelboard-fe/src/lib/api.ts`) and `useFeeds` hook.
+///
+/// All requests are JSON and derive the user from the auth token — no `userId`
+/// is sent in any body (the backend rejects non-whitelisted fields).
 class PostController extends GetxController {
   var isLoading = false.obs;
-  var posts = <Post>[].obs;
   var isCreatingPost = false.obs;
+  var posts = <Post>[].obs;
+  var stats = Rxn<FeedStats>();
+
+  // Pagination + filtering (mirrors the FE feed list).
+  var selectedCategory = 'all'.obs;
+  var page = 1.obs;
+  var totalPages = 1.obs;
+  var total = 0.obs;
 
   @override
   void onInit() {
@@ -21,12 +38,77 @@ class PostController extends GetxController {
   }
 
   Future<void> _initWithAuth() async {
-    // Ensure auth state is fresh (fixes empty userType issue)
     await AuthService.to.refreshLoginStatus();
-    fetchUserPosts();
+    await fetchFeeds();
+    fetchStats();
   }
 
-  /// Create a new post
+  /// GET /feeds — paginated, optional category filter.
+  Future<void> fetchFeeds({String? category, int page = 1}) async {
+    try {
+      isLoading.value = true;
+
+      final cat = category ?? selectedCategory.value;
+      final params = <String, dynamic>{
+        'page': page,
+        'limit': 20,
+        if (cat.isNotEmpty && cat != 'all') 'category': cat,
+      };
+
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.feeds.list,
+        queryParameters: params,
+      );
+
+      final feedsList = data['feeds'] as List<dynamic>? ?? [];
+      posts.value = feedsList
+          .whereType<Map<String, dynamic>>()
+          .map(Post.fromJson)
+          .toList();
+      this.page.value = (data['page'] as num?)?.toInt() ?? page;
+      totalPages.value = (data['totalPages'] as num?)?.toInt() ?? 1;
+      total.value = (data['total'] as num?)?.toInt() ?? posts.length;
+      selectedCategory.value = cat;
+      AppLogger.d("✅ Fetched ${posts.length} feeds (category: $cat)");
+    } on dio.DioException catch (e) {
+      AppLogger.e("❌ Failed to fetch feeds: ${_msg(e)}");
+    } catch (e) {
+      AppLogger.e("❌ Error fetching feeds: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// GET /feeds/stats — community statistics.
+  Future<void> fetchStats() async {
+    try {
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.feeds.stats,
+      );
+      stats.value = FeedStats.fromJson(data);
+    } catch (e) {
+      AppLogger.d("ℹ️ Failed to fetch feed stats: $e");
+    }
+  }
+
+  /// Filter the feed by category ('all' clears the filter).
+  Future<void> setCategory(String category) async {
+    await fetchFeeds(category: category, page: 1);
+  }
+
+  /// POST /feeds/upload-image — base64 → hosted URL.
+  Future<String?> uploadImage(File file) async {
+    final bytes = await file.readAsBytes();
+    final dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    final data = await ApiClient.instance.post<Map<String, dynamic>>(
+      ApiEndpoints.feeds.uploadImage,
+      data: {'image': dataUrl},
+    );
+    return data['url']?.toString();
+  }
+
+  /// Create a feed post. Mirrors the FE flow: upload the image first (if any)
+  /// to get a hosted URL, then POST /feeds with JSON `{content, image, category}`.
   Future<bool> createPost({
     required String content,
     required String category,
@@ -35,288 +117,225 @@ class PostController extends GetxController {
     try {
       isCreatingPost.value = true;
 
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-      final token = authService.currentToken;
-
-      if (userId.isEmpty || token.isEmpty) {
-        Get.snackbar("Error", "Please login to create a post");
-        return false;
+      String? imageUrl;
+      if (images != null && images.isNotEmpty) {
+        imageUrl = await uploadImage(images.first);
       }
 
-      // Prepare fields - only send what Swagger shows (UserId, Content, Category, Images)
-      Map<String, String> fields = {
-        'UserId': userId,
-        'Content': content,
-        'Category': category,
-      };
-
-      // Always use multipart/form-data as per Swagger
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.createPost,
-        fields: fields,
-        files: images ?? [], // Empty list if no images
-        fieldKey: 'Images', // Field name for images
-        headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
+      final feed = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiEndpoints.feeds.create,
+        data: {
+          'content': content,
+          'category': category,
+          if (imageUrl != null && imageUrl.isNotEmpty) 'image': imageUrl,
+        },
       );
 
-      final response = await http.Response.fromStream(streamedResponse);
-
-      AppLogger.d("📝 Post creation response status: ${response.statusCode}");
-      AppLogger.d("📝 Post creation response body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body);
-        if (data['success'] == true ||
-            (data['message'] != null &&
-                data['message'].toString().toLowerCase().contains('success'))) {
-          Get.snackbar(
-            "Success",
-            "Post created successfully!",
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
-          await fetchUserPosts(); // Refresh posts
-          return true;
-        }
-      }
-      // Use ErrorHandler for proper error message
-      final errorMsg = ErrorHandler.parseError(
-        response.body,
-        statusCode: response.statusCode,
-      );
-      Get.snackbar(
-        "Error",
-        errorMsg,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      posts.insert(0, Post.fromJson(feed));
+      total.value += 1;
+      fetchStats();
+      SnackBarHelper.success("Post created successfully!");
+      return true;
+    } on dio.DioException catch (e) {
+      AppLogger.e("❌ Error creating post: $e");
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to create post'));
       return false;
     } catch (e) {
-      AppLogger.d("❌ Error creating post: $e");
-      final errorMsg = ErrorHandler.handleNetworkError(e);
-      Get.snackbar(
-        "Error",
-        errorMsg,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      AppLogger.e("❌ Error creating post: $e");
+      SnackBarHelper.error("Failed to create post: $e");
       return false;
     } finally {
       isCreatingPost.value = false;
     }
   }
 
-  /// Fetch user posts
-  Future<void> fetchUserPosts() async {
+  /// PATCH /feeds/:id — update own post (content / category / image URL).
+  Future<bool> updateFeed(
+    String id, {
+    String? content,
+    String? category,
+    String? image,
+  }) async {
     try {
-      isLoading.value = true;
-
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-      final token = authService.currentToken;
-
-      if (userId.isEmpty || token.isEmpty) {
-        AppLogger.d("⚠️ User not logged in, cannot fetch posts");
-        return;
-      }
-
-      final response = await HttpHelper.getData(
-        endpoint: API.getAllPost,
-        headers: {'Authorization': 'Bearer $token', 'Accept': '*/*'},
-      );
-
-      AppLogger.d("📝 Fetch posts response status: ${response.statusCode}");
-      AppLogger.d("📝 Fetch posts response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        posts.value = data.map((e) => Post.fromJson(e)).toList();
-        AppLogger.d("✅ Fetched ${posts.length} posts");
-      } else {
-        AppLogger.d("❌ Failed to fetch posts: ${response.statusCode}");
-        Get.snackbar("Error", "Failed to load posts");
-      }
-    } catch (e) {
-      AppLogger.d("❌ Error fetching posts: $e");
-      Get.snackbar("Error", "Failed to load posts: ${e.toString()}");
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  /// Refresh posts
-  Future<void> refreshPosts() async {
-    await fetchUserPosts();
-  }
-
-  /// Toggle like on a post
-  Future<bool> togglePostLike(String postId) async {
-    try {
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-      final userId = authService.currentUserId;
-
-      if (token.isEmpty || userId.isEmpty) {
-        Get.snackbar("Error", "Please login to like posts");
-        return false;
-      }
-
-      AppLogger.d("👍 Toggling like for post: $postId");
-      AppLogger.d("👍 User ID: $userId");
-
-      // 🔧 FIX: Send postId and userId as query parameters (not body)
-      final endpoint = '${API.togglePostLike}?postId=$postId&userId=$userId';
-
-      final response = await HttpHelper.postData(
-        endpoint: endpoint,
-        data: {}, // Empty body
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': '*/*',
+      final feed = await ApiClient.instance.patch<Map<String, dynamic>>(
+        ApiEndpoints.feeds.update(id),
+        data: {
+          if (content != null) 'content': content,
+          if (category != null) 'category': category,
+          if (image != null) 'image': image,
         },
       );
-
-      AppLogger.d(
-        "👍 Toggle post like response status: ${response.statusCode}",
-      );
-      AppLogger.d("👍 Toggle post like response body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final postIndex = posts.indexWhere((post) => post.postId == postId);
-        if (postIndex != -1) {
-          final post = posts[postIndex];
-          // Toggle the like status and update count
-          final newIsLiked = !post.isLiked;
-          final newLikeCount = newIsLiked
-              ? post.likeCount + 1
-              : (post.likeCount > 0 ? post.likeCount - 1 : 0);
-
-          // Create updated post using copyWith
-          final updatedPost = post.copyWith(
-            likeCount: newLikeCount,
-            isLiked: newIsLiked,
-          );
-
-          // Update the post in the list - create new list to trigger GetX reactivity
-          final updatedPosts = List<Post>.from(posts);
-          updatedPosts[postIndex] = updatedPost;
-          posts.value = updatedPosts;
-          posts.refresh(); // Force refresh to ensure UI updates
-          AppLogger.d("✅ Successfully toggled like for post: $postId");
-        }
-        return true;
-      } else {
-        AppLogger.d("❌ Failed to toggle post like: ${response.statusCode}");
-        try {
-          final errorData = json.decode(response.body);
-          final errorMessage =
-              errorData['message'] ??
-              errorData['error'] ??
-              "Failed to toggle like";
-          Get.snackbar("Error", errorMessage);
-        } catch (e) {
-          Get.snackbar("Error", "Failed to toggle like");
-        }
-        return false;
-      }
+      _replacePost(Post.fromJson(feed));
+      SnackBarHelper.success("Post updated");
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to update post'));
+      return false;
     } catch (e) {
-      AppLogger.d("❌ Error toggling post like: $e");
-      Get.snackbar("Error", "Failed to toggle like: ${e.toString()}");
+      SnackBarHelper.error("Failed to update post: $e");
       return false;
     }
   }
-}
 
-/// Post Model
-class Post {
-  final String postId;
-  final String content;
-  final String category;
-  final String status;
-  final List<String> imageUrls;
-  final DateTime dateEntered;
-  final String userName;
-  final String? companyId;
-  final String? companyLogo;
-  final int likeCount;
-  final bool isLiked;
-
-  Post({
-    required this.postId,
-    required this.content,
-    required this.category,
-    required this.status,
-    required this.imageUrls,
-    required this.dateEntered,
-    required this.userName,
-    required this.companyId,
-    this.companyLogo,
-    this.likeCount = 0,
-    this.isLiked = false,
-  });
-
-  factory Post.fromJson(Map<String, dynamic> json) {
-    return Post(
-      postId: json['postId'] ?? '',
-      content: json['content'] ?? '',
-      category: json['category'] ?? '',
-      status: json['status'] ?? '',
-      imageUrls: json['imageUrls'] != null
-          ? List<String>.from(json['imageUrls'])
-          : [],
-      dateEntered: json['dateEntered'] != null
-          ? DateTime.parse(json['dateEntered'])
-          : DateTime.now(),
-      userName: json['userName'] ?? '',
-      companyId: json['companyId'] as String?,
-      companyLogo: json['companyLogo'] as String?,
-      likeCount: json['likeCount'] ?? 0,
-      isLiked: json['isLiked'] ?? false,
-    );
-  }
-
-  Post copyWith({
-    String? postId,
-    String? content,
-    String? category,
-    String? status,
-    List<String>? imageUrls,
-    DateTime? dateEntered,
-    String? userName,
-    String? companyId,
-    String? companyLogo,
-    int? likeCount,
-    bool? isLiked,
-  }) {
-    return Post(
-      postId: postId ?? this.postId,
-      content: content ?? this.content,
-      category: category ?? this.category,
-      status: status ?? this.status,
-      imageUrls: imageUrls ?? this.imageUrls,
-      dateEntered: dateEntered ?? this.dateEntered,
-      userName: userName ?? this.userName,
-      companyId: companyId ?? this.companyId,
-      companyLogo: companyLogo ?? this.companyLogo,
-      likeCount: likeCount ?? this.likeCount,
-      isLiked: isLiked ?? this.isLiked,
-    );
-  }
-
-  String get timeAgo {
-    final now = DateTime.now();
-    final difference = now.difference(dateEntered);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
-    } else {
-      return 'Just now';
+  /// DELETE /feeds/:id — delete own post.
+  Future<bool> deleteFeed(String id) async {
+    try {
+      await ApiClient.instance.delete<dynamic>(ApiEndpoints.feeds.delete(id));
+      posts.removeWhere((p) => p.id == id);
+      total.value = total.value > 0 ? total.value - 1 : 0;
+      fetchStats();
+      SnackBarHelper.success("Post deleted");
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to delete post'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to delete post: $e");
+      return false;
     }
+  }
+
+  /// POST /feeds/:id/like — toggle like (no body). Returns success.
+  Future<bool> toggleLike(String id) async {
+    // Optimistic update.
+    final index = posts.indexWhere((p) => p.id == id);
+    Post? original;
+    if (index != -1) {
+      original = posts[index];
+      final newLiked = !original.isLiked;
+      posts[index] = original.copyWith(
+        isLiked: newLiked,
+        likes: newLiked
+            ? original.likes + 1
+            : (original.likes > 0 ? original.likes - 1 : 0),
+      );
+      posts.refresh();
+    }
+
+    try {
+      final data = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiEndpoints.feeds.toggleLike(id),
+      );
+      // Reconcile with the server's authoritative counts.
+      if (index != -1) {
+        posts[index] = posts[index].copyWith(
+          likes: (data['likes'] as num?)?.toInt(),
+          isLiked: data['isLiked'] as bool?,
+        );
+        posts.refresh();
+      }
+      return true;
+    } on dio.DioException catch (e) {
+      if (original != null && index != -1) {
+        posts[index] = original; // revert
+        posts.refresh();
+      }
+      AppLogger.e("❌ Failed to toggle like: ${_msg(e)}");
+      return false;
+    } catch (e) {
+      if (original != null && index != -1) {
+        posts[index] = original;
+        posts.refresh();
+      }
+      return false;
+    }
+  }
+
+  /// Legacy alias retained for callers that expect a boolean toggle.
+  Future<bool> togglePostLike(String postId) => toggleLike(postId);
+
+  /// POST /feeds/:id/comment — add a comment; returns the updated feed.
+  Future<bool> addComment(String id, String content) async {
+    try {
+      final feed = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiEndpoints.feeds.addComment(id),
+        data: {'content': content},
+      );
+      _replacePost(Post.fromJson(feed));
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to add comment'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to add comment: $e");
+      return false;
+    }
+  }
+
+  /// DELETE /feeds/:id/comment/:commentId — delete own comment.
+  Future<bool> deleteComment(String feedId, String commentId) async {
+    try {
+      final feed = await ApiClient.instance.delete<Map<String, dynamic>>(
+        ApiEndpoints.feeds.deleteComment(feedId, commentId),
+      );
+      _replacePost(Post.fromJson(feed));
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to delete comment'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to delete comment: $e");
+      return false;
+    }
+  }
+
+  /// POST /feeds/:id/share — increment share count.
+  Future<bool> shareFeed(String id) async {
+    try {
+      final data = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiEndpoints.feeds.share(id),
+      );
+      final index = posts.indexWhere((p) => p.id == id);
+      if (index != -1) {
+        posts[index] = posts[index].copyWith(
+          shares: (data['shares'] as num?)?.toInt(),
+        );
+        posts.refresh();
+      }
+      return true;
+    } catch (e) {
+      AppLogger.d("ℹ️ Failed to record share: $e");
+      return false;
+    }
+  }
+
+  /// POST /feeds/:id/report — report a post.
+  Future<bool> reportFeed(String id, String reason) async {
+    try {
+      await ApiClient.instance.post<dynamic>(
+        ApiEndpoints.feeds.report(id),
+        data: {'reason': reason},
+      );
+      SnackBarHelper.success("Post reported. Thank you.");
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to report post'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to report post: $e");
+      return false;
+    }
+  }
+
+  Future<void> refreshPosts() async {
+    await fetchFeeds(category: selectedCategory.value, page: 1);
+    await fetchStats();
+  }
+
+  // ── Legacy aliases ────────────────────────────────────────────────────────
+  Future<void> fetchUserPosts() => fetchFeeds();
+
+  void _replacePost(Post updated) {
+    final index = posts.indexWhere((p) => p.id == updated.id);
+    if (index != -1) {
+      posts[index] = updated;
+      posts.refresh();
+    }
+  }
+
+  String _msg(dio.DioException e, {String fallback = 'Something went wrong'}) {
+    return e.error is ApiException
+        ? (e.error as ApiException).message
+        : fallback;
   }
 }

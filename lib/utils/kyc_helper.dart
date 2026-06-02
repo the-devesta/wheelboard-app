@@ -4,7 +4,7 @@ library;
 
 import 'package:get/get.dart';
 import '../controllers/Transport/user_profile_controller.dart';
-import '../services/auth_service.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../widgets/custom_snackbar.dart';
 import '../utils/app_logger.dart';
 

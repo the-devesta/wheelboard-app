@@ -473,16 +473,15 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                     role: job.role, // Show role like Driver, Helper
                     city: job.city, // Show city
                     jobId: job.jobId,
-                    likes: job.likeCount,
                     applicants:
                         job.openings, // This shows as "Openings" in widget
                     isApplying: jobsController.isApplying(job.jobId),
                     isApplied: job.isApplied,
-                    isLiked: job.isLiked,
+                    isSaved: job.isSaved,
 
-                    onLikeToggle: () async {
+                    onSaveToggle: () async {
                       if (job.jobId.isNotEmpty) {
-                        await jobsController.toggleJobLike(job.jobId);
+                        await jobsController.toggleSave(job.jobId);
                       }
                     },
                     onApplyNow: () async {

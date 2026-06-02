@@ -1,0 +1,657 @@
+/// API endpoint constants organized by backend module.
+///
+/// Paths are relative to [ApiClient.baseUrl] which already includes `/api`.
+/// Auth endpoints are handled directly by [AuthService] and not listed here.
+///
+/// All routes match the NestJS backend controllers with global prefix `/api`:
+///   /api/auth/*        → AuthService
+///   /api/fleet/*       → ApiEndpoints.fleet
+///   /api/trips/*       → ApiEndpoints.trips
+///   /api/jobs/*        → ApiEndpoints.jobs
+///   /api/services/*    → ApiEndpoints.services
+///   /api/feeds/*       → ApiEndpoints.feeds
+///   /api/lease/*       → ApiEndpoints.lease
+///   /api/notifications → ApiEndpoints.notifications
+///   /api/dashboard/*   → ApiEndpoints.dashboard
+///   /api/kyc/*         → ApiEndpoints.kyc
+///   /api/expenses/*    → ApiEndpoints.expenses
+///   /api/calendar/*    → ApiEndpoints.calendar
+///   /api/users/*       → ApiEndpoints.users
+class ApiEndpoints {
+  ApiEndpoints._();
+
+  // ── Users / Profile ──────────────────────────────────────────────────────
+  static const users = _UsersEndpoints();
+
+  // ── Fleet (Vehicles & Drivers) ───────────────────────────────────────────
+  static const fleet = _FleetEndpoints();
+
+  // ── Trips ────────────────────────────────────────────────────────────────
+  static const trips = _TripEndpoints();
+
+  // ── Jobs ─────────────────────────────────────────────────────────────────
+  static const jobs = _JobEndpoints();
+
+  // ── Services ─────────────────────────────────────────────────────────────
+  static const services = _ServiceEndpoints();
+
+  // ── Feeds / Posts ─────────────────────────────────────────────────────────
+  static const feeds = _FeedEndpoints();
+
+  // ── Lease ────────────────────────────────────────────────────────────────
+  static const lease = _LeaseEndpoints();
+
+  // ── Notifications ────────────────────────────────────────────────────────
+  static const notifications = _NotificationEndpoints();
+
+  // ── Dashboard ────────────────────────────────────────────────────────────
+  static const dashboard = _DashboardEndpoints();
+
+  // ── KYC / Verification ───────────────────────────────────────────────────
+  static const kyc = _KycEndpoints();
+
+  // ── Expenses ─────────────────────────────────────────────────────────────
+  static const expenses = _ExpensesEndpoints();
+
+  // ── Calendar ─────────────────────────────────────────────────────────────
+  static const calendar = _CalendarEndpoints();
+
+  // ── Share Navigation ─────────────────────────────────────────────────────
+  static const shareNavigation = _ShareNavigationEndpoints();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Share Navigation
+// ─────────────────────────────────────────────────────────────────────────────
+class _ShareNavigationEndpoints {
+  const _ShareNavigationEndpoints();
+
+  // POST /share-navigation/generate  { tripId } → { token, otp, shareUrl, expiresAt }
+  String get generate => '/share-navigation/generate';
+
+  // POST /share-navigation/verify  { token, otp }
+  String get verify => '/share-navigation/verify';
+
+  // GET  /share-navigation/:token/data
+  String data(String token) => '/share-navigation/$token/data';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Users
+// ─────────────────────────────────────────────────────────────────────────────
+class _UsersEndpoints {
+  const _UsersEndpoints();
+
+  // GET  /users/profile          — current user profile (via auth token)
+  String get profile => '/users/profile';
+
+  // GET  /users/:userId/public-profile
+  String publicProfile(String userId) => '/users/$userId/public-profile';
+
+  // PUT  /settings/account/password
+  String get changePassword => '/settings/account/password';
+
+  // PUT  /users/profile  — update own profile
+  String get updateProfile => '/users/profile';
+
+  // PUT  /users/profile/transport  — company transport profile update
+  String get updateTransportProfile => '/users/profile/transport';
+
+  // PUT  /users/profile/professional
+  String get updateProfessionalProfile => '/users/profile/professional';
+
+  // PUT  /users/profile/service-provider
+  String get updateServiceProvider => '/users/profile/service-provider';
+
+  // POST /users/complete-transport  — finish transport company setup
+  String get completeTransport => '/users/complete-transport';
+
+  // POST /users/complete-service-provider
+  String get completeServiceProvider => '/users/complete-service-provider';
+
+  // POST /users/professional-signup
+  String get professionalSignUp => '/users/professional-signup';
+
+  // POST /users/save-referral
+  String get saveReferral => '/users/save-referral';
+
+  // GET  /users/:userId/referrals
+  String referralsByUser(String userId) => '/users/$userId/referrals';
+
+  // GET  /users/:userId/profile  — fetch any user's profile by ID
+  String userProfileById(String userId) => '/users/$userId/profile';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fleet
+// ─────────────────────────────────────────────────────────────────────────────
+class _FleetEndpoints {
+  const _FleetEndpoints();
+
+  // ── Vehicles ───────────────────────────────────────────────────────────
+  // POST   /fleet/vehicles
+  String get addVehicle => '/fleet/vehicles';
+
+  // GET    /fleet/vehicles
+  String get vehicles => '/fleet/vehicles';
+
+  // GET    /fleet/vehicles/:id
+  String vehicleDetails(String id) => '/fleet/vehicles/$id';
+
+  // PUT    /fleet/vehicles/:id
+  String updateVehicle(String id) => '/fleet/vehicles/$id';
+
+  // DELETE /fleet/vehicles/:id
+  String deleteVehicle(String id) => '/fleet/vehicles/$id';
+
+  // GET    /fleet/vehicles/verify/registration?number=...
+  String get verifyVehicleRegistration => '/fleet/vehicles/verify/registration';
+
+  // ── Drivers ───────────────────────────────────────────────────────────
+  // POST   /fleet/drivers
+  String get addDriver => '/fleet/drivers';
+
+  // GET    /fleet/drivers
+  String get drivers => '/fleet/drivers';
+
+  // GET    /fleet/drivers/:id
+  String driverDetails(String id) => '/fleet/drivers/$id';
+
+  // PUT    /fleet/drivers/:id
+  String updateDriver(String id) => '/fleet/drivers/$id';
+
+  // DELETE /fleet/drivers/:id
+  String deleteDriver(String id) => '/fleet/drivers/$id';
+
+  // GET    /fleet/drivers/verify/license?number=...&dob=...
+  String get verifyDriverLicense => '/fleet/drivers/verify/license';
+
+  // GET    /fleet/summary
+  String get summary => '/fleet/summary';
+
+  // GET    /fleet/drivers?companyId=...  — professionals linked to a company
+  String professionalList(String companyId) =>
+      '/fleet/drivers?companyId=$companyId';
+
+  // GET    /fleet/drivers/:id  — alias used for professional profile detail
+  String professionalDetails(String id) => '/fleet/drivers/$id';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trips
+// ─────────────────────────────────────────────────────────────────────────────
+class _TripEndpoints {
+  const _TripEndpoints();
+
+  // POST   /trips
+  String get create => '/trips';
+
+  // GET    /trips  (supports ?status=, ?assigned=true, etc.)
+  String get list => '/trips';
+
+  // GET    /trips/:tripId
+  String details(String tripId) => '/trips/$tripId';
+
+  // PATCH  /trips/:tripId
+  String update(String tripId) => '/trips/$tripId';
+
+  // DELETE /trips/:tripId
+  String delete(String tripId) => '/trips/$tripId';
+
+  // POST   /trips/:tripId/start
+  String start(String tripId) => '/trips/$tripId/start';
+
+  // POST   /trips/:tripId/arrive  — mark delivery complete
+  String arrive(String tripId) => '/trips/$tripId/arrive';
+
+  // POST   /trips/:tripId/pickup/start
+  String pickupStart(String tripId) => '/trips/$tripId/pickup/start';
+
+  // POST   /trips/:tripId/pickup/arrive
+  String pickupArrive(String tripId) => '/trips/$tripId/pickup/arrive';
+
+  // POST   /trips/:tripId/location  — GPS location update
+  String updateLocation(String tripId) => '/trips/$tripId/location';
+
+  // POST   /trips/:tripId/bid
+  String submitBid(String tripId) => '/trips/$tripId/bid';
+
+  // POST   /trips/:tripId/assign-bid
+  String assignBid(String tripId) => '/trips/$tripId/assign-bid';
+
+  // POST   /trips/:tripId/assign
+  String assign(String tripId) => '/trips/$tripId/assign';
+
+  // POST   /trips/:tripId/confirm-otp
+  String confirmOtp(String tripId) => '/trips/$tripId/confirm-otp';
+
+  // GET    /trips/:tripId/bids  — bids placed on a trip (embedded in trip details)
+  String bids(String tripId) => '/trips/$tripId/bids';
+
+  // GET    /trips  (unassigned — use list with queryParameters: {assigned: false})
+  String get unassignedList => '/trips';
+
+  // GET    /trips/:tripId  — alias used by unassigned trip detail screen
+  String unassignedDetails(String tripId) => '/trips/$tripId';
+
+  // GET    /trips/professional/stats
+  String get professionalStats => '/trips/professional/stats';
+
+  // ── Dashboard / Earnings ──────────────────────────────────────────────
+  // GET    /trips/earnings-dashboard
+  String get earningsDashboard => '/trips/earnings-dashboard';
+
+  // GET    /trips/dashboard
+  String get tripDashboard => '/trips/dashboard';
+
+  // ── POD (Proof of Delivery) ───────────────────────────────────────────
+  // POST   /trips/:tripId/pod/collect  — driver collects POD (multipart)
+  String podCollect(String tripId) => '/trips/$tripId/pod/collect';
+
+  // POST   /trips/:tripId/pod  — professional uploads POD
+  String podUpload(String tripId) => '/trips/$tripId/pod';
+
+  // GET    /trips/:tripId/pod  — get POD details
+  String podDetails(String tripId) => '/trips/$tripId/pod';
+
+  // PATCH  /trips/:tripId/pod/verify  — company verifies or rejects POD
+  String podVerify(String tripId) => '/trips/$tripId/pod/verify';
+
+  // GET    /trips/:tripId/pod/download  — download POD document
+  String podDownload(String tripId) => '/trips/$tripId/pod/download';
+
+  // GET    /trips/pending-pod-verification  — list trips awaiting POD verification
+  String get pendingPodVerification => '/trips/pending-pod-verification';
+
+  // ── LR (Lorry Receipt) ────────────────────────────────────────────────
+  // POST   /trips/:tripId/lr  — upload LR document (fleet owner)
+  String lrUpload(String tripId) => '/trips/$tripId/lr';
+
+  // GET    /trips/:tripId/lr  — get LR details
+  String lrDetails(String tripId) => '/trips/$tripId/lr';
+
+  // POST   /trips/:tripId/lr/confirm  — driver confirms LR
+  String lrConfirm(String tripId) => '/trips/$tripId/lr/confirm';
+
+  // POST   /trips/:tripId/lr/request-otp  — driver requests OTP for LR confirmation
+  String lrRequestOtp(String tripId) => '/trips/$tripId/lr/request-otp';
+
+  // POST   /trips/:tripId/lr/verify-otp  — verify OTP and confirm LR
+  String lrVerifyOtp(String tripId) => '/trips/$tripId/lr/verify-otp';
+
+  // POST   /trips/:tripId/lr/reject  — driver rejects LR
+  String lrReject(String tripId) => '/trips/$tripId/lr/reject';
+
+  // ── Payment ───────────────────────────────────────────────────────────
+  // POST   /payment/initiate  — create Razorpay order for trip payment
+  String get createOrder => '/payment/initiate';
+
+  // POST   /payment/verify  — verify Razorpay payment and assign trip
+  String get verifyPayment => '/payment/verify';
+
+  // GET    /trips/:tripId/payment/status  — payment confirmation details
+  String confirmation(String tripId) => '/trips/$tripId/payment/status';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Jobs
+// ─────────────────────────────────────────────────────────────────────────────
+class _JobEndpoints {
+  const _JobEndpoints();
+
+  // ── Employer (Company/Business) ───────────────────────────────────────────
+  // POST   /jobs
+  String get create => '/jobs';
+
+  // GET    /jobs/my-jobs
+  String get myJobs => '/jobs/my-jobs';
+
+  // GET    /jobs/my-jobs/stats
+  String get myJobStats => '/jobs/my-jobs/stats';
+
+  // GET    /jobs/my-jobs/:id
+  String myJobDetails(String id) => '/jobs/my-jobs/$id';
+
+  // PUT    /jobs/my-jobs/:id
+  String updateJob(String id) => '/jobs/my-jobs/$id';
+
+  // DELETE /jobs/my-jobs/:id
+  String deleteJob(String id) => '/jobs/my-jobs/$id';
+
+  // GET    /jobs/my-jobs/:id/applications
+  String applications(String jobId) => '/jobs/my-jobs/$jobId/applications';
+
+  // PATCH  /jobs/my-jobs/:jobId/applications/:applicationId
+  String updateApplication(String jobId, String applicationId) =>
+      '/jobs/my-jobs/$jobId/applications/$applicationId';
+
+  // GET    /jobs/my-jobs/:jobId/applications/:applicationId/profile
+  String applicantProfile(String jobId, String applicationId) =>
+      '/jobs/my-jobs/$jobId/applications/$applicationId/profile';
+
+  // ── Hired Professionals (employer) ────────────────────────────────────────
+  // GET    /jobs/hired-professionals
+  String get hiredProfessionals => '/jobs/hired-professionals';
+
+  // GET    /jobs/hired-professionals/stats
+  String get hiredProfessionalsStats => '/jobs/hired-professionals/stats';
+
+  // PATCH  /jobs/hired-professionals/:professionalId/:jobId  (update status)
+  // DELETE /jobs/hired-professionals/:professionalId/:jobId  (remove)
+  String hiredProfessionalStatus(String professionalId, String jobId) =>
+      '/jobs/hired-professionals/$professionalId/$jobId';
+
+  // ── Professional ──────────────────────────────────────────────────────────
+  // GET    /jobs/browse  — open marketplace for professionals
+  String get browse => '/jobs/browse';
+
+  // GET    /jobs/my-applications
+  String get myApplications => '/jobs/my-applications';
+
+  // GET    /jobs/my-saved
+  String get mySavedJobs => '/jobs/my-saved';
+
+  // GET    /jobs/:id
+  String jobDetails(String id) => '/jobs/$id';
+
+  // POST   /jobs/:id/apply
+  String apply(String id) => '/jobs/$id/apply';
+
+  // DELETE /jobs/:id/withdraw
+  String withdraw(String id) => '/jobs/$id/withdraw';
+
+  // POST   /jobs/:id/save  — bookmark a job (the only "like"/save mechanism)
+  String saveJob(String id) => '/jobs/$id/save';
+
+  // DELETE /jobs/:id/unsave
+  String unsaveJob(String id) => '/jobs/$id/unsave';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Services
+// ─────────────────────────────────────────────────────────────────────────────
+class _ServiceEndpoints {
+  const _ServiceEndpoints();
+
+  // POST   /services
+  String get create => '/services';
+
+  // GET    /services
+  String get list => '/services';
+
+  // GET    /services/:id
+  String details(String id) => '/services/$id';
+
+  // PATCH  /services/:id
+  String update(String id) => '/services/$id';
+
+  // DELETE /services/:id
+  String delete(String id) => '/services/$id';
+
+  // POST   /services/:id/publish
+  String publish(String id) => '/services/$id/publish';
+
+  // POST   /services/:id/unpublish
+  String unpublish(String id) => '/services/$id/unpublish';
+
+  // ── Bookings ──────────────────────────────────────────────────────────
+  // POST   /services/bookings
+  String get createBooking => '/services/bookings';
+
+  // GET    /services/bookings/my
+  String get myBookings => '/services/bookings/my';
+
+  // GET    /services/bookings/service/:serviceId
+  String bookingsByService(String serviceId) =>
+      '/services/bookings/service/$serviceId';
+
+  // GET    /services/bookings/:id
+  String bookingDetails(String id) => '/services/bookings/$id';
+
+  // PATCH  /services/bookings/:id/status
+  String updateBookingStatus(String id) => '/services/bookings/$id/status';
+
+  // PATCH  /services/bookings/:id/start
+  String startBooking(String id) => '/services/bookings/$id/start';
+
+  // PATCH  /services/bookings/:id/complete
+  String completeBooking(String id) => '/services/bookings/$id/complete';
+
+  // POST   /services/bookings/:id/payment/initiate
+  String initiateBookingPayment(String id) =>
+      '/services/bookings/$id/payment/initiate';
+
+  // POST   /services/bookings/:id/payment/verify
+  String verifyBookingPayment(String id) =>
+      '/services/bookings/$id/payment/verify';
+
+  // GET    /services/earnings/analytics
+  String get earningsAnalytics => '/services/earnings/analytics';
+
+  // POST   /services/earnings/payments  — record manual payment
+  String get recordPayment => '/services/earnings/payments';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feeds
+// ─────────────────────────────────────────────────────────────────────────────
+class _FeedEndpoints {
+  const _FeedEndpoints();
+
+  // POST   /feeds
+  String get create => '/feeds';
+
+  // GET    /feeds
+  String get list => '/feeds';
+
+  // GET    /feeds/:id
+  String details(String id) => '/feeds/$id';
+
+  // PATCH  /feeds/:id
+  String update(String id) => '/feeds/$id';
+
+  // DELETE /feeds/:id
+  String delete(String id) => '/feeds/$id';
+
+  // POST   /feeds/:id/like
+  String toggleLike(String id) => '/feeds/$id/like';
+
+  // POST   /feeds/:id/comment
+  String addComment(String id) => '/feeds/$id/comment';
+
+  // DELETE /feeds/:id/comment/:commentId
+  String deleteComment(String feedId, String commentId) =>
+      '/feeds/$feedId/comment/$commentId';
+
+  // POST   /feeds/:id/share
+  String share(String id) => '/feeds/$id/share';
+
+  // POST   /feeds/:id/report
+  String report(String id) => '/feeds/$id/report';
+
+  // POST   /feeds/upload-image
+  String get uploadImage => '/feeds/upload-image';
+
+  // GET    /feeds/stats
+  String get stats => '/feeds/stats';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lease
+// ─────────────────────────────────────────────────────────────────────────────
+class _LeaseEndpoints {
+  const _LeaseEndpoints();
+
+  // POST   /lease/listings
+  String get createListing => '/lease/listings';
+
+  // GET    /lease/listings/my
+  String get myListings => '/lease/listings/my';
+
+  // GET    /lease/listings/:id
+  String listingDetails(String id) => '/lease/listings/$id';
+
+  // PUT    /lease/listings/:id
+  String updateListing(String id) => '/lease/listings/$id';
+
+  // PATCH  /lease/listings/:id/status
+  String updateListingStatus(String id) => '/lease/listings/$id/status';
+
+  // GET    /lease/marketplace
+  String get marketplace => '/lease/marketplace';
+
+  // GET    /lease/marketplace/:id
+  String marketplaceDetails(String id) => '/lease/marketplace/$id';
+
+  // POST   /lease/bookings
+  String get createBooking => '/lease/bookings';
+
+  // GET    /lease/bookings/my
+  String get myBookings => '/lease/bookings/my';
+
+  // GET    /lease/bookings/incoming
+  String get incomingBookings => '/lease/bookings/incoming';
+
+  // GET    /lease/bookings/:id
+  String bookingDetails(String id) => '/lease/bookings/$id';
+
+  // PATCH  /lease/bookings/:id/confirm
+  String confirmBooking(String id) => '/lease/bookings/$id/confirm';
+
+  // PATCH  /lease/bookings/:id/reject
+  String rejectBooking(String id) => '/lease/bookings/$id/reject';
+
+  // PATCH  /lease/bookings/:id/cancel
+  String cancelBooking(String id) => '/lease/bookings/$id/cancel';
+
+  // PATCH  /lease/bookings/:id/start
+  String startBooking(String id) => '/lease/bookings/$id/start';
+
+  // PATCH  /lease/bookings/:id/complete
+  String completeBooking(String id) => '/lease/bookings/$id/complete';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────────────────────────────────────
+class _NotificationEndpoints {
+  const _NotificationEndpoints();
+
+  // GET    /notifications
+  String get list => '/notifications';
+
+  // PATCH  /notifications/:id/read
+  String markRead(String id) => '/notifications/$id/read';
+
+  // POST   /notifications/read-all
+  String get readAll => '/notifications/read-all';
+
+  // DELETE /notifications/:id
+  String delete(String id) => '/notifications/$id';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dashboard
+// ─────────────────────────────────────────────────────────────────────────────
+class _DashboardEndpoints {
+  const _DashboardEndpoints();
+
+  // GET    /dashboard
+  String get get => '/dashboard';
+
+  // GET    /dashboard/stats
+  String get stats => '/dashboard/stats';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KYC
+// ─────────────────────────────────────────────────────────────────────────────
+class _KycEndpoints {
+  const _KycEndpoints();
+
+  // POST   /kyc
+  String get create => '/kyc';
+
+  // GET    /kyc/my-kyc
+  String get myKyc => '/kyc/my-kyc';
+
+  // PUT    /kyc
+  String get update => '/kyc';
+
+  // GET    /kyc/completeness
+  String get completeness => '/kyc/completeness';
+
+  // GET    /kyc/required-documents
+  String get requiredDocuments => '/kyc/required-documents';
+
+  // POST   /kyc/verify/pan
+  String get verifyPan => '/kyc/verify/pan';
+
+  // POST   /kyc/verify/driving-license
+  String get verifyDrivingLicense => '/kyc/verify/driving-license';
+
+  // POST   /kyc/upload/document
+  String get uploadDocument => '/kyc/upload/document';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Expenses
+// ─────────────────────────────────────────────────────────────────────────────
+class _ExpensesEndpoints {
+  const _ExpensesEndpoints();
+
+  // POST   /expenses
+  String get create => '/expenses';
+
+  // GET    /expenses
+  String get list => '/expenses';
+
+  // GET    /expenses/stats
+  String get stats => '/expenses/stats';
+
+  // GET    /expenses/recent
+  String get recent => '/expenses/recent';
+
+  // GET    /expenses/trip/:tripId/summary
+  String tripSummary(String tripId) => '/expenses/trip/$tripId/summary';
+
+  // GET    /expenses/:id
+  String details(String id) => '/expenses/$id';
+
+  // PATCH  /expenses/:id
+  String update(String id) => '/expenses/$id';
+
+  // DELETE /expenses/:id
+  String delete(String id) => '/expenses/$id';
+
+  // GET    /expenses/purposes  — expense categories/purpose list
+  String get purposes => '/expenses/purposes';
+
+  // GET    /expenses  — alias used by older controllers as expenseDetails
+  String get expenseDetails => '/expenses';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Calendar
+// ─────────────────────────────────────────────────────────────────────────────
+class _CalendarEndpoints {
+  const _CalendarEndpoints();
+
+  // POST   /calendar/events
+  String get createEvent => '/calendar/events';
+
+  // GET    /calendar/events
+  String get events => '/calendar/events';
+
+  // GET    /calendar/events/:id
+  String eventDetails(String id) => '/calendar/events/$id';
+
+  // PATCH  /calendar/events/:id
+  String updateEvent(String id) => '/calendar/events/$id';
+
+  // DELETE /calendar/events/:id
+  String deleteEvent(String id) => '/calendar/events/$id';
+
+  // GET    /calendar/stats
+  String get stats => '/calendar/stats';
+}

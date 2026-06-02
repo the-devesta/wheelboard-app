@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import '../NewReferral/newreferralscreen.dart';
 import '../../../controllers/Professional/add_referral_controller.dart';
-import '../../../apihelperclass/api_helper.dart';
+import '../../../utils/format_utils.dart';
 
 class Referral01Screen extends StatelessWidget {
   const Referral01Screen({super.key});
@@ -173,7 +173,7 @@ class Referral01Screen extends StatelessWidget {
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            HttpHelper.formatDate(
+                                            FormatUtils.formatDate(
                                               referral.createdDate,
                                               format: 'dd MMM yyyy',
                                             ),

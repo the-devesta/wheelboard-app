@@ -1,23 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../../controllers/Transport/assign_trip_controller.dart';
-import '../../../models/assign_trip_model.dart';
-import '../../../models/trip_confirmation_model.dart';
+import '../../../controllers/Transport/user_profile_controller.dart';
+import '../../../models/trip_bid_model.dart';
 import '../../../services/razorpay_service.dart';
 import '../../../services/trip_payment_service.dart';
-import '../../../utils/session_manager.dart';
 import '../../../widgets/custom_snackbar.dart';
 import '../../../widgets/custom_loader.dart';
-import 'trip_accepted.dart';
 import '../../../utils/app_logger.dart';
-import '../../../controllers/Transport/user_profile_controller.dart';
+import 'trip_assignment_success_screen.dart';
+
+// ── Design tokens (match Home & Fleet) ────────────────────────────────────────
+const _primary   = Color(0xFFF36969);
+const _primaryLt = Color(0xFFFFF1F1);
+const _bg        = Color(0xFFF9FAFB);
+const _card      = Colors.white;
+const _textDark  = Color(0xFF111827);
+const _textMid   = Color(0xFF374151);
+const _textGrey  = Color(0xFF6B7280);
+const _border    = Color(0xFFE5E7EB);
+const _green     = Color(0xFF22C55E);
+
+const double _platformFeeRate = 0.07; // 7% — matches web PLATFORM_FEE_RATE
+
+enum _PayOption { platform, total }
 
 class AssignTripScreen extends StatefulWidget {
   final String tripId;
   final String? bidId;
-
   const AssignTripScreen({super.key, required this.tripId, this.bidId});
 
   @override
@@ -26,24 +41,25 @@ class AssignTripScreen extends StatefulWidget {
 
 class _AssignTripScreenState extends State<AssignTripScreen> {
   late final AssignTripController _controller;
-  late final RazorpayService _razorpayService;
-  late final TripPaymentService _tripPaymentService;
-  AssignTripBid? _bidInPayment;
-  TripPaymentVerificationPayload? _pendingVerificationPayload;
-  bool _isPaymentProcessing = false;
-  bool _showLoader = false;
-  String _loaderMessage = "Confirming payment...";
+  late final RazorpayService _razorpay;
+  final _paymentService = TripPaymentService();
+
+  _PayOption _option = _PayOption.total;
+  bool _processing = false;
+
+  // pending payment context (for the verify step)
+  TripBid? _payingBid;
+  String? _pendingOrderId;
 
   @override
   void initState() {
     super.initState();
     _controller = Get.put(AssignTripController(), tag: widget.tripId);
-    _razorpayService = RazorpayService(
-      onPaymentSuccess: _handlePaymentSuccess,
-      onPaymentError: _handlePaymentError,
-      onExternalWallet: _handleExternalWallet,
+    _razorpay = RazorpayService(
+      onPaymentSuccess: _onPaymentSuccess,
+      onPaymentError: _onPaymentError,
+      onExternalWallet: _onExternalWallet,
     );
-    _tripPaymentService = TripPaymentService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.fetchAssignTrip(widget.tripId);
     });
@@ -51,1278 +67,585 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
 
   @override
   void dispose() {
-    _razorpayService.dispose();
+    _razorpay.dispose();
     if (Get.isRegistered<AssignTripController>(tag: widget.tripId)) {
       Get.delete<AssignTripController>(tag: widget.tripId);
     }
     super.dispose();
   }
 
-  AssignTripBid? _selectedBid() {
-    final bidId = widget.bidId;
-    if (bidId != null && bidId.isNotEmpty) {
-      final bid = _controller.getBidById(bidId);
-      if (bid != null) return bid;
-    }
-    if (_controller.assignBids.isNotEmpty) {
-      return _controller.assignBids.first;
-    }
-    return null;
-  }
+  // ── derived amounts (web parity) ──────────────────────────────────────────
+  double _platformFee(TripBid b) => b.bidAmount * _platformFeeRate;
+  double _total(TripBid b) => b.bidAmount + _platformFee(b);
+  double _payable(TripBid b) =>
+      _option == _PayOption.platform ? _platformFee(b) : _total(b);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
+      backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: _card,
+        elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Review Summary',
-          style: TextStyle(
-            color: Color(0xFF2D3436),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new, color: _primary, size: 20),
+          onPressed: () => Get.back(),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
+        title: Text('Assignment & Payment',
+            style: GoogleFonts.poppins(
+                fontSize: 17, fontWeight: FontWeight.w600, color: _textDark)),
       ),
       body: Obx(() {
         if (_controller.isLoading.value) {
-          return const CustomLoader(message: "Loading trip details...");
+          return const CustomLoader(message: 'Loading assignment…');
         }
-
-        if (_controller.errorMessage.value.isNotEmpty) {
-          return _buildErrorState(
-            message: _controller.errorMessage.value,
-            onRetry: () => _controller.fetchAssignTrip(widget.tripId),
-          );
+        if (_controller.errorMessage.value.isNotEmpty &&
+            _controller.bids.isEmpty) {
+          return _errorState(_controller.errorMessage.value);
         }
-
-        final bid = _selectedBid();
-        if (bid == null) {
-          return _buildEmptyState(
-            onRefresh: () => _controller.fetchAssignTrip(widget.tripId),
-          );
-        }
-
-        return Stack(
-          children: [
-            _buildContent(context, bid),
-            if (_showLoader)
-              Container(
-                color: Colors.black.withValues(alpha: 0.5),
-                child: CustomLoader(message: _loaderMessage),
-              ),
-          ],
-        );
+        final bid = _controller.getBidById(widget.bidId);
+        if (bid == null) return _emptyState();
+        return _content(bid);
       }),
     );
   }
 
-  Widget _buildContent(BuildContext context, AssignTripBid bid) {
-    final driverName = bid.driverName.isNotEmpty ? bid.driverName : 'Driver';
-    final driverImage = bid.driverPhoto.isNotEmpty
-        ? bid.driverPhoto
-        : 'https://via.placeholder.com/150';
-    final bidAmount = _formatCurrency(
-      bid.bidAmount > 0 ? bid.bidAmount : bid.totalTripCost,
-    );
-    final pickupAddress = bid.pickupLocation.isNotEmpty
-        ? bid.pickupLocation
-        : 'Pickup location not available';
-    final destinationAddress = bid.deliveryLocation.isNotEmpty
-        ? bid.deliveryLocation
-        : 'Destination not available';
-    final dateTime = _formatPickupDateTime(bid.pickupDate, bid.pickupTime);
-    final requirements = bid.specialInstructions.isNotEmpty
-        ? bid.specialInstructions
-        : 'No special instructions provided';
-
-    final platformFeeAmount = _formatCurrency(_nonNegative(bid.platformFee));
-    final amountToDriverAmount = _formatCurrency(
-      _nonNegative(bid.amountToDriver),
-    );
-    final totalTripCostAmount = _formatCurrency(_resolveTotalCost(bid));
-
-    final payoutAmount = _formatCurrency(_nonNegative(bid.amountToDriver));
-
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-
-          // Bid Amount and Trip Details Card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Bid Amount Section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Bid Amount to Pay',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Poppins',
-                              color: Color(0xFF2D3436),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                bidAmount,
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: 'Inter',
-                                  color: Color(0xFF00B894),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(9999),
-                          border: Border.all(color: Colors.blue[100]!),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.help_outline,
-                              size: 12,
-                              color: Color(0xFF2186EB),
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Verified',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Poppins',
-                                color: Color(0xFF2186EB),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Driver Info
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundImage: NetworkImage(driverImage),
-                        onBackgroundImageError: (_, __) {},
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            driverName,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Poppins',
-                              color: Color(0xFF2D3436),
-                            ),
-                          ),
-                          Text(
-                            'Driver',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontFamily: 'Poppins',
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Trip Details
-                  _buildTripDetail(
-                    icon: Icons.location_on,
-                    label: 'Pickup',
-                    value: pickupAddress,
-                    iconColor: Colors.green,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTripDetail(
-                    icon: Icons.location_on,
-                    label: 'Destination',
-                    value: destinationAddress,
-                    iconColor: Colors.red,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        dateTime,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Poppins',
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.inventory_2,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          requirements,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Poppins',
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Review Your Booking Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _startPayment(bid, isPartial: false),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00B894),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Review Your Booking',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Payment Summary Card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Payment',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Poppins',
-                              color: Color(0xFF2D3436),
-                            ),
-                          ),
-                          Text(
-                            'Summary',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Poppins',
-                              color: Color(0xFF2D3436),
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Container(
-                      //   padding: const EdgeInsets.all(8),
-                      //   decoration: BoxDecoration(
-                      //     color: const Color(0xFFE8FAF4),
-                      //     borderRadius: BorderRadius.circular(6),
-                      //   ),
-                      //   child: const Column(
-                      //     children: [
-                      //       Text(
-                      //         '20% upfront, 80% on-',
-                      //         style: TextStyle(
-                      //           fontSize: 12,
-                      //           fontWeight: FontWeight.w600,
-                      //           fontFamily: 'Poppins',
-                      //           color: Color(0xFF00B894),
-                      //         ),
-                      //       ),
-                      //       Text(
-                      //         'trip',
-                      //         style: TextStyle(
-                      //           fontSize: 12,
-                      //           fontWeight: FontWeight.w600,
-                      //           fontFamily: 'Poppins',
-                      //           color: Color(0xFF00B894),
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _buildPaymentRow(
-                    label: 'Platform Booking Fee',
-                    amount: platformFeeAmount,
-                    hasInfo: true,
-                    hasPayNow: true,
-                    onPayNowTap: () => _startPayment(bid, isPartial: true),
-                  ),
-                  const Divider(height: 32),
-                  _buildPaymentRow(
-                    label: 'Amount Payable to Driver',
-                    amount: amountToDriverAmount,
-                    hasInfo: true,
-                  ),
-                  const Divider(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Total Trip Cost',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF2D3436),
-                        ),
-                      ),
-                      Text(
-                        totalTripCostAmount,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                          color: Color(0xFF00B894),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Payment Method Card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Select Payment Method',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
-                      color: Color(0xFF2D3436),
-                    ),
-                  ),
-                  Text(
-                    '(for Platform Fee)',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Poppins',
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Selected Card
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5FEFA),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF00B894),
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 27,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Icon(Icons.credit_card, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Mastercard •••• 4679',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontFamily: 'Poppins',
-                              color: Color(0xFF2D3436),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF00B894),
-                              width: 2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            size: 18,
-                            color: Color(0xFF00B894),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Add New Card
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFBFBFB),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.grey[300]!,
-                        width: 2,
-                        style: BorderStyle.solid,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.add_card,
-                          size: 20,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Add New Card',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontFamily: 'Poppins',
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.grey[300]!,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Or pay using UPI',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Poppins',
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF9F9F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text(
-                          'UPI ID:',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontFamily: 'Poppins',
-                            color: Color(0xFF2D3436),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Enter UPI ID',
-                              hintStyle: TextStyle(
-                                fontSize: 15,
-                                fontFamily: 'Poppins',
-                                color: Colors.grey[400],
-                              ),
-                              border: InputBorder.none,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Payment Instructions
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F3F6),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.info_outline,
-                        size: 18,
-                        color: Color(0xFF2D3436),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Poppins',
-                              color: Color(0xFF2D3436),
-                            ),
-                            children: [
-                              const TextSpan(text: 'Pay Remaining Amount ('),
-                              TextSpan(
-                                text: payoutAmount,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: 'Inter',
-                                  color: const Color(0xFF00B894),
-                                ),
-                              ),
-                              const TextSpan(
-                                text: ') directly to\nthe driver via:',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(9999),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.money,
-                              size: 13,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Cash',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontFamily: 'Poppins',
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(9999),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.account_balance_wallet,
-                              size: 13,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(
-                              Icons.help_outline,
-                              size: 13,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(
-                              Icons.phone_android,
-                              size: 13,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'UPI',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontFamily: 'Poppins',
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'You\'ll receive payment instructions after\nbooking confirmation.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Poppins',
-                      color: Colors.grey[600],
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Pay Now Button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isPaymentProcessing
-                    ? null
-                    : () => _startPayment(bid, isPartial: false),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF36969),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                ),
-                child: Text(
-                  _isPaymentProcessing ? 'Processing...' : 'Pay Full Amount',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-            ),
-          ),
-
+  // ── main content ──────────────────────────────────────────────────────────
+  Widget _content(TripBid bid) {
+    return Stack(children: [
+      SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _tripOverviewCard(),
+          const SizedBox(height: 14),
+          _professionalCard(bid),
+          const SizedBox(height: 14),
+          _paymentOptionCard(bid),
+          const SizedBox(height: 14),
+          _paymentSummaryCard(bid),
           const SizedBox(height: 20),
+          _payButton(bid),
+        ]),
+      ),
+      if (_processing)
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.4),
+            child: const CustomLoader(message: 'Processing payment…'),
+          ),
+        ),
+    ]);
+  }
+
+  // ── trip overview ───────────────────────────────────────────────────────
+  Widget _tripOverviewCard() {
+    return _sectionCard(
+      title: 'Trip Overview',
+      child: Column(children: [
+        _routeRow(Iconsax.location, 'Pickup', _controller.from.value, _green),
+        const SizedBox(height: 12),
+        _routeRow(Iconsax.location_tick, 'Destination', _controller.to.value, _primary),
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(child: _miniInfo(Iconsax.calendar_1, 'Date', _dateStr())),
+          const SizedBox(width: 12),
+          Expanded(child: _miniInfo(Iconsax.clock, 'Time',
+              _controller.pickupTime.value.isNotEmpty
+                  ? _controller.pickupTime.value : 'TBD')),
+        ]),
+        if (_controller.vehicleName.value.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _miniInfo(Iconsax.truck, 'Vehicle', _controller.vehicleName.value),
         ],
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [_primary, Color(0xFFE85555)]),
+            borderRadius: BorderRadius.circular(12)),
+          child: Column(children: [
+            Text('Trip ID', style: GoogleFonts.poppins(
+                fontSize: 11, color: Colors.white.withValues(alpha: 0.85))),
+            Text(_controller.tripCode.value.toUpperCase(),
+                style: GoogleFonts.poppins(
+                    fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  // ── professional card ──────────────────────────────────────────────────
+  Widget _professionalCard(TripBid bid) {
+    return _sectionCard(
+      title: 'Assigned Professional',
+      child: Row(children: [
+        Stack(children: [
+          ClipOval(
+            child: SizedBox(
+              width: 60, height: 60,
+              child: bid.avatar.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: bid.avatar, fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _avatarFallback(bid.name))
+                  : _avatarFallback(bid.name),
+            ),
+          ),
+          if (bid.isVerified)
+            Positioned(
+              bottom: 0, right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(color: _green, shape: BoxShape.circle,
+                  border: Border.fromBorderSide(BorderSide(color: Colors.white, width: 2))),
+                child: const Icon(Icons.check, size: 10, color: Colors.white))),
+        ]),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(bid.name, style: GoogleFonts.poppins(
+              fontSize: 16, fontWeight: FontWeight.w700, color: _textDark)),
+          if (bid.phoneNumber.isNotEmpty && bid.phoneNumber != 'Not available')
+            Text(bid.phoneNumber, style: GoogleFonts.poppins(
+                fontSize: 12, color: _textGrey)),
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Icons.star, size: 14, color: Color(0xFFF59E0B)),
+            const SizedBox(width: 3),
+            Text(bid.rating.toStringAsFixed(1), style: GoogleFonts.poppins(
+                fontSize: 12, fontWeight: FontWeight.w600, color: _textMid)),
+            const SizedBox(width: 10),
+            Text('${bid.totalTrips} trips', style: GoogleFonts.poppins(
+                fontSize: 12, color: _textGrey)),
+            const SizedBox(width: 10),
+            Flexible(child: Text(bid.experience, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(fontSize: 12, color: _textGrey))),
+          ]),
+        ])),
+      ]),
+    );
+  }
+
+  // ── payment option selector ─────────────────────────────────────────────
+  Widget _paymentOptionCard(TripBid bid) {
+    final fee = _platformFee(bid);
+    final total = _total(bid);
+    return _sectionCard(
+      title: 'Select Payment Option',
+      child: Column(children: [
+        _optionTile(
+          selected: _option == _PayOption.platform,
+          onTap: () => setState(() => _option = _PayOption.platform),
+          label: 'Platform Fee Only',
+          sub: '${(_platformFeeRate * 100).round()}% platform fee',
+          amount: fee,
+          color: const Color(0xFF8B5CF6),
+        ),
+        const SizedBox(height: 10),
+        _optionTile(
+          selected: _option == _PayOption.total,
+          onTap: () => setState(() => _option = _PayOption.total),
+          label: 'Total Amount',
+          sub: 'All fees included',
+          amount: total,
+          color: _green,
+          recommended: true,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBFDBFE))),
+          child: Row(children: [
+            const Icon(Iconsax.shield_tick, size: 18, color: Color(0xFF3B82F6)),
+            const SizedBox(width: 8),
+            Expanded(child: Text(
+              'Secure payment powered by Razorpay. All major methods supported.',
+              style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF1D4ED8)))),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  // ── payment summary ──────────────────────────────────────────────────────
+  Widget _paymentSummaryCard(TripBid bid) {
+    final fee = _platformFee(bid);
+    final total = _total(bid);
+    final payable = _payable(bid);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_primary, Color(0xFFE85555)]),
+        borderRadius: BorderRadius.circular(16)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Payment Summary', style: GoogleFonts.poppins(
+            fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+        const SizedBox(height: 14),
+        _summaryRow('Bid Amount', bid.bidAmount),
+        const SizedBox(height: 8),
+        _summaryRow('Platform Fee (${(_platformFeeRate * 100).round()}%)', fee),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Divider(color: Colors.white.withValues(alpha: 0.25), height: 1)),
+        _summaryRow('Total', total, bold: true),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text("You're paying", style: GoogleFonts.poppins(fontSize: 12, color: _textGrey)),
+            Text('₹${payable.toStringAsFixed(2)}', style: GoogleFonts.poppins(
+                fontSize: 26, fontWeight: FontWeight.w800, color: _primary)),
+            Text(_option == _PayOption.platform ? 'Platform Fee' : 'Total Amount',
+                style: GoogleFonts.poppins(fontSize: 11, color: _textGrey)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _payButton(TripBid bid) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _processing ? null : () => _startPayment(bid),
+        icon: _processing
+            ? const SizedBox(width: 18, height: 18,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : const Icon(Iconsax.wallet_check, size: 20),
+        label: Text(_processing ? 'Processing…' : 'Pay Now & Confirm',
+            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primary, foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0),
       ),
     );
   }
 
-  Future<void> _startPayment(
-    AssignTripBid bid, {
-    bool isPartial = false,
-  }) async {
-    if (!mounted || _isPaymentProcessing) return;
+  // ── payment flow ──────────────────────────────────────────────────────────
+  Future<void> _startPayment(TripBid bid) async {
+    if (_processing) return;
+    setState(() => _processing = true);
 
-    setState(() {
-      _isPaymentProcessing = true;
-      _showLoader = true;
-      _loaderMessage = "Initializing payment...";
-      _bidInPayment = bid;
-    });
-
-    // If partial, pay only platform fee. Otherwise, pay total/full.
-    final payableAmount = isPartial
-        ? _nonNegative(bid.platformFee)
-        : _resolveTotalCost(bid);
-
-    final receipt = _buildReceiptId(bid);
+    final option = _option == _PayOption.platform ? 'platform' : 'total';
+    final amount = _payable(bid);
 
     try {
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString('userId');
-      if (userId == null || userId.isEmpty) {
-        throw Exception('User information is missing. Please log in again.');
-      }
+      AppLogger.d('[Assign] initiate trip=${widget.tripId} bid=${bid.bidId} '
+          'option=$option amount=$amount');
 
-      AppLogger.d(
-        '[AssignTrip] Creating backend order for trip=${widget.tripId} bid=${bid.bidId} amount=$payableAmount',
-      );
-      final order = await _tripPaymentService.createOrder(
-        totalAmount: payableAmount,
-      );
-      AppLogger.d(
-        '[AssignTrip] Order created successfully orderId=${order.orderId}',
-      );
-
-      _pendingVerificationPayload = TripPaymentVerificationPayload(
+      final init = await _paymentService.initiatePayment(
         tripId: widget.tripId,
         bidId: bid.bidId,
-        userId: userId,
-        amount: _nonNegative(bid.amountToDriver),
-        platformFee: _nonNegative(bid.platformFee),
-        totalAmount: payableAmount,
-        orderId: order.orderId,
+        paymentOption: option,
+        amount: amount,
       );
 
-      String prefillEmail = 'hello@wheelboard.in';
-      String prefillContact = '7420861942';
+      _payingBid = bid;
+      _pendingOrderId = init.orderId;
 
-      try {
-        if (Get.isRegistered<UserProfileController>()) {
-          final profile = Get.find<UserProfileController>().userProfile.value;
-          if (profile != null) {
-            prefillEmail = profile.email ?? profile.mobileNo ?? prefillEmail;
-            prefillContact = profile.mobileNo ?? prefillContact;
-          }
+      // prefill from current user profile if available
+      String email = 'hello@wheelboard.in';
+      String contact = '7420861942';
+      if (Get.isRegistered<UserProfileController>()) {
+        final p = Get.find<UserProfileController>().userProfile.value;
+        if (p != null) {
+          email = p.email ?? email;
+          contact = p.mobileNo ?? contact;
         }
-      } catch (e) {
-        AppLogger.d(
-          '[AssignTrip] Could not fetch user profile for prefill: $e',
-        );
       }
 
-      if (mounted) {
-        setState(() {
-          _showLoader = false;
-        });
-      }
-
-      await _razorpayService.openCheckout(
-        amountInPaise: order.amountInPaise,
-        orderId: order.orderId,
-        keyOverride: order.keyId.isNotEmpty ? order.keyId : null,
-        receipt: receipt,
-        description:
-            'Trip payment for ${bid.driverName.isNotEmpty ? bid.driverName : 'WheelBoard driver'}',
-        customerName: 'WheelBoard',
-        prefillEmail: prefillEmail,
-        prefillContact: prefillContact,
+      await _razorpay.openCheckout(
+        amountInPaise: init.amountInPaise,
+        orderId: init.orderId,
+        keyOverride: init.razorpayKey.isNotEmpty ? init.razorpayKey : null,
+        currency: init.currency,
+        description: 'Trip ${_controller.tripCode.value} • ${bid.name}',
+        prefillEmail: email,
+        prefillContact: contact,
         notes: {
           'tripId': widget.tripId,
           'bidId': bid.bidId,
-          'driverName': bid.driverName,
+          'driverName': bid.name,
         },
       );
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isPaymentProcessing = false;
-          _showLoader = false;
-        });
-      }
-      _bidInPayment = null;
-      _pendingVerificationPayload = null;
-      SnackBarHelper.error('Unable to start payment: $e');
+      _resetPending();
+      if (mounted) setState(() => _processing = false);
+      SnackBarHelper.error(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
-  Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    if (mounted) {
-      setState(() {
-        _isPaymentProcessing = true;
-        _showLoader = true;
-        _loaderMessage = "Verifying payment...";
-      });
+  Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
+    final bid = _payingBid;
+    final orderId = response.orderId ?? _pendingOrderId ?? '';
+    if (bid == null) {
+      if (mounted) setState(() => _processing = false);
+      return;
     }
-    AppLogger.d(
-      '[AssignTrip] Razorpay success paymentId=${response.paymentId} orderId=${response.orderId}',
-    );
-    final bid = _bidInPayment;
-    _bidInPayment = null;
-    final verificationPayload = _pendingVerificationPayload;
-    _pendingVerificationPayload = null;
+    AppLogger.d('[Assign] razorpay success payment=${response.paymentId}');
 
     try {
-      if (verificationPayload != null) {
-        final enrichedPayload = verificationPayload.copyWith(
-          orderId: response.orderId ?? verificationPayload.orderId,
+      final verifyResult = await _paymentService.verifyPayment(
+        paymentId: response.paymentId ?? '',
+        tripId: widget.tripId,
+        bidId: bid.bidId,
+        orderId: orderId,
+        signature: response.signature,
+      ).timeout(const Duration(seconds: 20));
+
+      SnackBarHelper.success('Payment successful! Trip assigned.');
+
+      if (mounted) {
+        Get.off(() => TripAssignmentSuccessScreen(
+          tripId: _controller.tripCode.value.isNotEmpty
+              ? _controller.tripCode.value : widget.tripId,
+          driverName: bid.name,
+          driverAvatar: bid.avatar,
+          driverRating: bid.rating,
+          driverTrips: bid.totalTrips,
+          driverIsVerified: bid.isVerified,
           paymentId: response.paymentId ?? '',
-          signature: response.signature ?? '',
-        );
-
-        // 1. Verify Payment with timeout
-        AppLogger.d('[AssignTrip] Verifying payment on server...');
-        await _tripPaymentService
-            .verifyPayment(enrichedPayload)
-            .timeout(
-              const Duration(seconds: 15),
-              onTimeout: () => throw Exception(
-                'Verification timed out after 15s. We will update your status shortly.',
-              ),
-            );
-
-        // 2. Fetch Trip Confirmation (Optional/Low priority)
-        TripConfirmationModel? confirmation;
-        try {
-          AppLogger.d('[AssignTrip] Fetching trip confirmation...');
-          confirmation = await _tripPaymentService
-              .getTripConfirmation(verificationPayload.tripId)
-              .timeout(const Duration(seconds: 10));
-        } catch (e) {
-          AppLogger.e(
-            '[AssignTrip] Confirmation fetch failed (non-critical): $e',
-          );
-        }
-
-        SnackBarHelper.success('Payment verified successfully!');
-
-        if (bid != null) {
-          _navigateToTripAccepted(bid, confirmation);
-          if (mounted) {
-            setState(() {
-              _isPaymentProcessing = false;
-              _showLoader = false;
-            });
-          }
-          return;
-        }
-      } else {
-        SnackBarHelper.success('Payment successful!');
-        if (bid != null) {
-          _navigateToTripAccepted(bid, null);
-          if (mounted) {
-            setState(() {
-              _isPaymentProcessing = false;
-              _showLoader = false;
-            });
-          }
-          return;
-        }
+          paymentAmount: _option == _PayOption.total
+              ? _total(bid)
+              : _platformFee(bid),
+          paymentOption: _option == _PayOption.total ? 'total' : 'platform',
+          otp: verifyResult.otp,
+          from: _controller.from.value,
+          to: _controller.to.value,
+          departureDate: _dateStr(),
+          departureTime: _controller.pickupTime.value,
+          distance: null,
+          vehicleName: _controller.vehicleName.value,
+        ));
       }
     } catch (e) {
-      AppLogger.e('[AssignTrip] Payment handling failed: $e');
       if (mounted) {
-        setState(() {
-          _isPaymentProcessing = false;
-          _showLoader = false;
-        });
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('Payment Status'),
-            content: Text(
-              'Your payment was processed, but we had trouble confirming it: $e. Your trip status will be updated automatically.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  if (bid != null) _navigateToTripAccepted(bid, null);
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+        setState(() => _processing = false);
+        _showVerifyIssueDialog(bid, e.toString(), response.paymentId ?? '');
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          if (_isPaymentProcessing) _isPaymentProcessing = false;
-          if (_showLoader) _showLoader = false;
-        });
-      }
+      _resetPending();
     }
   }
 
-  void _handlePaymentError(PaymentFailureResponse response) {
-    if (mounted) {
-      setState(() {
-        _isPaymentProcessing = false;
-        _showLoader = false;
-      });
-    }
-    _bidInPayment = null;
-    _pendingVerificationPayload = null;
-    final reason = response.message ?? 'Something went wrong';
-    SnackBarHelper.error('Payment failed: $reason');
+  void _onPaymentError(PaymentFailureResponse response) {
+    _resetPending();
+    if (mounted) setState(() => _processing = false);
+    SnackBarHelper.error('Payment failed: ${response.message ?? 'Cancelled'}');
   }
 
-  void _handleExternalWallet(ExternalWalletResponse response) {
-    SnackBarHelper.info(
-      'External wallet selected: ${response.walletName ?? 'Unknown'}',
+  void _onExternalWallet(ExternalWalletResponse response) {
+    SnackBarHelper.info('Wallet selected: ${response.walletName ?? 'Unknown'}');
+  }
+
+  void _resetPending() {
+    _payingBid = null;
+    _pendingOrderId = null;
+  }
+
+  void _showVerifyIssueDialog(TripBid bid, String error, String paymentId) {
+    Get.dialog(AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('Payment Received', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+      content: Text(
+        'Your payment was processed but we had trouble confirming it. '
+        'The trip status will update automatically.\n\n$error',
+        style: GoogleFonts.poppins(fontSize: 13, color: _textMid)),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Get.back();
+            Get.off(() => TripAssignmentSuccessScreen(
+              tripId: _controller.tripCode.value.isNotEmpty
+                  ? _controller.tripCode.value : widget.tripId,
+              driverName: bid.name,
+              driverAvatar: bid.avatar,
+              driverRating: bid.rating,
+              driverTrips: bid.totalTrips,
+              driverIsVerified: bid.isVerified,
+              paymentId: paymentId,
+              paymentAmount: _option == _PayOption.total
+                  ? _total(bid)
+                  : _platformFee(bid),
+              paymentOption: _option == _PayOption.total ? 'total' : 'platform',
+              otp: null,
+              from: _controller.from.value,
+              to: _controller.to.value,
+              departureDate: _dateStr(),
+              departureTime: _controller.pickupTime.value,
+              distance: null,
+              vehicleName: _controller.vehicleName.value,
+            ));
+          },
+          child: const Text('OK')),
+      ],
+    ));
+  }
+
+  // ── small UI helpers ───────────────────────────────────────────────────
+  Widget _sectionCard({required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _card, borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8, offset: const Offset(0, 2))]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: GoogleFonts.poppins(
+            fontSize: 15, fontWeight: FontWeight.w700, color: _textDark)),
+        const SizedBox(height: 14),
+        child,
+      ]),
     );
   }
 
-  void _navigateToTripAccepted(
-    AssignTripBid bid,
-    TripConfirmationModel? confirmation,
-  ) {
-    // Use confirmation data if available, otherwise fallback to bid data
-    final driverName = confirmation?.driver.isNotEmpty == true
-        ? confirmation!.driver
-        : (bid.driverName.isNotEmpty ? bid.driverName : 'Driver');
-    final vehicleType = confirmation?.vehicle.isNotEmpty == true
-        ? confirmation!.vehicle
-        : 'Bus';
-    final extractedDate = (confirmation?.pickupDate != null)
-        ? _formatDateOnly(confirmation!.pickupDate)
-        : _formatDateOnly(bid.pickupDate);
-    final extractedTime = confirmation?.pickupTime.isNotEmpty == true
-        ? confirmation!.pickupTime
-        : (bid.pickupTime.isNotEmpty ? bid.pickupTime : 'Time TBD');
-    final tripCode = confirmation?.tripCode.isNotEmpty == true
-        ? confirmation!.tripCode
-        : widget.tripId;
-
-    Get.off(
-      () => TripAccepted(
-        tripId: tripCode,
-        driverName: driverName,
-        vehicleType: vehicleType,
-        date: extractedDate,
-        time: extractedTime,
-      ),
-    );
+  Widget _routeRow(IconData icon, String label, String addr, Color color) {
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+        child: Icon(icon, size: 16, color: color)),
+      const SizedBox(width: 12),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: GoogleFonts.poppins(fontSize: 11, color: _textGrey)),
+        Text(addr.isEmpty ? 'N/A' : addr, style: GoogleFonts.poppins(
+            fontSize: 13, fontWeight: FontWeight.w600, color: _textDark)),
+      ])),
+    ]);
   }
 
-  Widget _buildTripDetail({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color iconColor,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: iconColor),
+  Widget _miniInfo(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+          color: _bg, borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _border)),
+      child: Row(children: [
+        Icon(icon, size: 16, color: _textGrey),
         const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: Color(0xFF2D3436),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: GoogleFonts.poppins(fontSize: 9, color: _textGrey)),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: _textDark)),
+        ])),
+      ]),
     );
   }
 
-  Widget _buildPaymentRow({
+  Widget _optionTile({
+    required bool selected,
+    required VoidCallback onTap,
     required String label,
-    required String amount,
-    bool hasInfo = false,
-    bool hasPayNow = false,
-    VoidCallback? onPayNowTap,
+    required String sub,
+    required double amount,
+    required Color color,
+    bool recommended = false,
   }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Poppins',
-                    color: Colors.grey[600],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (hasInfo) ...[
-                const SizedBox(width: 4),
-                const Icon(Icons.help_outline, size: 13, color: Colors.grey),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.06) : _card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: selected ? color : _border, width: selected ? 1.5 : 1)),
+        child: Row(children: [
+          Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: selected ? color : _textGrey, size: 20),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Flexible(child: Text(label, style: GoogleFonts.poppins(
+                  fontSize: 14, fontWeight: FontWeight.w600, color: _textDark))),
+              if (recommended) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                  child: Text('Recommended', style: GoogleFonts.poppins(
+                      fontSize: 8, fontWeight: FontWeight.w700, color: _green))),
               ],
-              if (hasPayNow) ...[
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: onPayNowTap,
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8FAF4),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'Book Now',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Poppins',
-                        color: Color(0xFF00B894),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        Text(
-          amount,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Inter',
-            color: Color(0xFF2D3436),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildErrorState({
-    required String message,
-    required VoidCallback onRetry,
-  }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Poppins',
-                color: Color(0xFF2D3436),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
+            ]),
+            Text(sub, style: GoogleFonts.poppins(fontSize: 11, color: _textGrey)),
+          ])),
+          Text('₹${amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2)}',
+              style: GoogleFonts.poppins(
+                  fontSize: 16, fontWeight: FontWeight.w700, color: color)),
+        ]),
       ),
     );
   }
 
-  Widget _buildEmptyState({required VoidCallback onRefresh}) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.assignment, color: Color(0xFF00B894), size: 48),
-            const SizedBox(height: 12),
-            const Text(
-              'No bids available yet.',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Poppins',
-                color: Color(0xFF2D3436),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onRefresh, child: const Text('Refresh')),
-          ],
-        ),
-      ),
-    );
+  Widget _summaryRow(String label, double amount, {bool bold = false}) {
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Text(label, style: GoogleFonts.poppins(
+          fontSize: bold ? 15 : 13,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+          color: Colors.white.withValues(alpha: bold ? 1 : 0.9))),
+      Text('₹${amount.toStringAsFixed(2)}', style: GoogleFonts.poppins(
+          fontSize: bold ? 20 : 14, fontWeight: FontWeight.w700, color: Colors.white)),
+    ]);
   }
 
-  double _resolveTotalCost(AssignTripBid bid) {
-    if (bid.totalTripCost > 0) {
-      return bid.totalTripCost;
-    }
-    final calculated = bid.bidAmount + bid.platformFee;
-    if (calculated.isFinite && calculated > 0) {
-      return calculated;
-    }
-    return bid.bidAmount;
+  Widget _avatarFallback(String name) {
+    final initials = name.trim().isNotEmpty
+        ? name.trim().split(' ').map((n) => n.isNotEmpty ? n[0] : '').take(2).join().toUpperCase()
+        : 'DR';
+    return Container(
+      color: _primaryLt,
+      child: Center(child: Text(initials, style: GoogleFonts.poppins(
+          fontSize: 22, fontWeight: FontWeight.w700, color: _primary))));
   }
 
-  double _nonNegative(double value) => value.isFinite && value > 0 ? value : 0;
-
-  String _formatCurrency(double value) =>
-      '₹${value.toStringAsFixed(2).replaceAll(RegExp(r'\.00$'), '')}';
-
-  String _formatPickupDateTime(DateTime? date, String time) {
-    final dateText = _formatDateOnly(date);
-    final timeText = time.isNotEmpty ? time : 'Time TBD';
-    return '$dateText, $timeText';
+  String _dateStr() {
+    final d = _controller.pickupDate.value;
+    if (d == null) return 'Date TBD';
+    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${m[d.month - 1]} ${d.day}, ${d.year}';
   }
 
-  String _formatDateOnly(DateTime? date) {
-    if (date == null) return 'Date TBD';
-    final months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    final month = months[date.month - 1];
-    return '$month ${date.day}, ${date.year}';
+  Widget _errorState(String message) {
+    return Center(child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.error_outline, size: 56, color: _primary),
+        const SizedBox(height: 16),
+        Text(message, textAlign: TextAlign.center, style: GoogleFonts.poppins(
+            fontSize: 14, color: _textMid)),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: () => _controller.fetchAssignTrip(widget.tripId),
+          style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white),
+          child: const Text('Retry')),
+      ]),
+    ));
   }
 
-  String _buildReceiptId(AssignTripBid bid) {
-    final tripPart = _sanitizeIdPart(widget.tripId);
-    final bidPart = _sanitizeIdPart(bid.bidId);
-    final timestampPart = DateTime.now().millisecondsSinceEpoch.toRadixString(
-      36,
-    );
-    var receipt = 'trip_${tripPart}_${bidPart}_$timestampPart';
-    if (receipt.length > 40) {
-      receipt = receipt.substring(0, 40);
-    }
-    return receipt;
-  }
-
-  String _sanitizeIdPart(String value, {int maxLength = 8}) {
-    final sanitized = value
-        .replaceAll(RegExp('[^a-zA-Z0-9]'), '')
-        .toLowerCase();
-    if (sanitized.isEmpty) {
-      return 'id';
-    }
-    return sanitized.length <= maxLength
-        ? sanitized
-        : sanitized.substring(0, maxLength);
+  Widget _emptyState() {
+    return Center(child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Iconsax.people, size: 56, color: _primary),
+        const SizedBox(height: 16),
+        Text('No bid found for this trip.', style: GoogleFonts.poppins(
+            fontSize: 15, fontWeight: FontWeight.w600, color: _textMid)),
+        const SizedBox(height: 8),
+        Text('Bids may have been withdrawn.', style: GoogleFonts.poppins(
+            fontSize: 12, color: _textGrey)),
+      ]),
+    ));
   }
 }

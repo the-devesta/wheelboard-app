@@ -1,12 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart' as dio;
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 import 'package:wheelboard/models/expense_purpose_model.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
-import 'package:wheelboard/services/auth_service.dart';
-import 'package:wheelboard/utils/constants.dart';
-import 'package:wheelboard/utils/error_handler.dart';
+import 'package:wheelboard/core/network/api_client.dart';
+import 'package:wheelboard/core/network/api_endpoints.dart';
+import 'package:wheelboard/core/network/api_exception.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
@@ -26,19 +25,17 @@ class ExpenseController extends GetxController {
   Future<void> fetchExpensePurposes() async {
     try {
       isLoadingPurposes(true);
-      final response = await HttpHelper.getData(
-        endpoint: API.getExpensePurposes,
-        headers: {'accept': '*/*'},
+
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.expenses.list,
       );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        expensePurposes.value = data
-            .map((json) => ExpensePurpose.fromJson(json))
-            .toList();
-      } else {
-        SnackBarHelper.error('Failed to load expense purposes');
-      }
+      expensePurposes.value = data
+          .map((json) => ExpensePurpose.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on dio.DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load expense purposes';
+      SnackBarHelper.error(msg);
     } catch (e) {
       SnackBarHelper.error('Error loading expense purposes: $e');
     } finally {
@@ -63,79 +60,51 @@ class ExpenseController extends GetxController {
       // Format date as ISO8601 string
       final formattedDate = expenseDate.toIso8601String();
 
-      final fields = <String, String>{
-        'TripId': tripId,
-        'ExpensePurposeId': expensePurposeId.toString(),
-        'ExpenseDate': formattedDate,
-        'Amount': amount.toString(),
-        'Description': description,
-        'CreatedBy': userId,
-        'ExpenseId': expenseId ?? '', // Always send, empty if creating new
-        'ReceiptPath':
-            receiptPath ??
-            'string', // Always send, default to 'string' if not provided
+      final fields = <String, dynamic>{
+        'tripId': tripId,
+        'expensePurposeId': expensePurposeId.toString(),
+        'expenseDate': formattedDate,
+        'amount': amount.toString(),
+        'description': description,
+        'createdBy': userId,
+        if (expenseId != null && expenseId.isNotEmpty) 'expenseId': expenseId,
+        if (receiptPath != null && receiptPath.isNotEmpty) 'receiptPath': receiptPath,
       };
 
-      final files = <File>[];
+      final formData = dio.FormData.fromMap(fields);
+
       if (receiptFile != null) {
-        files.add(receiptFile);
+        formData.files.add(MapEntry(
+          'receiptFile',
+          await dio.MultipartFile.fromFile(receiptFile.path),
+        ));
       }
 
-      AppLogger.d("💾 Saving expense:");
-      AppLogger.d("💾 TripId: $tripId");
-      AppLogger.d("💾 ExpensePurposeId: $expensePurposeId");
-      AppLogger.d("💾 ExpenseDate: $formattedDate");
-      AppLogger.d("💾 Amount: $amount");
-      AppLogger.d("💾 Description: $description");
-      AppLogger.d("💾 ExpenseId: ${fields['ExpenseId']}");
-      AppLogger.d("💾 ReceiptPath: ${fields['ReceiptPath']}");
-      AppLogger.d("💾 Has Receipt File: ${receiptFile != null}");
+      AppLogger.d("💾 Saving expense for trip: $tripId, amount: $amount");
 
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.saveTripExpense,
-        fields: fields,
-        files: files,
-        fieldKey: 'ReceiptFile',
-        headers: {'accept': '*/*'},
+      final data = await ApiClient.instance.upload<Map<String, dynamic>>(
+        ApiEndpoints.expenses.create,
+        formData: formData,
       );
 
-      final response = await http.Response.fromStream(streamedResponse);
+      final success = data['success'] ?? false;
+      final message = data['message'] ?? 'Expense saved successfully';
 
-      AppLogger.d("💾 Expense save response status: ${response.statusCode}");
-      AppLogger.d("💾 Expense save response body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        try {
-          final responseBody = jsonDecode(response.body);
-          final success = responseBody['success'] ?? false;
-          final message =
-              responseBody['message'] ?? 'Expense saved successfully';
-
-          if (success) {
-            SnackBarHelper.success(message);
-            return true;
-          } else {
-            SnackBarHelper.error(message);
-            return false;
-          }
-        } catch (_) {
-          // If response is not JSON or doesn't have success field, assume success
-          SnackBarHelper.success('Expense saved successfully');
-          return true;
-        }
+      if (success) {
+        SnackBarHelper.success(message);
+        return true;
       } else {
-        // Use ErrorHandler for proper backend error message
-        final errorMsg = ErrorHandler.parseError(
-          response.body,
-          statusCode: response.statusCode,
-        );
-        SnackBarHelper.error(errorMsg);
+        SnackBarHelper.error(message);
         return false;
       }
+    } on dio.DioException catch (e) {
+      AppLogger.d("❌ Error saving expense: $e");
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to save expense';
+      SnackBarHelper.error(msg);
+      return false;
     } catch (e) {
       AppLogger.d("❌ Error saving expense: $e");
-      final errorMsg = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMsg);
+      SnackBarHelper.error("Something went wrong");
       return false;
     } finally {
       isSaving(false);

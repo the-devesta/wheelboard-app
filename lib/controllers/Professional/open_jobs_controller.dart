@@ -1,17 +1,28 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../services/auth_service.dart';
-import '../../models/Professional/open_job_model.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
+import '../../models/job_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/kyc_helper.dart';
 import '../../utils/app_logger.dart';
 
+/// Professional jobs controller — a 1:1 mirror of the FE `jobsAPI` professional
+/// endpoints (`browse`, `getJobById`, `apply`, `withdraw`, `save`, `unsave`).
+///
+/// Jobs have no "like": the heart is a bookmark backed by save/unsave, and
+/// saved state is derived from the job's `savedBy[]`.
 class OpenJobsController extends GetxController {
   var isLoading = false.obs;
-  var openJobs = <OpenJob>[].obs;
-  var applyingJobId = ''.obs; // Track which job is being applied
+  var openJobs = <JobModel>[].obs;
+  var applyingJobId = ''.obs;
+  var savingJobId = ''.obs;
+
+  var page = 1.obs;
+  var totalPages = 1.obs;
+  var total = 0.obs;
 
   @override
   void onInit() {
@@ -19,265 +30,198 @@ class OpenJobsController extends GetxController {
     fetchOpenJobs();
   }
 
-  /// Fetch open jobs from API
-  Future<void> fetchOpenJobs() async {
+  /// GET /jobs/browse — paginated `{jobs,total,page,totalPages}`.
+  Future<void> fetchOpenJobs({Map<String, dynamic>? filters}) async {
     try {
       isLoading.value = true;
 
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-      final userId = authService.currentUserId;
-
-      AppLogger.d("💼 Fetching open jobs...");
-      AppLogger.d("💼 User ID: $userId");
-
-      // Build endpoint with userId query parameter
-      final endpoint = userId.isNotEmpty
-          ? '${API.getOpenJobs}?userId=$userId'
-          : API.getOpenJobs;
-
-      AppLogger.d("💼 API Endpoint: $endpoint");
-
-      final response = await HttpHelper.getData(
-        endpoint: endpoint,
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.jobs.browse,
+        queryParameters: filters,
       );
 
-      AppLogger.d("💼 Open jobs response status: ${response.statusCode}");
-      AppLogger.d(
-        "💼 Open jobs response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
-      );
-
-      // Check if response is HTML (error page)
-      if (response.body.trim().startsWith('<!DOCTYPE') ||
-          response.body.trim().startsWith('<html')) {
-        AppLogger.d(
-          "❌ Server returned HTML instead of JSON - API endpoint may be incorrect",
-        );
-        SnackBarHelper.error("Server error: Please try again later");
-        openJobs.value = []; // Clear jobs list
-        return;
-      }
-
-      if (response.statusCode == 200) {
-        try {
-          final decoded = json.decode(response.body);
-
-          if (decoded is List) {
-            // 🔍 Debug: Print first job raw data to see all fields
-            if (decoded.isNotEmpty) {
-              AppLogger.d(
-                "🔍 First job raw data keys: ${decoded[0].keys.toList()}",
-              );
-              AppLogger.d("🔍 First job raw data: ${decoded[0]}");
-            }
-
-            openJobs.value = decoded.map((e) => OpenJob.fromJson(e)).toList();
-            AppLogger.d("✅ Fetched ${openJobs.length} open jobs");
-          } else {
-            // Case where server returns a message object instead of a list
-            openJobs.value = [];
-            if (decoded is Map && decoded.containsKey('message')) {
-              AppLogger.d("ℹ️ API Message: ${decoded['message']}");
-            }
-          }
-
-          // 🔍 Debug: Print first parsed job's companyName
-          if (openJobs.isNotEmpty) {
-            AppLogger.d("🔍 First job companyName: ${openJobs[0].companyName}");
-          }
-        } catch (parseError) {
-          AppLogger.d("❌ Error parsing open jobs response: $parseError");
-          SnackBarHelper.error("Failed to parse jobs data");
-          openJobs.value = [];
-        }
-      } else {
-        AppLogger.d("❌ Failed to fetch open jobs: ${response.statusCode}");
-        // Try to parse error message if it's JSON
-        try {
-          final errorData = json.decode(response.body);
-          final errorMessage =
-              errorData['message'] ??
-              errorData['error'] ??
-              "Failed to load jobs";
-          SnackBarHelper.error(errorMessage);
-        } catch (e) {
-          SnackBarHelper.error("Failed to load jobs (${response.statusCode})");
-        }
-        openJobs.value = [];
-      }
+      final jobsList = data['jobs'] as List<dynamic>? ?? [];
+      final userId = AuthService.to.currentUserId;
+      openJobs.value = jobsList
+          .whereType<Map<String, dynamic>>()
+          .map(JobModel.fromJson)
+          .map((j) => j.copyWith(
+                isSaved: j.isSavedBy(userId),
+                isApplied: j.isAppliedBy(userId),
+              ))
+          .toList();
+      page.value = (data['page'] as num?)?.toInt() ?? 1;
+      totalPages.value = (data['totalPages'] as num?)?.toInt() ?? 1;
+      total.value = (data['total'] as num?)?.toInt() ?? openJobs.length;
+      AppLogger.d("✅ Fetched ${openJobs.length} open jobs");
+    } on DioException catch (e) {
+      AppLogger.e("❌ Failed to fetch open jobs: ${_msg(e)}");
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to load jobs'));
+      openJobs.clear();
     } catch (e) {
-      AppLogger.d("❌ Error fetching open jobs: $e");
-      SnackBarHelper.error("Failed to load jobs: ${e.toString()}");
-      openJobs.value = [];
+      AppLogger.e("❌ Error fetching open jobs: $e");
+      SnackBarHelper.error("Failed to load jobs: $e");
+      openJobs.clear();
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Apply for a job
-  Future<bool> applyForJob(String jobId) async {
+  /// GET /jobs/:id (optionally increments the view counter).
+  Future<JobModel?> getJobById(String jobId, {bool incrementView = false}) async {
+    try {
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.jobs.jobDetails(jobId),
+        queryParameters: incrementView ? {'incrementView': true} : null,
+      );
+      final userId = AuthService.to.currentUserId;
+      final job = JobModel.fromJson(data);
+      return job.copyWith(isSaved: job.isSavedBy(userId));
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to load job'));
+      return null;
+    } catch (e) {
+      SnackBarHelper.error("Failed to load job: $e");
+      return null;
+    }
+  }
+
+  /// POST /jobs/:id/apply — ApplyJobDto (no userId).
+  Future<bool> applyForJob(
+    String jobId, {
+    String? coverLetter,
+    String? experience,
+    String? expectedSalary,
+    String? resume,
+    String? availability,
+  }) async {
     try {
       applyingJobId.value = jobId;
 
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-      final token = authService.currentToken;
-
-      if (userId.isEmpty) {
+      if (AuthService.to.currentUserId.isEmpty) {
         SnackBarHelper.error("Please login to apply for jobs");
         return false;
       }
 
-      // Check KYC status before applying
-      if (!KYCHelper.checkAndShowKYCDialog()) {
-        return false;
-      }
+      // KYC gate (existing app UX).
+      if (!KYCHelper.checkAndShowKYCDialog()) return false;
 
-      AppLogger.d("📝 Applying for job: $jobId");
-      AppLogger.d("📝 User ID: $userId");
-
-      final response = await HttpHelper.postData(
-        endpoint: API.applyJob,
-        data: {"jobId": jobId, "userId": userId},
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': '*/*',
+      await ApiClient.instance.post<dynamic>(
+        ApiEndpoints.jobs.apply(jobId),
+        data: {
+          if (coverLetter != null && coverLetter.isNotEmpty)
+            'coverLetter': coverLetter,
+          if (experience != null && experience.isNotEmpty)
+            'experience': experience,
+          if (expectedSalary != null && expectedSalary.isNotEmpty)
+            'expectedSalary': expectedSalary,
+          if (resume != null && resume.isNotEmpty) 'resume': resume,
+          if (availability != null && availability.isNotEmpty)
+            'availability': availability,
         },
       );
 
-      AppLogger.d("📝 Apply job response status: ${response.statusCode}");
-      AppLogger.d("📝 Apply job response body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        AppLogger.d("✅ Successfully applied for job: $jobId");
-        SnackBarHelper.success("Job application submitted successfully!");
-        return true;
-      } else {
-        AppLogger.d("❌ Failed to apply for job: ${response.statusCode}");
-        try {
-          final errorData = json.decode(response.body);
-          final errorMessage =
-              errorData['message'] ??
-              errorData['error'] ??
-              "Failed to apply for job";
-          SnackBarHelper.error(errorMessage);
-        } catch (e) {
-          SnackBarHelper.error("Failed to apply for job");
-        }
-        return false;
-      }
+      SnackBarHelper.success("Job application submitted successfully!");
+      // Refresh so the job reflects the applied state.
+      await fetchOpenJobs();
+      return true;
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to apply for job'));
+      return false;
     } catch (e) {
-      AppLogger.d("❌ Error applying for job: $e");
-      SnackBarHelper.error("Failed to apply for job: ${e.toString()}");
+      SnackBarHelper.error("Failed to apply for job: $e");
       return false;
     } finally {
       applyingJobId.value = '';
     }
   }
 
-  /// Refresh open jobs
-  Future<void> refreshOpenJobs() async {
-    await fetchOpenJobs();
-  }
-
-  /// Check if a job is being applied
-  bool isApplying(String jobId) {
-    return applyingJobId.value == jobId;
-  }
-
-  /// Toggle like on a job
-  Future<bool> toggleJobLike(String jobId) async {
+  /// DELETE /jobs/:id/withdraw
+  Future<bool> withdrawApplication(String jobId) async {
     try {
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-      final userId = authService.currentUserId;
-
-      if (token.isEmpty || userId.isEmpty) {
-        SnackBarHelper.error("Please login to like jobs");
-        return false;
-      }
-
-      // Check KYC status before liking
-      if (!KYCHelper.checkAndShowKYCDialog()) {
-        return false;
-      }
-
-      AppLogger.d("👍 Toggling like for job: $jobId");
-      AppLogger.d("👍 User ID: $userId");
-
-      // Build endpoint with both jobId and userId query parameters
-      final endpoint = '${API.toggleJobLike}?jobId=$jobId&userId=$userId';
-
-      final response = await HttpHelper.postData(
-        endpoint: endpoint,
-        data: {}, // Empty body as per API
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': '*/*',
-        },
+      await ApiClient.instance.delete<dynamic>(
+        ApiEndpoints.jobs.withdraw(jobId),
       );
-
-      AppLogger.d("👍 Toggle like response status: ${response.statusCode}");
-      AppLogger.d("👍 Toggle like response body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Find the job in the list and update its like status
-        final jobIndex = openJobs.indexWhere((job) => job.jobId == jobId);
-        if (jobIndex != -1) {
-          final job = openJobs[jobIndex];
-          // Toggle the like status and update count
-          final newIsLiked = !job.isLiked;
-          final newLikeCount = newIsLiked
-              ? job.likeCount + 1
-              : job.likeCount - 1;
-
-          // Create updated job
-          final updatedJob = OpenJob(
-            jobId: job.jobId,
-            role: job.role,
-            jobDuration: job.jobDuration,
-            openings: job.openings,
-            salary: job.salary,
-            city: job.city,
-            jobType: job.jobType,
-            description: job.description,
-            imagePaths: job.imagePaths,
-            isApplied: job.isApplied,
-            likeCount: newLikeCount >= 0 ? newLikeCount : 0,
-            isLiked: newIsLiked,
-            companyName: job.companyName, // Preserve company name
-          );
-
-          // Update the job in the list
-          openJobs[jobIndex] = updatedJob;
-          AppLogger.d("✅ Successfully toggled like for job: $jobId");
-        }
-        return true;
-      } else {
-        AppLogger.d("❌ Failed to toggle like: ${response.statusCode}");
-        try {
-          final errorData = json.decode(response.body);
-          final errorMessage =
-              errorData['message'] ??
-              errorData['error'] ??
-              "Failed to toggle like";
-          SnackBarHelper.error(errorMessage);
-        } catch (e) {
-          SnackBarHelper.error("Failed to toggle like");
-        }
-        return false;
-      }
+      SnackBarHelper.success("Application withdrawn");
+      await fetchOpenJobs();
+      return true;
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to withdraw'));
+      return false;
     } catch (e) {
-      AppLogger.d("❌ Error toggling like: $e");
-      SnackBarHelper.error("Failed to toggle like: ${e.toString()}");
+      SnackBarHelper.error("Failed to withdraw: $e");
       return false;
     }
+  }
+
+  /// Toggle bookmark: POST /jobs/:id/save or DELETE /jobs/:id/unsave.
+  Future<bool> toggleSave(String jobId) async {
+    final index = openJobs.indexWhere((j) => j.id == jobId);
+    final currentlySaved = index != -1 && openJobs[index].isSaved;
+    return currentlySaved ? unsaveJob(jobId) : saveJob(jobId);
+  }
+
+  /// POST /jobs/:id/save
+  Future<bool> saveJob(String jobId) async {
+    try {
+      savingJobId.value = jobId;
+      await ApiClient.instance.post<dynamic>(ApiEndpoints.jobs.saveJob(jobId));
+      _setSaved(jobId, true);
+      SnackBarHelper.success("Job saved");
+      return true;
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to save job'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to save job: $e");
+      return false;
+    } finally {
+      savingJobId.value = '';
+    }
+  }
+
+  /// DELETE /jobs/:id/unsave
+  Future<bool> unsaveJob(String jobId) async {
+    try {
+      savingJobId.value = jobId;
+      await ApiClient.instance.delete<dynamic>(
+        ApiEndpoints.jobs.unsaveJob(jobId),
+      );
+      _setSaved(jobId, false);
+      SnackBarHelper.success("Removed from saved");
+      return true;
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to unsave job'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to unsave job: $e");
+      return false;
+    } finally {
+      savingJobId.value = '';
+    }
+  }
+
+  void _setSaved(String jobId, bool saved) {
+    final index = openJobs.indexWhere((j) => j.id == jobId);
+    if (index != -1) {
+      openJobs[index] = openJobs[index].copyWith(isSaved: saved);
+      openJobs.refresh();
+    }
+  }
+
+  Future<void> refreshOpenJobs() => fetchOpenJobs();
+
+  bool isApplying(String jobId) => applyingJobId.value == jobId;
+  bool isSaving(String jobId) => savingJobId.value == jobId;
+
+  bool isSaved(String jobId) {
+    final i = openJobs.indexWhere((j) => j.id == jobId);
+    return i != -1 && openJobs[i].isSaved;
+  }
+
+  String _msg(DioException e, {String fallback = 'Something went wrong'}) {
+    return e.error is ApiException
+        ? (e.error as ApiException).message
+        : fallback;
   }
 }

@@ -1,10 +1,10 @@
-import 'dart:convert';
-
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
-import '../../apihelperclass/api_helper.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
 import '../../models/service_model.dart';
-import '../../utils/constants.dart';
 import '../../widgets/custom_snackbar.dart';
 
 class ServiceController extends GetxController {
@@ -26,22 +26,25 @@ class ServiceController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final response = await HttpHelper.getData(
-        endpoint: API.serviceList,
-        headers: const {'Accept': '*/*'},
+      // Backend GET /services returns a plain array directly
+      final response = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.services.list,
       );
 
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final List<dynamic> data = body['data'] as List<dynamic>? ?? [];
-
-        services.assignAll(
-          data.map((e) => ServiceModel.fromJson(e as Map<String, dynamic>)),
-        );
-      } else {
-        errorMessage.value = 'Failed to load services (${response.statusCode})';
-        SnackBarHelper.error(errorMessage.value);
+      List<dynamic> data = [];
+      if (response is List) {
+        data = response;
+      } else if (response is Map) {
+        data = (response['data'] as List<dynamic>?) ?? (response['services'] as List<dynamic>?) ?? [];
       }
+
+      services.assignAll(
+        data.map((e) => ServiceModel.fromJson(e as Map<String, dynamic>)),
+      );
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load services';
+      errorMessage.value = msg;
+      SnackBarHelper.error(msg);
     } catch (e) {
       errorMessage.value = 'Failed to load services: ${e.toString()}';
       SnackBarHelper.error(errorMessage.value);
@@ -55,37 +58,34 @@ class ServiceController extends GetxController {
       isDetailLoading.value = true;
       errorMessage.value = '';
 
-      final response = await HttpHelper.getData(
-        endpoint: '${API.serviceDetail}$serviceId',
-        headers: const {'Accept': '*/*'},
+      final response = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.services.details(serviceId),
       );
 
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final data = body['data'];
-        if (data is Map<String, dynamic>) {
-          final detail = ServiceModel.fromJson(data);
+      // Backend returns the service object directly, not wrapped in {data: {}}
+      final raw = response is Map && response.containsKey('data') ? response['data'] : response;
+      if (raw is Map<String, dynamic>) {
+        final detail = ServiceModel.fromJson(raw);
 
-          // Merge detail into existing list item if present
-          final index = services.indexWhere(
-            (element) => element.serviceId == serviceId,
-          );
-          if (index != -1) {
-            final updated = services[index].copyWith(detail);
-            services[index] = updated;
-            selectedService.value = updated;
-          } else {
-            selectedService.value = detail;
-          }
+        // Merge detail into existing list item if present
+        final index = services.indexWhere(
+          (element) => element.serviceId == serviceId,
+        );
+        if (index != -1) {
+          final updated = services[index].copyWith(detail);
+          services[index] = updated;
+          selectedService.value = updated;
         } else {
-          errorMessage.value = 'Invalid detail response';
-          SnackBarHelper.error(errorMessage.value);
+          selectedService.value = detail;
         }
       } else {
-        errorMessage.value =
-            'Failed to load service detail (${response.statusCode})';
+        errorMessage.value = 'Invalid detail response';
         SnackBarHelper.error(errorMessage.value);
       }
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load service detail';
+      errorMessage.value = msg;
+      SnackBarHelper.error(msg);
     } catch (e) {
       errorMessage.value = 'Failed to load service detail: ${e.toString()}';
       SnackBarHelper.error(errorMessage.value);
@@ -120,35 +120,27 @@ class ServiceController extends GetxController {
         payload['serviceTitle'] = serviceTitle;
       }
 
-      final response = await HttpHelper.postData(
-        endpoint: API.assignService,
+      final response = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiEndpoints.services.createBooking,
         data: payload,
-        headers: const {'Accept': '*/*', 'Content-Type': 'application/json'},
       );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final body = response.body.isNotEmpty
-            ? jsonDecode(response.body) as Map<String, dynamic>?
-            : null;
-        final successValue = body?['success'];
-        final responseSuccess = successValue is bool ? successValue : true;
+      final successValue = response['success'];
+      final responseSuccess = successValue is bool ? successValue : true;
 
-        if (responseSuccess) {
-          final message =
-              body?['message'] as String? ?? 'Service assigned successfully.';
-          SnackBarHelper.success(message);
-          return true;
-        } else {
-          final message =
-              body?['message'] as String? ?? 'Failed to assign service.';
-          errorMessage.value = message;
-          SnackBarHelper.error(message);
-        }
+      if (responseSuccess) {
+        final message = response['message'] as String? ?? 'Service assigned successfully.';
+        SnackBarHelper.success(message);
+        return true;
       } else {
-        errorMessage.value =
-            'Failed to assign service (${response.statusCode})';
-        SnackBarHelper.error(errorMessage.value);
+        final message = response['message'] as String? ?? 'Failed to assign service.';
+        errorMessage.value = message;
+        SnackBarHelper.error(message);
       }
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to assign service';
+      errorMessage.value = msg;
+      SnackBarHelper.error(msg);
     } catch (e) {
       errorMessage.value = 'Failed to assign service: ${e.toString()}';
       SnackBarHelper.error(errorMessage.value);

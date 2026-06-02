@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../TripDashboard/TripDashboardScreen.dart';
-import '../TripProgress/TripProgressScreen.dart';
 import '../TrackTrip/TrackTripScreen.dart';
 import '../../../widgets/custom_loader.dart';
 
+/// Smart router — sends the professional to whichever screen is appropriate
+/// based on the current state of their assigned trips.
+///
+/// Priority:
+///   1. Active/in-progress trip  → TrackTripScreen (step=inTransit)
+///   2. Pending/scheduled trip   → TrackTripScreen (step=readyToStart / confirmOtp)
+///   3. No current trips         → TripDashboardScreen
 class ProfessionalTripsScreen extends StatelessWidget {
   const ProfessionalTripsScreen({super.key});
 
@@ -20,33 +26,41 @@ class ProfessionalTripsScreen extends StatelessWidget {
 
       final trips = assignedTripController.assignedTrips;
 
-      // 1. Map statuses (Live tracking)
+      // 1. Active trip that needs live tracking (in-progress / en-route)
       final active = trips.firstWhereOrNull((t) {
         final s = t.tripStatus.toLowerCase();
-        return [
+        return const {
           'in progress',
           'inprogress',
           'active',
           'ongoing',
           'en route',
-        ].contains(s);
+          'en-route-to-pickup',
+          'arrived-at-pickup',
+          'in-progress',
+          'awaiting-pod',
+          'arrived',
+        }.contains(s);
       });
 
       if (active != null) {
         return TrackTripScreen(tripId: active.tripId);
       }
 
-      // 2. Progress/Start statuses (Any non-finished trip)
+      // 2. Any pending/upcoming trip — let the step machine handle it
       final next = trips.firstWhereOrNull((t) {
         final s = t.tripStatus.toLowerCase();
-        return s != 'completed' && s != 'cancelled';
+        return s != 'completed' &&
+            s != 'cancelled' &&
+            s != 'done' &&
+            s != 'finished';
       });
 
       if (next != null) {
-        return TripProgressScreen(trip: next);
+        return TrackTripScreen(tripId: next.tripId);
       }
 
-      // 3. Fallback to Dashboard only if no current/upcoming trips
+      // 3. Nothing active → show dashboard/history
       return const TripDashboardScreen();
     });
   }

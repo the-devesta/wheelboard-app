@@ -1,9 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'dart:convert';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/core/network/api_client.dart';
+import 'package:wheelboard/core/network/api_endpoints.dart';
+import 'package:wheelboard/core/network/api_exception.dart';
 import 'package:wheelboard/models/Professional/trip_dashboard_model.dart';
-import 'package:wheelboard/services/auth_service.dart';
-import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../utils/app_logger.dart';
 
 class TripDashboardController extends GetxController {
@@ -24,30 +25,21 @@ class TripDashboardController extends GetxController {
       final userId = _authService.currentUserId;
       if (userId.isEmpty) {
         AppLogger.d('⚠️ User not logged in or userId is missing');
-        isLoading(false);
         return;
       }
 
       AppLogger.d("📊 Fetching trip dashboard data for userId: $userId");
 
-      final response = await HttpHelper.getData(
-        endpoint: '${API.tripDashboard}?userId=$userId',
-        headers: {
-          'Authorization': 'Bearer ${_authService.currentToken}',
-          'Accept': 'application/json',
-        },
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.trips.tripDashboard,
+        queryParameters: {'userId': userId},
       );
 
-      if (response.statusCode == 200) {
-        AppLogger.d("📊 Dashboard Data: ${response.body}"); // Log raw data
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        dashboardData.value = TripDashboardModel.fromJson(data);
-        AppLogger.d("✅ Trip dashboard data loaded successfully");
-      } else {
-        AppLogger.d(
-          '❌ Failed to load trip dashboard data: ${response.statusCode}',
-        );
-      }
+      dashboardData.value = TripDashboardModel.fromJson(data);
+      AppLogger.d("✅ Trip dashboard data loaded successfully");
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load trip dashboard data';
+      AppLogger.d('❌ Error fetching trip dashboard data: $msg');
     } catch (e) {
       AppLogger.d('❌ Error fetching trip dashboard data: $e');
     } finally {

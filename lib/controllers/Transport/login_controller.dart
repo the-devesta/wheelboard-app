@@ -1,21 +1,25 @@
 import 'package:get/get.dart';
-import 'dart:convert';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../utils/error_handler.dart';
+
+import '../../core/auth/auth_service.dart' as core;
+import '../../core/auth/auth_models.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 
+/// Login controller — now uses the centralized [core.AuthService]
+/// which calls the same endpoints as wheelboard-fe:
+///   - POST /api/auth/request-otp  { mobileNo }
+///   - POST /api/auth/login/otp    { mobileNo, otp }
+///   - POST /api/auth/login        { identifier, password }
 class LoginController extends GetxController {
   var isLoading = false.obs;
   var isOTPSent = false.obs;
-
-  /// 👁️ Password visibility toggle
   var obscurePassword = true.obs;
+
+  core.AuthService get _auth => core.AuthService.to;
 
   String _formatPhone(String phone) {
     String p = phone.trim();
-    // Remove +91 or 91 prefix if present - API expects plain 10 digit number
+    // Remove +91 or 91 prefix if present — API expects plain 10-digit number
     if (p.startsWith('+91')) {
       p = p.substring(3);
     } else if (p.startsWith('91') && p.length > 10) {
@@ -28,7 +32,9 @@ class LoginController extends GetxController {
     isOTPSent.value = false;
   }
 
-  /// Send OTP API
+  // ── Send OTP ───────────────────────────────────────────────────────────
+  // Calls: POST /api/auth/request-otp { mobileNo }
+
   Future<bool> sendOTP(String phone) async {
     final formattedPhone = _formatPhone(phone);
     if (formattedPhone.isEmpty) {
@@ -38,50 +44,23 @@ class LoginController extends GetxController {
 
     isLoading.value = true;
     try {
-      final requestData = {"mobileNo": formattedPhone};
-
-      AppLogger.apiRequest(
-        endpoint: API.sendOtp,
-        method: 'POST',
-        data: requestData,
-      );
-
-      final response = await HttpHelper.postData(
-        endpoint: API.sendOtp,
-        data: requestData,
-        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
-      );
-
-      AppLogger.apiResponse(
-        endpoint: API.sendOtp,
-        statusCode: response.statusCode,
-        body: response.body,
-        isError: response.statusCode != 200,
-      );
-
-      if (response.statusCode == 200) {
-        isOTPSent.value = true;
-        SnackBarHelper.success("OTP sent successfully");
-        return true;
-      } else {
-        final errorMessage = ErrorHandler.parseError(
-          response.body,
-          statusCode: response.statusCode,
-        );
-        SnackBarHelper.error(errorMessage);
-        return false;
-      }
+      final message = await _auth.requestOtp(mobileNo: formattedPhone);
+      isOTPSent.value = true;
+      SnackBarHelper.success(message);
+      return true;
     } catch (e) {
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.error(core.AuthService.extractError(e));
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Login with OTP API
-  Future<Map<String, dynamic>?> loginWithOTP(String phone, String otp) async {
+  // ── Login with OTP ─────────────────────────────────────────────────────
+  // Calls: POST /api/auth/login/otp { mobileNo, otp }
+  // Returns the full AuthResponse so the UI can read user/role/profile.
+
+  Future<AuthResponse?> loginWithOTP(String phone, String otp) async {
     final formattedPhone = _formatPhone(phone);
     if (formattedPhone.isEmpty) {
       SnackBarHelper.error('Please enter phone number');
@@ -94,162 +73,55 @@ class LoginController extends GetxController {
 
     isLoading.value = true;
     try {
-      final requestData = {"mobileNo": formattedPhone, "otp": otp.trim()};
-
-      AppLogger.apiRequest(
-        endpoint: API.loginWithOtp,
-        method: 'POST',
-        data: requestData,
+      final response = await _auth.loginWithOtp(
+        mobileNo: formattedPhone,
+        otp: otp.trim(),
       );
-
-      final response = await HttpHelper.postData(
-        endpoint: API.loginWithOtp,
-        data: requestData,
-        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
-      );
-
-      AppLogger.apiResponse(
-        endpoint: API.loginWithOtp,
-        statusCode: response.statusCode,
-        body: response.body,
-        isError: response.statusCode != 200,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final isSuccess = data['success'] == true;
-
-        if (isSuccess && data.containsKey('data') && data['data'] != null) {
-          final responseData = data['data'] as Map<String, dynamic>;
-          if (responseData.containsKey('token') &&
-              responseData.containsKey('userId')) {
-            return responseData;
-          } else {
-            SnackBarHelper.error('Missing token or userId in response');
-            return null;
-          }
-        } else {
-          SnackBarHelper.error(data['message'] ?? 'Login failed');
-          return null;
-        }
-      } else {
-        final errorMessage = ErrorHandler.parseError(
-          response.body,
-          statusCode: response.statusCode,
-        );
-        SnackBarHelper.error(errorMessage);
-        return null;
-      }
+      AppLogger.d('✅ OTP login successful: ${response.user.role.value}');
+      return response;
     } catch (e) {
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.error(core.AuthService.extractError(e));
       return null;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Login API (Existing)
-  Future<Map<String, dynamic>?> login(String phone, String password) async {
-    // ✅ Validate inputs before making API call
-    if (phone.trim().isEmpty) {
-      AppLogger.e('Login failed: Phone number is empty');
+  // ── Login with Password ────────────────────────────────────────────────
+  // Calls: POST /api/auth/login { identifier, password }
+
+  Future<AuthResponse?> login(String identifier, String password) async {
+    if (identifier.trim().isEmpty) {
+      SnackBarHelper.error('Please enter phone number or email');
       return null;
     }
-
     if (password.trim().isEmpty) {
-      AppLogger.e('Login failed: Password is empty');
+      SnackBarHelper.error('Please enter password');
       return null;
     }
 
     isLoading.value = true;
-
     try {
-      final requestData = {
-        "mobileNo": phone.trim(),
-        "password": password.trim(),
-      };
-
-      // Log API Request
-      AppLogger.apiRequest(
-        endpoint: API.login,
-        method: 'POST',
-        data: {
-          "mobileNo": phone.trim(),
-          "password": '*' * password.length, // Hide password in logs
-        },
-      );
-
-      final response = await HttpHelper.postData(
-        endpoint: API.login,
-        data: requestData,
-      );
-
-      // Log API Response
-      AppLogger.apiResponse(
-        endpoint: API.login,
-        statusCode: response.statusCode,
-        body: response.body,
-        isError: response.statusCode != 200,
-      );
-
-      if (response.statusCode == 200) {
-        try {
-          final data = json.decode(response.body);
-          AppLogger.i('Login successful, data received');
-
-          // ✅ Check for success field and data object
-          final isSuccess = data['success'] == true;
-
-          if (isSuccess && data.containsKey('data') && data['data'] != null) {
-            final responseData = data['data'] as Map<String, dynamic>;
-
-            // ✅ Validate required fields
-            if (responseData.containsKey('token') &&
-                responseData.containsKey('userId') &&
-                responseData['token'] != null &&
-                responseData['userId'] != null) {
-              AppLogger.auth('Login data extracted successfully');
-              return responseData; // Return the data object
-            } else {
-              AppLogger.e('Login failed: Missing token or userId in response');
-              return null;
-            }
-          } else if (!isSuccess) {
-            AppLogger.e('Login failed: success field is false');
-            return null;
-          } else {
-            AppLogger.e('Login failed: No data in response');
-            return null;
-          }
-        } catch (e) {
-          AppLogger.e('Login failed: Error parsing response', error: e);
-          return null;
-        }
-      } else {
-        AppLogger.e('Login failed with status: ${response.statusCode}');
-
-        // Use ErrorHandler to parse and display user-friendly error
-        final errorMessage = ErrorHandler.parseError(
-          response.body,
-          statusCode: response.statusCode,
-        );
-        SnackBarHelper.error(errorMessage);
-        return null;
+      // Format phone if it looks like a phone number
+      String formattedIdentifier = identifier.trim();
+      if (!formattedIdentifier.contains('@')) {
+        formattedIdentifier = _formatPhone(formattedIdentifier);
       }
-    } catch (e, stackTrace) {
-      AppLogger.e('LOGIN EXCEPTION', error: e, stackTrace: stackTrace);
 
-      // Use ErrorHandler for network errors
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+      final response = await _auth.login(
+        identifier: formattedIdentifier,
+        password: password.trim(),
+      );
+      AppLogger.d('✅ Password login successful: ${response.user.role.value}');
+      return response;
+    } catch (e) {
+      SnackBarHelper.error(core.AuthService.extractError(e));
       return null;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// 👁️ Toggle password visibility
   void togglePasswordVisibility() {
     obscurePassword.value = !obscurePassword.value;
   }

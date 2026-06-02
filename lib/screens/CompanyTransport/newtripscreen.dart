@@ -1,354 +1,241 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
+
 import '../../controllers/Transport/add_trip_controller.dart';
-import '../../utils/session_manager.dart';
+import '../../core/auth/auth_service.dart';
 import '../../utils/distance_service.dart';
 import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
-import 'dart:math';
 import '../../utils/constants.dart';
 import '../../utils/app_logger.dart';
+
+// ── Design tokens (match Home & Fleet) ────────────────────────────────────────
+const _primary   = Color(0xFFF36969);
+const _bg        = Color(0xFFF9FAFB);
+const _card      = Colors.white;
+const _textDark  = Color(0xFF111827);
+const _textGrey  = Color(0xFF6B7280);
+const _border    = Color(0xFFE5E7EB);
 
 class Newtripscreen extends StatefulWidget {
   const Newtripscreen({super.key});
 
   @override
-  State<Newtripscreen> createState() => _ScheduleTripScreenState();
+  State<Newtripscreen> createState() => _NewTripScreenState();
 }
 
-class _ScheduleTripScreenState extends State<Newtripscreen> {
+class _NewTripScreenState extends State<Newtripscreen> {
   final TripController tripController = Get.put(TripController());
 
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
 
-  final TextEditingController pickupController = TextEditingController();
-  final TextEditingController deliveryController = TextEditingController();
-  final TextEditingController specialInstructionsController =
-      TextEditingController();
-  final TextEditingController minPayRangeController = TextEditingController();
-  final TextEditingController maxPayRangeController = TextEditingController();
-  final PlacesService placesService = PlacesService(
-    apiKey: MapsConstants.googleMapsApiKey,
-  ); // <-- put your key here
+  final pickupController = TextEditingController();
+  final deliveryController = TextEditingController();
+  final specialInstructionsController = TextEditingController();
+  final minPayRangeController = TextEditingController();
+  final maxPayRangeController = TextEditingController();
+
+  final PlacesService placesService =
+      PlacesService(apiKey: MapsConstants.googleMapsApiKey);
 
   List<Suggestion> pickupSuggestions = [];
   List<Suggestion> deliverySuggestions = [];
 
-  // Distance calculation state
   DistanceResult? _distanceResult;
   bool _isCalculatingDistance = false;
   bool _isLoadingLocation = false;
-  double? _pickupLat;
-  double? _pickupLng;
-  double? _deliveryLat;
-  double? _deliveryLng;
+  double? _pickupLat, _pickupLng, _deliveryLat, _deliveryLng;
 
   @override
   void initState() {
     super.initState();
-
-    _FetchDrivers();
-    _FetchVehicles();
-  }
-
-  Future<void> _FetchDrivers() async {
-    final sessionManager = SessionManager();
-    final userId = await sessionManager.getString("userId");
-
-    if (userId != null && userId.isNotEmpty) {
-      tripController.fetchDrivers(userId);
-    } else {
-      AppLogger.d("UserId is null or empty");
-    }
-  }
-
-  Future<void> _FetchVehicles() async {
-    final sessionManager = SessionManager();
-    final userId = await sessionManager.getString("userId");
-
-    if (userId != null && userId.isNotEmpty) {
-      tripController.fetchVehicles(userId);
-    } else {
-      AppLogger.d("UserId is null or empty");
-    }
+    _fetchDrivers();
+    _fetchVehicles();
   }
 
   @override
+  void dispose() {
+    pickupController.dispose();
+    deliveryController.dispose();
+    specialInstructionsController.dispose();
+    minPayRangeController.dispose();
+    maxPayRangeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchDrivers() async =>
+      tripController.fetchDrivers(AuthService.to.userId);
+  Future<void> _fetchVehicles() async =>
+      tripController.fetchVehicles(AuthService.to.userId);
+
+  // ── build ──────────────────────────────────────────────────────────────────
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3),
+      backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'New Post Trip',
-          style: TextStyle(
-            color: Color(0xFF1E1E1E),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-            letterSpacing: -0.14,
-          ),
-        ),
-        leading: const BackButton(color: Colors.black),
-        shape: const Border(
-          bottom: BorderSide(color: Color(0xFFFCD2D2), width: 1),
-        ),
+        backgroundColor: _card,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: _primary, size: 20),
+          onPressed: () => Get.back()),
+        centerTitle: true,
+        title: Text('Post a Trip', style: GoogleFonts.poppins(
+          fontSize: 17, fontWeight: FontWeight.w600, color: _textDark)),
       ),
       body: SingleChildScrollView(
-        child: Center(
-          child: Container(
-            margin: const EdgeInsets.only(top: 24),
-            width: 343,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _headerBanner(
+            icon: Iconsax.box,
+            title: 'Create a New Trip',
+            subtitle: 'Post a trip and receive bids from professionals.'),
+          const SizedBox(height: 16),
+
+          _sectionCard(title: 'Vehicle', icon: Iconsax.truck, child: _vehicleDropdown()),
+          const SizedBox(height: 14),
+
+          _sectionCard(title: 'Route', icon: Iconsax.routing, child: Column(children: [
+            _pickupField(),
+            const SizedBox(height: 16),
+            _deliveryField(),
+            const SizedBox(height: 14),
+            _distanceWidget(),
+          ])),
+          const SizedBox(height: 14),
+
+          _sectionCard(title: 'Schedule', icon: Iconsax.calendar_1, child: Row(children: [
+            Expanded(child: _pickerField(
+              label: 'Date',
+              value: selectedDate == null
+                  ? null
+                  : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+              hint: 'Choose date',
+              icon: Iconsax.calendar,
+              onTap: _pickDate)),
+            const SizedBox(width: 12),
+            Expanded(child: _pickerField(
+              label: 'Time',
+              value: selectedTime?.format(context),
+              hint: 'Choose time',
+              icon: Iconsax.clock,
+              onTap: _pickTime)),
+          ])),
+          const SizedBox(height: 14),
+
+          _sectionCard(title: 'Details', icon: Iconsax.document_text, child: Column(children: [
+            _fieldLabel('Special Instructions'),
+            const SizedBox(height: 6),
+            _input(specialInstructionsController, 'Enter special instructions', maxLines: 3),
+            const SizedBox(height: 16),
+            Row(children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _fieldLabel('Min Pay (₹)'),
+                const SizedBox(height: 6),
+                _input(minPayRangeController, '0', keyboard: TextInputType.number),
+              ])),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _fieldLabel('Max Pay (₹)'),
+                const SizedBox(height: 6),
+                _input(maxPayRangeController, '0', keyboard: TextInputType.number),
+              ])),
+            ]),
+          ])),
+          const SizedBox(height: 24),
+
+          Obx(() => SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: tripController.isLoading.value ? null : _postTrip,
+              icon: tripController.isLoading.value
+                  ? const SizedBox(width: 18, height: 18,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Icon(Iconsax.send_2, size: 18),
+              label: Text(tripController.isLoading.value ? 'Posting…' : 'Post Trip',
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary, foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: Text(
-                      "Trip Details",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Poppins',
-                        color: const Color(0xFF6C7278),
-                        letterSpacing: -0.32,
-                      ),
-                    ),
-                  ),
-                ),
-
-                _buildVehicleDropdown(),
-                const SizedBox(height: 17),
-
-                _buildPickupField(),
-                const SizedBox(height: 17),
-
-                _buildDeliveryField(),
-                const SizedBox(height: 17),
-
-                // Estimated Distance Widget
-                _buildEstimatedDistanceWidget(),
-                const SizedBox(height: 17),
-
-                _buildDatePicker(context),
-                const SizedBox(height: 17),
-
-                _buildTimePicker(context),
-                const SizedBox(height: 17),
-
-                _buildSpecialInstructionsField(),
-                const SizedBox(height: 17),
-
-                _buildPayRangeFields(),
-                const SizedBox(height: 24),
-
-                Center(
-                  child: SizedBox(
-                    width: 295,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        // Using userId-based authentication (token not required)
-                        final userId = await SessionManager().getString(
-                          "userId",
-                        );
-
-                        if (userId == null || userId.isEmpty) {
-                          Get.snackbar("Error", "User not logged in");
-                          return;
-                        }
-
-                        // Combine min and max pay range for backend
-                        final payRange =
-                            minPayRangeController.text.isNotEmpty &&
-                                maxPayRangeController.text.isNotEmpty
-                            ? "Rs ${minPayRangeController.text} - Rs ${maxPayRangeController.text}"
-                            : "";
-
-                        // ✅ Build Trip object according to new API structure
-                        // Note: driverId is NOT included as there's no driver selection in this UI
-                        final trip = Trip(
-                          tripId: "", // Empty for new trips
-                          userId: userId,
-                          vehicleId: tripController.selectedVehicle.value ?? "",
-                          driverId:
-                              "", // Not used in new trip screen - no driver selection UI
-                          pickupLocation: pickupController.text.trim(),
-                          deliveryLocation: deliveryController.text.trim(),
-                          pickupDate: selectedDate,
-                          pickupTime: selectedTime != null
-                              ? _formatTimeOfDay(selectedTime!)
-                              : "",
-                          specialInstructions: specialInstructionsController
-                              .text
-                              .trim(),
-                          payRange: payRange.trim(),
-                          tripCode:
-                              "TRIP-${DateTime.now().millisecondsSinceEpoch}", // Auto-generated
-                          tripStatus: "Pending", // Default status
-                          isScheduledTrip:
-                              false, // ❌ This is a POST trip - no driver assigned
-                          latitude: _deliveryLat,
-                          longitude: _deliveryLng,
-                          distance: _distanceResult != null
-                              ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
-                              : "",
-                        );
-
-                        // ✅ Send API call (userId-based auth, no token needed)
-                        await tripController.addTrip(trip);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF25C5C),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 24,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        "Post Trip",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontFamily: 'Poppins',
-                          letterSpacing: -0.14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+          )),
+        ]),
       ),
     );
   }
 
-  Widget _buildVehicleDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Select Vehicle",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.normal,
-            fontFamily: 'Poppins',
-            color: const Color(0xFF535353),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Obx(() {
-          if (tripController.isVehicleLoading.value) {
-            return const CircularProgressIndicator();
-          }
-          if (tripController.vehicles.isEmpty) {
-            return const Text("No vehicles available");
-          }
-          return DropdownButtonFormField<String>(
-            initialValue: tripController.selectedVehicle.value,
-            hint: Text(
-              "Select Vehicle",
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Poppins',
-                color: const Color(0xFF8F9098),
-              ),
-            ),
-            isExpanded: true,
-            decoration: _inputDecoration(
-              borderColor: const Color(0xFFC5C6CC),
-              height: 48,
-            ),
-            items: tripController.vehicles
-                .map(
-                  (vehicle) => DropdownMenuItem(
-                    value: vehicle.vehicleId,
-                    child: Text(vehicle.vehicleModel),
-                  ),
-                )
-                .toList(),
-            onChanged: (val) => tripController.selectedVehicle.value = val,
-            icon: const Icon(
-              Icons.keyboard_arrow_down,
-              color: Color(0xFF006FFD),
-              size: 12,
-            ),
-          );
-        }),
-      ],
-    );
+  // ── actions ──────────────────────────────────────────────────────────────
+  Future<void> _pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100));
+    if (date != null) setState(() => selectedDate = date);
   }
 
-  // Widget _buildDriverDropdown() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text("Select Driver"),
-  //       const SizedBox(height: 6),
-  //       Obx(() {
-  //         if (tripController.isLoading.value) {
-  //           return const CircularProgressIndicator(); // Show loading indicator
-  //         }
-  //         if (tripController.drivers.isEmpty) {
-  //           return const Text("No drivers available");
-  //         }
-  //         return DropdownButtonFormField<String>(
-  //           value: tripController.selectedDriver.value,
-  //           hint: const Text("Select Driver"),
-  //           isExpanded: true,
-  //           decoration: _inputDecoration(borderColor: fieldBorderColor),
-  //           items: tripController.drivers
-  //               .map(
-  //                 (driver) => DropdownMenuItem(
-  //                   value: driver.driverId, // Use driver ID as the value
-  //                   child: Text(driver.fullName), // Display driver name
-  //                 ),
-  //               )
-  //               .toList(),
-  //           onChanged: (val) => tripController.selectedDriver.value = val,
-  //         );
-  //       }),
-  //     ],
-  //   );
-  // }
+  Future<void> _pickTime() async {
+    final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    if (time != null) setState(() => selectedTime = time);
+  }
+
+  Future<void> _postTrip() async {
+    final userId = AuthService.to.userId;
+    if (userId.isEmpty) {
+      Get.snackbar('Error', 'User not logged in');
+      return;
+    }
+    final payRange = minPayRangeController.text.isNotEmpty &&
+            maxPayRangeController.text.isNotEmpty
+        ? 'Rs ${minPayRangeController.text} - Rs ${maxPayRangeController.text}'
+        : '';
+
+    final trip = Trip(
+      tripId: '',
+      userId: userId,
+      vehicleId: tripController.selectedVehicle.value ?? '',
+      driverId: '',
+      pickupLocation: pickupController.text.trim(),
+      deliveryLocation: deliveryController.text.trim(),
+      pickupDate: selectedDate,
+      pickupTime: selectedTime != null ? _formatTimeOfDay(selectedTime!) : '',
+      specialInstructions: specialInstructionsController.text.trim(),
+      payRange: payRange.trim(),
+      tripCode: '',
+      tripStatus: '',
+      isScheduledTrip: false,
+      pickupLat: _pickupLat,
+      pickupLng: _pickupLng,
+      latitude: _deliveryLat,
+      longitude: _deliveryLng,
+      distance: _distanceResult != null
+          ? '${_distanceResult!.distanceKm.toStringAsFixed(2)} km'
+          : '',
+    );
+    await tripController.addTrip(trip);
+  }
 
   String _formatTimeOfDay(TimeOfDay time) {
     final now = DateTime.now();
     final dt = DateTime(now.year, now.month, now.day, time.hour, time.minute);
-    return "${dt.hour.toString().padLeft(2, '0')}:"
-        "${dt.minute.toString().padLeft(2, '0')}:00";
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:00';
   }
 
-  /// Get current location and fill in the controller
   Future<void> _getCurrentLocation(TextEditingController controller) async {
     setState(() => _isLoadingLocation = true);
-
     try {
       final position = await LocationService.getCurrentPosition();
       final address = position != null
           ? await LocationService.getAddressFromCoordinates(
-              position.latitude,
-              position.longitude,
-            )
+              position.latitude, position.longitude)
           : null;
-
       if (address != null && address.isNotEmpty) {
         setState(() {
           controller.text = address;
@@ -357,677 +244,333 @@ class _ScheduleTripScreenState extends State<Newtripscreen> {
             _pickupLng = position?.longitude;
           }
         });
-
-        // Auto-calculate distance if both locations are set
         _autoCalculateDistance();
-
-        Get.snackbar(
-          '✅ Success',
-          'Current location filled successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.withValues(alpha: 0.8),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
-        );
       } else {
-        Get.snackbar(
-          '❌ Error',
-          'Could not get current location. Please check permissions.',
+        Get.snackbar('Location', 'Could not get current location. Check permissions.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withValues(alpha: 0.8),
-          colorText: Colors.white,
-        );
+          backgroundColor: Colors.red.withValues(alpha: 0.8), colorText: Colors.white);
       }
     } catch (e) {
-      Get.snackbar(
-        '❌ Error',
-        'Failed to get location: $e',
+      Get.snackbar('Location', 'Failed to get location',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withValues(alpha: 0.8),
-        colorText: Colors.white,
-      );
+        backgroundColor: Colors.red.withValues(alpha: 0.8), colorText: Colors.white);
     } finally {
-      setState(() => _isLoadingLocation = false);
+      if (mounted) setState(() => _isLoadingLocation = false);
     }
-  }
-
-  // Widget _buildPickupField() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text("Pickup Location"),
-  //       const SizedBox(height: 6),
-  //       TextFormField(
-  //         controller: pickupController,
-  //         decoration: _inputDecoration(
-  //           hint: "Enter pickup location",
-  //           borderColor: fieldBorderColor,
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-  Widget _buildPickupField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Pickup Location",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Poppins',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.24,
-          ),
-        ),
-        const SizedBox(height: 2),
-        TextFormField(
-          controller: pickupController,
-          decoration: _inputDecoration(
-            hint: "Enter pickup location",
-            borderColor: const Color(0xFFEDF1F3),
-            height: 46,
-          ),
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Poppins',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.14,
-          ),
-          onChanged: (value) async {
-            if (value.isNotEmpty) {
-              final results = await placesService.fetchSuggestions(value);
-              setState(() => pickupSuggestions = results);
-            } else {
-              setState(() => pickupSuggestions = []);
-            }
-          },
-        ),
-        if (pickupSuggestions.isNotEmpty)
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFEDF1F3)),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: pickupSuggestions.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final s = pickupSuggestions[index];
-                return ListTile(
-                  title: Text(s.description),
-                  subtitle: Text(s.subTitle),
-                  onTap: () async {
-                    setState(() {
-                      pickupController.text = s.description;
-                      pickupSuggestions.clear();
-                    });
-
-                    try {
-                      final loc = await placesService.fetchPlaceLocation(
-                        s.placeId,
-                      );
-                      AppLogger.d("Pickup LatLng: $loc");
-
-                      setState(() {
-                        _pickupLat = loc['lat'];
-                        _pickupLng = loc['lng'];
-                      });
-                    } catch (e) {
-                      AppLogger.e("Error fetching place location: $e");
-                    }
-
-                    // Auto-calculate distance if both locations are set
-                    _autoCalculateDistance();
-                  },
-                );
-              },
-            ),
-          ),
-        // Current Location Button for Pickup
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _isLoadingLocation
-                ? null
-                : () => _getCurrentLocation(pickupController),
-            icon: _isLoadingLocation
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.my_location, size: 18),
-            label: Text(
-              _isLoadingLocation
-                  ? 'Getting location...'
-                  : 'Use Current Location',
-              style: const TextStyle(fontSize: 12),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF006FFD),
-              side: const BorderSide(color: Color(0xFF006FFD)),
-              padding: const EdgeInsets.symmetric(vertical: 8),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Widget _buildDeliveryField() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text("Delivery Location"),
-  //       const SizedBox(height: 6),
-  //       TextFormField(
-  //         controller: deliveryController,
-  //         decoration: _inputDecoration(
-  //           hint: "Enter delivery location",
-  //           borderColor: fieldBorderColor,
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  Widget _buildDeliveryField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Delivery Location",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Plus Jakarta Sans',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.24,
-          ),
-        ),
-        const SizedBox(height: 2),
-        TextFormField(
-          controller: deliveryController,
-          decoration: _inputDecoration(
-            hint: "Enter delivery location",
-            borderColor: const Color(0xFFEDF1F3),
-            height: 46,
-          ),
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Inter',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.14,
-          ),
-          onChanged: (value) async {
-            if (value.isNotEmpty) {
-              final results = await placesService.fetchSuggestions(value);
-              setState(() => deliverySuggestions = results);
-            } else {
-              setState(() => deliverySuggestions = []);
-            }
-          },
-        ),
-        if (deliverySuggestions.isNotEmpty)
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFEDF1F3)),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: deliverySuggestions.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final s = deliverySuggestions[index];
-                return ListTile(
-                  title: Text(s.description),
-                  subtitle: Text(s.subTitle),
-                  onTap: () async {
-                    setState(() {
-                      deliveryController.text = s.description;
-                      deliverySuggestions.clear();
-                    });
-
-                    try {
-                      final loc = await placesService.fetchPlaceLocation(
-                        s.placeId,
-                      );
-                      AppLogger.d("Delivery LatLng: $loc");
-
-                      setState(() {
-                        _deliveryLat = loc['lat'];
-                        _deliveryLng = loc['lng'];
-                      });
-                    } catch (e) {
-                      AppLogger.e("Error fetching delivery location: $e");
-                    }
-
-                    // Auto-calculate distance if both locations are set
-                    _autoCalculateDistance();
-                  },
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildDatePicker(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Pick up a Date",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Plus Jakarta Sans',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.24,
-          ),
-        ),
-        const SizedBox(height: 2),
-        TextFormField(
-          readOnly: true,
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime.now(),
-              lastDate: DateTime(2100),
-            );
-            if (date != null) {
-              setState(() => selectedDate = date);
-            }
-          },
-          decoration: _inputDecoration(
-            hint: selectedDate == null
-                ? "Choose a date"
-                : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-            suffixIcon: const Icon(
-              Icons.calendar_month_outlined,
-              color: Color(0xFF006FFD),
-              size: 21,
-            ),
-            borderColor: const Color(0xFFEDF1F3),
-            height: 46,
-          ),
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Inter',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.14,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimePicker(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Pick Time",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Plus Jakarta Sans',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.24,
-          ),
-        ),
-        const SizedBox(height: 2),
-        TextFormField(
-          readOnly: true,
-          onTap: () async {
-            final time = await showTimePicker(
-              context: context,
-              initialTime: TimeOfDay.now(),
-            );
-            if (time != null) {
-              setState(() => selectedTime = time);
-            }
-          },
-          decoration: _inputDecoration(
-            hint: selectedTime == null
-                ? "Pick your time."
-                : selectedTime!.format(context),
-            suffixIcon: const Icon(
-              Icons.access_time,
-              color: Color(0xFF006FFD),
-              size: 21,
-            ),
-            borderColor: const Color(0xFFEDF1F3),
-            height: 46,
-          ),
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Inter',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.14,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSpecialInstructionsField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Special Instructions",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Plus Jakarta Sans',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.24,
-          ),
-        ),
-        const SizedBox(height: 2),
-        TextFormField(
-          controller: specialInstructionsController,
-          maxLines: 3,
-          decoration: _inputDecoration(
-            hint: "Enter special instructions",
-            borderColor: const Color(0xFFEDF1F3),
-            height: 46,
-          ),
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Inter',
-            color: const Color(0xFF6C7278),
-            letterSpacing: -0.14,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPayRangeFields() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Min Pay Range (Rs)",
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Plus Jakarta Sans',
-                  color: const Color(0xFF6C7278),
-                  letterSpacing: -0.24,
-                ),
-              ),
-              const SizedBox(height: 2),
-              TextFormField(
-                controller: minPayRangeController,
-                keyboardType: TextInputType.number,
-                decoration: _inputDecoration(
-                  hint: "00",
-                  borderColor: const Color(0xFFEDF1F3),
-                  height: 46,
-                ),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Inter',
-                  color: const Color(0xFF6C7278),
-                  letterSpacing: -0.14,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Max Pay Range (Rs)",
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Plus Jakarta Sans',
-                  color: const Color(0xFF6C7278),
-                  letterSpacing: -0.24,
-                ),
-              ),
-              const SizedBox(height: 2),
-              TextFormField(
-                controller: maxPayRangeController,
-                keyboardType: TextInputType.number,
-                decoration: _inputDecoration(
-                  hint: "00",
-                  borderColor: const Color(0xFFEDF1F3),
-                  height: 46,
-                ),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Inter',
-                  color: const Color(0xFF6C7278),
-                  letterSpacing: -0.14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    String? hint,
-    Widget? suffixIcon,
-    Color? borderColor,
-    double? height,
-  }) {
-    final color = borderColor ?? const Color(0xFFEDF1F3);
-
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      suffixIcon: suffixIcon,
-      hintStyle: TextStyle(
-        fontSize: 14,
-        fontFamily: 'Inter',
-        color: const Color(0xFF6C7278),
-        letterSpacing: -0.14,
-      ),
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: height != null ? (height - 21) / 2 : 12.5,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: color, width: 1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: color, width: 1),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: color, width: 1),
-      ),
-      constraints: height != null ? BoxConstraints(minHeight: height) : null,
-    );
-  }
-
-  // Estimated Distance Widget
-  Widget _buildEstimatedDistanceWidget() {
-    final hasLocations =
-        pickupController.text.isNotEmpty && deliveryController.text.isNotEmpty;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFE082)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.route, color: Color(0xFFF57C00), size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  "Distance between Origin and Destination:",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF6C7278),
-                  ),
-                ),
-              ),
-              if (_isCalculatingDistance)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.only(left: 28),
-            child: Text(
-              _isCalculatingDistance
-                  ? "Calculating..."
-                  : _distanceResult != null && _distanceResult!.distanceKm > 0
-                  ? "${_distanceResult!.distanceKm.toStringAsFixed(2)} km"
-                  : hasLocations
-                  ? "Tap to calculate distance"
-                  : "Enter both locations to calculate",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color:
-                    _distanceResult != null && _distanceResult!.distanceKm > 0
-                    ? const Color(0xFFF57C00)
-                    : Colors.grey,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(
-                Icons.local_shipping,
-                color: Color(0xFF0288D1),
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _distanceResult != null &&
-                          _distanceResult!.durationMinutes > 0
-                      ? "Estimated truck travel time: ${_distanceResult!.truckDurationText}"
-                      : "Estimated travel time will appear here",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color:
-                        _distanceResult != null &&
-                            _distanceResult!.durationMinutes > 0
-                        ? const Color(0xFF0288D1)
-                        : Colors.grey,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (hasLocations &&
-              (_distanceResult == null || _distanceResult!.distanceKm == 0))
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: GestureDetector(
-                onTap: _calculateDistance,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF57C00),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    "Calculate Distance",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 
   Future<void> _calculateDistance() async {
-    if (pickupController.text.isEmpty || deliveryController.text.isEmpty) {
-      return;
-    }
-
+    if (pickupController.text.isEmpty || deliveryController.text.isEmpty) return;
     setState(() => _isCalculatingDistance = true);
-
     try {
       final result = await distanceService.calculateDistance(
-        origin: pickupController.text,
-        destination: deliveryController.text,
-      );
-
-      setState(() {
-        _distanceResult = result;
-        _isCalculatingDistance = false;
-      });
+        origin: pickupController.text, destination: deliveryController.text);
+      if (mounted) setState(() { _distanceResult = result; _isCalculatingDistance = false; });
     } catch (e) {
-      setState(() => _isCalculatingDistance = false);
-      Get.snackbar(
-        'Error',
-        'Failed to calculate distance',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      if (mounted) setState(() => _isCalculatingDistance = false);
     }
   }
 
-  /// Auto-calculate distance when both locations are selected
   void _autoCalculateDistance() {
-    // Add small delay to ensure state is updated
     Future.delayed(const Duration(milliseconds: 300), () {
-      if (pickupController.text.isNotEmpty &&
-          deliveryController.text.isNotEmpty) {
+      if (pickupController.text.isNotEmpty && deliveryController.text.isNotEmpty) {
         _calculateDistance();
       }
     });
   }
+
+  // ── shared UI pieces ───────────────────────────────────────────────────────
+  Widget _headerBanner({required IconData icon, required String title, required String subtitle}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_primary, Color(0xFFE85555)]),
+        borderRadius: BorderRadius.circular(16)),
+      child: Row(children: [
+        Container(padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, color: Colors.white, size: 26)),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: GoogleFonts.poppins(
+            fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(subtitle, style: GoogleFonts.poppins(
+            fontSize: 12, color: Colors.white.withValues(alpha: 0.85))),
+        ])),
+      ]),
+    );
+  }
+
+  Widget _sectionCard({required String title, required IconData icon, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _card, borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(icon, size: 16, color: _primary),
+          const SizedBox(width: 8),
+          Text(title, style: GoogleFonts.poppins(
+            fontSize: 14, fontWeight: FontWeight.w700, color: _textDark)),
+        ]),
+        const SizedBox(height: 14),
+        child,
+      ]),
+    );
+  }
+
+  Widget _fieldLabel(String label) => Align(
+    alignment: Alignment.centerLeft,
+    child: Text(label, style: GoogleFonts.poppins(
+      fontSize: 12, fontWeight: FontWeight.w500, color: _textGrey)));
+
+  Widget _input(TextEditingController c, String hint,
+      {int maxLines = 1, TextInputType keyboard = TextInputType.text, void Function(String)? onChanged}) {
+    return TextField(
+      controller: c, maxLines: maxLines, keyboardType: keyboard, onChanged: onChanged,
+      style: GoogleFonts.poppins(fontSize: 14, color: _textDark),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.poppins(fontSize: 13, color: _textGrey),
+        filled: true, fillColor: _bg,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        border: _ob(_border), enabledBorder: _ob(_border),
+        focusedBorder: _ob(_primary, w: 1.5)),
+    );
+  }
+
+  OutlineInputBorder _ob(Color c, {double w = 1}) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c, width: w));
+
+  Widget _vehicleDropdown() {
+    return Obx(() {
+      if (tripController.isVehicleLoading.value) {
+        return const Padding(padding: EdgeInsets.symmetric(vertical: 8),
+          child: Center(child: CircularProgressIndicator(color: _primary)));
+      }
+      if (tripController.vehicles.isEmpty) {
+        return Row(children: [
+          const Icon(Iconsax.info_circle, size: 16, color: _textGrey),
+          const SizedBox(width: 8),
+          Expanded(child: Text('No vehicles available. Add a vehicle first.',
+            style: GoogleFonts.poppins(fontSize: 13, color: _textGrey))),
+        ]);
+      }
+      return DropdownButtonFormField<String>(
+        initialValue: tripController.selectedVehicle.value,
+        isExpanded: true,
+        hint: Text('Select vehicle', style: GoogleFonts.poppins(fontSize: 13, color: _textGrey)),
+        decoration: InputDecoration(
+          filled: true, fillColor: _bg, isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          border: _ob(_border), enabledBorder: _ob(_border), focusedBorder: _ob(_primary, w: 1.5)),
+        icon: const Icon(Iconsax.arrow_down_1, color: _primary, size: 16),
+        items: tripController.vehicles
+            .map((v) => DropdownMenuItem(value: v.vehicleId,
+                child: Text(v.vehicleModel,
+                  style: GoogleFonts.poppins(fontSize: 14, color: _textDark))))
+            .toList(),
+        onChanged: (val) => tripController.selectedVehicle.value = val);
+    });
+  }
+
+  Widget _pickerField({
+    required String label,
+    required String? value,
+    required String hint,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _fieldLabel(label),
+      const SizedBox(height: 6),
+      GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: _bg, borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _border)),
+          child: Row(children: [
+            Expanded(child: Text(value ?? hint, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: value == null ? _textGrey : _textDark,
+                fontWeight: value == null ? FontWeight.w400 : FontWeight.w600))),
+            Icon(icon, size: 18, color: _primary),
+          ]),
+        ),
+      ),
+    ]);
+  }
+
+  Widget _pickupField() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _fieldLabel('Pickup Location'),
+      const SizedBox(height: 6),
+      _input(pickupController, 'Enter pickup location', onChanged: (value) async {
+        if (value.isNotEmpty) {
+          try {
+            final r = await placesService.fetchSuggestions(value);
+            if (mounted) setState(() => pickupSuggestions = r);
+          } catch (_) {}
+        } else {
+          setState(() => pickupSuggestions = []);
+        }
+      }),
+      if (pickupSuggestions.isNotEmpty) _suggestionList(pickupSuggestions, isPickup: true),
+      const SizedBox(height: 8),
+      _currentLocationButton(),
+    ]);
+  }
+
+  Widget _deliveryField() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _fieldLabel('Delivery Location'),
+      const SizedBox(height: 6),
+      _input(deliveryController, 'Enter delivery location', onChanged: (value) async {
+        if (value.isNotEmpty) {
+          try {
+            final r = await placesService.fetchSuggestions(value);
+            if (mounted) setState(() => deliverySuggestions = r);
+          } catch (_) {}
+        } else {
+          setState(() => deliverySuggestions = []);
+        }
+      }),
+      if (deliverySuggestions.isNotEmpty) _suggestionList(deliverySuggestions, isPickup: false),
+    ]);
+  }
+
+  Widget _currentLocationButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _isLoadingLocation ? null : () => _getCurrentLocation(pickupController),
+        icon: _isLoadingLocation
+            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Iconsax.gps, size: 16),
+        label: Text(_isLoadingLocation ? 'Getting location…' : 'Use Current Location',
+          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _primary, side: const BorderSide(color: _primary),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+      ),
+    );
+  }
+
+  Widget _suggestionList(List<Suggestion> list, {required bool isPickup}) {
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      decoration: BoxDecoration(
+        color: _card, border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(10)),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: list.length,
+        separatorBuilder: (_, __) => const Divider(height: 1, color: _border),
+        itemBuilder: (context, index) {
+          final s = list[index];
+          return ListTile(
+            dense: true,
+            title: Text(s.description, style: GoogleFonts.poppins(fontSize: 13, color: _textDark)),
+            subtitle: Text(s.subTitle, style: GoogleFonts.poppins(fontSize: 11, color: _textGrey)),
+            onTap: () async {
+              setState(() {
+                if (isPickup) {
+                  pickupController.text = s.description;
+                  pickupSuggestions.clear();
+                } else {
+                  deliveryController.text = s.description;
+                  deliverySuggestions.clear();
+                }
+              });
+              try {
+                final loc = await placesService.fetchPlaceLocation(s.placeId);
+                setState(() {
+                  if (isPickup) {
+                    _pickupLat = loc['lat']; _pickupLng = loc['lng'];
+                  } else {
+                    _deliveryLat = loc['lat']; _deliveryLng = loc['lng'];
+                  }
+                });
+              } catch (e) {
+                AppLogger.e('Error fetching place location: $e');
+              }
+              _autoCalculateDistance();
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _distanceWidget() {
+    final hasLocations =
+        pickupController.text.isNotEmpty && deliveryController.text.isNotEmpty;
+    final hasDistance = _distanceResult != null && _distanceResult!.distanceKm > 0;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFDE68A))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Iconsax.routing, color: Color(0xFFF59E0B), size: 18),
+          const SizedBox(width: 8),
+          Expanded(child: Text('Estimated Distance',
+            style: GoogleFonts.poppins(
+              fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF92400E)))),
+          if (_isCalculatingDistance)
+            const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+        ]),
+        const SizedBox(height: 6),
+        Text(
+          _isCalculatingDistance ? 'Calculating…'
+              : hasDistance ? '${_distanceResult!.distanceKm.toStringAsFixed(2)} km'
+              : hasLocations ? 'Tap below to calculate'
+              : 'Enter both locations',
+          style: GoogleFonts.poppins(
+            fontSize: 18, fontWeight: FontWeight.w700,
+            color: hasDistance ? const Color(0xFFF59E0B) : _textGrey)),
+        if (hasDistance && _distanceResult!.durationMinutes > 0) ...[
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Iconsax.truck, size: 14, color: Color(0xFF0288D1)),
+            const SizedBox(width: 6),
+            Text('Truck travel: ${_distanceResult!.truckDurationText}',
+              style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF0288D1))),
+          ]),
+        ],
+        if (hasLocations && !hasDistance) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _calculateDistance,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(16)),
+              child: Text('Calculate Distance', style: GoogleFonts.poppins(
+                color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+          ),
+        ],
+      ]),
+    );
+  }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Google Places suggestion model + service (unchanged logic)
+// ─────────────────────────────────────────────────────────────────────────────
 class Suggestion {
   final String placeId;
   final String description;
@@ -1083,15 +626,12 @@ class Suggestion {
   }
 }
 
-/// ----------------------------
-/// Google Places Service
-/// ----------------------------
 class PlacesService {
   final String apiKey;
   final http.Client client;
 
   PlacesService({required this.apiKey, http.Client? client})
-    : client = client ?? http.Client();
+      : client = client ?? http.Client();
 
   Future<List<Suggestion>> fetchSuggestions(String input) async {
     final encoded = Uri.encodeQueryComponent(input);
@@ -1145,39 +685,4 @@ class PlacesService {
       throw Exception(body['error_message'] ?? 'Details error: $status');
     }
   }
-}
-
-/// Generate proper UUID v4 format (GUID) for TripId
-/// Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-String generateTripId() {
-  final random = Random();
-  final timestamp = DateTime.now().microsecondsSinceEpoch;
-
-  // Generate UUID v4 format: 8-4-4-4-12 (hexadecimal)
-  String generateHexSegment(int length, Random rng, int seed) {
-    final hex = '0123456789abcdef';
-    final buffer = StringBuffer();
-    for (int i = 0; i < length; i++) {
-      buffer.write(hex[rng.nextInt(16)]);
-    }
-    return buffer.toString();
-  }
-
-  // Part 1: 8 hex digits
-  final part1 = generateHexSegment(8, random, timestamp);
-
-  // Part 2: 4 hex digits
-  final part2 = generateHexSegment(4, random, timestamp);
-
-  // Part 3: 4 hex digits starting with '4' (version 4)
-  final part3 = '4${generateHexSegment(3, random, timestamp)}';
-
-  // Part 4: 4 hex digits with variant bits (8, 9, a, or b)
-  final variant = ['8', '9', 'a', 'b'][random.nextInt(4)];
-  final part4 = '$variant${generateHexSegment(3, random, timestamp)}';
-
-  // Part 5: 12 hex digits
-  final part5 = generateHexSegment(12, random, timestamp);
-
-  return '$part1-$part2-$part3-$part4-$part5';
 }

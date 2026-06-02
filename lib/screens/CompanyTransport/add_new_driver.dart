@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'dart:io' show File;
-import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,10 +7,7 @@ import 'package:get/get.dart';
 import '../../controllers/Transport/add_driver_controller.dart';
 import '../../controllers/Transport/fleet_controller.dart';
 import '../../models/add_drivermodel.dart';
-import '../../models/driver_license_model.dart';
 import '../../utils/session_manager.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
 class AddNewDriverScreen extends StatefulWidget {
@@ -43,7 +39,6 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
 
   String? selectedVehicleType;
   bool isDeclarationAccepted = false;
-  bool _isSearchingDriver = false; // ✅ For driver search loading
   XFile? _pickedImage; // ✅ Single image only
   DateTime? _selectedDob; // ✅ For date of birth
 
@@ -139,99 +134,6 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  /// Search driver license details by license number and DOB
-  Future<void> _searchDriverLicense() async {
-    final licenseNumber = licenseNumberController.text.trim();
-    final dob = dobController.text.trim();
-
-    if (licenseNumber.isEmpty || dob.isEmpty) {
-      SnackBarHelper.warning(
-        "Please enter both license number and date of birth",
-      );
-      return;
-    }
-
-    setState(() {
-      _isSearchingDriver = true;
-    });
-
-    try {
-      SnackBarHelper.info("Searching driver license details...");
-
-      // Use selected DOB if available, otherwise use text from controller
-      final dobToUse = _selectedDob != null ? _formatDate(_selectedDob!) : dob;
-
-      final response = await HttpHelper.getLicenseDetails(
-        number: licenseNumber,
-        dob: dobToUse,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['code'] == 200 && data['result'] != null) {
-          final licenseDetails = DriverLicenseModel.fromJson(data);
-
-          // ✅ Auto-fill the form with fetched data
-          driverNameController.text =
-              licenseDetails.detailsOfDrivingLicence.name;
-
-          // Extract vehicle types from badge details
-          if (licenseDetails.badgeDetails.isNotEmpty) {
-            final vehicleClasses =
-                licenseDetails.badgeDetails.first.classOfVehicle;
-            if (vehicleClasses.isNotEmpty) {
-              final licenseVehicleType = vehicleClasses.first;
-              // ✅ Only set if it's in the valid vehicle types list
-              // License returns "LMV", "MCWG" etc. which are not in our dropdown
-              // So we'll set it to null and let user select manually
-              if (validVehicleTypes.contains(licenseVehicleType)) {
-                selectedVehicleType = licenseVehicleType;
-              } else {
-                // License vehicle type doesn't match our dropdown options
-                // Set to null so user can select from dropdown
-                selectedVehicleType = null;
-                AppLogger.d(
-                  "⚠️ License vehicle type '$licenseVehicleType' not in valid list. User needs to select manually.",
-                );
-              }
-            }
-          }
-
-          setState(() {}); // Refresh UI
-
-          SnackBarHelper.success(
-            "Driver license details fetched successfully!",
-          );
-          AppLogger.d("👤 Driver License Details Fetched:");
-          AppLogger.d(
-            "👤 Name: ${licenseDetails.detailsOfDrivingLicence.name}",
-          );
-          AppLogger.d(
-            "👤 Father Name: ${licenseDetails.detailsOfDrivingLicence.fatherOrHusbandName}",
-          );
-          AppLogger.d(
-            "👤 Vehicle Classes: ${licenseDetails.badgeDetails.isNotEmpty ? licenseDetails.badgeDetails.first.classOfVehicle : 'None'}",
-          );
-          AppLogger.d(
-            "👤 Address: ${licenseDetails.detailsOfDrivingLicence.address}",
-          );
-        } else {
-          SnackBarHelper.error("Driver license details not found");
-        }
-      } else {
-        SnackBarHelper.error("Failed to fetch driver license details");
-      }
-    } catch (e) {
-      AppLogger.d("❌ Error fetching driver license details: $e");
-      SnackBarHelper.error("Error fetching driver license details: $e");
-    } finally {
-      setState(() {
-        _isSearchingDriver = false;
-      });
-    }
-  }
-
   void _submitForm() async {
     final sessionManager = SessionManager();
 
@@ -302,7 +204,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
         final refreshUserId = await sessionManager.getString("userId");
 
         if (refreshToken != null && refreshUserId != null) {
-          await fleetController.fetchDrivers(refreshUserId, refreshToken);
+          await fleetController.fetchDrivers();
         }
       } catch (e) {
         AppLogger.d("⚠️ Could not refresh fleet data: $e");

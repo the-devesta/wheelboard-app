@@ -1,10 +1,12 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/auth/auth_service.dart';
 import '../../models/dashboard_model.dart';
-import '../../utils/constants.dart';
-import '../../services/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class DashboardController extends GetxController {
   final isLoading = false.obs;
@@ -29,8 +31,7 @@ class DashboardController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
+      final userId = AuthService.to.userId;
 
       if (userId.isEmpty) {
         errorMessage.value = 'User not logged in';
@@ -39,23 +40,25 @@ class DashboardController extends GetxController {
         return;
       }
 
-      final response = await HttpHelper.getData(
-        endpoint: API.getDashboard,
-        queryParams: {'userId': userId},
-        headers: {'accept': '*/*'},
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.dashboard.get,
+        queryParameters: {'userId': userId},
       );
 
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-        dashboardData.value = DashboardModel.fromJson(jsonData);
-      } else {
-        errorMessage.value =
-            'Failed to load dashboard data (${response.statusCode})';
-        SnackBarHelper.error(errorMessage.value);
-      }
+      dashboardData.value = DashboardModel.fromJson(data);
+      AppLogger.d('✅ Dashboard data loaded');
+    } on DioException catch (e) {
+      final apiError = e.error;
+      final msg = apiError is ApiException
+          ? apiError.message
+          : 'Failed to load dashboard';
+      errorMessage.value = msg;
+      SnackBarHelper.error(msg);
+      AppLogger.e('❌ Dashboard fetch error: $e');
     } catch (e) {
       errorMessage.value = 'Failed to load dashboard: ${e.toString()}';
       SnackBarHelper.error(errorMessage.value);
+      AppLogger.e('❌ Dashboard unexpected error: $e');
     } finally {
       isLoading.value = false;
     }

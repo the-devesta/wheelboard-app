@@ -1,3 +1,6 @@
+import '../core/auth/auth_models.dart';
+import '../core/auth/user_role.dart';
+
 /// Common User Profile Model
 /// Handles Company/Transport, Professional, and Service Provider profile types
 class UserProfileModel {
@@ -64,6 +67,73 @@ class UserProfileModel {
     // KYC fields
     this.isKYCCompleted,
   });
+
+  /// Build from the authenticated [AppUser] returned by GET /auth/profile.
+  factory UserProfileModel.fromAppUser(AppUser user) {
+    final p = user.profile;
+    return UserProfileModel(
+      userId: user.id,
+      userType: user.role.value,
+      mobileNo: user.phoneNumber,
+      companyName: p['companyName']?.toString(),
+      gstNumber: p['gstNumber']?.toString(),
+      businessCategory: p['businessCategory']?.toString(),
+      companyLogoPath: p['logo']?.toString() ?? p['companyLogoPath']?.toString(),
+      fullName: p['fullName']?.toString(),
+      address: p['address']?.toString(),
+      fleetSize: p['fleetSize']?.toString(),
+      name: p['fullName']?.toString(),
+      fatherName: p['fatherName']?.toString(),
+      email: user.email,
+      dateOfBirth: p['dateOfBirth']?.toString(),
+      state: p['state']?.toString(),
+      city: p['city']?.toString(),
+      professionalType: p['professionalType']?.toString(),
+      profileImagePath: p['avatar']?.toString() ?? p['profileImage']?.toString(),
+      businessName: p['businessName']?.toString(),
+      businessType: p['businessType']?.toString(),
+      businessLogoPath: p['logo']?.toString() ?? p['businessLogoPath']?.toString(),
+      servicesOffered: _joinList(p['servicesOffered']),
+      isKYCCompleted: user.isKYCCompleted,
+    );
+  }
+
+  static String? _joinList(dynamic value) {
+    if (value == null) return null;
+    if (value is List) return value.join(', ');
+    return value.toString();
+  }
+
+  /// Build from GET /users/:id/public-profile response.
+  /// Response shape: { id, email, role, profile: { ... } }
+  factory UserProfileModel.fromPublicProfile(Map<String, dynamic> json) {
+    final p = json['profile'] as Map<String, dynamic>? ?? {};
+    return UserProfileModel(
+      userId: json['id']?.toString() ?? '',
+      userType: json['role']?.toString() ?? '',
+      email: json['email']?.toString(),
+      mobileNo: p['mobileNo']?.toString() ?? p['phoneNumber']?.toString(),
+      companyName: p['companyName']?.toString(),
+      gstNumber: p['gstNumber']?.toString(),
+      businessCategory: p['businessCategory']?.toString(),
+      companyLogoPath: p['logo']?.toString() ?? p['companyLogoPath']?.toString(),
+      fullName: p['fullName']?.toString(),
+      address: p['address']?.toString(),
+      fleetSize: p['fleetSize']?.toString(),
+      name: p['fullName']?.toString(),
+      fatherName: p['fatherName']?.toString(),
+      dateOfBirth: p['dateOfBirth']?.toString(),
+      state: p['state']?.toString(),
+      city: p['city']?.toString(),
+      professionalType: p['professionalType']?.toString(),
+      profileImagePath: p['avatar']?.toString() ?? p['profileImage']?.toString(),
+      businessName: p['businessName']?.toString(),
+      businessType: p['businessType']?.toString(),
+      businessLogoPath: p['logo']?.toString() ?? p['businessLogoPath']?.toString(),
+      servicesOffered: _joinList(p['servicesOffered']),
+      isKYCCompleted: p['isKYCCompleted'] as bool?,
+    );
+  }
 
   /// Factory constructor to create from JSON
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
@@ -135,18 +205,17 @@ class UserProfileModel {
     };
   }
 
+  /// Parsed role enum from the raw [userType] string.
+  UserRole get _role => UserRole.fromString(userType);
+
   /// Check if user is Company/Transport
-  bool get isCompany =>
-      userType.toLowerCase() == 'company' ||
-      userType.toLowerCase() == 'transport';
+  bool get isCompany => _role == UserRole.company;
 
   /// Check if user is Professional
-  bool get isProfessional => userType.toLowerCase() == 'professional';
+  bool get isProfessional => _role == UserRole.professional;
 
   /// Check if user is Service Provider
-  bool get isServiceProvider =>
-      userType.toLowerCase() == 'serviceprovider' ||
-      userType.toLowerCase() == 'service provider';
+  bool get isServiceProvider => _role == UserRole.business;
 
   /// Get display name based on user type
   String get displayName {

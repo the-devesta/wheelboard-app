@@ -1,212 +1,206 @@
-import 'dart:convert';
-
-import '../apihelperclass/api_helper.dart';
+import 'package:dio/dio.dart';
+import '../core/network/api_client.dart';
+import '../core/network/api_endpoints.dart';
+import '../core/network/api_exception.dart';
 import '../models/trip_confirmation_model.dart';
-import '../utils/constants.dart';
 import '../utils/app_logger.dart';
 
-class TripOrderResponse {
-  TripOrderResponse({
+/// Result of `POST /payment/initiate`.
+///
+/// Mirrors web `PaymentInitiateResponse`:
+/// `{ paymentId, orderId, amount, currency, razorpayKey }`.
+class PaymentInitiateResult {
+  PaymentInitiateResult({
     required this.orderId,
     required this.amountInPaise,
-    required this.keyId,
-    this.receipt,
+    required this.razorpayKey,
+    required this.currency,
+    this.paymentId,
     this.raw,
   });
 
   final String orderId;
   final int amountInPaise;
-  final String keyId;
-  final String? receipt;
+  final String razorpayKey;
+  final String currency;
+  final String? paymentId;
   final Map<String, dynamic>? raw;
 }
 
-class TripPaymentVerificationPayload {
-  TripPaymentVerificationPayload({
-    required this.tripId,
-    required this.bidId,
-    required this.userId,
-    required this.amount,
-    required this.platformFee,
-    required this.totalAmount,
-    required this.orderId,
+/// Result of `POST /payment/verify`.
+///
+/// Mirrors web `PaymentVerifyResponse`:
+/// `{ success, message, tripId, driverId, paymentId, otp? }`.
+class PaymentVerifyResult {
+  PaymentVerifyResult({
+    required this.success,
+    this.message,
+    this.otp,
     this.paymentId,
-    this.signature,
+    this.raw,
   });
 
-  final String tripId;
-  final String bidId;
-  final String userId;
-  final double amount;
-  final double platformFee;
-  final double totalAmount;
-  final String orderId;
+  final bool success;
+  final String? message;
+  final String? otp;
   final String? paymentId;
-  final String? signature;
-
-  TripPaymentVerificationPayload copyWith({
-    String? orderId,
-    String? paymentId,
-    String? signature,
-  }) {
-    return TripPaymentVerificationPayload(
-      tripId: tripId,
-      bidId: bidId,
-      userId: userId,
-      amount: amount,
-      platformFee: platformFee,
-      totalAmount: totalAmount,
-      orderId: orderId ?? this.orderId,
-      paymentId: paymentId ?? this.paymentId,
-      signature: signature ?? this.signature,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'tripId': tripId,
-      'bidId': bidId,
-      'userId': userId,
-      'amount': _roundCurrency(amount),
-      'platformFee': _roundCurrency(platformFee),
-      'totalAmount': _roundCurrency(totalAmount),
-      'orderId': orderId,
-      'paymentId': paymentId,
-      'signature': signature,
-    };
-  }
-
-  double _roundCurrency(double value) {
-    if (!value.isFinite) return 0.0;
-    return double.parse(value.toStringAsFixed(2));
-  }
+  final Map<String, dynamic>? raw;
 }
 
 class TripPaymentService {
-  Future<TripOrderResponse> createOrder({required double totalAmount}) async {
-    final response = await HttpHelper.postData(
-      endpoint: API.createTripOrder,
-      data: {'totalAmount': _currencyToNum(totalAmount)},
-      headers: const {'accept': '*/*', 'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Unable to create payment order (${response.statusCode})',
+  /// Initiate a trip-assignment payment and create a Razorpay order.
+  ///
+  /// Matches web `paymentAPI.initiatePayment()`:
+  /// `POST /payment/initiate { tripId, bidId, paymentOption, paymentMethod, amount }`.
+  Future<PaymentInitiateResult> initiatePayment({
+    required String tripId,
+    required String bidId,
+    required String paymentOption, // 'platform' | 'total'
+    required double amount,
+    String paymentMethod = 'card',
+  }) async {
+    try {
+      final raw = await ApiClient.instance.post<dynamic>(
+        ApiEndpoints.trips.createOrder, // /payment/initiate
+        data: {
+          'tripId': tripId,
+          'bidId': bidId,
+          'paymentOption': paymentOption,
+          'paymentMethod': paymentMethod,
+          'amount': _round(amount),
+        },
       );
-    }
 
-    final Map<String, dynamic> payload =
-        jsonDecode(response.body) as Map<String, dynamic>;
-    final data = _extractData(payload);
-    final orderId = _stringField(data, ['orderId', 'order_id', 'id']);
-    final keyId = _stringField(data, ['key', 'keyId', 'key_id']);
-    final rawServerAmount = data['amount'];
-    int amountPaise;
+      final data = _extractData(raw);
 
-    if (rawServerAmount != null) {
-      double parsedAmount = double.tryParse(rawServerAmount.toString()) ?? 0;
-      // If the server returns a value that is already close to totalAmount * 100,
-      // it is likely already in Paise.
-      if (parsedAmount >= (totalAmount * 100) - 5 &&
-          parsedAmount <= (totalAmount * 100) + 5) {
-        amountPaise = parsedAmount.round();
-        AppLogger.d(
-          "PaymentService: Using server amount as Paise: $amountPaise",
-        );
-      } else {
-        amountPaise = (parsedAmount * 100).round();
-        AppLogger.d(
-          "PaymentService: Converted server amount to Paise: $amountPaise",
-        );
+      final orderId = _stringField(data, [
+        'orderId', 'order_id', 'razorpayOrderId', 'razorpay_order_id', 'id',
+      ]);
+      final razorpayKey = _stringField(data, [
+        'razorpayKey', 'razorpayKeyId', 'key', 'keyId', 'key_id',
+      ]);
+      final currency = _stringField(data, ['currency']) ?? 'INR';
+      final paymentId = _stringField(data, ['paymentId', 'payment_id']);
+
+      if (orderId == null || orderId.isEmpty) {
+        throw Exception('Payment could not be started: missing order id.');
       }
-    } else {
-      amountPaise = (totalAmount * 100).round();
-      AppLogger.d("PaymentService: Using calculated Paise: $amountPaise");
-    }
-    final receipt = _stringField(data, ['receipt'], allowNull: true);
 
-    if (orderId == null || orderId.isEmpty) {
-      throw Exception('Server did not return a valid order id');
-    }
-
-    return TripOrderResponse(
-      orderId: orderId,
-      amountInPaise: amountPaise,
-      keyId: keyId ?? '',
-      receipt: receipt,
-      raw: data,
-    );
-  }
-
-  Future<void> verifyPayment(TripPaymentVerificationPayload payload) async {
-    final response = await HttpHelper.postData(
-      endpoint: API.verifyTripPayment,
-      data: payload.toJson(),
-      headers: const {'accept': '*/*', 'Content-Type': 'application/json'},
-    );
-
-    final bodyText = response.body;
-
-    if (response.statusCode != 200) {
-      final message = bodyText.isNotEmpty
-          ? bodyText
-          : 'Payment verification failed';
-      throw Exception(
-        'Payment verification failed (${response.statusCode}): $message',
-      );
-    }
-
-    if (bodyText.isNotEmpty) {
-      try {
-        final Map<String, dynamic> body =
-            jsonDecode(bodyText) as Map<String, dynamic>;
-        if (body.containsKey('success') && body['success'] == false) {
-          throw Exception(body['message'] ?? 'Payment verification failed');
+      // Server returns amount in rupees → convert to paise (web parity).
+      final serverAmount = data['amount'];
+      int paise;
+      if (serverAmount != null) {
+        final parsed = double.tryParse(serverAmount.toString()) ?? amount;
+        // If it already looks like paise (≈ amount*100), keep it; else *100.
+        if (parsed >= (amount * 100) - 5 && parsed <= (amount * 100) + 5) {
+          paise = parsed.round();
+        } else {
+          paise = (parsed * 100).round();
         }
-      } catch (_) {
-        // Non-JSON body, ignore.
+      } else {
+        paise = (amount * 100).round();
       }
+
+      AppLogger.d(
+          '[Payment] initiated order=$orderId paise=$paise key=${razorpayKey != null}');
+
+      return PaymentInitiateResult(
+        orderId: orderId,
+        amountInPaise: paise,
+        razorpayKey: razorpayKey ?? '',
+        currency: currency,
+        paymentId: paymentId,
+        raw: data,
+      );
+    } on DioException catch (e) {
+      final msg = e.error is ApiException
+          ? (e.error as ApiException).message
+          : 'Unable to start payment (${e.response?.statusCode ?? "network error"})';
+      throw Exception(msg);
     }
   }
 
-  Map<String, dynamic> _extractData(Map<String, dynamic> payload) {
-    final data = payload['data'];
-    if (data is Map<String, dynamic>) return data;
-    return payload;
+  /// Verify the Razorpay payment and assign the trip.
+  ///
+  /// Matches web `paymentAPI.verifyPayment()`:
+  /// `POST /payment/verify { paymentId, tripId, bidId, signature, orderId }`.
+  Future<PaymentVerifyResult> verifyPayment({
+    required String paymentId,
+    required String tripId,
+    required String bidId,
+    required String orderId,
+    String? signature,
+  }) async {
+    try {
+      final raw = await ApiClient.instance.post<dynamic>(
+        ApiEndpoints.trips.verifyPayment, // /payment/verify
+        data: {
+          'paymentId': paymentId,
+          'tripId': tripId,
+          'bidId': bidId,
+          'orderId': orderId,
+          if (signature != null && signature.isNotEmpty) 'signature': signature,
+        },
+      );
+
+      final data = _extractData(raw);
+      final success = data['success'] == null ? true : data['success'] == true;
+      if (!success) {
+        throw Exception(
+            (data['message'] ?? 'Payment verification failed').toString());
+      }
+
+      return PaymentVerifyResult(
+        success: true,
+        message: data['message']?.toString(),
+        otp: data['otp']?.toString(),
+        paymentId: (data['paymentId'] ?? paymentId).toString(),
+        raw: data,
+      );
+    } on DioException catch (e) {
+      final msg = e.error is ApiException
+          ? (e.error as ApiException).message
+          : 'Payment verification failed (${e.response?.statusCode ?? "network error"})';
+      throw Exception(msg);
+    }
   }
 
-  String? _stringField(
-    Map<String, dynamic> data,
-    List<String> keys, {
-    bool allowNull = false,
-  }) {
-    for (final key in keys) {
-      final value = data[key];
-      if (value is String && value.isNotEmpty) {
-        return value;
+  /// Fetch trip confirmation details after a successful payment.
+  Future<TripConfirmationModel> getTripConfirmation(String tripId) async {
+    try {
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.trips.confirmation(tripId),
+      );
+      return TripConfirmationModel.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(
+          'Failed to fetch trip confirmation (${e.response?.statusCode ?? "network error"})');
+    }
+  }
+
+  // ── helpers ──
+  Map<String, dynamic> _extractData(dynamic payload) {
+    if (payload is Map<String, dynamic>) {
+      final data = payload['data'];
+      if (data is Map<String, dynamic>) return data;
+      return payload;
+    }
+    return <String, dynamic>{};
+  }
+
+  String? _stringField(Map<String, dynamic> data, List<String> keys) {
+    for (final k in keys) {
+      final v = data[k];
+      if (v is String && v.trim().isNotEmpty) {
+        final s = v.trim();
+        if (s.toLowerCase() != 'undefined' && s.toLowerCase() != 'null') {
+          return s;
+        }
       }
     }
     return null;
   }
 
-  double _currencyToNum(double value) => double.parse(value.toStringAsFixed(2));
-
-  /// Fetch trip confirmation details after payment
-  Future<TripConfirmationModel> getTripConfirmation(String tripId) async {
-    final response = await HttpHelper.getData(
-      endpoint: '${API.getTripConfirmation}$tripId',
-      headers: const {'accept': '*/*'},
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to fetch trip confirmation (${response.statusCode})',
-      );
-    }
-
-    final Map<String, dynamic> body =
-        jsonDecode(response.body) as Map<String, dynamic>;
-    return TripConfirmationModel.fromJson(body);
-  }
+  double _round(double v) =>
+      v.isFinite ? double.parse(v.toStringAsFixed(2)) : 0.0;
 }

@@ -1,634 +1,394 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
-import 'package:wheelboard/utils/app_logger.dart';
-import 'package:wheelboard/utils/constants.dart';
-import 'package:wheelboard/utils/error_handler.dart';
-import 'package:wheelboard/widgets/common_delete_button.dart';
-import '../../services/auth_service.dart';
-import '../../widgets/custom_snackbar.dart';
-import '../../controllers/Transport/user_profile_controller.dart';
-import '../../models/user_profile_model.dart';
-import '../auth/onboarding_screen.dart';
-import '../../widgets/custom_loader.dart';
-import '../auth/service_provider_login.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class ServiceProviderProfileScreen extends StatefulWidget {
+import '../../controllers/Transport/user_profile_controller.dart';
+import '../../core/auth/auth_service.dart';
+import '../../models/user_profile_model.dart';
+import '../../utils/app_logger.dart';
+import '../../widgets/common_delete_button.dart';
+import '../../widgets/custom_snackbar.dart';
+import '../auth/onboarding_screen.dart';
+import '../auth/service_provider_login.dart';
+import '../shared/subscription_screen.dart';
+
+// ── Design tokens ────────────────────────────────────────────────────────────
+const _primary = Color(0xFFF36969);
+const _primaryLight = Color(0xFFFFF1F1);
+const _bg = Color(0xFFF9FAFB);
+const _cardBg = Colors.white;
+const _textDark = Color(0xFF111827);
+const _textGrey = Color(0xFF6B7280);
+const _border = Color(0xFFE5E7EB);
+
+class ServiceProviderProfileScreen extends StatelessWidget {
   const ServiceProviderProfileScreen({super.key});
 
   @override
-  State<ServiceProviderProfileScreen> createState() =>
-      _ServiceProviderProfileScreenState();
-}
-
-class _ServiceProviderProfileScreenState
-    extends State<ServiceProviderProfileScreen> {
-  String selectedService = 'Tyre Services';
-  bool isDescriptionExpanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    // Initialize controller
-    final controller = Get.put(UserProfileController());
+    final ctrl = Get.put(UserProfileController());
 
-    // Fetch profile on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchCurrentUserProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ctrl.fetchCurrentUserProfile();
+      ctrl.syncKycStatus(); // live-sync from /kyc/my-kyc (matches web panel)
     });
 
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4E3E3,
-      ), // Pink background like Professional
-      body: SafeArea(
-        child: Obx(() {
-          if (controller.isLoading.value) {
-            return const Center(
-              child: CustomLoader(message: "Loading profile..."),
-            );
-          }
-
-          if (controller.errorMessage.value.isNotEmpty) {
-            return Center(
+      backgroundColor: _bg,
+      body: Obx(() {
+        if (ctrl.isLoading.value && ctrl.userProfile.value == null) {
+          return const Center(
+              child: CircularProgressIndicator(color: _primary));
+        }
+        if (ctrl.errorMessage.value.isNotEmpty &&
+            ctrl.userProfile.value == null) {
+          return _ErrorRetry(
+            message: ctrl.errorMessage.value,
+            onRetry: ctrl.fetchCurrentUserProfile,
+          );
+        }
+        final profile = ctrl.userProfile.value;
+        return CustomScrollView(
+          slivers: [
+            _buildSliverHeader(context, profile),
+            SliverToBoxAdapter(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text(controller.errorMessage.value),
+                  _buildStatsRow(profile),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => controller.fetchCurrentUserProfile(),
-                    child: const Text('Retry'),
-                  ),
+                  _buildKycBanner(profile),
+                  _buildServicesSection(profile),
+                  const SizedBox(height: 12),
+                  _buildBusinessInfo(profile),
+                  const SizedBox(height: 12),
+                  _buildContactInfo(profile),
+                  const SizedBox(height: 12),
+                  _buildPlatformPreferences(ctrl),
+                  const SizedBox(height: 12),
+                  _buildSubscriptionCard(),
+                  const SizedBox(height: 12),
+                  _buildQuickActions(context, profile),
+                  const SizedBox(height: 12),
+                  _buildDangerZone(ctrl),
+                  const SizedBox(height: 12),
+                  _buildSupportCard(),
+                  const SizedBox(height: 12),
+                  _buildFooter(),
+                  const SizedBox(height: 32),
                 ],
               ),
-            );
-          }
+            ),
+          ],
+        );
+      }),
+    );
+  }
 
-          final profile = controller.userProfile.value;
+  // ── Sliver header ─────────────────────────────────────────────────────────
 
-          return Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      _buildProfileCard(profile),
-                      const SizedBox(height: 20),
-                      _buildServicesOfferedSection(profile),
-                      const SizedBox(height: 20),
-                      _buildBusinessInfoCard(profile),
-                      const SizedBox(height: 20),
-                      // _buildDescriptionCard(),
-                      // const SizedBox(height: 20),
-                      // _buildSubscriptionPlans(),
-                      // const SizedBox(height: 16),
-                      _buildQuickActions(),
-                      const SizedBox(height: 16),
-                      CommonDeleteButton(
-                        onConfirm: () {
-                          AuthService().deleteAccount();
-                        },
+  Widget _buildSliverHeader(BuildContext context, UserProfileModel? profile) {
+    final name = profile?.businessName ?? 'My Business';
+    final initials = _initials(name);
+    final imgUrl = profile?.businessLogoPath;
+    final isVerified = profile?.isKYCCompleted ?? false;
+
+    return SliverAppBar(
+      expandedHeight: 230,
+      pinned: true,
+      backgroundColor: _primary,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+            color: Colors.white, size: 20),
+        onPressed: () => Get.back(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Iconsax.edit, color: Colors.white, size: 20),
+          onPressed: () => _navigateToEdit(context, profile),
+          tooltip: 'Edit profile',
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFE84545), Color(0xFFF36969)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 40),
+                // Avatar
+                Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    GestureDetector(
+                      onTap: () => _navigateToEdit(context, profile),
+                      child: Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
+                        child: ClipOval(
+                          child: (imgUrl != null && imgUrl.isNotEmpty)
+                              ? Image.network(imgUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _initialsAvatar(initials, 88))
+                              : _initialsAvatar(initials, 88),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildFooter(),
-                    ],
-                  ),
+                    ),
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _primary, width: 1.5),
+                      ),
+                      child: const Icon(Iconsax.camera, size: 13, color: _primary),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          );
-        }),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(name,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Poppins')),
+                    if (isVerified) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.verified_rounded,
+                          color: Colors.white, size: 18),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 6),
+                if (profile?.businessCategory != null &&
+                    profile!.businessCategory!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Iconsax.shop,
+                            size: 13, color: Colors.white),
+                        const SizedBox(width: 5),
+                        Text(
+                          profile.businessCategory!,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Iconsax.star1, size: 14, color: Colors.amber),
+                    SizedBox(width: 4),
+                    Text('4.5 / 5',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      height: 60,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
+  // ── Stats row ─────────────────────────────────────────────────────────────
+
+  Widget _buildStatsRow(UserProfileModel? profile) {
+    // For service provider we show relevant business stats
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+        ),
+        child: Row(
+          children: [
+            _statItem('Services', 'Active', Iconsax.setting_2,
+                const Color(0xFF8B5CF6)),
+            _vDivider(),
+            _statItem('Bookings', 'Total', Iconsax.receipt_1,
+                const Color(0xFF3B82F6)),
+            _vDivider(),
+            _statItem('Clients', 'Happy', Iconsax.people,
+                const Color(0xFF22C55E)),
+          ],
+        ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 23),
-      child: Row(
+    );
+  }
+
+  Widget _statItem(String value, String label, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 6),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: _textDark,
+                  fontFamily: 'Poppins')),
+          const SizedBox(height: 2),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+        ],
+      ),
+    );
+  }
+
+  Widget _vDivider() =>
+      Container(width: 1, height: 48, color: _border);
+
+  // ── KYC Banner ────────────────────────────────────────────────────────────
+
+  Widget _buildKycBanner(UserProfileModel? profile) {
+    final isVerified = AuthService.to.isUserKYCCompleted ||
+        (profile?.isKYCCompleted ?? false);
+    if (isVerified) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFBEB),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey.withValues(alpha: 0.1),
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.arrow_back_ios, size: 16),
+              child: const Icon(Iconsax.warning_2,
+                  size: 22, color: Color(0xFFF59E0B)),
             ),
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                'Business Profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFF36969),
-                ),
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () async {
-              final controller = Get.find<UserProfileController>();
-              final profile = controller.userProfile.value;
-
-              if (profile != null && profile.userId.isNotEmpty) {
-                final result = await Get.to(
-                  () => const AlliedBusinessRegistrationScreen(),
-                  arguments: {
-                    'userId': profile.userId,
-                    'isUpdate': true,
-                    'businessName': profile.businessName,
-                    'gstNumber': profile.gstNumber,
-                    'businessType': profile.businessType,
-                    'city': profile.city,
-                    'phoneNumber': profile.mobileNo,
-                    'email': profile.email,
-                    'businessLogoPath': profile.businessLogoPath,
-                  },
-                ); // Refresh profile if update was successful
-                if (result == true) {
-                  controller.fetchCurrentUserProfile();
-                }
-              } else {
-                SnackBarHelper.error(
-                  'Unable to edit profile. User ID not found.',
-                );
-              }
-            },
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey.withValues(alpha: 0.1),
-              ),
-              child: const Icon(Icons.edit, size: 22),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileCard(UserProfileModel? profile) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 8),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  // Handle profile picture edit
-                },
-                child: Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFF36969),
-                      width: 4,
-                    ),
-                    image:
-                        profile?.businessLogoPath != null &&
-                            profile!.businessLogoPath!.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(profile.businessLogoPath!),
-                            fit: BoxFit.cover,
-                            onError: (exception, stackTrace) {},
-                          )
-                        : null,
-                    color:
-                        profile?.businessLogoPath == null ||
-                            profile!.businessLogoPath!.isEmpty
-                        ? Colors.grey[300]
-                        : null,
-                  ),
-                  child:
-                      profile?.businessLogoPath == null ||
-                          profile!.businessLogoPath!.isEmpty
-                      ? const Icon(Icons.business, size: 50, color: Colors.grey)
-                      : null,
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: () {
-                    // Handle profile picture edit
-                  },
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF36969),
-                      shape: BoxShape.circle,
-                      border: Border.fromBorderSide(
-                        BorderSide(color: Colors.white, width: 2),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                profile?.businessName ?? 'Business Name',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF535353),
-                ),
-              ),
-              Text(
-                ' (Free account)',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF535353),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-          if (profile?.businessCategory != null &&
-              profile!.businessCategory!.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF8B8B),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                profile.businessCategory!,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Business Verification Pending',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF92400E),
+                          fontFamily: 'Poppins')),
+                  SizedBox(height: 2),
+                  Text(
+                      'Complete verification to publish services and receive bookings.',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF92400E),
+                          fontFamily: 'Poppins')),
+                ],
               ),
             ),
-          const SizedBox(height: 8),
-          // Rating
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.star, size: 14, color: Color(0xFFF36969)),
-              const SizedBox(width: 4),
-              Text(
-                '4.5 / 5',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFF36969),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServicesOfferedSection(UserProfileModel? profile) {
-    if (profile?.servicesOffered == null || profile!.servicesOffered!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final servicesList = profile.servicesOffered!
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    if (servicesList.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Services Offered',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF535353),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: servicesList
-                .map((service) => _buildServiceButton(service))
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceButton(String text) {
-    return GestureDetector(
-      onTap: () {
-        // setState(() {
-        //   selectedService = text;
-        // });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          border: Border.all(color: const Color(0xFFF36969), width: 2),
-          borderRadius: BorderRadius.circular(9999),
-        ),
-        child: Text(
-          text,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFF36969),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBusinessInfoCard(UserProfileModel? profile) {
-    String? profileCity = profile?.city;
-
-    return _buildCard(
-      title: 'Business Information',
-      children: [
-        _buildInfoItem(
-          Icons.location_on,
-          'Business Address',
-          profileCity != null && profileCity.isNotEmpty
-              ? profileCity
-              : 'Address not available',
-        ),
-        _buildInfoItem(
-          Icons.location_city,
-          'City',
-          profileCity != null && profileCity.isNotEmpty ? profileCity : 'N/A',
-        ),
-        _buildInfoItem(
-          Icons.phone,
-          'Phone',
-          profile?.mobileNo != null && profile!.mobileNo!.isNotEmpty
-              ? '+91 ${profile.mobileNo}'
-              : 'N/A',
-        ),
-        _buildInfoItem(
-          Icons.chat,
-          'WhatsApp',
-          profile?.mobileNo != null && profile!.mobileNo!.isNotEmpty
-              ? '+91 ${profile.mobileNo}'
-              : 'N/A',
-        ),
-        _buildInfoItem(
-          Icons.email,
-          'Email Address',
-          profile?.email != null && profile!.email!.isNotEmpty
-              ? profile.email!
-              : 'N/A',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescriptionCard() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Description',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF535353),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'TechCorp Solutions is a leading provider of automotive services and solutions. We specialize in comprehensive tyre services, vehicle maintenance, and advanced retreading technologies. Our commitment to quality and customer satisfaction has made us a trusted partner for businesses across Karnataka.',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-              color: Colors.grey[700],
-              height: 1.6,
-            ),
-            maxLines: isDescriptionExpanded ? null : 3,
-            overflow: isDescriptionExpanded ? null : TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                isDescriptionExpanded = !isDescriptionExpanded;
-              });
-            },
-            child: Text(
-              isDescriptionExpanded ? 'Read less' : 'Read more',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFFF36969),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubscriptionPlans() {
-    return _buildCard(
-      title: 'Subscription Plans',
-      children: [_buildPlanCard('Gold Member')],
-    );
-  }
-
-  Widget _buildPlanCard(String plan) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 57,
-            height: 57,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFA500), Color(0xFFFFD700)],
-              ),
-              borderRadius: BorderRadius.circular(28.5),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10),
-              ],
-            ),
-            child: const Center(
-              child: Text('🏆', style: TextStyle(fontSize: 30)),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              plan,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A1A1A),
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              // Navigate to subscription plans
-            },
-            child: Text(
-              'View Plans',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF407BFF),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return _buildCard(
-      title: 'Quick Actions',
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(Icons.edit, 'Edit Profile', () async {
-                final controller = Get.find<UserProfileController>();
-                final profile = controller.userProfile.value;
-
-                if (profile != null && profile.userId.isNotEmpty) {
-                  final result = await Get.to(
-                    () => const AlliedBusinessRegistrationScreen(),
-                    arguments: {
-                      'userId': profile.userId,
-                      'isUpdate': true,
-                      'businessName': profile.businessName,
-                      'gstNumber': profile.gstNumber,
-                      'businessType': profile.businessType,
-                      'city': profile.city,
-                      'phoneNumber': profile.mobileNo,
-                      'email': profile.email,
-                      'businessLogoPath': profile.businessLogoPath,
-                    },
-                  ); // Refresh profile if update was successful
-                  if (result == true) {
-                    controller.fetchCurrentUserProfile();
-                  }
-                } else {
-                  SnackBarHelper.error(
-                    'Unable to edit profile. User ID not found.',
-                  );
-                }
-              }),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionCard(Icons.swap_horiz, 'Switch Profile', () {
-                // Navigate to switch profile
-              }),
-            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: Color(0xFFF59E0B)),
           ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildActionCard(IconData icon, String title, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
+  // ── Services offered ──────────────────────────────────────────────────────
+
+  Widget _buildServicesSection(UserProfileModel? profile) {
+    final raw = profile?.servicesOffered ?? '';
+    if (raw.isEmpty) return const SizedBox.shrink();
+
+    final services = raw
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (services.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF9F9F9),
-          borderRadius: BorderRadius.circular(12),
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 24, color: const Color(0xFFF36969)),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF535353),
-              ),
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Iconsax.setting_2,
+                      size: 18, color: Color(0xFF8B5CF6)),
+                ),
+                const SizedBox(width: 10),
+                const Text('Services Offered',
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _textDark,
+                        fontFamily: 'Poppins')),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: services.map((s) => _serviceChip(s)).toList(),
             ),
           ],
         ),
@@ -636,126 +396,697 @@ class _ServiceProviderProfileScreenState
     );
   }
 
-  Widget _buildFooter() {
+  Widget _serviceChip(String label) {
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: OutlinedButton.icon(
-        onPressed: () async {
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Log Out'),
-              content: const Text('Are you sure you want to log out?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Log Out'),
-                ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: _primaryLight,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _primary.withValues(alpha: 0.3)),
+      ),
+      child: Text(label,
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _primary,
+              fontFamily: 'Poppins')),
+    );
+  }
+
+  // ── Section card helper ───────────────────────────────────────────────────
+
+  Widget _card({
+    required String title,
+    required List<Widget> children,
+    Widget? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _textDark,
+                        fontFamily: 'Poppins')),
+                if (trailing != null) trailing,
               ],
             ),
-          );
-
-          if (confirm == true) {
-            try {
-              final success = await AuthService.to.logout();
-              if (success) {
-                Get.offAll(() => const RegisterScreen());
-              } else {
-                SnackBarHelper.error('Logout failed. Please try again.');
-              }
-            } catch (e) {
-              SnackBarHelper.error('An error occurred during logout.');
-            }
-          }
-        },
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFF36969), width: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        icon: Transform.rotate(
-          angle: 3.14159,
-          child: const Icon(Icons.logout, color: Color(0xFFF36969), size: 20),
-        ),
-        label: Text(
-          'Log Out',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFF36969),
-          ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildCard({required String title, required List<Widget> children}) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF535353),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(IconData icon, String label, String value) {
+  Widget _infoRow(IconData icon, Color iconColor, String label,
+      String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: const Color(0xFF757575)),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: iconColor),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF757575),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF424242),
-                  ),
-                ),
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: _textGrey,
+                        fontFamily: 'Poppins')),
+                const SizedBox(height: 2),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: _textDark,
+                        fontFamily: 'Poppins')),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Business information ──────────────────────────────────────────────────
+
+  Widget _buildBusinessInfo(UserProfileModel? profile) {
+    return _card(
+      title: 'Business Information',
+      trailing: GestureDetector(
+        onTap: () => _navigateToEditFromCtrl(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: _primaryLight,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Iconsax.edit, size: 12, color: _primary),
+              SizedBox(width: 4),
+              Text('Edit',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _primary,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins')),
+            ],
+          ),
+        ),
+      ),
+      children: [
+        _infoRow(Iconsax.shop, const Color(0xFF8B5CF6), 'Business Name',
+            profile?.businessName ?? '—'),
+        _infoRow(Iconsax.category, const Color(0xFF3B82F6), 'Business Category',
+            profile?.businessCategory ?? '—'),
+        _infoRow(Iconsax.receipt_text, const Color(0xFFF59E0B), 'GST Number',
+            profile?.gstNumber ?? '—'),
+        _infoRow(Iconsax.location, const Color(0xFF0EA5E9), 'City',
+            profile?.city ?? '—'),
+        if (profile?.businessType != null &&
+            profile!.businessType!.isNotEmpty)
+          _infoRow(Iconsax.buildings, const Color(0xFF22C55E), 'Business Type',
+              profile.businessType!),
+      ],
+    );
+  }
+
+  // ── Contact information ───────────────────────────────────────────────────
+
+  Widget _buildContactInfo(UserProfileModel? profile) {
+    return _card(
+      title: 'Contact Information',
+      children: [
+        _infoRow(Iconsax.call, const Color(0xFF22C55E), 'Mobile Number',
+            profile?.mobileNo != null && profile!.mobileNo!.isNotEmpty
+                ? '+91 ${profile.mobileNo}'
+                : '—'),
+        _infoRow(Iconsax.sms, const Color(0xFF3B82F6), 'Email Address',
+            profile?.email ?? '—'),
+        _infoRow(Icons.chat_rounded, const Color(0xFF22C55E), 'WhatsApp',
+            profile?.mobileNo != null && profile!.mobileNo!.isNotEmpty
+                ? '+91 ${profile.mobileNo}'
+                : '—'),
+      ],
+    );
+  }
+
+  // ── Platform preferences ──────────────────────────────────────────────────
+
+  Widget _buildPlatformPreferences(UserProfileController ctrl) {
+    return _card(
+      title: 'Platform Preferences',
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Iconsax.language_circle,
+                  size: 18, color: Color(0xFF3B82F6)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Language',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: _textDark,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w500)),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _bg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('English',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: _textDark,
+                          fontFamily: 'Poppins')),
+                  SizedBox(width: 4),
+                  Icon(Icons.keyboard_arrow_down_rounded,
+                      size: 18, color: _textGrey),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Divider(color: _border, height: 1),
+        const SizedBox(height: 16),
+        Obx(() => _toggleRow(Iconsax.sms, 'SMS Notifications',
+            ctrl.smsNotifications.value, ctrl.toggleSmsNotifications)),
+        const SizedBox(height: 14),
+        Obx(() => _toggleRow(Iconsax.sms_notification, 'Email Notifications',
+            ctrl.emailNotifications.value, ctrl.toggleEmailNotifications)),
+        const SizedBox(height: 14),
+        Obx(() => _toggleRow(Icons.chat_rounded, 'WhatsApp Notifications',
+            ctrl.whatsappNotifications.value,
+            ctrl.toggleWhatsappNotifications)),
+      ],
+    );
+  }
+
+  Widget _toggleRow(IconData icon, String label, bool value,
+      ValueChanged<bool> onChanged) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: _textGrey),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(label,
+              style: const TextStyle(
+                  fontSize: 14,
+                  color: _textDark,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500)),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeTrackColor: _primary,
+          activeThumbColor: Colors.white,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ],
+    );
+  }
+
+  // ── Subscription ──────────────────────────────────────────────────────────
+
+  Widget _buildSubscriptionCard() {
+    return GestureDetector(
+      onTap: () => Get.to(
+          () => const SubscriptionScreen(category: 'service_provider')),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(Iconsax.crown, size: 24, color: Colors.white),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Subscription Plans',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            fontFamily: 'Poppins')),
+                    SizedBox(height: 3),
+                    Text('View plans & manage your subscription',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white70,
+                            fontFamily: 'Poppins')),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  size: 16, color: Colors.white70),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Quick actions ─────────────────────────────────────────────────────────
+
+  Widget _buildQuickActions(
+      BuildContext context, UserProfileModel? profile) {
+    return _card(
+      title: 'Quick Actions',
+      children: [
+        Row(
+          children: [
+            _actionTile(
+              Iconsax.edit,
+              'Edit Profile',
+              const Color(0xFF3B82F6),
+              const Color(0xFFEFF6FF),
+              () => _navigateToEdit(context, profile),
+            ),
+            const SizedBox(width: 10),
+            _actionTile(
+              Iconsax.call,
+              'Contact Us',
+              const Color(0xFF22C55E),
+              const Color(0xFFF0FDF4),
+              _contactUs,
+            ),
+            const SizedBox(width: 10),
+            _actionTile(
+              Iconsax.logout,
+              'Logout',
+              _primary,
+              _primaryLight,
+              () => _showLogoutDialog(context),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _actionTile(IconData icon, String label, Color iconColor, Color bg,
+      VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: iconColor.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 22, color: iconColor),
+              const SizedBox(height: 6),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: iconColor,
+                      fontFamily: 'Poppins'),
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Danger zone ───────────────────────────────────────────────────────────
+
+  Widget _buildDangerZone(UserProfileController ctrl) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Account',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _textDark,
+                    fontFamily: 'Poppins')),
+            const SizedBox(height: 16),
+            CommonDeleteButton(
+              onConfirm: (password) async {
+                try {
+                  await AuthService.to.deleteAccount(password: password);
+                  Get.offAll(() => const RegisterScreen());
+                } catch (e) {
+                  SnackBarHelper.error(AuthService.extractError(e));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Support card ──────────────────────────────────────────────────────────
+
+  Widget _buildSupportCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE84545), Color(0xFFF36969)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Having issues with your profile?',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          fontFamily: 'Poppins')),
+                  SizedBox(height: 4),
+                  Text('Our support team is ready to help.',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                          fontFamily: 'Poppins')),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () => SnackBarHelper.info('Chat support coming soon!'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Chat',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: _primary,
+                            fontFamily: 'Poppins')),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3CD),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text('Soon',
+                          style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF856404),
+                              fontFamily: 'Poppins')),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+
+  Widget _buildFooter() {
+    return Column(
+      children: [
+        const Text('App v1.3.2',
+            style: TextStyle(
+                fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text('Terms & Conditions',
+                style: TextStyle(
+                    fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text('•',
+                  style: TextStyle(color: _textGrey, fontSize: 11)),
+            ),
+            Text('Privacy Policy',
+                style: TextStyle(
+                    fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Navigation helpers ────────────────────────────────────────────────────
+
+  void _navigateToEdit(BuildContext context, UserProfileModel? profile) {
+    if (profile == null || profile.userId.isEmpty) {
+      SnackBarHelper.error('Unable to edit profile. User ID not found.');
+      return;
+    }
+    Get.to(
+      () => const AlliedBusinessRegistrationScreen(),
+      arguments: {
+        'userId': profile.userId,
+        'isUpdate': true,
+        'businessName': profile.businessName,
+        'gstNumber': profile.gstNumber,
+        'businessType': profile.businessType,
+        'city': profile.city,
+        'phoneNumber': profile.mobileNo,
+        'email': profile.email,
+        'businessLogoPath': profile.businessLogoPath,
+      },
+    )?.then((result) {
+      if (result == true) {
+        Get.find<UserProfileController>().fetchCurrentUserProfile();
+      }
+    });
+  }
+
+  void _navigateToEditFromCtrl() {
+    final ctrl = Get.find<UserProfileController>();
+    final profile = ctrl.userProfile.value;
+    if (profile == null || profile.userId.isEmpty) {
+      SnackBarHelper.error('Unable to edit profile.');
+      return;
+    }
+    Get.to(
+      () => const AlliedBusinessRegistrationScreen(),
+      arguments: {
+        'userId': profile.userId,
+        'isUpdate': true,
+        'businessName': profile.businessName,
+        'gstNumber': profile.gstNumber,
+        'businessType': profile.businessType,
+        'city': profile.city,
+        'phoneNumber': profile.mobileNo,
+        'email': profile.email,
+        'businessLogoPath': profile.businessLogoPath,
+      },
+    )?.then((result) {
+      if (result == true) ctrl.fetchCurrentUserProfile();
+    });
+  }
+
+  void _contactUs() async {
+    final uri = Uri(scheme: 'tel', path: '+917420861942');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      SnackBarHelper.error('Cannot open phone dialer');
+    }
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Log Out',
+            style: TextStyle(
+                fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: const Text('Are you sure you want to log out?',
+            style: TextStyle(fontFamily: 'Poppins')),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel',
+                style: TextStyle(color: _textGrey, fontFamily: 'Poppins')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              try {
+                await AuthService.to.logout();
+                Get.offAll(() => const RegisterScreen());
+              } catch (e) {
+                AppLogger.e('Logout error: $e');
+                SnackBarHelper.error('An error occurred during logout.');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Log Out',
+                style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Pure helpers ──────────────────────────────────────────────────────────
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    if (parts[0].isNotEmpty) return parts[0][0].toUpperCase();
+    return 'B';
+  }
+
+  Widget _initialsAvatar(String initials, double size) {
+    return Container(
+      width: size,
+      height: size,
+      color: Colors.white.withValues(alpha: 0.25),
+      child: Center(
+        child: Text(initials,
+            style: TextStyle(
+                fontSize: size * 0.35,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                fontFamily: 'Poppins')),
+      ),
+    );
+  }
+}
+
+// ── Error / retry widget ─────────────────────────────────────────────────────
+
+class _ErrorRetry extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorRetry({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Iconsax.warning_2, size: 48, color: _primary),
+            const SizedBox(height: 16),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 14, color: _textGrey, fontFamily: 'Poppins')),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Iconsax.refresh, size: 16),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

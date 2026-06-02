@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/controllers/Transport/transaction_summary_controller.dart';
-import 'package:wheelboard/models/expense_purpose_model.dart';
+import 'package:wheelboard/utils/format_utils.dart';
 import 'package:wheelboard/models/trip_expense_detail_model.dart';
 import 'dart:math' as math;
 import '../../CompanyTransport/add_expense_screen.dart';
-import '../../../services/auth_service.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../../utils/app_logger.dart';
 
-class TransactionSummaryScreen extends StatelessWidget {
-  TransactionSummaryScreen({super.key});
-  TransactionSummaryController controller = Get.put(
-    TransactionSummaryController(),
-  );
+class TransactionSummaryScreen extends StatefulWidget {
+  const TransactionSummaryScreen({super.key});
+  @override
+  State<TransactionSummaryScreen> createState() => _TransactionSummaryScreenState();
+}
+
+class _TransactionSummaryScreenState extends State<TransactionSummaryScreen> {
+  final TransactionSummaryController controller = Get.put(TransactionSummaryController());
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,7 +227,7 @@ class TransactionSummaryScreen extends StatelessWidget {
                               right: 16,
                             ),
                             child: _buildTransactionItem(
-                              date: HttpHelper.formatDate(
+                              date: FormatUtils.formatDate(
                                 e.dateEntered,
                                 format: 'dd.MM.yy',
                               ),
@@ -283,7 +286,7 @@ class TransactionSummaryScreen extends StatelessWidget {
 
                                       child: Center(
                                         child: Text(
-                                          HttpHelper.formatAmount(
+                                          FormatUtils.formatAmount(
                                             controller.totalExpenses.value,
                                           ),
                                           style: GoogleFonts.inter(
@@ -456,17 +459,14 @@ class TransactionSummaryScreen extends StatelessWidget {
                       // 🔧 FIX: Dynamically determine user type instead of hardcoding
                       // 🔧 FIX: Dynamically determine user type instead of hardcoding
                       // Check if user is Professional/Driver or Transport Company
-                      final userType = Get.find<AuthService>()
-                          .userType
-                          .value; // Access .value for RxString
+                      // Check if user is Professional using enum
                       final isProfessional =
-                          userType.toLowerCase().trim() == 'professional' ||
-                          userType.toLowerCase().trim() == 'driver';
+                          Get.find<AuthService>().isProfessional;
 
                       AppLogger.d("🔍 Opening Add Expense Screen");
-                      AppLogger.d("🔍 User Type (Raw): '$userType'");
+                      AppLogger.d("🔍 User Role: '${Get.find<AuthService>().currentUserType}'");
                       AppLogger.d(
-                        "🔍 isProfessional Calculated: $isProfessional",
+                        "🔍 isProfessional: $isProfessional",
                       );
 
                       Get.to(
@@ -637,27 +637,6 @@ class TransactionSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryDot(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF374151),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 // Custom Pie Chart Painter (No external URL needed)

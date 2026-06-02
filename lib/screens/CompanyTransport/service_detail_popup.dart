@@ -6,7 +6,7 @@ import '../../controllers/Transport/fleet_controller.dart';
 import '../../models/service_assignment_summary.dart';
 import '../../models/service_model.dart';
 import '../../models/get_vehicle_model.dart';
-import '../../services/auth_service.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'service_confirmation.dart';
 
@@ -60,7 +60,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
     final token = authService.currentToken;
 
     if (userId.isNotEmpty && token.isNotEmpty) {
-      await _fleetController.fetchVehicles(userId, token);
+      await _fleetController.fetchVehicles();
     }
   }
 

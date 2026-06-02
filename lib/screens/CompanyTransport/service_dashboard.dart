@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
 import 'package:wheelboard/controllers/Transport/service_dashboard_controller.dart';
-import 'package:wheelboard/models/dashboard_model.dart';
 import 'package:wheelboard/models/myassign_sevice_list.dart';
 
 class ServiceDashboardScreen extends StatelessWidget {
@@ -298,7 +296,7 @@ class ServiceCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Assigned Date: ${HttpHelper.formatDate(data.meta, format: 'dd.MM.yy')}",
+                "Assigned Date: ${DateFormat('dd.MM.yy').format(DateTime.tryParse(data.meta.toString()) ?? DateTime.now())}",
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   color: const Color(0xFF6B7280),

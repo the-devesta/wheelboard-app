@@ -1,21 +1,17 @@
-import 'dart:convert';
-
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:dio/dio.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
+import 'package:wheelboard/core/network/api_client.dart';
+import 'package:wheelboard/core/network/api_endpoints.dart';
+import 'package:wheelboard/core/network/api_exception.dart';
 import 'user_profile_controller.dart';
-import 'package:wheelboard/models/dashboard_model.dart';
 import 'package:wheelboard/models/myassign_sevice_list.dart';
-import 'package:wheelboard/services/auth_service.dart';
 import 'package:wheelboard/utils/app_logger.dart';
-import 'package:wheelboard/utils/constants.dart';
-import 'package:wheelboard/utils/error_handler.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
 import 'package:wheelboard/services/razorpay_service.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wheelboard/utils/session_manager.dart';
 
 class ServiceDashboardController extends GetxController {
   RxBool isLoading = false.obs;
@@ -55,24 +51,23 @@ class ServiceDashboardController extends GetxController {
   Future<void> getServices() async {
     try {
       isLoading.value = true;
-      final response = await HttpHelper.getData(
-        endpoint:
-            '${API.getAssingServiceList}${Get.find<AuthService>().userId}',
-        headers: {"Content-Type": "application/json"},
+      final userId = AuthService.to.currentUserId;
+
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.services.myBookings,
+        queryParameters: {'userId': userId},
       );
 
-      if (response.statusCode == 200) {
-        debugPrint('data====>>>${response.body}');
-        final List data = jsonDecode(response.body);
+      allServices.assignAll(
+        data.map((e) => AssignedServiceModel.fromJson(e)).toList(),
+      );
 
-        allServices.assignAll(
-          data.map((e) => AssignedServiceModel.fromJson(e)).toList(),
-        );
-
-        filteredServices.assignAll(allServices);
-      }
-
-      isLoading.value = false;
+      filteredServices.assignAll(allServices);
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load services';
+      AppLogger.e('Error fetching services: $msg');
+    } catch (e) {
+      AppLogger.e('Error fetching services: $e');
     } finally {
       isLoading.value = false;
     }
@@ -96,34 +91,23 @@ class ServiceDashboardController extends GetxController {
   Future<bool> deleteService(String assignmentId) async {
     try {
       isLoading.value = true;
-      final endpoint = '${API.deleteService}/$assignmentId/delete';
 
-      final response = await HttpHelper.postData(
-        endpoint: endpoint,
-        data: {},
-        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
+      await ApiClient.instance.patch(
+        ApiEndpoints.services.updateBookingStatus(assignmentId),
+        data: {'status': 'cancelled'},
       );
 
-      AppLogger.d("🗑️ Delete response status: ${response.statusCode}");
-      AppLogger.d("🗑️ Delete response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        SnackBarHelper.success("Service deleted successfully!");
-        getServices();
-        return true;
-      }
-
-      final errorMessage = ErrorHandler.parseError(
-        response.body,
-        statusCode: response.statusCode,
-      );
-
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.success("Service deleted successfully!");
+      getServices();
+      return true;
+    } on DioException catch (e) {
+      AppLogger.d("❌ Error deleting service: $e");
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to delete service';
+      SnackBarHelper.error(msg);
       return false;
     } catch (e) {
       AppLogger.d("❌ Error deleting service: $e");
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.error("Failed to delete service");
       return false;
     } finally {
       isLoading.value = false;
@@ -137,7 +121,6 @@ class ServiceDashboardController extends GetxController {
         return;
       }
       _currentProcessingService = service;
-      // Generate a temporary order ID or use assignment ID
 
       String prefillEmail = "hello@wheelboard.in";
       String prefillContact = "7420861942";
@@ -188,10 +171,7 @@ class ServiceDashboardController extends GetxController {
   ) async {
     try {
       isLoading.value = true;
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString(
-        "userId",
-      ); // or service.assignedToUserId
+      final userId = AuthService.to.currentUserId;
 
       final paymentId = const Uuid().v4();
       final now = DateTime.now().toIso8601String();
@@ -203,7 +183,7 @@ class ServiceDashboardController extends GetxController {
         "serviceId": service.serviceId,
         "paymentDate": now,
         "paymentNotes": service.description,
-        "userId": userId ?? service.assignedToUserId,
+        "userId": userId.isNotEmpty ? userId : service.assignedToUserId,
         "paymentStatus": "Success",
         "paymentMode": "Razorpay",
         "orderId": paymentResponse.orderId ?? "",
@@ -213,23 +193,16 @@ class ServiceDashboardController extends GetxController {
         "assignmentId": service.assignmentId,
       };
 
-      final response = await HttpHelper.postData(
-        endpoint:
-            API.completePayment, // Need to ensure this API constant exists
+      await ApiClient.instance.post(
+        ApiEndpoints.services.verifyBookingPayment(service.assignmentId),
         data: payload,
-        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        SnackBarHelper.success("Payment Completed Successfully!");
-        // Refresh list
-        getServices();
-        // User requested: "GO TO ROUTE /ServiceDashboardScreen"
-        // Since we are already here, refreshing is fine. Or we can reload.
-      } else {
-        SnackBarHelper.error("Payment recorded failed at backend.");
-        AppLogger.d("Backend api fail: ${response.body}");
-      }
+      SnackBarHelper.success("Payment Completed Successfully!");
+      getServices();
+    } on DioException catch (e) {
+      AppLogger.d("Error completing payment on backend: $e");
+      SnackBarHelper.error("Payment recorded failed at backend.");
     } catch (e) {
       AppLogger.d("Error completing payment on backend: $e");
       SnackBarHelper.error("Error completing payment.");

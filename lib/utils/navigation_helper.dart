@@ -1,68 +1,96 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../services/auth_service.dart';
+
+import '../core/auth/auth_service.dart' as core;
+import '../core/auth/user_role.dart';
+import '../core/navigation/app_routes.dart';
 import '../controllers/Transport/main_wrapper_controller.dart';
 import '../screens/Professional/main_wrapper.dart';
 import '../screens/CompanyTransport/main_wrapper.dart';
 import '../screens/CompanyServiceProvider/main_wrapper.dart';
 import '../utils/app_logger.dart';
 
-/// Helper class to navigate to appropriate wrapper based on user type
+/// Helper class to navigate to appropriate wrapper based on user role.
+///
+/// Now uses [UserRole] enum and [AppRoutes] named routes,
+/// matching the `normalizeRole()` pattern from wheelboard-fe.
 class NavigationHelper {
-  /// Navigate to the correct main wrapper based on user type
+  /// Navigate to the correct main wrapper based on the user's role.
+  /// Prefers named routes when available, falls back to direct navigation.
   static void navigateToMainWrapper() {
-    final authService = AuthService.to;
-    final userType = authService.currentUserType;
+    final auth = core.AuthService.to;
+    final role = auth.userRole;
 
-    AppLogger.d("🧭 Navigation Helper - User Type: $userType");
+    AppLogger.d('🧭 Navigation Helper - User Role: ${role.value}');
 
-    // Navigate based on user type
-    if (userType == "Professional" || userType == "professional") {
-      Get.offAll(() => const ProfessionalMainWrapper());
-    } else if (userType == "Transport" || userType == "transport") {
-      Get.offAll(() => const CompanyTransportMainWrapper());
-    } else if (userType == "Service Provider" ||
-        userType == "service provider") {
-      Get.offAll(() => const CompanyServiceProviderMainWrapper());
-    } else {
-      // Default fallback - you can change this to your preferred default
-
-      Get.offAll(() => const ProfessionalMainWrapper());
+    switch (role) {
+      case UserRole.professional:
+        Get.offAllNamed(AppRoutes.professionalHome);
+        break;
+      case UserRole.company:
+        Get.offAllNamed(AppRoutes.companyHome);
+        break;
+      case UserRole.business:
+        Get.offAllNamed(AppRoutes.serviceProviderHome);
+        break;
+      case UserRole.admin:
+      case UserRole.superAdmin:
+        Get.offAllNamed(AppRoutes.companyHome);
+        break;
     }
   }
 
-  /// Get the appropriate wrapper widget based on user type
+  /// Get the appropriate wrapper widget based on user role.
   static Widget getMainWrapper() {
-    final authService = AuthService.to;
-    final userType = authService.currentUserType;
+    final auth = core.AuthService.to;
+    final role = auth.userRole;
 
-    if (userType == "Professional" || userType == "professional") {
-      return const ProfessionalMainWrapper();
-    } else if (userType == "Transport" || userType == "transport") {
-      return const CompanyTransportMainWrapper();
-    } else if (userType == "Service Provider" ||
-        userType == "service provider") {
-      return const CompanyServiceProviderMainWrapper();
-    } else {
-      // Default fallback
-      return const ProfessionalMainWrapper();
+    switch (role) {
+      case UserRole.professional:
+        return const ProfessionalMainWrapper();
+      case UserRole.company:
+        return const CompanyTransportMainWrapper();
+      case UserRole.business:
+        return const CompanyServiceProviderMainWrapper();
+      case UserRole.admin:
+      case UserRole.superAdmin:
+        return const CompanyTransportMainWrapper();
     }
   }
 
-  /// Navigate to Trips tab in bottom navigation (index 2)
-  static void navigateToTripsTab() {
-    final authService = AuthService.to;
-    final userType = authService.currentUserType;
+  /// Get the named route for the user's home screen.
+  static String homeRouteForCurrentUser() {
+    final auth = core.AuthService.to;
+    switch (auth.userRole) {
+      case UserRole.professional:
+        return AppRoutes.professionalHome;
+      case UserRole.company:
+        return AppRoutes.companyHome;
+      case UserRole.business:
+        return AppRoutes.serviceProviderHome;
+      case UserRole.admin:
+      case UserRole.superAdmin:
+        return AppRoutes.companyHome;
+    }
+  }
 
-    if (userType == "Transport" || userType == "transport") {
-      // Use GetX controller to switch tabs without navigation
+  /// Navigate to Trips tab in bottom navigation (index 2).
+  static void navigateToTripsTab() {
+    final auth = core.AuthService.to;
+    final role = auth.userRole;
+
+    if (role == UserRole.company) {
       try {
         final wrapperController = Get.find<MainWrapperController>();
         wrapperController.switchToTripsTab();
       } catch (e) {
-        // If controller not found, navigate to main wrapper with trips tab
         Get.offAll(() => const CompanyTransportMainWrapper(initialIndex: 2));
       }
     }
+  }
+
+  /// Navigate to login, clearing all routes.
+  static void navigateToLogin() {
+    Get.offAllNamed(AppRoutes.onboarding);
   }
 }

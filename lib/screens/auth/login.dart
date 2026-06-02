@@ -1,437 +1,228 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
-import 'package:wheelboard/screens/CompanyTransport/complete_company_profile.dart';
 
 import '../../controllers/Transport/login_controller.dart';
-import '../../services/auth_service.dart';
-import '../../widgets/custom_snackbar.dart';
+import '../../core/auth/auth_service.dart' as core;
+import '../../core/auth/user_role.dart';
 import '../../utils/navigation_helper.dart';
 import '../../utils/session_manager.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-
+import '../../widgets/custom_snackbar.dart';
+import '../CompanyTransport/complete_company_profile.dart';
 import '../auth/service_provider_login.dart';
-
 import 'onboarding_screen.dart';
+import 'forgot_password.dart';
 
-class ProfessionLogin extends StatelessWidget {
-  ProfessionLogin({super.key});
+// ─── Constants ────────────────────────────────────────────────────────────
 
-  final LoginController loginController = Get.put(LoginController());
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController otpController = TextEditingController();
+const _primary = Color(0xFFF36969);
+const _textDark = Color(0xFF1A1C1E);
+const _textGrey = Color(0xFF6B7280);
+const _border = Color(0xFFE5E7EB);
+const _inputBg = Color(0xFFF9FAFB);
+
+// ─── LoginScreen ──────────────────────────────────────────────────────────
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
+  final LoginController _ctrl = Get.put(LoginController());
+
+  late TabController _tabController;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnim;
+
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _otpCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) return;
+      _ctrl.resetOTP();
+      _otpCtrl.clear();
+    });
+
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _fadeController.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    _phoneCtrl.dispose();
+    _otpCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── Auth actions ─────────────────────────────────────────────────────────
+
+  Future<void> _loginWithPassword() async {
+    final email = _emailCtrl.text.trim();
+    final pass = _passCtrl.text.trim();
+    if (email.isEmpty) { SnackBarHelper.error('Please enter email or phone'); return; }
+    if (pass.isEmpty) { SnackBarHelper.error('Please enter password'); return; }
+    final resp = await _ctrl.login(email, pass);
+    if (resp != null) _handleAuthSuccess(resp.user.role);
+  }
+
+  Future<void> _sendOtp() async {
+    await _ctrl.sendOTP(_phoneCtrl.text.trim());
+  }
+
+  Future<void> _loginWithOtp() async {
+    final resp = await _ctrl.loginWithOTP(
+      _phoneCtrl.text.trim(),
+      _otpCtrl.text.trim(),
+    );
+    if (resp != null) _handleAuthSuccess(resp.user.role);
+  }
+
+  Future<void> _handleAuthSuccess(UserRole role) async {
+    final authUser = core.AuthService.to.currentUser.value;
+    final profileComplete = authUser?.isProfileComplete ?? true;
+
+    if (role == UserRole.company && !profileComplete) {
+      final sessionManager = SessionManager();
+      final data = {
+        'companyName': await sessionManager.getString('registration_companyName') ?? '',
+        'email': await sessionManager.getString('registration_email') ?? '',
+        'mobileNo': await sessionManager.getString('registration_mobileNo') ?? '',
+        'businessCategory': await sessionManager.getString('registration_businessCategory') ?? 'Transport',
+      };
+      Get.to(() => CompanyCompleteProfile(), arguments: data);
+      return;
+    }
+    if (role == UserRole.business && !profileComplete) {
+      Get.to(() => const AlliedBusinessRegistrationScreen());
+      return;
+    }
+    NavigationHelper.navigateToMainWrapper();
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+  //
+  // Architecture:
+  //   Scaffold(bg: coral) → Column
+  //     ├── _buildHeader()   SafeArea(bottom:false) + padding + content  [intrinsic height]
+  //     └── Expanded
+  //         └── _buildCard() Container(rounded-top) → SafeArea(top:false) → Column
+  //                            ├── TabBar               [fixed 48px]
+  //                            └── Expanded(TabBarView) [fills bounded remainder]
+  //                                └── each tab: SingleChildScrollView → Column
+  //
+  // This gives TabBarView a finite bounded height without IntrinsicHeight or
+  // nested ScrollViews, satisfying RenderViewport's bounded-height requirement.
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(0),
-        child: AppBar(elevation: 0, backgroundColor: Colors.transparent),
+      backgroundColor: _primary,
+      resizeToAvoidBottomInset: true,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(child: _buildCard()),
+          ],
+        ),
       ),
-      backgroundColor: AppColors.primary,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight:
-                  MediaQuery.of(context).size.height -
-                  MediaQuery.of(context).padding.top,
-            ),
-            child: IntrinsicHeight(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 24),
-                    // Logo
-                    Image.asset(
-                      'assets/mainlogo.png',
-                      height: 85,
-                      width: 85,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 24),
-                    // Title
-                    Text(
-                      "Sign in to your\nAccount",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF535353),
-                        height: 1.2,
-                        letterSpacing: -0.64,
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Subtitle
-                    Text(
-                      "Enter your Phone no. to receive an OTP",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: const Color(0xFF535353),
-                        height: 1.4,
-                        letterSpacing: -0.13,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    // White Card Container
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 4),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _socialButton(
-                            "Continue with Google",
-                            "assets/google.svg",
-                          ),
-                          const SizedBox(height: 24),
-                          _buildDivider(context),
-                          const SizedBox(height: 24),
+    );
+  }
 
-                          /// 📌 Phone & OTP Input Section
-                          Obx(
-                            () => Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Phone Field (Read-only when OTP sent)
-                                _buildInputField(
-                                  controller: phoneController,
-                                  hintText: "Enter your phone number",
-                                  keyboardType: TextInputType.phone,
-                                  readOnly: loginController.isOTPSent.value,
-                                  prefixIcon: const Icon(
-                                    Icons.phone_android,
-                                    size: 20,
-                                    color: Color(0xFF6C7278),
-                                  ),
-                                  suffixIcon: loginController.isOTPSent.value
-                                      ? TextButton(
-                                          onPressed: () {
-                                            loginController.resetOTP();
-                                            otpController.clear();
-                                          },
-                                          child: const Text(
-                                            "Change",
-                                            style: TextStyle(
-                                              color: Color(0xFFF26262),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        )
-                                      : null,
-                                ),
+  // ── Header (coral background from Scaffold) ───────────────────────────────
 
-                                if (loginController.isOTPSent.value) ...[
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    "Enter 6-digit OTP",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF535353),
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  _buildInputField(
-                                    controller: otpController,
-                                    hintText: "Enter OTP",
-                                    keyboardType: TextInputType.number,
-                                    prefixIcon: const Icon(
-                                      Icons.lock_outline,
-                                      size: 20,
-                                      color: Color(0xFF6C7278),
-                                    ),
-                                    maxLength: 6,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton(
-                                      onPressed: () => loginController.sendOTP(
-                                        phoneController.text,
-                                      ),
-                                      child: const Text(
-                                        "Resend OTP",
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF6C7278),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 24),
-                              ],
-                            ),
-                          ),
-
-                          /// 📌 Login Button
-                          _buildLoginButton(),
-                          const SizedBox(height: 24),
-
-                          /// 📌 Signup Redirect
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Don't have an account?",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: const Color(0xFF6C7278),
-                                  height: 1.4,
-                                  letterSpacing: -0.12,
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              GestureDetector(
-                                onTap: () {
-                                  Get.to(RegisterScreen());
-                                },
-                                child: Text(
-                                  "Sign Up",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFFF26262),
-                                    height: 1.4,
-                                    letterSpacing: -0.12,
-                                    fontFamily: 'Poppins',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          /// Quick Login Buttons (for testing)
-                          if (kDebugMode)
-                            Column(
-                              children: [
-                                Text(
-                                  "--- Quick Logins for Testing ---",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade500,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildTestLoginButton(
-                                        "Transport",
-                                        () async {
-                                          phoneController.text = "8600202678";
-                                          await loginController.sendOTP(
-                                            phoneController.text,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _buildTestLoginButton(
-                                        "Professional",
-                                        () async {
-                                          phoneController.text = "7420861942";
-                                          await loginController.sendOTP(
-                                            phoneController.text,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _buildTestLoginButton(
-                                        "Service Provider",
-                                        () async {
-                                          phoneController.text = "8210447299";
-                                          await loginController.sendOTP(
-                                            phoneController.text,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
+  Widget _buildHeader() {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.canPop(context)
+                  ? Navigator.pop(context)
+                  : Get.offAll(() => const OnboardingScreen(), transition: Transition.fadeIn),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Helper method for test login buttons
-  Widget _buildTestLoginButton(String role, VoidCallback onPressed) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFF26262),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        minimumSize: const Size(0, 0),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 0,
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          role,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-      ),
-    );
-  }
-
-  /// Encapsulated login logic
-  Future<void> _performLogin() async {
-    if (phoneController.text.trim().isEmpty) {
-      SnackBarHelper.error("Please enter phone number");
-      return;
-    }
-
-    if (loginController.isLoading.value) {
-      return;
-    }
-
-    if (!loginController.isOTPSent.value) {
-      // Step 1: Send OTP
-      await loginController.sendOTP(phoneController.text.trim());
-      return;
-    }
-
-    // Step 2: Login with OTP
-    if (otpController.text.trim().isEmpty) {
-      SnackBarHelper.error("Please enter OTP");
-      return;
-    }
-
-    final responseData = await loginController.loginWithOTP(
-      phoneController.text.trim(),
-      otpController.text.trim(),
-    );
-
-    if (responseData != null && responseData.isNotEmpty) {
-      final businessCategory = responseData['businessCategory'] ?? '';
-      final userTypeFromApi = responseData['userType'] ?? '';
-      final isProfileComplete = responseData['isProfileComplete'] ?? false;
-      final isKYCCompleted = responseData['isKYCCompleted'] ?? false;
-      final isHired = responseData['isHired'] ?? false;
-      final token = responseData['token'] ?? '';
-      final userId = responseData['userId'] ?? '';
-
-      // Determine effective user type
-      // API returns "userType": "Professional" but empty "businessCategory" for professionals
-      // Determine effective user type
-      // Prioritize businessCategory to match original app flow
-      final effectiveUserType = (businessCategory.toString().isNotEmpty)
-          ? businessCategory
-          : userTypeFromApi;
-
-      if (token.isEmpty || userId.isEmpty) {
-        SnackBarHelper.error("Login failed: Invalid response from server");
-        return;
-      }
-
-      final authService = AuthService.to;
-      final loginSuccess = await authService.login(
-        token: token,
-        userId: userId,
-        userType: effectiveUserType,
-        isKYCCompleted: isKYCCompleted,
-        isHired: isHired,
-      );
-
-      if (loginSuccess) {
-        if (businessCategory == "Transport" && !isProfileComplete) {
-          final sessionManager = SessionManager();
-          final registrationData = {
-            "userId": userId,
-            "companyName":
-                await sessionManager.getString("registration_companyName") ??
-                "",
-            "email": await sessionManager.getString("registration_email") ?? "",
-            "mobileNo":
-                await sessionManager.getString("registration_mobileNo") ?? "",
-            "businessCategory":
-                await sessionManager.getString(
-                  "registration_businessCategory",
-                ) ??
-                "Transport",
-          };
-
-          Get.to(CompanyCompleteProfile(), arguments: registrationData);
-        } else if (businessCategory == "Service Provider" &&
-            !isProfileComplete) {
-          Get.to(
-            AlliedBusinessRegistrationScreen(),
-            arguments: {"userId": userId},
-          );
-        } else {
-          NavigationHelper.navigateToMainWrapper();
-        }
-      } else {
-        SnackBarHelper.error("Login failed: Could not save session");
-      }
-    }
-  }
-
-  Widget _socialButton(String text, String asset) {
-    return InkWell(
-      onTap: () {
-        // TODO: Implement Google sign in
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: double.infinity,
-        height: 48,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFEFF0F6)),
-          color: Colors.white,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(asset, height: 18, width: 18),
-            const SizedBox(width: 10),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(6),
+                  child: Image.asset(
+                    'assets/mainlogo.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.local_shipping_rounded,
+                      color: _primary,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'WHEELBOARD',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 2,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Welcome back!',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                fontFamily: 'Poppins',
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 4),
             Text(
-              text,
+              'Sign in to continue to your account',
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A1C1E),
-                height: 1.4,
-                letterSpacing: -0.14,
+                color: Colors.white.withValues(alpha: 0.85),
                 fontFamily: 'Poppins',
               ),
             ),
@@ -441,134 +232,424 @@ class ProfessionLogin extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider(BuildContext context) {
-    return Row(
+  // ── Card (fills remaining bounded height from Expanded above) ────────────
+
+  Widget _buildCard() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      // SafeArea(top:false) handles home-indicator / nav-bar padding at bottom.
+      child: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tab selector — fixed height, no flex
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: BoxDecoration(
+                    color: _primary,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: _textGrey,
+                  labelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                  ),
+                  tabs: const [
+                    Tab(text: 'Email & Password'),
+                    Tab(text: 'Phone OTP'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // TabBarView — fills remaining bounded height.
+            // Parent Column has bounded height (Scaffold → Column → Expanded → Container → SafeArea → Column).
+            // This satisfies RenderViewport's finite-constraints requirement.
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildPasswordTab(),
+                  _buildOtpTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Password tab ─────────────────────────────────────────────────────────
+  // SingleChildScrollView scrolls when keyboard is shown (resizeToAvoidBottomInset
+  // shrinks Scaffold body, Expanded shrinks TabBarView, tab scrolls to focused field).
+
+  Widget _buildPasswordTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _field(
+            label: 'Email or Phone',
+            hint: 'Enter your email or phone number',
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.alternate_email_rounded,
+          ),
+          const SizedBox(height: 16),
+          Obx(() => _field(
+            label: 'Password',
+            hint: 'Enter your password',
+            controller: _passCtrl,
+            obscure: _ctrl.obscurePassword.value,
+            prefixIcon: Icons.lock_outline_rounded,
+            suffix: IconButton(
+              icon: Icon(
+                _ctrl.obscurePassword.value
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: _textGrey,
+              ),
+              onPressed: _ctrl.togglePasswordVisibility,
+              splashRadius: 18,
+            ),
+          )),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => Get.to(() => const ForgotPasswordScreen()),
+              style: TextButton.styleFrom(
+                foregroundColor: _primary,
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Forgot Password?',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Obx(() => _primaryButton(
+            label: 'Log In',
+            loading: _ctrl.isLoading.value,
+            onTap: _loginWithPassword,
+          )),
+          const SizedBox(height: 24),
+          _signUpRow(),
+          if (kDebugMode) _buildDebugLogins(),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  // ── OTP tab ──────────────────────────────────────────────────────────────
+
+  Widget _buildOtpTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      child: Obx(() {
+        final otpSent = _ctrl.isOTPSent.value;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _field(
+              label: 'Phone Number',
+              hint: 'Enter 10-digit mobile number',
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              prefixIcon: Icons.phone_android_rounded,
+              readOnly: otpSent,
+              suffix: otpSent
+                  ? TextButton(
+                      onPressed: () {
+                        _ctrl.resetOTP();
+                        _otpCtrl.clear();
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: _primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Change',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            if (otpSent) ...[
+              const SizedBox(height: 16),
+              _field(
+                label: 'Enter OTP',
+                hint: '6-digit OTP sent to your phone',
+                controller: _otpCtrl,
+                keyboardType: TextInputType.number,
+                prefixIcon: Icons.pin_outlined,
+                maxLength: 6,
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => _ctrl.sendOTP(_phoneCtrl.text.trim()),
+                  style: TextButton.styleFrom(
+                    foregroundColor: _textGrey,
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Resend OTP',
+                    style: TextStyle(fontSize: 12, fontFamily: 'Poppins'),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            _primaryButton(
+              label: otpSent ? 'Verify & Log In' : 'Send OTP',
+              loading: _ctrl.isLoading.value,
+              onTap: otpSent ? _loginWithOtp : _sendOtp,
+            ),
+            const SizedBox(height: 24),
+            _signUpRow(),
+            const SizedBox(height: 8),
+          ],
+        );
+      }),
+    );
+  }
+
+  // ── Shared widgets ────────────────────────────────────────────────────────
+
+  Widget _field({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscure = false,
+    bool readOnly = false,
+    IconData? prefixIcon,
+    Widget? suffix,
+    int? maxLength,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: Container(height: 1, color: const Color(0xFFEDF1F3))),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            "Or login with",
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: _textDark,
+            fontFamily: 'Poppins',
+            letterSpacing: 0.1,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: readOnly ? const Color(0xFFF3F4F6) : _inputBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _border),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            obscureText: obscure,
+            readOnly: readOnly,
+            maxLength: maxLength,
             style: TextStyle(
-              fontSize: 12,
-              color: const Color(0xFF6C7278),
-              height: 1.5,
-              letterSpacing: -0.12,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: readOnly ? _textGrey : _textDark,
               fontFamily: 'Poppins',
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFFB0B7C3),
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
+              ),
+              counterText: '',
+              prefixIcon: prefixIcon != null
+                  ? Icon(prefixIcon, size: 18, color: _textGrey)
+                  : null,
+              suffixIcon: suffix,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             ),
           ),
         ),
-        Expanded(child: Container(height: 1, color: const Color(0xFFEDF1F3))),
       ],
     );
   }
 
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String hintText,
-    bool obscureText = false,
-    bool readOnly = false,
-    TextInputType keyboardType = TextInputType.text,
-    Widget? prefixIcon,
-    Widget? suffixIcon,
-    int? maxLength,
+  Widget _primaryButton({
+    required String label,
+    required bool loading,
+    required VoidCallback onTap,
   }) {
-    return Container(
+    return SizedBox(
+      width: double.infinity,
       height: 52,
-      decoration: BoxDecoration(
-        color: readOnly ? const Color(0xFFF9F9F9) : Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEDF1F3)),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscureText,
-        readOnly: readOnly,
-        keyboardType: keyboardType,
-        maxLength: maxLength,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: readOnly ? Colors.grey : const Color(0xFF1A1C1E),
-          height: 1.4,
-          letterSpacing: -0.14,
-          fontFamily: 'Inter',
+      child: ElevatedButton(
+        onPressed: loading ? null : onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primary,
+          disabledBackgroundColor: _primary.withValues(alpha: 0.55),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFADAEBC),
-            height: 1.4,
-            letterSpacing: -0.14,
-            fontFamily: 'Inter',
-          ),
-          counterText: "",
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: (prefixIcon != null || suffixIcon != null) ? 14 : 12,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoginButton() {
-    return Obx(
-      () => SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: ElevatedButton(
-          onPressed: loginController.isLoading.value
-              ? null // Disable button while loading
-              : _performLogin, // Use the encapsulated login logic
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFF26262),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            elevation: 0,
-          ),
-          child: loginController.isLoading.value
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(
-                  loginController.isOTPSent.value
-                      ? "Verify & Log In"
-                      : "Send OTP",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    height: 1.4,
-                    letterSpacing: -0.14,
-                    fontFamily: 'Poppins',
-                  ),
+        child: loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
                 ),
-        ),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  fontFamily: 'Poppins',
+                ),
+              ),
       ),
     );
   }
-}
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+  Widget _signUpRow() {
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            "Don't have an account?",
+            style: TextStyle(fontSize: 13, color: _textGrey, fontFamily: 'Poppins'),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => Get.to(
+              () => const OnboardingScreen(),
+              transition: Transition.rightToLeft,
+            ),
+            child: const Text(
+              'Sign Up',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: _primary,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return ProfessionLogin();
+  Widget _buildDebugLogins() {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        const Divider(),
+        const SizedBox(height: 8),
+        const Text(
+          'Quick Test Logins',
+          style: TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins'),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(child: _debugBtn('Transport', () {
+              _tabController.animateTo(1);
+              _phoneCtrl.text = '8600202678';
+              _ctrl.sendOTP('8600202678');
+            })),
+            const SizedBox(width: 6),
+            Expanded(child: _debugBtn('Professional', () {
+              _tabController.animateTo(1);
+              _phoneCtrl.text = '7420861942';
+              _ctrl.sendOTP('7420861942');
+            })),
+            const SizedBox(width: 6),
+            Expanded(child: _debugBtn('Service', () {
+              _tabController.animateTo(1);
+              _phoneCtrl.text = '8210447299';
+              _ctrl.sendOTP('8210447299');
+            })),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _debugBtn(String label, VoidCallback onTap) {
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: _primary,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: FittedBox(
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontFamily: 'Poppins',
+          ),
+        ),
+      ),
+    );
   }
 }

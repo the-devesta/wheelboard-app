@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
-import 'package:wheelboard/controllers/Transport/main_wrapper_controller.dart';
-import 'package:wheelboard/controllers/Transport/notification_controller.dart';
-import 'package:wheelboard/controllers/Transport/user_profile_controller.dart';
-import 'package:wheelboard/controllers/Transport/job_controller.dart';
-import 'package:wheelboard/controllers/Professional/feeds_controller.dart';
-import 'home_screen.dart';
-import 'fleet_screen.dart';
-import 'trips_screen.dart';
-import 'feed_screen.dart';
-import 'job_screen.dart';
+import '../../controllers/Professional/feeds_controller.dart';
+import '../../controllers/Transport/job_controller.dart';
+import '../../controllers/Transport/main_wrapper_controller.dart';
+import '../../controllers/Transport/notification_controller.dart';
+import '../../controllers/Transport/user_profile_controller.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/app_bottom_nav.dart';
+import 'feed_screen.dart';
+import 'fleet_screen.dart';
+import 'home_screen.dart';
+import 'job_screen.dart';
+import 'trips_screen.dart';
 
-/// Main Wrapper for Company Transport User Type
-/// This wrapper contains bottom navigation and manages all Company Transport screens
 class CompanyTransportMainWrapper extends StatefulWidget {
   final int initialIndex;
   const CompanyTransportMainWrapper({super.key, this.initialIndex = 0});
@@ -26,17 +24,22 @@ class CompanyTransportMainWrapper extends StatefulWidget {
 
 class _CompanyTransportMainWrapperState
     extends State<CompanyTransportMainWrapper> {
-  // late int _currentIndex;
-  final MainWrapperController _wrapperController = Get.put(
-    MainWrapperController(),
-    permanent: true,
-  );
+  final MainWrapperController _wrapperController =
+      Get.put(MainWrapperController(), permanent: true);
+
+  // IndexedStack keeps every screen alive — no rebuild on tab switch
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const FleetVehiclesScreen(),
+    TripPage(),
+    const FeedScreen(),
+    const JobsScreen(),
+  ];
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize common controllers globally
     if (!Get.isRegistered<NotificationController>()) {
       Get.put(NotificationController(), permanent: true);
     }
@@ -50,53 +53,25 @@ class _CompanyTransportMainWrapperState
       Get.put(FeedsController(), permanent: true);
     }
 
-    AppLogger.d("✅ Common controllers initialized in Company wrapper");
+    AppLogger.d('✅ Common controllers initialized in Company wrapper');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _wrapperController.currentTabIndex.value = widget.initialIndex;
     });
   }
 
-  final List<Widget> _screens = [
-    HomeScreen(),
-    FleetVehiclesScreen(),
-    TripPage(),
-    FeedScreen(),
-    JobsScreen(),
-  ];
-
-  void _onTabTapped(int index) {
-    // setState(() {
-    //   _currentIndex = index;
-    // });
-    // Update controller when user taps tab
-    _wrapperController.currentTabIndex.value = index;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        body: _screens[_wrapperController.currentTabIndex.value],
-        bottomNavigationBar: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
+        body: IndexedStack(
+          index: _wrapperController.currentTabIndex.value,
+          children: _screens,
+        ),
+        bottomNavigationBar: AppBottomNav(
+          items: companyNavItems,
           currentIndex: _wrapperController.currentTabIndex.value,
-          onTap: _onTabTapped,
-          selectedItemColor: AppColors.buttonBg,
-          unselectedItemColor: Colors.grey,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.local_shipping),
-              label: "Fleet",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.alt_route),
-              label: "Trips",
-            ),
-            BottomNavigationBarItem(icon: Icon(Icons.article), label: "Feeds"),
-            BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
-          ],
+          onTap: (i) => _wrapperController.currentTabIndex.value = i,
         ),
       ),
     );

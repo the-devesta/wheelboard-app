@@ -8,7 +8,7 @@ import '../../controllers/Transport/job_controller.dart';
 import '../../models/job_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../enums/job_enums.dart';
-import '../../services/auth_service.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 
 class PostJobScreen extends StatefulWidget {
   final JobModel? jobToEdit; // For editing existing job
@@ -25,10 +25,15 @@ class _PostJobScreenState extends State<PostJobScreen> {
   JobDuration? selectedJobDuration;
   JobType? selectedJobType;
 
+  final TextEditingController titleController = TextEditingController();
   final TextEditingController openingController = TextEditingController();
   final TextEditingController salaryController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
+  final TextEditingController stateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController skillsController = TextEditingController();
+  final TextEditingController requirementsController = TextEditingController();
+  final TextEditingController benefitsController = TextEditingController();
 
   List<PlatformFile> uploadedFiles = <PlatformFile>[];
   List<File> imageFiles = <File>[];
@@ -36,30 +41,36 @@ class _PostJobScreenState extends State<PostJobScreen> {
   bool isEditMode = false;
   bool isSubmitting = false;
   bool isServiceProvider = false;
+  bool isUrgent = false;
 
   @override
   void initState() {
     super.initState();
     isEditMode = widget.jobToEdit != null;
 
-    // Check user type
-    final userType = AuthService.to.currentUserType;
-    isServiceProvider = userType == 'Service Provider';
+    // Check user type using enum instead of string comparison
+    isServiceProvider = AuthService.to.isServiceProvider;
 
     if (isEditMode && widget.jobToEdit != null) {
       final job = widget.jobToEdit!;
-      selectedRole = JobRole.fromString(job.role);
+      selectedRole = JobRole.fromString(job.type);
 
       // Map API jobDuration to enum
-      selectedJobDuration = JobDuration.fromString(job.jobDuration);
+      selectedJobDuration = JobDuration.fromString(job.duration);
 
       // Map API jobType to enum
-      selectedJobType = JobType.fromString(job.jobType);
+      selectedJobType = JobType.fromString(job.type);
 
+      titleController.text = job.title;
       openingController.text = job.openings.toString();
-      salaryController.text = job.salary.toString();
+      salaryController.text = job.salary;
       cityController.text = job.city;
+      stateController.text = job.state ?? '';
       descriptionController.text = job.description;
+      skillsController.text = job.skills.join(', ');
+      requirementsController.text = job.requirements.join(', ');
+      benefitsController.text = job.benefits.join(', ');
+      isUrgent = job.urgent;
     } else {
       // For new job, prefill Type of Job with selected role
       // If Service Provider, default to Technician if Driver was default
@@ -165,6 +176,15 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     ),
                     const SizedBox(height: 39),
 
+                    // Job Title
+                    _buildLabel("Job title"),
+                    const SizedBox(height: 2),
+                    _buildTextField(
+                      "e.g. Truck Driver, Bike Mechanic",
+                      controller: titleController,
+                    ),
+                    const SizedBox(height: 31),
+
                     // Job Duration - Dropdown
                     _buildLabel("Job duration"),
                     const SizedBox(height: 2),
@@ -206,9 +226,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                               _buildLabel("Salary"),
                               const SizedBox(height: 2),
                               _buildTextField(
-                                "Salary",
+                                "e.g. ₹25,000/month",
                                 controller: salaryController,
-                                keyboardType: TextInputType.number,
                               ),
                             ],
                           ),
@@ -217,10 +236,38 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     ),
                     const SizedBox(height: 31),
 
-                    // City
-                    _buildLabel("City"),
-                    const SizedBox(height: 2),
-                    _buildTextField("Enter city", controller: cityController),
+                    // City + State
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildLabel("City"),
+                              const SizedBox(height: 2),
+                              _buildTextField(
+                                "Enter city",
+                                controller: cityController,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildLabel("State (optional)"),
+                              const SizedBox(height: 2),
+                              _buildTextField(
+                                "Enter state",
+                                controller: stateController,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 31),
 
                     // Type of Job (Removed as it is auto-selected based on Role)
@@ -231,6 +278,46 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     // Description
                     _buildDescriptionField(descriptionController),
                     const SizedBox(height: 31),
+
+                    // Skills (comma-separated, optional)
+                    _buildLabel("Skills (comma-separated, optional)"),
+                    const SizedBox(height: 2),
+                    _buildTextField(
+                      "e.g. Driving, Navigation",
+                      controller: skillsController,
+                    ),
+                    const SizedBox(height: 31),
+
+                    // Requirements (comma-separated, optional)
+                    _buildLabel("Requirements (comma-separated, optional)"),
+                    const SizedBox(height: 2),
+                    _buildTextField(
+                      "e.g. Valid license, 3 years experience",
+                      controller: requirementsController,
+                    ),
+                    const SizedBox(height: 31),
+
+                    // Benefits (comma-separated, optional)
+                    _buildLabel("Benefits (comma-separated, optional)"),
+                    const SizedBox(height: 2),
+                    _buildTextField(
+                      "e.g. Health insurance, Paid leave",
+                      controller: benefitsController,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Urgent toggle
+                    Row(
+                      children: [
+                        Expanded(child: _buildLabel("Mark as urgent")),
+                        Switch(
+                          value: isUrgent,
+                          activeThumbColor: const Color(0xFFF36969),
+                          onChanged: (v) => setState(() => isUrgent = v),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
                     // Upload Images Section
                     Row(
@@ -381,71 +468,96 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                     // Image upload is now optional
                                     // Removed validation: if (imageFiles.isEmpty && !isEditMode)
 
+                                    final title = titleController.text.trim();
+                                    if (title.isEmpty) {
+                                      SnackBarHelper.error(
+                                        "Please enter a job title",
+                                      );
+                                      return;
+                                    }
+
                                     final openings =
                                         int.tryParse(
                                           openingController.text.trim(),
                                         ) ??
                                         0;
-                                    final salary =
-                                        int.tryParse(
-                                          salaryController.text.trim(),
-                                        ) ??
-                                        0;
+                                    final salaryText =
+                                        salaryController.text.trim();
+                                    final salaryDigits = salaryText.replaceAll(
+                                      RegExp(r'[^\d]'),
+                                      '',
+                                    );
+                                    final salaryMin = int.tryParse(salaryDigits);
+
+                                    List<String> splitList(String s) => s
+                                        .split(',')
+                                        .map((e) => e.trim())
+                                        .where((e) => e.isNotEmpty)
+                                        .toList();
+                                    final skills =
+                                        splitList(skillsController.text);
+                                    final requirements =
+                                        splitList(requirementsController.text);
+                                    final benefits =
+                                        splitList(benefitsController.text);
+                                    final city = cityController.text.trim();
+                                    final state = stateController.text.trim();
+                                    final imageFile = imageFiles.isNotEmpty
+                                        ? imageFiles.first
+                                        : null;
 
                                     setState(() {
                                       isSubmitting = true;
                                     });
 
                                     try {
-                                      if (isEditMode) {
-                                        // Update existing job
-                                        if (widget.jobToEdit != null) {
-                                          final success = await jobController
-                                              .updateJob(
-                                                jobId: widget.jobToEdit!.jobId,
-                                                role: selectedRole.value,
-                                                jobDuration:
-                                                    selectedJobDuration!.value,
-                                                openings: openings,
-                                                salary: salary,
-                                                city: cityController.text
-                                                    .trim(),
-                                                jobType: selectedJobType!.value,
-                                                description:
-                                                    descriptionController.text
-                                                        .trim(),
-                                                newImages: imageFiles,
-                                              );
-                                          if (success) {
-                                            await jobController.refreshJobs();
-                                            if (mounted) {
-                                              Navigator.of(context).pop();
-                                            }
-                                          }
-                                        }
+                                      bool success;
+                                      if (isEditMode &&
+                                          widget.jobToEdit != null) {
+                                        success = await jobController.updateJob(
+                                          jobId: widget.jobToEdit!.jobId,
+                                          title: title,
+                                          duration: selectedJobDuration!.value,
+                                          openings: openings,
+                                          salary: salaryText,
+                                          salaryMin: salaryMin,
+                                          city: city,
+                                          location: city,
+                                          state: state.isEmpty ? null : state,
+                                          type: selectedJobType!.value,
+                                          description:
+                                              descriptionController.text.trim(),
+                                          requirements: requirements,
+                                          benefits: benefits,
+                                          skills: skills,
+                                          urgent: isUrgent,
+                                          imageFile: imageFile,
+                                        );
                                       } else {
-                                        // Add new job
-                                        final success = await jobController
-                                            .addJob(
-                                              role: selectedRole.value,
-                                              jobDuration:
-                                                  selectedJobDuration!.value,
-                                              openings: openings,
-                                              salary: salary,
-                                              city: cityController.text.trim(),
-                                              jobType: selectedJobType!.value,
-                                              description: descriptionController
-                                                  .text
-                                                  .trim(),
-                                              images: imageFiles,
-                                            );
+                                        success = await jobController.createJob(
+                                          title: title,
+                                          duration: selectedJobDuration!.value,
+                                          openings: openings,
+                                          salary: salaryText,
+                                          salaryMin: salaryMin,
+                                          city: city,
+                                          location: city,
+                                          state: state.isEmpty ? null : state,
+                                          type: selectedJobType!.value,
+                                          description:
+                                              descriptionController.text.trim(),
+                                          requirements: requirements,
+                                          benefits: benefits,
+                                          skills: skills,
+                                          urgent: isUrgent,
+                                          imageFile: imageFile,
+                                        );
+                                      }
 
-                                        if (success) {
-                                          // Refresh jobs list before going back
-                                          await jobController.refreshJobs();
-                                          if (mounted) {
-                                            Navigator.of(context).pop();
-                                          }
+                                      if (success) {
+                                        await jobController.refreshJobs();
+                                        if (mounted) {
+                                          Navigator.of(context).pop();
                                         }
                                       }
                                     } finally {

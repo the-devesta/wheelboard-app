@@ -4,10 +4,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import '../../apihelperclass/api_helper.dart';
+import 'package:dio/dio.dart' as dio;
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
 import '../../models/user_profile_model.dart';
-import '../../utils/constants.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'user_profile_controller.dart';
 import '../../utils/app_logger.dart';
@@ -23,6 +24,10 @@ class CompanyProfileController extends GetxController {
   final TextEditingController locationController = TextEditingController();
   final TextEditingController fleetSizeController = TextEditingController();
   final TextEditingController gstController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController whatsappController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController websiteController = TextEditingController();
 
   final Rx<XFile?> _pickedLogo = Rx<XFile?>(null);
   XFile? get pickedLogo => _pickedLogo.value;
@@ -72,6 +77,8 @@ class CompanyProfileController extends GetxController {
           profile.address ?? profile.city ?? profile.state ?? '';
       fleetSizeController.text = profile.fleetSize ?? '';
       gstController.text = profile.gstNumber ?? '';
+      phoneController.text = profile.mobileNo ?? '';
+      whatsappController.text = profile.mobileNo ?? ''; // same default
       _existingLogoUrl.value = profile.companyLogoPath;
     } catch (e) {
       // Controller was disposed, ignore the error
@@ -120,38 +127,46 @@ class CompanyProfileController extends GetxController {
     isSaving.value = true;
     AppLogger.d("🔄 Updating company profile...");
     try {
-      final response = await HttpHelper.uploadMultipart(
-        endpoint: API.updateTransportProfile,
-        fields: {
-          'UserId': userId,
-          'CompanyName': companyName,
-          'FullName': fullName,
-          'Email': email,
-          'Location': location,
-          'FleetSize': fleetSize.isEmpty ? '0' : fleetSize,
-          'GSTNumber': gstNumber,
-        },
-        files: logoFile != null ? [logoFile!] : [],
-        fieldKey: 'CompanyLogo',
-      );
-      final resolved = await http.Response.fromStream(response);
-      AppLogger.d("✅ API Response Status: ${resolved.statusCode}");
-      AppLogger.d("✅ API Response Body: ${resolved.body}");
-      if (resolved.statusCode >= 200 && resolved.statusCode < 300) {
-        AppLogger.d("✅ Profile updated successfully.");
-        SnackBarHelper.success("Profile updated successfully.");
-        await _profileController.fetchCurrentUserProfile();
-        // Navigation will be handled by screen level listener
-        // No need to navigate from controller
-      } else {
-        AppLogger.d(
-          "❌ Failed to update profile. Status Code: ${resolved.statusCode}",
-        );
-        AppLogger.d("❌ Response Body: ${resolved.body}");
-        throw Exception(
-          'Failed to update profile (${resolved.statusCode}): ${resolved.body}',
-        );
+      final phone = phoneController.text.trim();
+      final whatsapp = whatsappController.text.trim();
+      final description = descriptionController.text.trim();
+      final website = websiteController.text.trim();
+
+      final formData = dio.FormData.fromMap({
+        'UserId': userId,
+        'CompanyName': companyName,
+        'FullName': fullName,
+        'Email': email,
+        'Location': location,
+        'FleetSize': fleetSize.isEmpty ? '0' : fleetSize,
+        'GSTNumber': gstNumber,
+        if (phone.isNotEmpty) 'PhoneNumber': phone,
+        if (whatsapp.isNotEmpty) 'WhatsappNumber': whatsapp,
+        if (description.isNotEmpty) 'Description': description,
+        if (website.isNotEmpty) 'Website': website,
+      });
+
+      if (logoFile != null) {
+        formData.files.add(MapEntry(
+          'CompanyLogo',
+          await dio.MultipartFile.fromFile(logoFile!.path),
+        ));
       }
+
+      await ApiClient.instance.upload<dynamic>(
+        ApiEndpoints.users.updateTransportProfile,
+        formData: formData,
+      );
+
+      AppLogger.d("✅ Profile updated successfully.");
+      SnackBarHelper.success("Profile updated successfully.");
+      await _profileController.fetchCurrentUserProfile();
+      // Navigation will be handled by screen level listener
+      // No need to navigate from controller
+    } on dio.DioException catch (e) {
+      AppLogger.d("❌ An error occurred while updating profile: $e");
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to update profile';
+      SnackBarHelper.error("Failed to update profile: $msg");
     } catch (e) {
       AppLogger.d("❌ An error occurred while updating profile: $e");
       SnackBarHelper.error("Failed to update profile: $e");
@@ -173,6 +188,10 @@ class CompanyProfileController extends GetxController {
     locationController.dispose();
     fleetSizeController.dispose();
     gstController.dispose();
+    phoneController.dispose();
+    whatsappController.dispose();
+    descriptionController.dispose();
+    websiteController.dispose();
     super.onClose();
   }
 }

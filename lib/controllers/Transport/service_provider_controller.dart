@@ -1,13 +1,11 @@
-import 'dart:io';
-import 'dart:convert';
+import 'package:dio/dio.dart' as dio;
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 import '../../models/service_provider_signup.dart';
 import '../../models/add_service_model.dart';
 import '../../models/update_service_model.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../utils/error_handler.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../screens/auth/login.dart';
 import '../../utils/app_logger.dart';
@@ -26,75 +24,36 @@ class ServiceProviderController extends GetxController {
       AppLogger.d("🚀 Starting Service Provider Registration...");
 
       final fields = model.toJsonFields();
-      final files = <File>[];
+      final formData = dio.FormData.fromMap(fields);
 
       if (model.getBusinessLogo() != null) {
-        files.add(model.getBusinessLogo()!);
+        formData.files.add(MapEntry(
+          "BusinessLogo",
+          await dio.MultipartFile.fromFile(model.getBusinessLogo()!.path),
+        ));
       }
 
       AppLogger.d("📤 Sending request to API...");
 
-      // Add timeout of 30 seconds
-      final streamedResponse =
-          await HttpHelper.uploadMultipart(
-            endpoint: API.completeServiceProvider,
-            fields: fields,
-            files: files,
-            fieldKey: "BusinessLogo",
-            headers: {'Accept': 'application/json'},
-          ).timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              AppLogger.d("⏱️ Request timed out after 30 seconds");
-              throw Exception(
-                'Request timeout. Please check your internet connection and try again.',
-              );
-            },
-          );
-
-      AppLogger.d("✅ Request sent, waiting for response...");
-      AppLogger.d("📊 Response Status Code: ${streamedResponse.statusCode}");
-
-      final response = await http.Response.fromStream(streamedResponse).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          AppLogger.d("⏱️ Response reading timed out");
-          throw Exception('Response timeout. Please try again.');
-        },
+      await ApiClient.instance.upload<dynamic>(
+        ApiEndpoints.users.completeServiceProvider,
+        formData: formData,
       );
 
-      AppLogger.d("📥 Response received!");
-      AppLogger.d("📊 Status Code: ${response.statusCode}");
-      AppLogger.d(
-        "📄 Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
+      AppLogger.d("✅ Profile completed successfully!");
+      SnackBarHelper.success(
+        "Profile completed successfully! Please login to continue.",
       );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        AppLogger.d("✅ Profile completed successfully!");
-        SnackBarHelper.success(
-          "Profile completed successfully! Please login to continue.",
-        );
-        await Future.delayed(const Duration(milliseconds: 2000));
-        // Navigate to login page - clear all previous routes
-        Get.offAll(() => ProfessionLogin());
-        return;
-      }
-
-      AppLogger.d("❌ API Error - Status: ${response.statusCode}");
-      final errorMessage = ErrorHandler.parseError(
-        response.body,
-        statusCode: response.statusCode,
-      );
-
-      AppLogger.d("❌ Error Message: $errorMessage");
-      SnackBarHelper.error(errorMessage);
+      await Future.delayed(const Duration(milliseconds: 2000));
+      // Navigate to login page - clear all previous routes
+      Get.offAll(() => const LoginScreen());
+    } on dio.DioException catch (e) {
+      AppLogger.d("❌ API Error: $e");
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to complete profile';
+      SnackBarHelper.error(msg);
     } catch (e) {
       AppLogger.d("❌ Exception caught: $e");
-      AppLogger.d("❌ Exception type: ${e.runtimeType}");
-
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      AppLogger.d("❌ Final Error Message: $errorMessage");
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.error("Failed to complete profile: $e");
     } finally {
       AppLogger.d("🏁 Request completed, resetting loading state");
       isLoading.value = false;
@@ -113,71 +72,33 @@ class ServiceProviderController extends GetxController {
       AppLogger.d("🚀 Starting Service Provider Profile Update...");
 
       final fields = model.toJsonFields();
-      final files = <File>[];
+      final formData = dio.FormData.fromMap(fields);
 
       if (model.getBusinessLogo() != null) {
-        files.add(model.getBusinessLogo()!);
+        formData.files.add(MapEntry(
+          "BusinessLogo",
+          await dio.MultipartFile.fromFile(model.getBusinessLogo()!.path),
+        ));
       }
 
       AppLogger.d("📤 Sending update request to API...");
 
-      final streamedResponse =
-          await HttpHelper.uploadMultipart(
-            endpoint: API.updateServiceProvider,
-            fields: fields,
-            files: files,
-            fieldKey: "BusinessLogo",
-            headers: {'Accept': 'application/json'},
-          ).timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              AppLogger.d("⏱️ Request timed out after 30 seconds");
-              throw Exception(
-                'Request timeout. Please check your internet connection and try again.',
-              );
-            },
-          );
-
-      AppLogger.d("✅ Request sent, waiting for response...");
-      AppLogger.d("📊 Response Status Code: ${streamedResponse.statusCode}");
-
-      final response = await http.Response.fromStream(streamedResponse).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          AppLogger.d("⏱️ Response reading timed out");
-          throw Exception('Response timeout. Please try again.');
-        },
+      await ApiClient.instance.upload<dynamic>(
+        ApiEndpoints.users.updateServiceProvider,
+        formData: formData,
       );
 
-      AppLogger.d("📥 Response received!");
-      AppLogger.d("📊 Status Code: ${response.statusCode}");
-      AppLogger.d(
-        "📄 Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}",
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        AppLogger.d("✅ Profile updated successfully!");
-        SnackBarHelper.success("Profile updated successfully!");
-        await Future.delayed(const Duration(milliseconds: 800));
-        Get.back(result: true); // Go back with success result
-        return;
-      }
-
-      AppLogger.d("❌ API Error - Status: ${response.statusCode}");
-      final errorMessage = ErrorHandler.parseError(
-        response.body,
-        statusCode: response.statusCode,
-      );
-
-      AppLogger.d("❌ Error Message: $errorMessage");
-      SnackBarHelper.error(errorMessage);
+      AppLogger.d("✅ Profile updated successfully!");
+      SnackBarHelper.success("Profile updated successfully!");
+      await Future.delayed(const Duration(milliseconds: 800));
+      Get.back(result: true); // Go back with success result
+    } on dio.DioException catch (e) {
+      AppLogger.d("❌ API Error: $e");
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to update profile';
+      SnackBarHelper.error(msg);
     } catch (e) {
       AppLogger.d("❌ Exception caught: $e");
-      AppLogger.d("❌ Exception type: ${e.runtimeType}");
-
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      AppLogger.d("❌ Final Error Message: $errorMessage");
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.error("Failed to update profile: $e");
     } finally {
       AppLogger.d("🏁 Request completed, resetting loading state");
       isLoading.value = false;
@@ -192,39 +113,29 @@ class ServiceProviderController extends GetxController {
       isLoading.value = true;
 
       final fields = model.toJsonFields();
+      final formData = dio.FormData.fromMap(fields);
+
       final files = model.getImages();
-
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.addService,
-        fields: fields,
-        files: files,
-        fieldKey: "Images", // API expects "Images" field name
-        headers: {'Accept': '*/*'},
-      );
-
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        try {
-          final responseData = json.decode(response.body);
-          SnackBarHelper.success("Service added successfully!");
-          return {'success': true, 'data': responseData};
-        } catch (e) {
-          SnackBarHelper.success("Service added successfully!");
-          return {'success': true, 'data': response.body};
-        }
+      for (var file in files) {
+        formData.files.add(MapEntry(
+          "Images",
+          await dio.MultipartFile.fromFile(file.path),
+        ));
       }
 
-      final errorMessage = ErrorHandler.parseError(
-        response.body,
-        statusCode: response.statusCode,
+      final data = await ApiClient.instance.upload<dynamic>(
+        ApiEndpoints.services.create,
+        formData: formData,
       );
 
-      SnackBarHelper.error(errorMessage);
-      return {'success': false, 'error': errorMessage};
+      SnackBarHelper.success("Service added successfully!");
+      return {'success': true, 'data': data};
+    } on dio.DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to add service';
+      SnackBarHelper.error(msg);
+      return {'success': false, 'error': msg};
     } catch (e) {
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.error(e.toString());
       return {'success': false, 'error': e.toString()};
     } finally {
       isLoading.value = false;
@@ -239,40 +150,30 @@ class ServiceProviderController extends GetxController {
       isLoading.value = true;
 
       final fields = model.toJsonFields();
+      final formData = dio.FormData.fromMap(fields);
+
       final files = model.getNewImages();
-
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.updateService,
-        fields: fields,
-        files: files,
-        fieldKey: "NewImages", // API expects "NewImages" field name
-        headers: {'Accept': '*/*'},
-        method: "POST",
-      );
-
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        try {
-          final responseData = json.decode(response.body);
-          SnackBarHelper.success("Service updated successfully!");
-          return {'success': true, 'data': responseData};
-        } catch (e) {
-          SnackBarHelper.success("Service updated successfully!");
-          return {'success': true, 'data': response.body};
-        }
+      for (var file in files) {
+        formData.files.add(MapEntry(
+          "NewImages",
+          await dio.MultipartFile.fromFile(file.path),
+        ));
       }
 
-      final errorMessage = ErrorHandler.parseError(
-        response.body,
-        statusCode: response.statusCode,
+      final data = await ApiClient.instance.upload<dynamic>(
+        ApiEndpoints.services.update(model.serviceId),
+        formData: formData,
+        method: 'PATCH',
       );
 
-      SnackBarHelper.error(errorMessage);
-      return {'success': false, 'error': errorMessage};
+      SnackBarHelper.success("Service updated successfully!");
+      return {'success': true, 'data': data};
+    } on dio.DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to update service';
+      SnackBarHelper.error(msg);
+      return {'success': false, 'error': msg};
     } catch (e) {
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.error(e.toString());
       return {'success': false, 'error': e.toString()};
     } finally {
       isLoading.value = false;
@@ -288,40 +189,20 @@ class ServiceProviderController extends GetxController {
 
       AppLogger.d("🗑️ Deleting service: $serviceId for user: $userId");
 
-      // Construct the delete endpoint URL
-      final endpoint = '${API.deleteService}/$serviceId/user/$userId/delete';
-
-      final response = await HttpHelper.postData(
-        endpoint: endpoint,
-        data: {}, // Empty body for delete
-        headers: {
-          'UserId': userId,
-          'Accept': '*/*',
-          'Content-Type': 'application/json',
-        },
+      await ApiClient.instance.delete(
+        ApiEndpoints.services.delete(serviceId),
       );
 
-      AppLogger.d("🗑️ Delete response status: ${response.statusCode}");
-      AppLogger.d("🗑️ Delete response body: ${response.body}");
-
-      if (response.statusCode == 200 ||
-          response.statusCode == 201 ||
-          response.statusCode == 204) {
-        SnackBarHelper.success("Service deleted successfully!");
-        return true;
-      }
-
-      final errorMessage = ErrorHandler.parseError(
-        response.body,
-        statusCode: response.statusCode,
-      );
-
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.success("Service deleted successfully!");
+      return true;
+    } on dio.DioException catch (e) {
+      AppLogger.d("❌ Error deleting service: $e");
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to delete service';
+      SnackBarHelper.error(msg);
       return false;
     } catch (e) {
       AppLogger.d("❌ Error deleting service: $e");
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.error("Failed to delete service: $e");
       return false;
     } finally {
       isLoading.value = false;

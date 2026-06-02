@@ -9,13 +9,12 @@ class JobCardWidget extends StatelessWidget {
   final String? role; // Job role like Driver, Helper, Technician
   final String? city; // Job location city
   final String? jobId; // Job ID from API
-  final int likes;
   final int applicants;
   final bool isApplying; // Show loading state when applying
   final bool isApplied; // Whether user has already applied
-  final bool isLiked; // Whether user has liked this job
+  final bool isSaved; // Whether user has saved/bookmarked this job
   final VoidCallback? onApplyNow;
-  final VoidCallback? onLikeToggle; // Callback for like toggle
+  final VoidCallback? onSaveToggle; // Callback for save/bookmark toggle
 
   const JobCardWidget({
     super.key,
@@ -23,13 +22,12 @@ class JobCardWidget extends StatelessWidget {
     this.role,
     this.city,
     this.jobId,
-    this.likes = 0,
     this.applicants = 0,
     this.isApplying = false,
     this.isApplied = false,
-    this.isLiked = false,
+    this.isSaved = false,
     this.onApplyNow,
-    this.onLikeToggle,
+    this.onSaveToggle,
   });
 
   @override
@@ -73,26 +71,26 @@ class JobCardWidget extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 10),
-          // Likes and Openings
+          // Save/bookmark and Openings
           Row(
             children: [
-              // Like button (clickable)
+              // Save / bookmark button (clickable)
               GestureDetector(
-                onTap: onLikeToggle,
+                onTap: onSaveToggle,
                 child: Row(
                   children: [
                     Icon(
-                      isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
-                      size: 13,
-                      color: isLiked ? const Color(0xFF00AEEF) : Colors.black,
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      size: 15,
+                      color: isSaved ? const Color(0xFF00AEEF) : Colors.black,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      "$likes Likes",
+                      isSaved ? "Saved" : "Save",
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: isLiked
+                        color: isSaved
                             ? const Color(0xFF00AEEF)
                             : const Color(0xFF1F1F1F),
                       ),

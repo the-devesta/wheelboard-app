@@ -1,9 +1,10 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
 import '../../utils/app_logger.dart';
-import '../../services/auth_service.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 
 class EarningSummaryController extends GetxController {
   var isLoading = true.obs;
@@ -29,31 +30,29 @@ class EarningSummaryController extends GetxController {
         return;
       }
 
-      final response = await HttpHelper.getData(
-        endpoint: API.earningsDashboard,
-        queryParams: {'userId': userId},
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.trips.earningsDashboard,
+        queryParameters: {'userId': userId},
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        totalIncome.value = (data['totalIncome'] ?? 0).toDouble();
-        tripsCompleted.value = data['tripsCompleted'] ?? 0;
-        avgEarningPerTrip.value = (data['avgEarningPerTrip'] ?? 0).toDouble();
+      totalIncome.value = (data['totalIncome'] ?? 0).toDouble();
+      tripsCompleted.value = data['tripsCompleted'] ?? 0;
+      avgEarningPerTrip.value = (data['avgEarningPerTrip'] ?? 0).toDouble();
 
-        if (data['earningsChart'] != null) {
-          earningsChart.value = List<Map<String, dynamic>>.from(
-            data['earningsChart'],
-          );
-        }
-
-        if (data['transactions'] != null) {
-          transactions.value = List<Map<String, dynamic>>.from(
-            data['transactions'],
-          );
-        }
-      } else {
-        AppLogger.e("Failed to fetch earnings data: ${response.statusCode}");
+      if (data['earningsChart'] != null) {
+        earningsChart.value = List<Map<String, dynamic>>.from(
+          data['earningsChart'],
+        );
       }
+
+      if (data['transactions'] != null) {
+        transactions.value = List<Map<String, dynamic>>.from(
+          data['transactions'],
+        );
+      }
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to fetch earnings data';
+      AppLogger.e("Error fetching earnings data: $msg");
     } catch (e) {
       AppLogger.e("Error fetching earnings data: $e");
     } finally {

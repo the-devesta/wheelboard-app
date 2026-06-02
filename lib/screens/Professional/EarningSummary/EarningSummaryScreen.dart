@@ -5,7 +5,7 @@ import '../widgets/calendar_header_widget.dart';
 import '../widgets/earning_stat_card_widget.dart';
 import '../widgets/transaction_item_widget.dart';
 import '../../../controllers/Professional/earning_summary_controller.dart';
-import '../../../apihelperclass/api_helper.dart';
+import '../../../utils/format_utils.dart';
 
 class EarningSummaryScreen extends StatelessWidget {
   const EarningSummaryScreen({super.key});
@@ -44,7 +44,7 @@ class EarningSummaryScreen extends StatelessWidget {
                             Expanded(
                               child: EarningStatCardWidget(
                                 icon: Icons.account_balance_wallet,
-                                value: HttpHelper.formatAmount(
+                                value: FormatUtils.formatAmount(
                                   controller.totalIncome.value,
                                 ),
                                 label: 'Total income earned',
@@ -67,7 +67,7 @@ class EarningSummaryScreen extends StatelessWidget {
                             Expanded(
                               child: EarningStatCardWidget(
                                 icon: Icons.trending_up,
-                                value: HttpHelper.formatAmount(
+                                value: FormatUtils.formatAmount(
                                   controller.avgEarningPerTrip.value,
                                 ),
                                 label: 'Avg. Earning / Trip',
@@ -222,13 +222,13 @@ class EarningSummaryScreen extends StatelessWidget {
                               final transaction =
                                   controller.transactions[index];
                               return TransactionItemWidget(
-                                date: HttpHelper.formatDate(
+                                date: FormatUtils.formatDate(
                                   transaction['date'],
                                   format: 'dd MMM yyyy',
                                 ),
                                 companyName:
                                     '${transaction['tripCode'] ?? ''} - ${transaction['vehicleNumber'] ?? ''}',
-                                amount: HttpHelper.formatAmount(
+                                amount: FormatUtils.formatAmount(
                                   transaction['amount'],
                                 ),
                               );

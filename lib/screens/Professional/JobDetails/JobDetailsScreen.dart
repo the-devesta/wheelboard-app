@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../models/Professional/applied_job_model.dart';
+import '../../../models/job_model.dart';
+import '../../../models/job_application_model.dart';
 import '../../../constants/apps_colors.dart';
 
 class JobDetailsScreen extends StatelessWidget {
-  final AppliedJob job;
+  final JobModel job;
 
   const JobDetailsScreen({super.key, required this.job});
+
+  JobApplication? get _app => job.myApplication;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +71,7 @@ class JobDetailsScreen extends StatelessWidget {
                   ],
 
                   // Job Description
-                  if (job.jobDescription.isNotEmpty) ...[
+                  if (job.description.isNotEmpty) ...[
                     _buildSectionTitle(
                       "Description",
                       Icons.description_outlined,
@@ -128,16 +131,16 @@ class JobDetailsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (job.jobRole.isNotEmpty)
+                    if (job.title.isNotEmpty)
                       Text(
-                        job.jobRole,
+                        job.title,
                         style: GoogleFonts.poppins(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: AppColors.buttonBg,
                         ),
                       ),
-                    if (job.jobCity.isNotEmpty) ...[
+                    if (job.city.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -148,7 +151,7 @@ class JobDetailsScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            job.jobCity,
+                            job.city,
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               color: Colors.grey.shade700,
@@ -174,14 +177,23 @@ class JobDetailsScreen extends StatelessWidget {
     Color textColor;
     IconData icon;
 
-    if (job.isAccepted) {
+    final status = _app?.status ?? '';
+    if (status == 'hired') {
       bgColor = const Color(0xFF10B981);
       textColor = Colors.white;
       icon = Icons.check_circle;
-    } else if (job.isRejected) {
+    } else if (status == 'rejected') {
       bgColor = const Color(0xFFEF4444);
       textColor = Colors.white;
       icon = Icons.cancel;
+    } else if (status == 'shortlisted') {
+      bgColor = const Color(0xFF8B5CF6);
+      textColor = Colors.white;
+      icon = Icons.star;
+    } else if (status == 'reviewed') {
+      bgColor = const Color(0xFF3B82F6);
+      textColor = Colors.white;
+      icon = Icons.visibility;
     } else {
       bgColor = const Color(0xFFF59E0B);
       textColor = Colors.white;
@@ -207,7 +219,7 @@ class JobDetailsScreen extends StatelessWidget {
           Icon(icon, size: 16, color: textColor),
           const SizedBox(width: 6),
           Text(
-            job.status,
+            _app?.statusLabel ?? 'Applied',
             style: GoogleFonts.poppins(
               color: textColor,
               fontWeight: FontWeight.w600,
@@ -271,7 +283,7 @@ class JobDetailsScreen extends StatelessWidget {
         ],
       ),
       child: Text(
-        job.jobDescription,
+        job.description,
         style: GoogleFonts.poppins(
           fontSize: 14,
           color: Colors.grey.shade700,
@@ -344,30 +356,32 @@ class JobDetailsScreen extends StatelessWidget {
     );
   }
 
-  bool _hasJobInfo(AppliedJob job) {
-    return job.jobRole.isNotEmpty ||
+  bool _hasJobInfo(JobModel job) {
+    return job.title.isNotEmpty ||
         job.jobDuration.isNotEmpty ||
-        job.jobCity.isNotEmpty ||
-        job.salary > 0;
+        job.city.isNotEmpty ||
+        job.salary.isNotEmpty;
   }
 
-  bool _hasApplicationInfo(AppliedJob job) {
-    return job.formattedDate.isNotEmpty ||
-        job.status.isNotEmpty ||
-        job.salaryExpectation > 0 ||
-        job.remarks.isNotEmpty;
+  bool _hasApplicationInfo(JobModel job) {
+    final app = job.myApplication;
+    if (app == null) return false;
+    return app.appliedDateFormatted.isNotEmpty ||
+        app.status.isNotEmpty ||
+        (app.expectedSalary ?? '').isNotEmpty ||
+        (app.notes ?? app.coverLetter ?? '').isNotEmpty;
   }
 
   List<Widget> _buildJobInfoRows() {
     List<Widget> rows = [];
 
-    if (job.jobRole.isNotEmpty) {
-      rows.add(_buildInfoRow("Job Role", job.jobRole, Icons.work_outline));
+    if (job.title.isNotEmpty) {
+      rows.add(_buildInfoRow("Job Role", job.title, Icons.work_outline));
     }
 
-    if (job.jobCity.isNotEmpty) {
+    if (job.city.isNotEmpty) {
       rows.add(
-        _buildInfoRow("Location", job.jobCity, Icons.location_on_outlined),
+        _buildInfoRow("Location", job.city, Icons.location_on_outlined),
       );
     }
 
@@ -375,13 +389,9 @@ class JobDetailsScreen extends StatelessWidget {
       rows.add(_buildInfoRow("Duration", job.jobDuration, Icons.access_time));
     }
 
-    if (job.salary > 0) {
+    if (job.salary.isNotEmpty) {
       rows.add(
-        _buildInfoRow(
-          "Salary",
-          "₹${job.salary.toStringAsFixed(0)}/month",
-          Icons.currency_rupee,
-        ),
+        _buildInfoRow("Salary", job.salary, Icons.currency_rupee),
       );
     }
 
@@ -398,29 +408,36 @@ class JobDetailsScreen extends StatelessWidget {
 
   List<Widget> _buildApplicationInfoRows() {
     List<Widget> rows = [];
+    final app = _app;
+    if (app == null) return rows;
 
-    if (job.formattedDate.isNotEmpty) {
+    if (app.appliedDateFormatted.isNotEmpty) {
       rows.add(
-        _buildInfoRow("Applied Date", job.formattedDate, Icons.calendar_today),
+        _buildInfoRow(
+          "Applied Date",
+          app.appliedDateFormatted,
+          Icons.calendar_today,
+        ),
       );
     }
 
-    if (job.status.isNotEmpty) {
-      rows.add(_buildInfoRow("Status", job.status, Icons.info_outline));
+    if (app.status.isNotEmpty) {
+      rows.add(_buildInfoRow("Status", app.statusLabel, Icons.info_outline));
     }
 
-    if (job.salaryExpectation > 0) {
+    if ((app.expectedSalary ?? '').isNotEmpty) {
       rows.add(
         _buildInfoRow(
           "Salary Expectation",
-          "₹${job.salaryExpectation.toStringAsFixed(0)}",
+          app.expectedSalary!,
           Icons.attach_money,
         ),
       );
     }
 
-    if (job.remarks.isNotEmpty) {
-      rows.add(_buildInfoRow("Remarks", job.remarks, Icons.note_outlined));
+    final remarks = app.notes ?? app.coverLetter ?? '';
+    if (remarks.isNotEmpty) {
+      rows.add(_buildInfoRow("Remarks", remarks, Icons.note_outlined));
     }
 
     // Remove bottom padding from last item

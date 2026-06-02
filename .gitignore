@@ -20,5 +20,5 @@ ios/Pods/
 .metadata
 
 # Environment variables (contains sensitive keys)
-# .env
-# *.env.local
+.env
+*.env.local

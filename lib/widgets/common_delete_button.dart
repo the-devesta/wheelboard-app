@@ -5,12 +5,12 @@ class CommonDeleteButton extends StatelessWidget {
   final String title;
   final String message;
   final String buttonText;
-  final VoidCallback onConfirm;
+  final void Function(String password) onConfirm;
 
   const CommonDeleteButton({
     super.key,
     this.title = 'Delete Account',
-    this.message = 'Are you sure you want to delete your account?',
+    this.message = 'Are you sure you want to delete your account? This action cannot be undone.',
     this.buttonText = 'Delete Account',
     required this.onConfirm,
   });
@@ -22,29 +22,13 @@ class CommonDeleteButton extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: OutlinedButton.icon(
         onPressed: () async {
-          final confirm = await showDialog<bool>(
+          final password = await showDialog<String>(
             context: context,
-            builder: (_) => AlertDialog(
-              title: Text(title),
-              content: Text(message),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text(
-                    'Delete',
-                    style: TextStyle(color: Color(0xFFF36969)),
-                  ),
-                ),
-              ],
-            ),
+            builder: (_) => _DeleteAccountDialog(title: title, message: message),
           );
 
-          if (confirm == true) {
-            onConfirm();
+          if (password != null && password.isNotEmpty) {
+            onConfirm(password);
           }
         },
         style: OutlinedButton.styleFrom(
@@ -64,6 +48,67 @@ class CommonDeleteButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DeleteAccountDialog extends StatefulWidget {
+  final String title;
+  final String message;
+
+  const _DeleteAccountDialog({required this.title, required this.message});
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _passwordController = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.message),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscure,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _passwordController.text),
+          child: const Text(
+            'Delete',
+            style: TextStyle(color: Color(0xFFF36969)),
+          ),
+        ),
+      ],
     );
   }
 }

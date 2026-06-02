@@ -5,9 +5,10 @@ import 'package:wheelboard/screens/CompanyTransport/notification_screen.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
-import '../../../models/Professional/open_job_model.dart';
+import '../../../models/job_model.dart';
 import '../TripOverview/TripOverviewScreen.dart';
 import '../../../widgets/custom_loader.dart';
+import '../../../widgets/ui/app_ui.dart';
 
 class FindJobsScreen extends StatelessWidget {
   const FindJobsScreen({super.key});
@@ -78,6 +79,7 @@ class _JobBoardScreenState extends State<JobBoardScreen>
         }
       },
       child: Scaffold(
+        backgroundColor: AppUi.scaffold,
         appBar: AppBar(
           title: const Text(
             "Find Jobs",
@@ -179,14 +181,10 @@ class _JobBoardScreenState extends State<JobBoardScreen>
             }
 
             if (jobsController.openJobs.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Text(
-                    "No jobs available",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
+              return const AppEmptyState(
+                icon: Icons.work_outline,
+                title: "No jobs available",
+                subtitle: "Check back later for new opportunities.",
               );
             }
 
@@ -232,8 +230,8 @@ class _JobBoardScreenState extends State<JobBoardScreen>
                         }
                       }
                     },
-                    onLikeToggle: () async {
-                      await jobsController.toggleJobLike(job.jobId);
+                    onSaveToggle: () async {
+                      await jobsController.toggleSave(job.jobId);
                     },
                     isApplying: jobsController.isApplying(job.jobId),
                   ),
@@ -324,44 +322,29 @@ class _JobBoardScreenState extends State<JobBoardScreen>
 }
 
 class JobCard extends StatelessWidget {
-  final OpenJob job;
+  final JobModel job;
   final VoidCallback onApply;
-  final VoidCallback? onLikeToggle;
+  final VoidCallback? onSaveToggle;
   final bool isApplying;
 
   const JobCard({
     super.key,
     required this.job,
     required this.onApply,
-    this.onLikeToggle,
+    this.onSaveToggle,
     this.isApplying = false,
   });
 
-  String _formatSalary(double salary) {
-    if (salary == 0) return "Not specified";
-    if (salary >= 100000) {
-      return "₹${(salary / 100000).toStringAsFixed(1)}L";
-    } else if (salary >= 1000) {
-      return "₹${(salary / 1000).toStringAsFixed(1)}K";
-    }
-    return "₹${salary.toStringAsFixed(0)}";
-  }
+  String _salaryText() => job.salary.isNotEmpty ? job.salary : "Not specified";
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppUi.surface,
+        borderRadius: BorderRadius.circular(AppUi.radius),
+        boxShadow: AppUi.softShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +388,7 @@ class JobCard extends StatelessWidget {
               const Icon(Icons.currency_rupee, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
               Text(
-                _formatSalary(job.salary),
+                _salaryText(),
                 style: const TextStyle(fontSize: 13, color: Colors.black87),
               ),
             ],
@@ -434,28 +417,30 @@ class JobCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Likes and Openings row
+          // Save/bookmark and Openings row
           Row(
             children: [
-              // Like button
+              // Save / bookmark button
               GestureDetector(
-                onTap: onLikeToggle,
+                onTap: onSaveToggle,
                 child: Row(
                   children: [
                     Icon(
-                      job.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
-                      size: 14,
-                      color: job.isLiked
+                      job.isSaved
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      size: 16,
+                      color: job.isSaved
                           ? const Color(0xFF00AEEF)
                           : Colors.black,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      "${job.likeCount} Likes",
+                      job.isSaved ? "Saved" : "Save",
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: job.isLiked
+                        color: job.isSaved
                             ? const Color(0xFF00AEEF)
                             : const Color(0xFF1F1F1F),
                       ),
@@ -501,7 +486,7 @@ class JobCard extends StatelessWidget {
                       jobType: job.jobType,
                       jobDuration: job.jobDuration,
                       openings: job.openings,
-                      salary: job.salary.toInt(),
+                      salary: job.salary,
                       description: job.description,
                     );
                   },

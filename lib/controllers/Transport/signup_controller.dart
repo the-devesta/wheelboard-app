@@ -1,104 +1,91 @@
 import 'package:get/get.dart';
-import 'dart:convert';
-import '../../models/company_signupmodel.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../utils/session_manager.dart';
-import '../../utils/error_handler.dart';
-import '../../widgets/custom_snackbar.dart';
-import '../../utils/app_logger.dart';
 
+import '../../core/auth/auth_service.dart' as core;
+import '../../core/auth/user_role.dart';
+import '../../models/company_signupmodel.dart';
+import '../../utils/app_logger.dart';
+import '../../widgets/custom_snackbar.dart';
+
+/// Signup controller — now uses the centralized [core.AuthService]
+/// which calls: POST /api/auth/register (same as wheelboard-fe authAPI.register())
+///
+/// The backend RegisterDto expects:
+///   { email, password, role, phoneNumber?, profile?, identityType?, identityNumber? }
 class SignupController extends GetxController {
   var isLoading = false.obs;
   var obscurePassword = true.obs;
   var userId = RxnString();
 
+  core.AuthService get _auth => core.AuthService.to;
+
+  /// Register a company (Transport or Service Provider).
+  /// Matches: POST /api/auth/register
   Future<bool> registerCompany(CompanySignUpModel model) async {
     if (isLoading.value) {
       AppLogger.d(
-        "⚠️ registerCompany called while a request is already in progress",
+        '⚠️ registerCompany called while a request is already in progress',
       );
-      SnackBarHelper.error("Registration already in progress. Please wait.");
+      SnackBarHelper.error('Registration already in progress. Please wait.');
       return false;
     }
 
-    isLoading.value = true; // Start the loader
-
+    isLoading.value = true;
     try {
-      // 🔍 DEBUG: Log what we're sending
-      final requestData = model.toJson();
-      AppLogger.d("=================================");
-      AppLogger.d("📤 Signup Request Data:");
-      AppLogger.d("📱 Mobile: ${requestData['mobileNo']}");
-      AppLogger.d("🏢 Company: ${requestData['companyName']}");
-      AppLogger.d("📧 Email: ${requestData['email']}");
-      AppLogger.d("📂 Category: ${requestData['businessCategory']}");
-      AppLogger.d("=================================");
+      AppLogger.d('================================');
+      AppLogger.d('📤 Signup Request (new API):');
+      AppLogger.d('📱 Mobile: ${model.mobileNo}');
+      AppLogger.d('🏢 Company: ${model.companyName}');
+      AppLogger.d('📧 Email: ${model.email}');
+      AppLogger.d('📂 Category: ${model.businessCategory}');
+      AppLogger.d('================================');
 
-      final response = await HttpHelper.postData(
-        endpoint: API.companySignUp,
-        data: requestData,
+      // Map businessCategory to backend UserRole
+      final String role;
+      if (model.businessCategory.toLowerCase() == 'service provider') {
+        role = UserRole.business.value; // 'business'
+      } else {
+        role = UserRole.company.value; // 'company' (Transport)
+      }
+
+      // Build profile matching backend CompanyProfile / BusinessProfile
+      final Map<String, dynamic> profile;
+      if (role == UserRole.business.value) {
+        // Service Provider profile
+        profile = {
+          'businessName': model.companyName,
+          'ownerName': model.contactPerson.isNotEmpty ? model.contactPerson : model.companyName,
+          'phoneNumber': model.mobileNo,
+          'businessCategory': 'Service Provider',
+        };
+      } else {
+        // Transport company profile
+        profile = {
+          'companyName': model.companyName,
+          'contactPerson': model.contactPerson.isNotEmpty ? model.contactPerson : model.companyName,
+          'phoneNumber': model.mobileNo,
+          'businessCategory': 'Transport',
+        };
+      }
+
+      final response = await _auth.register(
+        email: model.email.isNotEmpty
+            ? model.email
+            : '${model.mobileNo}@wheelboard.in', // Email required by backend
+        password: model.password,
+        role: role,
+        phoneNumber: model.mobileNo,
+        profile: profile,
       );
 
-      // 🔍 DEBUG: Log response
-      AppLogger.d("=================================");
-      AppLogger.d("📥 Signup Response:");
-      AppLogger.d("Status: ${response.statusCode}");
-      AppLogger.d("Body: ${response.body}");
-      AppLogger.d("=================================");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        userId.value = data['userId'];
-
-        // ✅ Check if registration response includes token
-        // Some APIs return token directly, others return it in 'data' object
-        String? token;
-        if (data['token'] != null) {
-          token = data['token'].toString();
-        } else if (data['data'] != null && data['data']['token'] != null) {
-          token = data['data']['token'].toString();
-        }
-
-        // ✅ Store token if available
-        if (token != null && token.isNotEmpty) {
-          final sessionManager = SessionManager();
-          await sessionManager.saveString("authToken", token);
-          AppLogger.d(
-            "✅ Token stored from registration: ${token.substring(0, 20)}...",
-          );
-        } else {
-          AppLogger.d(
-            "⚠️ No token in registration response - user will need to login",
-          );
-        }
-
-        // Don't show snackbar here - let the screen handle it
-        // SnackBarHelper.success('Company registered successfully');
-        return true; // ✅ Success
-      } else {
-        // 🔍 Show exact backend error
-        AppLogger.d("❌ Registration failed!");
-        AppLogger.d("❌ Status Code: ${response.statusCode}");
-        AppLogger.d("❌ Error Body: ${response.body}");
-
-        final errorMessage = ErrorHandler.parseError(
-          response.body,
-          statusCode: response.statusCode,
-        );
-
-        // Also show the phone number that failed
-        AppLogger.d("❌ Failed for mobile: ${requestData['mobileNo']}");
-
-        SnackBarHelper.error(errorMessage);
-        return false; // ❌ Failed
-      }
+      userId.value = response.user.id;
+      AppLogger.d('✅ Registration successful: userId=${response.user.id}');
+      return true;
     } catch (e) {
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
-      return false; // ❌ Error
+      AppLogger.e('❌ Registration failed', error: e);
+      SnackBarHelper.error(core.AuthService.extractError(e));
+      return false;
     } finally {
-      isLoading.value = false; // Stop the loader
+      isLoading.value = false;
     }
   }
 }

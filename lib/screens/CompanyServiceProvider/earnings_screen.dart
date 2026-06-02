@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/utils/format_utils.dart';
 import 'package:wheelboard/controllers/ServiceProvider/service_earnings_controller.dart';
 import 'package:wheelboard/models/ServiceProvider/service_earnings_model.dart';
 import 'package:wheelboard/utils/constants.dart';
@@ -167,7 +167,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            HttpHelper.formatAmount(total),
+            FormatUtils.formatAmount(total),
             style: GoogleFonts.poppins(
               fontSize: 32,
               fontWeight: FontWeight.w700,
@@ -306,7 +306,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                 Row(
                   children: [
                     Text(
-                      HttpHelper.formatAmount(service.totalAmount),
+                      FormatUtils.formatAmount(service.totalAmount),
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -475,7 +475,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
               getTooltipItems: (List<LineBarSpot> touchedSpots) {
                 return touchedSpots.map((LineBarSpot touchedSpot) {
                   return LineTooltipItem(
-                    HttpHelper.formatAmount(touchedSpot.y),
+                    FormatUtils.formatAmount(touchedSpot.y),
                     const TextStyle(
                       color: Color(0xFF438883),
                       fontWeight: FontWeight.bold,
@@ -523,7 +523,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
             ],
           ),
           Text(
-            HttpHelper.formatAmount(payment.paymentAmount),
+            FormatUtils.formatAmount(payment.paymentAmount),
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w700,

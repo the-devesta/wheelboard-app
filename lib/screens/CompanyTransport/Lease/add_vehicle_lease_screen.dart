@@ -6,7 +6,7 @@ import '../../../controllers/Transport/vehicle_lease_controller.dart';
 import '../../../controllers/Transport/fleet_controller.dart';
 import '../../../models/vehicle_lease_model.dart';
 import '../../../models/get_vehicle_model.dart';
-import '../../../services/auth_service.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../../widgets/custom_snackbar.dart';
 
 /// Add Vehicle Lease Screen for Transport side
@@ -85,7 +85,7 @@ class _AddVehicleLeaseScreenState extends State<AddVehicleLeaseScreen> {
     final token = authService.currentToken;
 
     if (userId.isNotEmpty && token.isNotEmpty) {
-      await _fleetController.fetchVehicles(userId, token);
+      await _fleetController.fetchVehicles();
     }
   }
 

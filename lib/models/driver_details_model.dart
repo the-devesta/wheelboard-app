@@ -31,6 +31,59 @@ class DriverDetailsModel {
     this.driverType,
   });
 
+  /// Build from a `GET /users/:id/public-profile` response.
+  ///
+  /// Bidders are professional *users*, so their data lives under a nested
+  /// `profile` object — not the flat fleet-driver shape.
+  factory DriverDetailsModel.fromUserProfile(dynamic response) {
+    final Map<String, dynamic> root =
+        response is Map && response['data'] is Map
+            ? Map<String, dynamic>.from(response['data'])
+            : (response is Map
+                ? Map<String, dynamic>.from(response)
+                : <String, dynamic>{});
+
+    final Map<String, dynamic> profile = root['profile'] is Map
+        ? Map<String, dynamic>.from(root['profile'])
+        : <String, dynamic>{};
+
+    final id = (root['id'] ?? root['_id'] ?? '').toString();
+
+    String name() {
+      final first = (profile['firstName'] ?? '').toString().trim();
+      final last = (profile['lastName'] ?? '').toString().trim();
+      final combined = '$first $last'.trim();
+      if (combined.isNotEmpty) return combined;
+      final full = (profile['fullName'] ?? profile['name'] ?? '').toString().trim();
+      if (full.isNotEmpty) return full;
+      final email = (root['email'] ?? '').toString();
+      if (email.contains('@')) return email.split('@').first;
+      return 'Professional';
+    }
+
+    return DriverDetailsModel(
+      driverId: id,
+      userId: id,
+      fullName: name(),
+      contactNumber:
+          (profile['phoneNumber'] ?? root['phoneNumber'] ?? '').toString(),
+      vehicleType: (profile['vehicleType'] ?? '').toString(),
+      vehicleNumber: (profile['vehicleNumber'] ?? '').toString(),
+      description:
+          (profile['description'] ?? profile['bio'] ?? '').toString(),
+      isDeclarationAccepted: true,
+      isKYCCompleted:
+          (profile['isKYCCompleted'] ?? profile['kycCompleted'] ?? false) == true,
+      isVerified: (profile['isVerified'] ?? false) == true,
+      driverImagePath:
+          (profile['profileImage'] ?? profile['avatar'])?.toString(),
+      dlNumber:
+          (profile['licenseNumber'] ?? profile['drivingLicenseNumber'])?.toString(),
+      driverType:
+          (profile['professionalType'] ?? profile['driverType'])?.toString(),
+    );
+  }
+
   factory DriverDetailsModel.fromJson(Map<String, dynamic> json) {
     return DriverDetailsModel(
       driverId: json['driverId'] ?? '',

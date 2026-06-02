@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../services/auth_service.dart';
 import '../../controllers/Professional/assigned_trip_controller.dart';
-import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
-import 'FindJobs/FindJobsScreen.dart';
-import 'FeedsProfessional/FeedsProfessionalScreen.dart';
-import 'Trips/ProfessionalTripsScreen.dart';
-import 'widgets/professional_bottom_nav_widget.dart';
-import 'JobProgress/JobProgressScreen.dart';
+import '../../core/auth/auth_service.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/app_bottom_nav.dart';
+import 'FeedsProfessional/FeedsProfessionalScreen.dart';
+import 'FindJobs/FindJobsScreen.dart';
+import 'JobProgress/JobProgressScreen.dart';
+import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
+import 'Trips/ProfessionalTripsScreen.dart';
 
-/// Main Wrapper for Professional User Type
-/// This wrapper contains bottom navigation and manages all Professional screens
 class ProfessionalMainWrapper extends StatefulWidget {
   final int initialIndex;
   const ProfessionalMainWrapper({super.key, this.initialIndex = 0});
@@ -24,68 +22,57 @@ class ProfessionalMainWrapper extends StatefulWidget {
 class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
   late int _currentIndex;
 
+  // IndexedStack keeps every screen alive — no rebuild on tab switch
+  final List<Widget> _screens = [
+    const ProfessionalHomePageScreen(),
+    const FindJobsScreen(),
+    const ProfessionalTripsScreen(),
+    const FeedsProfessionalScreen(),
+    const JobProgressScreen(),
+  ];
+
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
 
-    // ✅ Initialize AssignedTripController globally so all screens can access it
     if (!Get.isRegistered<AssignedTripController>()) {
       Get.put(AssignedTripController(), permanent: true);
-      AppLogger.d("✅ AssignedTripController initialized in wrapper");
+      AppLogger.d('✅ AssignedTripController initialized in Professional wrapper');
     }
 
-    // ✅ Refresh login status to load KYC and other data from session
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        final authService = AuthService.to;
-        await authService.refreshLoginStatus();
-        AppLogger.d("✅ AuthService refreshed in Professional wrapper");
-
-        // ✅ Fetch assigned trips after auth is ready
-        final tripController = Get.find<AssignedTripController>();
-        await tripController.fetchAssignedTrips();
-        AppLogger.d(
-          "✅ AssignedTripController fetched trips after auth refresh",
-        );
+        await AuthService.to.refreshLoginStatus();
+        final tripCtrl = Get.find<AssignedTripController>();
+        await tripCtrl.fetchAssignedTrips();
+        AppLogger.d('✅ Auth + trips refreshed in Professional wrapper');
       } catch (e) {
-        AppLogger.d("⚠️ Could not refresh AuthService: $e");
+        AppLogger.d('⚠️ Could not refresh on startup: $e');
       }
     });
   }
 
-  // Professional screens with bottom navigation (5 items matching Figma)
-  final List<Widget> _screens = [
-    const ProfessionalHomePageScreen(),
-    const FindJobsScreen(), // Find
-    const ProfessionalTripsScreen(), // Trips - Smart Router
-    const FeedsProfessionalScreen(), // Feeds
-    const JobProgressScreen(), // Jobs
-  ];
-
   void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    setState(() => _currentIndex = index);
 
-    // ✅ Refetch assigned trips when navigating to Trips tab (index 2)
-    // or when returning to Home (index 0) to keep data fresh
+    // Refresh trips when switching to Home or Trips tab
     if (index == 0 || index == 2) {
       try {
-        final tripController = Get.find<AssignedTripController>();
-        tripController.fetchAssignedTrips();
-        AppLogger.d("🔄 Refetching trips on tab change (index: $index)");
-      } catch (e) {
-        AppLogger.d("⚠️ Could not refetch trips: $e");
-      }
+        Get.find<AssignedTripController>().fetchAssignedTrips();
+      } catch (_) {}
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: ProfessionalBottomNavWidget(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: AppBottomNav(
+        items: professionalNavItems,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
       ),

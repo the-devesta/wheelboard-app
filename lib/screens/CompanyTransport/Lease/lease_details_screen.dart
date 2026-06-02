@@ -937,7 +937,7 @@ class _LeaseDetailsScreenState extends State<LeaseDetailsScreen> {
               Navigator.pop(context);
               await _leaseController.applyForLease(
                 widget.leaseId,
-                notesController.text,
+                message: notesController.text,
               );
             },
             child: const Text('Apply'),

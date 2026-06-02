@@ -1,10 +1,11 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
 import '../../models/unassigned_trip_model.dart';
-import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../utils/kyc_helper.dart';
 import '../../utils/app_logger.dart';
 
@@ -46,43 +47,28 @@ class UnassignedTripsController extends GetxController {
   Future<void> fetchUnassignedTrips() async {
     try {
       isLoading.value = true;
-
       AppLogger.d("🚚 Fetching unassigned trips...");
 
-      final response = await HttpHelper.getData(
-        endpoint: API.getUnassignedTripList,
-        headers: {'Accept': '*/*'},
+      // Backend returns { trips: [...], pagination: {...} }
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.trips.unassignedList,
+        queryParameters: {'tripType': 'created'},
       );
 
-      AppLogger.d(
-        "🚚 Unassigned trips response status: ${response.statusCode}",
-      );
-      AppLogger.d("🚚 Unassigned trips response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-
-        if (decoded is List) {
-          unassignedTrips.value = decoded
-              .map((e) => UnassignedTrip.fromJson(e))
-              .toList();
-          AppLogger.d("✅ Fetched ${unassignedTrips.length} unassigned trips");
-        } else {
-          // If it's a Map (e.g., {"message": "No unassigned trips found."})
-          unassignedTrips.value = [];
-          if (decoded is Map && decoded.containsKey('message')) {
-            AppLogger.d("ℹ️ API Message: ${decoded['message']}");
-          }
-        }
-      } else {
-        AppLogger.d(
-          "❌ Failed to fetch unassigned trips: ${response.statusCode}",
-        );
-        SnackBarHelper.error("Failed to load trips");
-      }
+      final tripsList = data['trips'] as List<dynamic>? ?? [];
+      unassignedTrips.value = tripsList
+          .map((e) => UnassignedTrip.fromJson(e as Map<String, dynamic>))
+          .toList();
+      AppLogger.d("✅ Fetched ${unassignedTrips.length} unassigned trips");
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load trips';
+      AppLogger.e("❌ Error fetching unassigned trips: $e");
+      SnackBarHelper.error(msg);
+      unassignedTrips.value = [];
     } catch (e) {
-      AppLogger.d("❌ Error fetching unassigned trips: $e");
-      SnackBarHelper.error("Failed to load trips: ${e.toString()}");
+      AppLogger.e("❌ Error fetching unassigned trips: $e");
+      SnackBarHelper.error("Failed to load trips: $e");
+      unassignedTrips.value = [];
     } finally {
       isLoading.value = false;
     }
@@ -92,28 +78,21 @@ class UnassignedTripsController extends GetxController {
   Future<void> fetchTripDetails(String tripId) async {
     try {
       isDetailsLoading.value = true;
-
       AppLogger.d("🚚 Fetching trip details for: $tripId");
 
-      final response = await HttpHelper.getData(
-        endpoint: '${API.getUnassignedTripDetails}$tripId',
-        headers: {'Accept': '*/*'},
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.trips.unassignedDetails(tripId),
       );
 
-      AppLogger.d("🚚 Trip details response status: ${response.statusCode}");
-      AppLogger.d("🚚 Trip details response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        tripDetails.value = UnassignedTripDetails.fromJson(data);
-        AppLogger.d("✅ Fetched trip details");
-      } else {
-        AppLogger.d("❌ Failed to fetch trip details: ${response.statusCode}");
-        SnackBarHelper.error("Failed to load trip details");
-      }
+      tripDetails.value = UnassignedTripDetails.fromJson(data);
+      AppLogger.d("✅ Fetched trip details");
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load trip details';
+      AppLogger.e("❌ Error fetching trip details: $e");
+      SnackBarHelper.error(msg);
     } catch (e) {
-      AppLogger.d("❌ Error fetching trip details: $e");
-      SnackBarHelper.error("Failed to load trip details: ${e.toString()}");
+      AppLogger.e("❌ Error fetching trip details: $e");
+      SnackBarHelper.error("Failed to load trip details: $e");
     } finally {
       isDetailsLoading.value = false;
     }
@@ -129,10 +108,9 @@ class UnassignedTripsController extends GetxController {
     try {
       isSubmittingBid.value = true;
 
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString("userId");
+      final userId = AuthService.to.currentUserId;
 
-      if (userId == null || userId.isEmpty) {
+      if (userId.isEmpty) {
         SnackBarHelper.error("User not logged in");
         return false;
       }
@@ -142,177 +120,57 @@ class UnassignedTripsController extends GetxController {
         return false;
       }
 
-      final requestData = {
-        'createdBy': userId,
-        'partnerId': partnerId ?? 0,
-        'tripId': tripId,
-        'userId': userId,
-        'bidAmount': bidAmount,
-        'bidDescription': bidDescription,
+      final requestData = <String, dynamic>{
+        'amount': bidAmount,
+        if (bidDescription.trim().isNotEmpty) 'notes': bidDescription.trim(),
       };
 
-      AppLogger.d(
-        "═══════════════════════════════════════════════════════════",
-      );
       AppLogger.d("💰 BID SUBMISSION REQUEST");
-      AppLogger.d(
-        "═══════════════════════════════════════════════════════════",
-      );
-      AppLogger.d("📍 Trip ID: $tripId");
-      AppLogger.d("👤 User ID: $userId");
-      AppLogger.d("💵 Bid Amount: ₹$bidAmount");
-      AppLogger.d("📝 Description: $bidDescription");
-      AppLogger.d("📤 Full Request Data: ${json.encode(requestData)}");
-      AppLogger.d(
-        "═══════════════════════════════════════════════════════════",
-      );
+      AppLogger.d("📤 Data: $requestData");
 
-      final response = await HttpHelper.postData(
-        endpoint: API.submitBid,
+      final response = await ApiClient.instance.post<dynamic>(
+        ApiEndpoints.trips.submitBid(tripId),
         data: requestData,
-        headers: {'Accept': '*/*', 'Content-Type': 'application/json'},
       );
 
-      AppLogger.d(
-        "═══════════════════════════════════════════════════════════",
-      );
-      AppLogger.d("💰 BID SUBMISSION RESPONSE");
-      AppLogger.d(
-        "═══════════════════════════════════════════════════════════",
-      );
-      AppLogger.d("📊 Status Code: ${response.statusCode}");
-      AppLogger.d("📥 Response Body: ${response.body}");
-      AppLogger.d(
-        "═══════════════════════════════════════════════════════════",
-      );
+      // Handle weird 200 OK responses with status: false
+      if (response is Map) {
+        final status = response['status'];
+        final message = response['message'] ?? response['msg'] ?? response['error'] ?? '';
 
-      // Parse the response body to get the server message
-      String serverMessage = "";
-      bool isDuplicateBid = false;
-      bool isServerStatusFalse = false;
+        if (status == false || status == 'false' || status == 0) {
+          final isDuplicate = message.toString().toLowerCase().contains('already') ||
+                              message.toString().toLowerCase().contains('duplicate');
 
-      try {
-        final responseData = json.decode(response.body);
-        if (responseData is Map) {
-          // Check for status field in response body
-          if (responseData.containsKey('status')) {
-            final status = responseData['status'];
-            if (status == false || status == 'false' || status == 0) {
-              isServerStatusFalse = true;
-              AppLogger.d("⚠️ SERVER RETURNED status: false");
-            }
-          }
-
-          // Check for various possible message fields
-          serverMessage =
-              responseData['message'] ??
-              responseData['Message'] ??
-              responseData['error'] ??
-              responseData['Error'] ??
-              responseData['msg'] ??
-              "";
-
-          // Check if it's a duplicate bid - common patterns
-          final responseLower = response.body.toLowerCase();
-          if (responseLower.contains('already') ||
-              responseLower.contains('duplicate') ||
-              responseLower.contains('exist') ||
-              responseLower.contains('placed a bid')) {
-            isDuplicateBid = true;
-            AppLogger.d("⚠️ DUPLICATE BID DETECTED!");
-          }
-        }
-      } catch (parseError) {
-        AppLogger.d("⚠️ Could not parse response as JSON: $parseError");
-        serverMessage = response.body;
-      }
-
-      // Check if server returned status: false (even with HTTP 200)
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (isServerStatusFalse || isDuplicateBid) {
-          // Server returned 200 but status is false - this is an error case
-          AppLogger.d("❌ SERVER RETURNED SUCCESS CODE BUT status: false");
-          AppLogger.d("📄 Server Message: $serverMessage");
-          AppLogger.d(
-            "═══════════════════════════════════════════════════════════",
-          );
-
-          if (isDuplicateBid) {
-            SnackBarHelper.warning(
-              serverMessage.isNotEmpty
-                  ? serverMessage
-                  : "Aapne is trip ke liye pehle se bid submit ki hai!",
-            );
+          if (isDuplicate) {
+            SnackBarHelper.warning(message.isNotEmpty ? message : "Aapne is trip ke liye pehle se bid submit ki hai!");
           } else {
-            SnackBarHelper.error(
-              serverMessage.isNotEmpty
-                  ? serverMessage
-                  : "Bid submit nahi ho paayi. Please try again.",
-            );
+            SnackBarHelper.error(message.isNotEmpty ? message : "Bid submit nahi ho paayi. Please try again.");
           }
           return false;
         }
 
-        // Actual success case
         AppLogger.d("✅ BID SUBMITTED SUCCESSFULLY!");
-        AppLogger.d(
-          "═══════════════════════════════════════════════════════════",
-        );
-        SnackBarHelper.success(
-          serverMessage.isNotEmpty
-              ? serverMessage
-              : "Bid submitted successfully",
-        );
+        SnackBarHelper.success(message.isNotEmpty ? message : "Bid submitted successfully");
         return true;
-      } else if (response.statusCode == 409 || isDuplicateBid) {
-        // 409 Conflict typically means duplicate
-        AppLogger.d(
-          "⚠️ DUPLICATE BID - User already submitted bid for this trip",
-        );
-        AppLogger.d(
-          "═══════════════════════════════════════════════════════════",
-        );
-        SnackBarHelper.warning(
-          serverMessage.isNotEmpty
-              ? serverMessage
-              : "Aapne is trip ke liye pehle se bid submit ki hai!",
-        );
-        return false;
-      } else if (response.statusCode == 400) {
-        AppLogger.d("❌ BAD REQUEST: $serverMessage");
-        AppLogger.d(
-          "═══════════════════════════════════════════════════════════",
-        );
-        SnackBarHelper.error(
-          serverMessage.isNotEmpty
-              ? serverMessage
-              : "Invalid bid request. Please check your input.",
-        );
-        return false;
-      } else {
-        AppLogger.d("❌ FAILED TO SUBMIT BID");
-        AppLogger.d("📊 Status: ${response.statusCode}");
-        AppLogger.d("📄 Server Message: $serverMessage");
-        AppLogger.d(
-          "═══════════════════════════════════════════════════════════",
-        );
-        SnackBarHelper.error(
-          serverMessage.isNotEmpty
-              ? serverMessage
-              : "Failed to submit bid (Error: ${response.statusCode})",
-        );
-        return false;
       }
+
+      AppLogger.d("✅ BID SUBMITTED SUCCESSFULLY!");
+      SnackBarHelper.success("Bid submitted successfully");
+      return true;
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to submit bid';
+      final isDuplicate = msg.toLowerCase().contains('already') || msg.toLowerCase().contains('duplicate');
+      
+      if (e.response?.statusCode == 409 || isDuplicate) {
+        SnackBarHelper.warning("Aapne is trip ke liye pehle se bid submit ki hai!");
+      } else {
+        SnackBarHelper.error(msg);
+      }
+      return false;
     } catch (e) {
-      AppLogger.d(
-        "═══════════════════════════════════════════════════════════",
-      );
-      AppLogger.d("❌ EXCEPTION DURING BID SUBMISSION");
-      AppLogger.d("Error: $e");
-      AppLogger.d(
-        "═══════════════════════════════════════════════════════════",
-      );
-      SnackBarHelper.error("Failed to submit bid: ${e.toString()}");
+      AppLogger.e("❌ EXCEPTION DURING BID SUBMISSION: $e");
+      SnackBarHelper.error("Failed to submit bid: $e");
       return false;
     } finally {
       isSubmittingBid.value = false;

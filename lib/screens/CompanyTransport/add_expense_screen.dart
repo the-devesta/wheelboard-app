@@ -11,7 +11,7 @@ import '../../models/add_new_trip_model.dart';
 import '../../models/assigned_trip_model.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_loader.dart';
-import '../../services/auth_service.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../utils/app_logger.dart';
 
 class AddExpenseScreen extends StatefulWidget {
@@ -81,17 +81,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     // 📋 DEBUG: Dump all session data to see what is actually stored
     SessionManager.logAllSessionData();
 
-    // Verify user type directly from AuthService to prevent stale router arguments
-    final authUserType = Get.find<AuthService>().userType.value;
-
+    // Verify user type directly from AuthService using enum-based check
     // Default to widget passed value
     _localIsProfessional = widget.isProfessional;
 
     bool effectiveIsProfessional = _localIsProfessional;
 
     // Double check: if AuthService says Professional, we MUST treat as Professional
-    if (authUserType.toLowerCase().trim() == 'professional' ||
-        authUserType.toLowerCase().trim() == 'driver') {
+    if (Get.find<AuthService>().isProfessional) {
       effectiveIsProfessional = true;
     }
 

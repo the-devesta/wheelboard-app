@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../controllers/Transport/post_controller.dart';
-import '../../services/auth_service.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 
 class NetworkPostScreen extends StatefulWidget {
   const NetworkPostScreen({super.key});
@@ -24,8 +24,7 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
   @override
   Widget build(BuildContext context) {
     // Check if user is professional
-    final userType = AuthService.to.userType.value.toLowerCase().trim();
-    if (userType == 'professional') {
+    if (AuthService.to.isProfessional) {
       return Scaffold(
         appBar: AppBar(title: const Text('Access Denied')),
         body: const Center(child: Text('Professionals cannot create posts.')),

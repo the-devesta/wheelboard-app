@@ -24,7 +24,7 @@ import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 import 'booking_list_screen.dart';
 import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
-import '../../apihelperclass/api_helper.dart';
+
 
 class ServiceProviderHomeScreen extends StatefulWidget {
   const ServiceProviderHomeScreen({super.key});
@@ -1091,6 +1091,6 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     if (cleanPath.startsWith('/')) {
       cleanPath = cleanPath.substring(1);
     }
-    return '${HttpHelper.baseUrl}/$cleanPath';
+    return '${ApiConstants.baseUrl}/$cleanPath';
   }
 }

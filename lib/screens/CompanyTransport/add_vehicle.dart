@@ -1,5 +1,4 @@
 import 'dart:io' show File;
-import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,8 +9,10 @@ import '../../models/vehicle_details_model.dart';
 import '../../controllers/Transport/add_new_vehicle_controller.dart';
 import '../../controllers/Transport/fleet_controller.dart';
 import '../../utils/session_manager.dart';
-import '../../apihelperclass/api_helper.dart';
+
 import '../../widgets/custom_snackbar.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/app_logger.dart';
 
@@ -111,65 +112,52 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
       AppLogger.d("🔍 Searching for vehicle: $vehicleNumber");
 
-      final response = await HttpHelper.getVehicleDetails(
-        vehicleNumber: vehicleNumber,
+      final data = await ApiClient.instance.post<dynamic>(
+        ApiEndpoints.fleet.verifyVehicleRegistration,
+        data: {"vehicleNumber": vehicleNumber},
       );
 
-      AppLogger.d("📡 API Response Status: ${response.statusCode}");
-      AppLogger.d("📡 API Response Body: ${response.body}");
+      if (data is Map<String, dynamic> && data['code'] == 200 && data['result'] != null) {
+        try {
+          final vehicleDetails = VehicleDetailsModel.fromJson(data);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        AppLogger.d("📊 Parsed Response: $data");
-
-        if (data['code'] == 200 && data['result'] != null) {
-          try {
-            final vehicleDetails = VehicleDetailsModel.fromJson(data);
-
-            // ✅ Auto-fill the form with fetched data
-            _vehicleModelController.text = vehicleDetails.model;
-            _manufacturingYearController.text = vehicleDetails
-                .vehicleManufacturingMonthYear
-                .split('/')
-                .last; // Extract year
-            // Map vehicle category to our dropdown options
-            final category = vehicleDetails.vehicleCategory.toLowerCase();
-            if (category.contains('construction')) {
-              _vehicleType = 'Construction';
-            } else if (category.contains('mining')) {
-              _vehicleType = 'Mining';
-            } else {
-              _vehicleType = 'Shipment'; // Default to Shipment
-            }
-
-            setState(() {}); // Refresh UI
-
-            SnackBarHelper.success("Vehicle details fetched successfully!");
-            AppLogger.d("🚗 Vehicle Details Fetched:");
-            AppLogger.d("🚗 Model: ${vehicleDetails.model}");
-            AppLogger.d(
-              "🚗 Manufacturer: ${vehicleDetails.vehicleManufacturerName}",
-            );
-            AppLogger.d("🚗 Category: ${vehicleDetails.vehicleCategory}");
-            AppLogger.d(
-              "🚗 Manufacturing Year: ${vehicleDetails.vehicleManufacturingMonthYear}",
-            );
-          } catch (parseError) {
-            AppLogger.d("❌ Error parsing vehicle details: $parseError");
-            SnackBarHelper.error(
-              "Error parsing vehicle details. Please try again.",
-            );
+          // ✅ Auto-fill the form with fetched data
+          _vehicleModelController.text = vehicleDetails.model;
+          _manufacturingYearController.text = vehicleDetails
+              .vehicleManufacturingMonthYear
+              .split('/')
+              .last; // Extract year
+          // Map vehicle category to our dropdown options
+          final category = vehicleDetails.vehicleCategory.toLowerCase();
+          if (category.contains('construction')) {
+            _vehicleType = 'Construction';
+          } else if (category.contains('mining')) {
+            _vehicleType = 'Mining';
+          } else {
+            _vehicleType = 'Shipment'; // Default to Shipment
           }
-        } else {
-          AppLogger.d("❌ API returned error or no result");
-          SnackBarHelper.error("Vehicle details not found for this number");
+
+          setState(() {}); // Refresh UI
+
+          SnackBarHelper.success("Vehicle details fetched successfully!");
+          AppLogger.d("🚗 Vehicle Details Fetched:");
+          AppLogger.d("🚗 Model: ${vehicleDetails.model}");
+          AppLogger.d(
+            "🚗 Manufacturer: ${vehicleDetails.vehicleManufacturerName}",
+          );
+          AppLogger.d("🚗 Category: ${vehicleDetails.vehicleCategory}");
+          AppLogger.d(
+            "🚗 Manufacturing Year: ${vehicleDetails.vehicleManufacturingMonthYear}",
+          );
+        } catch (parseError) {
+          AppLogger.d("❌ Error parsing vehicle details: $parseError");
+          SnackBarHelper.error(
+            "Error parsing vehicle details. Please try again.",
+          );
         }
       } else {
-        AppLogger.d("❌ API request failed with status: ${response.statusCode}");
-        SnackBarHelper.error(
-          "Failed to fetch vehicle details. Please try again.",
-        );
+        AppLogger.d("❌ API returned error or no result");
+        SnackBarHelper.error("Vehicle details not found for this number");
       }
     } catch (e) {
       AppLogger.d("❌ Error fetching vehicle details: $e");
@@ -255,7 +243,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         final refreshUserId = await sessionManager.getString("userId");
 
         if (refreshToken != null && refreshUserId != null) {
-          await fleetController.fetchVehicles(refreshUserId, refreshToken);
+          await fleetController.fetchVehicles();
         }
       } catch (e) {
         AppLogger.d("⚠️ Could not refresh fleet data: $e");

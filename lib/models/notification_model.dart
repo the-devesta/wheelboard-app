@@ -5,6 +5,8 @@ class NotificationModel {
   final String message;
   final bool isRead;
   final String createdDate;
+  // Backend sends 'info' | 'success' | 'warning' | 'error'
+  final String type;
 
   NotificationModel({
     required this.notificationId,
@@ -13,16 +15,21 @@ class NotificationModel {
     required this.message,
     required this.isRead,
     required this.createdDate,
+    this.type = 'info',
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    // Backend (NestJS) uses _id and createdAt — map both naming conventions
+    final id = (json['_id'] ?? json['id'] ?? json['notificationId'] ?? '') as String;
+    final created = (json['createdAt'] ?? json['createdDate'] ?? '') as String;
     return NotificationModel(
-      notificationId: json['notificationId'] as String? ?? '',
+      notificationId: id,
       userId: json['userId'] as String? ?? '',
       title: json['title'] as String? ?? '',
       message: json['message'] as String? ?? '',
       isRead: json['isRead'] == true || json['isRead'] == 'true',
-      createdDate: json['createdDate'] as String? ?? '',
+      createdDate: created,
+      type: json['type'] as String? ?? 'info',
     );
   }
 
@@ -34,6 +41,7 @@ class NotificationModel {
       'message': message,
       'isRead': isRead,
       'createdDate': createdDate,
+      'type': type,
     };
   }
 
@@ -44,6 +52,7 @@ class NotificationModel {
     String? message,
     bool? isRead,
     String? createdDate,
+    String? type,
   }) {
     return NotificationModel(
       notificationId: notificationId ?? this.notificationId,
@@ -52,6 +61,7 @@ class NotificationModel {
       message: message ?? this.message,
       isRead: isRead ?? this.isRead,
       createdDate: createdDate ?? this.createdDate,
+      type: type ?? this.type,
     );
   }
 

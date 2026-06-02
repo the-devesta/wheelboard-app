@@ -17,7 +17,7 @@ class ShareService {
     required String jobType,
     required String jobDuration,
     required int openings,
-    required int salary,
+    required String salary,
     required String description,
   }) async {
     final jobUrl = '$wheelboardWebsiteUrl/jobs/$jobId';
@@ -30,7 +30,7 @@ class ShareService {
 📋 Type: $jobType
 ⏱ Duration: $jobDuration
 👥 Openings: $openings
-💰 Salary: ₹$salary
+💰 Salary: $salary
 
 📝 $description
 

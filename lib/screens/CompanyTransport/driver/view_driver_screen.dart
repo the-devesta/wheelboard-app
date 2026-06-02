@@ -33,7 +33,8 @@ class _ViewDriverScreenState extends State<ViewDriverScreen> {
   void initState() {
     super.initState();
     if (widget.isProfessional) {
-      controller.fetchProfessionalDetails(widget.driverId);
+      // Bidders are professional *users* → use the public-profile endpoint.
+      controller.fetchPublicProfile(widget.driverId);
     } else {
       controller.fetchDriverDetails(widget.driverId);
     }

@@ -1,9 +1,10 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:wheelboard/core/network/api_client.dart';
+import 'package:wheelboard/core/network/api_endpoints.dart';
+import 'package:wheelboard/core/network/api_exception.dart';
 import 'package:wheelboard/models/ServiceProvider/service_earnings_model.dart';
-import 'package:wheelboard/services/auth_service.dart';
-import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 
@@ -36,21 +37,16 @@ class ServiceEarningsController extends GetxController {
 
       AppLogger.d("💰 Fetching service provider earnings for userId: $userId");
 
-      final response = await HttpHelper.getData(
-        endpoint: '${API.serviceEarningsDashboard}?userId=$userId',
-        headers: {
-          'Authorization': 'Bearer ${_authService.currentToken}',
-          'Accept': 'application/json',
-        },
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.services.earningsAnalytics,
+        queryParameters: {'userId': userId},
       );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        dashboardData.value = ServiceEarningsModel.fromJson(data);
-        AppLogger.d("✅ Earnings dashboard data loaded successfully");
-      } else {
-        AppLogger.d('❌ Failed to load earnings data: ${response.statusCode}');
-      }
+      dashboardData.value = ServiceEarningsModel.fromJson(data);
+      AppLogger.d("✅ Earnings dashboard data loaded successfully");
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load earnings data';
+      AppLogger.d('❌ Error fetching earnings dashboard data: $msg');
     } catch (e) {
       AppLogger.d('❌ Error fetching earnings dashboard data: $e');
     } finally {
@@ -66,46 +62,40 @@ class ServiceEarningsController extends GetxController {
 
       AppLogger.d("📋 Fetching user services for userId: $userId");
 
-      final response = await HttpHelper.getData(
-        endpoint: '${API.serviceListByUser}$userId',
-        headers: {
-          'Authorization': 'Bearer ${_authService.currentToken}',
-          'Accept': 'application/json',
-        },
+      final decoded = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.services.list,
+        queryParameters: {'userId': userId},
       );
 
-      if (response.statusCode == 200) {
-        final dynamic decoded = jsonDecode(response.body);
-        List services = [];
+      List services = [];
 
-        // Handle different response formats
-        if (decoded is List) {
-          // API returns List directly
-          services = decoded;
-        } else if (decoded is Map) {
-          // API returns Map with success/data structure
-          if (decoded['success'] == true && decoded['data'] != null) {
-            services = decoded['data'] as List;
-          } else if (decoded['data'] != null) {
-            services = decoded['data'] as List;
-          }
+      // Handle different response formats
+      if (decoded is List) {
+        // API returns List directly
+        services = decoded;
+      } else if (decoded is Map) {
+        // API returns Map with success/data structure
+        if (decoded['success'] == true && decoded['data'] != null) {
+          services = decoded['data'] as List;
+        } else if (decoded['data'] != null) {
+          services = decoded['data'] as List;
         }
-
-        if (services.isNotEmpty) {
-          userServices.value = services.map<Map<String, String>>((s) {
-            return {
-              'serviceId': (s['serviceId'] ?? '').toString(),
-              'serviceTitle': (s['serviceTitle'] ?? s['title'] ?? 'Service')
-                  .toString(),
-            };
-          }).toList();
-          AppLogger.d("✅ Loaded ${userServices.length} services for dropdown");
-        } else {
-          AppLogger.d('⚠️ No services found for user');
-        }
-      } else {
-        AppLogger.d('❌ Failed to load services: ${response.statusCode}');
       }
+
+      if (services.isNotEmpty) {
+        userServices.value = services.map<Map<String, String>>((s) {
+          return {
+            'serviceId': (s['serviceId'] ?? '').toString(),
+            'serviceTitle': (s['serviceTitle'] ?? s['title'] ?? 'Service').toString(),
+          };
+        }).toList();
+        AppLogger.d("✅ Loaded ${userServices.length} services for dropdown");
+      } else {
+        AppLogger.d('⚠️ No services found for user');
+      }
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load services';
+      AppLogger.d('❌ Error fetching user services: $msg');
     } catch (e) {
       AppLogger.d('❌ Error fetching user services: $e');
     }
@@ -130,49 +120,25 @@ class ServiceEarningsController extends GetxController {
         "userId": userId,
       };
 
-      AppLogger.d("💸 Recording payment: ${jsonEncode(paymentData)}");
+      AppLogger.d("💸 Recording payment: $paymentData");
 
-      final response = await HttpHelper.postData(
-        endpoint: API.createPayment,
+      final data = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiEndpoints.services.recordPayment,
         data: paymentData,
-        headers: {
-          'Authorization': 'Bearer ${_authService.currentToken}',
-          'Content-Type': 'application/json',
-        },
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Parse response to get message
-        String successMessage = 'Payment recorded successfully!';
-        try {
-          final responseData = jsonDecode(response.body);
-          if (responseData['success'] == true &&
-              responseData['message'] != null) {
-            successMessage = responseData['message'];
-          }
-        } catch (_) {}
+      String successMessage = data['message'] ?? 'Payment recorded successfully!';
+      SnackBarHelper.success(successMessage);
 
-        SnackBarHelper.success(successMessage);
+      // Refresh data in background
+      fetchEarningsDashboard();
 
-        // Refresh data in background
-        fetchEarningsDashboard();
-
-        return true;
-      } else {
-        AppLogger.d('❌ Failed to record payment: ${response.statusCode}');
-
-        // Try to parse error message from response
-        String errorMessage = 'Failed to record payment';
-        try {
-          final responseData = jsonDecode(response.body);
-          if (responseData['message'] != null) {
-            errorMessage = responseData['message'];
-          }
-        } catch (_) {}
-
-        SnackBarHelper.error(errorMessage);
-        return false;
-      }
+      return true;
+    } on DioException catch (e) {
+      AppLogger.d('❌ Error recording payment: $e');
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to record payment';
+      SnackBarHelper.error(msg);
+      return false;
     } catch (e) {
       AppLogger.d('❌ Error recording payment: $e');
       SnackBarHelper.error('Something went wrong');

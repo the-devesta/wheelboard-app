@@ -1,10 +1,10 @@
-import 'dart:convert';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:dio/dio.dart';
+import 'package:wheelboard/core/network/api_client.dart';
+import 'package:wheelboard/core/network/api_endpoints.dart';
+import 'package:wheelboard/core/network/api_exception.dart';
 import 'package:wheelboard/models/Professional/referral_model.dart';
-import 'package:wheelboard/services/auth_service.dart';
-import 'package:wheelboard/utils/constants.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../utils/app_logger.dart';
 
 class AddReferralController extends GetxController {
@@ -24,20 +24,18 @@ class AddReferralController extends GetxController {
     try {
       isLoading.value = true;
 
-      final userId = _authService.userId;
+      final userId = _authService.currentUserId;
 
-      final response = await HttpHelper.getData(
-        endpoint: '${API.getReferralList}$userId',
-        headers: {"Content-Type": "application/json"},
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.users.referralsByUser(userId),
       );
-      debugPrint('responsereferallll====>>>${response.body}');
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
 
-        referrals.assignAll(
-          data.map((e) => ReferralModel.fromJson(e)).toList(),
-        );
-      } else {}
+      referrals.assignAll(
+        data.map((e) => ReferralModel.fromJson(e)).toList(),
+      );
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load referrals';
+      AppLogger.d('Error==>> $msg');
     } catch (e) {
       AppLogger.d('Error==>> ${e.toString()}');
     } finally {

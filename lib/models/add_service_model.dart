@@ -17,6 +17,9 @@ class AddServiceModel {
   final String createdBy;
   final String serviceCategory;
   final List<File> images;
+  final String? listingPaymentOrderId;
+  final String? listingPaymentId;
+  final String? listingPaymentSignature;
 
   AddServiceModel({
     required this.userId,
@@ -35,11 +38,14 @@ class AddServiceModel {
     required this.createdBy,
     required this.serviceCategory,
     required this.images,
+    this.listingPaymentOrderId,
+    this.listingPaymentId,
+    this.listingPaymentSignature,
   });
 
   // Convert to JSON fields (excluding files)
   Map<String, String> toJsonFields() {
-    return {
+    final payload = <String, String>{
       'UserId': userId,
       'ServiceTitle': serviceTitle,
       'FullAddress': fullAddress,
@@ -59,6 +65,47 @@ class AddServiceModel {
       'CreatedBy': createdBy,
       'ServiceCategory': serviceCategory,
     };
+
+    if (listingPaymentOrderId != null && listingPaymentOrderId!.isNotEmpty) {
+      payload['listingPaymentOrderId'] = listingPaymentOrderId!;
+    }
+    if (listingPaymentId != null && listingPaymentId!.isNotEmpty) {
+      payload['listingPaymentId'] = listingPaymentId!;
+    }
+    if (listingPaymentSignature != null &&
+        listingPaymentSignature!.isNotEmpty) {
+      payload['listingPaymentSignature'] = listingPaymentSignature!;
+    }
+
+    return payload;
+  }
+
+  AddServiceModel withListingPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) {
+    return AddServiceModel(
+      userId: userId,
+      serviceTitle: serviceTitle,
+      fullAddress: fullAddress,
+      city: city,
+      contactNumber: contactNumber,
+      whatsappNumber: whatsappNumber,
+      description: description,
+      isFlatPrice: isFlatPrice,
+      price: price,
+      isVisible: isVisible,
+      daysOpen: daysOpen,
+      businessFrom: businessFrom,
+      businessTo: businessTo,
+      createdBy: createdBy,
+      serviceCategory: serviceCategory,
+      images: images,
+      listingPaymentOrderId: orderId,
+      listingPaymentId: paymentId,
+      listingPaymentSignature: signature,
+    );
   }
 
   // Get the files for upload

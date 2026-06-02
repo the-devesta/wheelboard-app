@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
+import '../../core/auth/auth_service.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
 import '../../models/user_profile_model.dart';
-import '../../utils/constants.dart';
-import '../../services/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
@@ -22,107 +21,111 @@ class UserProfileController extends GetxController {
   void toggleWhatsappNotifications(bool value) =>
       whatsappNotifications.value = value;
 
-  /// Fetch user profile by userId
+  /// Fetch another user's public profile — calls GET /users/:id/public-profile.
+  /// Matches wheelboard-fe's userAPI.getUserProfile().
   Future<bool> fetchUserProfile(String userId) async {
+    final auth = AuthService.to;
+
+    // For the current user's own profile, use the auth endpoint.
+    if (userId == auth.currentUserId) {
+      return fetchCurrentUserProfile();
+    }
+
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      AppLogger.d("==================================");
-      AppLogger.d("📡 Fetching User Profile");
-      AppLogger.d("👉 UserId: $userId");
-      AppLogger.d("==================================");
-
-      // Get auth token
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-
-      // Build endpoint URL
-      final endpoint = API.userProfile.replaceAll('{userId}', userId);
-
-      // Make API call
-      final response = await HttpHelper.getData(
-        endpoint: endpoint,
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.users.publicProfile(userId),
       );
 
-      AppLogger.d("📥 Response Status: ${response.statusCode}");
-      AppLogger.d("📥 Response Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        userProfile.value = UserProfileModel.fromJson(data);
-
-        AppLogger.d("✅ Profile loaded successfully");
-        AppLogger.d("👉 User Type: ${userProfile.value?.userType}");
-        AppLogger.d("👉 Display Name: ${userProfile.value?.displayName}");
-        AppLogger.d(
-          "👉 KYC Status from API: ${userProfile.value?.isKYCCompleted}",
-        );
-
-        // Update AuthService KYC status
-        if (userProfile.value?.isKYCCompleted != null) {
-          AppLogger.d(
-            "🔐 Updating AuthService KYC status to: ${userProfile.value!.isKYCCompleted!}",
-          );
-          await AuthService.to.updateKYCStatus(
-            userProfile.value!.isKYCCompleted!,
-          );
-          AppLogger.d(
-            "🔐 AuthService KYC status after update: ${AuthService.to.isUserKYCCompleted}",
-          );
-        } else {
-          AppLogger.d(
-            "⚠️ WARNING: Profile API did not return isKYCCompleted field!",
-          );
-        }
-
-        AppLogger.d("==================================");
-
-        return true;
-      } else {
-        final errorMsg = "Failed to load profile: ${response.statusCode}";
-        errorMessage.value = errorMsg;
-        AppLogger.d("❌ $errorMsg");
-        SnackBarHelper.error("Failed to load profile");
-        return false;
-      }
+      userProfile.value = UserProfileModel.fromPublicProfile(data);
+      AppLogger.d("✅ Public profile loaded for $userId");
+      return true;
     } catch (e) {
-      final errorMsg = "Error loading profile: ${e.toString()}";
-      errorMessage.value = errorMsg;
-      AppLogger.d("❌ $errorMsg");
-      SnackBarHelper.error("Error loading profile");
+      final msg = "Failed to load profile: ${e.toString()}";
+      errorMessage.value = msg;
+      AppLogger.e("❌ $msg", error: e);
+      SnackBarHelper.error("Failed to load profile");
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Fetch current logged-in user's profile
+  /// Fetch the current logged-in user's profile — calls GET /auth/profile.
+  /// Matches wheelboard-fe's authAPI.getProfile().
   Future<bool> fetchCurrentUserProfile() async {
-    final authService = AuthService.to;
-    final userId = authService.currentUserId;
+    final auth = AuthService.to;
 
-    if (userId.isEmpty) {
+    if (auth.currentUserId.isEmpty) {
       errorMessage.value = "User not logged in";
       SnackBarHelper.error("Please login to view profile");
       return false;
     }
 
-    return await fetchUserProfile(userId);
-  }
+    // Optimistically populate from cached user so UI doesn't flash empty.
+    if (auth.currentUser.value != null) {
+      userProfile.value = UserProfileModel.fromAppUser(auth.currentUser.value!);
+    }
 
-  /// Refresh profile data
-  Future<void> refreshProfile() async {
-    if (userProfile.value != null) {
-      await fetchUserProfile(userProfile.value!.userId);
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      // Refresh from backend (same as wheelboard-fe authAPI.getProfile())
+      final user = await auth.getProfile();
+      userProfile.value = UserProfileModel.fromAppUser(user);
+
+      AppLogger.d("✅ Profile loaded: ${user.role.value} | ${user.displayName}");
+      AppLogger.d("👉 KYC: ${user.isKYCCompleted}");
+      return true;
+    } catch (e) {
+      final msg = "Failed to load profile: ${e.toString()}";
+      errorMessage.value = msg;
+      AppLogger.e("❌ $msg", error: e);
+      // Keep cached value if available
+      if (userProfile.value == null) {
+        SnackBarHelper.error("Failed to load profile");
+      }
+      return false;
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  /// Clear profile data
+  /// Refresh profile data.
+  Future<void> refreshProfile() async {
+    await fetchCurrentUserProfile();
+  }
+
+  /// Sync KYC status from the live /kyc/my-kyc endpoint.
+  /// Mirrors the 30-second polling that professional/company pages do in
+  /// wheelboard-fe. Call once per profile page open; repeat if still pending.
+  Future<void> syncKycStatus() async {
+    try {
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.kyc.myKyc,
+      );
+      // overallStatus is the authoritative field from the KYC service
+      final overallStatus =
+          data['overallStatus']?.toString().toLowerCase() ?? '';
+      if (overallStatus == 'verified') {
+        await AuthService.to.updateKYCStatus(true);
+        // Rebuild UserProfileModel so the UI reflects the new KYC state
+        final user = AuthService.to.currentUser.value;
+        if (user != null) {
+          userProfile.value = UserProfileModel.fromAppUser(user);
+        }
+        AppLogger.d('✅ KYC synced from live API → verified');
+      }
+    } catch (e) {
+      // Non-fatal: profile already shows the profile-level KYC flags
+      AppLogger.d('ℹ️ KYC live-sync skipped (non-fatal): $e');
+    }
+  }
+
+  /// Clear profile data.
   void clearProfile() {
     userProfile.value = null;
     errorMessage.value = '';

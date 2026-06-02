@@ -1,16 +1,22 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../services/auth_service.dart';
-import '../../models/Professional/applied_job_model.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
+import '../../models/job_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
+/// Professional "job progress" controller — applied jobs and saved jobs.
+///
+/// Mirrors the FE `jobsAPI.getMyApplications` / `getMySavedJobs`
+/// (`{jobs,total}`). Applied jobs carry the professional's own application as
+/// `job.myApplication`. The user is derived from the auth token (no params).
 class JobProgressController extends GetxController {
   var isLoading = false.obs;
-  var appliedJobs = <AppliedJob>[].obs;
-  var savedJobs = <AppliedJob>[].obs; // Can be populated later if needed
+  var isSavedLoading = false.obs;
+  var appliedJobs = <JobModel>[].obs;
+  var savedJobs = <JobModel>[].obs;
   var searchQuery = ''.obs;
   var selectedFilter = 'All'.obs;
 
@@ -18,99 +24,131 @@ class JobProgressController extends GetxController {
   void onInit() {
     super.onInit();
     fetchAppliedJobs();
+    fetchSavedJobs();
   }
 
-  /// Fetch applied jobs from API
+  /// GET /jobs/my-applications → `{jobs,total}` (each job has `myApplication`).
   Future<void> fetchAppliedJobs() async {
     try {
       isLoading.value = true;
-
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-      final token = authService.currentToken;
-
-      if (userId.isEmpty) {
-        AppLogger.d("⚠️ User not logged in, cannot fetch applied jobs");
-        SnackBarHelper.error("Please login to view applied jobs");
-        return;
-      }
-
-      AppLogger.d("📋 Fetching applied jobs for userId: $userId");
-
-      final response = await HttpHelper.getData(
-        endpoint: '${API.getAppliedJobs}$userId',
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.jobs.myApplications,
       );
-
-      AppLogger.d("📋 Applied jobs response status: ${response.statusCode}");
-      AppLogger.d("📋 Applied jobs response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-        if (decoded is List) {
-          appliedJobs.value = decoded
-              .map((e) => AppliedJob.fromJson(e))
-              .toList();
-          AppLogger.d("✅ Fetched ${appliedJobs.length} applied jobs");
-        } else {
-          // Handle Map response (e.g., {"message": "No applied jobs found."})
-          appliedJobs.value = [];
-          if (decoded is Map && decoded.containsKey('message')) {
-            AppLogger.d("ℹ️ API Message: ${decoded['message']}");
-          }
-        }
-      } else {
-        AppLogger.d("❌ Failed to fetch applied jobs: ${response.statusCode}");
-        SnackBarHelper.error("Failed to load applied jobs");
-      }
+      final jobsList = data['jobs'] as List<dynamic>? ?? [];
+      appliedJobs.value = jobsList
+          .whereType<Map<String, dynamic>>()
+          .map(JobModel.fromJson)
+          .toList();
+      AppLogger.d("✅ Fetched ${appliedJobs.length} applied jobs");
+    } on DioException catch (e) {
+      AppLogger.e("❌ Failed to fetch applied jobs: ${_msg(e)}");
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to load applied jobs'));
+      appliedJobs.clear();
     } catch (e) {
-      AppLogger.d("❌ Error fetching applied jobs: $e");
-      SnackBarHelper.error("Failed to load applied jobs: ${e.toString()}");
+      AppLogger.e("❌ Error fetching applied jobs: $e");
+      SnackBarHelper.error("Failed to load applied jobs: $e");
+      appliedJobs.clear();
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Get filtered applied jobs based on search and filter
-  List<AppliedJob> get filteredAppliedJobs {
-    List<AppliedJob> filtered = List.from(appliedJobs);
+  /// GET /jobs/my-saved → `{jobs,total}`.
+  Future<void> fetchSavedJobs() async {
+    try {
+      isSavedLoading.value = true;
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.jobs.mySavedJobs,
+      );
+      final jobsList = data['jobs'] as List<dynamic>? ?? [];
+      savedJobs.value = jobsList
+          .whereType<Map<String, dynamic>>()
+          .map(JobModel.fromJson)
+          .map((j) => j.copyWith(isSaved: true))
+          .toList();
+    } on DioException catch (e) {
+      AppLogger.e("❌ Failed to fetch saved jobs: ${_msg(e)}");
+      savedJobs.clear();
+    } catch (e) {
+      AppLogger.e("❌ Error fetching saved jobs: $e");
+      savedJobs.clear();
+    } finally {
+      isSavedLoading.value = false;
+    }
+  }
 
-    // Apply search filter
+  /// DELETE /jobs/:id/withdraw
+  Future<bool> withdrawApplication(String jobId) async {
+    try {
+      await ApiClient.instance.delete<dynamic>(
+        ApiEndpoints.jobs.withdraw(jobId),
+      );
+      appliedJobs.removeWhere((j) => j.id == jobId);
+      SnackBarHelper.success("Application withdrawn");
+      return true;
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to withdraw'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to withdraw: $e");
+      return false;
+    }
+  }
+
+  /// DELETE /jobs/:id/unsave
+  Future<bool> unsaveJob(String jobId) async {
+    try {
+      await ApiClient.instance.delete<dynamic>(
+        ApiEndpoints.jobs.unsaveJob(jobId),
+      );
+      savedJobs.removeWhere((j) => j.id == jobId);
+      SnackBarHelper.success("Removed from saved");
+      return true;
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to unsave job'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to unsave job: $e");
+      return false;
+    }
+  }
+
+  /// Applied jobs filtered by the search query and the selected application
+  /// status (All / pending / reviewed / shortlisted / rejected / hired).
+  List<JobModel> get filteredAppliedJobs {
+    List<JobModel> filtered = List.from(appliedJobs);
+
     if (searchQuery.value.isNotEmpty) {
-      final query = searchQuery.value.toLowerCase();
+      final q = searchQuery.value.toLowerCase();
       filtered = filtered.where((job) {
-        return job.jobRole.toLowerCase().contains(query) ||
-            job.jobCity.toLowerCase().contains(query) ||
-            job.jobType.toLowerCase().contains(query) ||
-            job.jobDescription.toLowerCase().contains(query);
+        return job.title.toLowerCase().contains(q) ||
+            job.city.toLowerCase().contains(q) ||
+            job.type.toLowerCase().contains(q) ||
+            job.description.toLowerCase().contains(q);
       }).toList();
     }
 
-    // Apply status filter
     if (selectedFilter.value != 'All') {
-      filtered = filtered.where((job) {
-        return job.status.toLowerCase() == selectedFilter.value.toLowerCase();
-      }).toList();
+      final f = selectedFilter.value.toLowerCase();
+      filtered = filtered
+          .where((job) => (job.myApplication?.status ?? '') == f)
+          .toList();
     }
 
     return filtered;
   }
 
-  /// Refresh applied jobs
   Future<void> refreshAppliedJobs() async {
     await fetchAppliedJobs();
+    await fetchSavedJobs();
   }
 
-  /// Update search query
-  void updateSearchQuery(String query) {
-    searchQuery.value = query;
-  }
+  void updateSearchQuery(String query) => searchQuery.value = query;
+  void updateFilter(String filter) => selectedFilter.value = filter;
 
-  /// Update filter
-  void updateFilter(String filter) {
-    selectedFilter.value = filter;
+  String _msg(DioException e, {String fallback = 'Something went wrong'}) {
+    return e.error is ApiException
+        ? (e.error as ApiException).message
+        : fallback;
   }
 }

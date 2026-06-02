@@ -1,59 +1,57 @@
-import 'dart:io';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
-import '../../models/professional_signupmodel.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../screens/auth/login.dart';
-import '../../utils/constants.dart';
-import '../../utils/error_handler.dart';
+
+import '../../core/auth/auth_service.dart' as core;
+import '../../core/auth/user_role.dart';
+import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 
 class ProfessionalController extends GetxController {
   var isLoading = false.obs;
+  var obscurePassword = true.obs;
 
-  Future<void> registerProfessional(ProfessionalSignupmodel model) async {
-    if (isLoading.value) return;
+  core.AuthService get _auth => core.AuthService.to;
 
+  /// Register a professional.
+  /// Matches: POST /api/auth/register (same as wheelboard-fe)
+  /// Payload: { email, password, role: 'professional', phoneNumber, profile: { firstName, lastName, phoneNumber } }
+  Future<bool> registerProfessional({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String phone,
+    String? professionalType,
+    String? city,
+  }) async {
+    if (isLoading.value) return false;
+
+    isLoading.value = true;
     try {
-      isLoading.value = true;
+      final profile = <String, dynamic>{
+        'firstName': firstName,
+        'lastName': lastName,
+        'phoneNumber': phone,
+        if (professionalType != null && professionalType.isNotEmpty)
+          'professionalType': professionalType,
+        if (city != null && city.isNotEmpty) 'city': city,
+      };
 
-      final fields = model.toJsonFields();
-      final files = <File>[];
+      AppLogger.d('📤 Professional register: email=$email, phone=$phone, type=$professionalType');
 
-      if (model.driverImage != null) {
-        files.add(model.driverImage!);
-      }
-
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.professionalSignUp,
-        fields: fields,
-        files: files,
-        fieldKey: "ProfileImage",
-        headers: {'Accept': 'application/json'},
+      await _auth.register(
+        email: email,
+        password: password,
+        role: UserRole.professional.value,
+        phoneNumber: phone,
+        profile: profile,
       );
 
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        SnackBarHelper.success(
-          "Registered successfully! Please login to continue.",
-        );
-        await Future.delayed(const Duration(milliseconds: 1500));
-        Get.offAll(() => LoginScreen());
-        return;
-      }
-
-      // Use ErrorHandler to parse and display user-friendly error message
-      final errorMessage = ErrorHandler.parseError(
-        response.body,
-        statusCode: response.statusCode,
-      );
-
-      SnackBarHelper.error(errorMessage);
+      SnackBarHelper.success('Registered successfully! Please log in to continue.');
+      return true;
     } catch (e) {
-      // Use ErrorHandler for network/connection errors
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+      AppLogger.e('❌ Professional registration failed', error: e);
+      SnackBarHelper.error(core.AuthService.extractError(e));
+      return false;
     } finally {
       isLoading.value = false;
     }

@@ -86,62 +86,66 @@ class AssignedTrip {
     this.companyAddress,
   });
 
-  factory AssignedTrip.fromJson(Map<String, dynamic> json) => AssignedTrip(
-    tripId: json["tripId"] ?? "",
-    userId: json["userId"] ?? "",
-    vehicleId: json["vehicleId"] ?? "",
-    vehicleNumber: json["vehicleNumber"] ?? "",
-    vehicleModel: json["vehicleModel"] ?? "",
-    vehicleType: json["vehicleType"] ?? "",
-    driverId: json["driverId"] ?? "",
-    driverName: json["driverName"] ?? "",
-    driverContact: json["driverContact"] ?? "",
-    pickupLocation: json["pickupLocation"] ?? "",
-    deliveryLocation: json["deliveryLocation"] ?? "",
-    pickupDate: json["pickupDate"] != null
-        ? DateTime.parse(json["pickupDate"])
-        : DateTime.now(),
-    pickupTime: json["pickupTime"] ?? "",
-    specialInstructions: json["specialInstructions"] ?? "",
-    payRange: json["payRange"] ?? "",
-    tripCode: json["tripCode"] ?? "",
-    tripStatus: json["tripStatus"] ?? "",
-    createdDate: json["createdDate"] != null
-        ? DateTime.parse(json["createdDate"])
-        : DateTime.now(),
-    totalBidCount: json["totalBidCount"] ?? 0,
-    // Optional fields
-    bidId: json["bidId"],
-    bidAmount: json["bidAmount"]?.toDouble(),
-    bidDescription: json["bidDescription"],
-    driverImagePath: json["driverImagePath"] ?? json["driverPhoto"],
-    platformFee: json["platformFee"]?.toDouble(),
-    amountToDriver: json["amountToDriver"]?.toDouble(),
-    totalTripCost: json["totalTripCost"]?.toDouble(),
-    distance: json["distance"]?.toString(),
-    latitude: json["latitude"]?.toDouble(),
-    longitude: json["longitude"]?.toDouble(),
-    companyName:
-        json["companyName"] ?? json["CompanyName"] ?? json["company_name"],
-    companyMobileNo:
-        json["companyMobileNo"] ??
-        json["CompanyMobileNo"] ??
-        json["company_mobile_no"] ??
-        json["companyContact"] ??
-        json["company_contact"],
-    companyLogoPath:
-        json["companyLogoPath"] ??
-        json["CompanyLogoPath"] ??
-        json["company_logo_path"] ??
-        json["companyLogo"] ??
-        json["company_logo"],
-    companyEmail:
-        json["companyEmail"] ?? json["CompanyEmail"] ?? json["company_email"],
-    companyAddress:
-        json["companyAddress"] ??
-        json["CompanyAddress"] ??
-        json["company_address"],
-  );
+  factory AssignedTrip.fromJson(Map<String, dynamic> json) {
+    final route = json['route'] as Map<String, dynamic>? ?? {};
+    final startLoc = route['startLocation'] as Map<String, dynamic>? ?? {};
+    final endLoc = route['endLocation'] as Map<String, dynamic>? ?? {};
+    final timeline = json['timeline'] as Map<String, dynamic>? ?? {};
+    final bids = json['bids'] as List? ?? [];
+
+    final scheduledStart = timeline['scheduledStartTime'] ?? json['pickupDate'];
+    final parsedDate = scheduledStart != null
+        ? DateTime.tryParse(scheduledStart.toString()) ?? DateTime.now()
+        : DateTime.now();
+
+    final endCoords = endLoc['coordinates'] as List?;
+
+    return AssignedTrip(
+      tripId: json['tripId']?.toString() ?? json['id']?.toString() ?? '',
+      userId: json['fleetOwnerId']?.toString() ?? json['userId']?.toString() ?? '',
+      vehicleId: json['vehicleId']?.toString() ?? '',
+      vehicleNumber: json['vehicleNumber']?.toString() ?? '',
+      vehicleModel: json['vehicleModel']?.toString() ?? '',
+      vehicleType: json['vehicleType']?.toString() ?? '',
+      driverId: json['driverId']?.toString() ?? '',
+      driverName: json['driver_name']?.toString() ?? json['driverName']?.toString() ?? '',
+      driverContact: json['driver_phone']?.toString() ?? json['driverContact']?.toString() ?? '',
+      pickupLocation: startLoc['address']?.toString() ?? json['pickupLocation']?.toString() ?? '',
+      deliveryLocation: endLoc['address']?.toString() ?? json['deliveryLocation']?.toString() ?? '',
+      pickupDate: parsedDate,
+      pickupTime: _formatTime(scheduledStart) ?? json['pickupTime']?.toString() ?? '',
+      specialInstructions: json['specialInstructions']?.toString() ?? '',
+      payRange: json['expectedPay']?.toString() ?? json['payRange']?.toString() ?? '',
+      tripCode: json['tripId']?.toString() ?? json['tripCode']?.toString() ?? '',
+      tripStatus: json['status']?.toString() ?? json['tripStatus']?.toString() ?? '',
+      createdDate: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      totalBidCount: bids.isNotEmpty ? bids.length : (json['totalBidCount'] as num?)?.toInt() ?? 0,
+      bidId: json['bidId']?.toString(),
+      bidAmount: (json['bidAmount'] as num?)?.toDouble(),
+      bidDescription: json['bidDescription']?.toString() ?? json['notes']?.toString(),
+      driverImagePath: json['driverImagePath']?.toString() ?? json['driverPhoto']?.toString(),
+      platformFee: (json['platformFee'] as num?)?.toDouble(),
+      amountToDriver: (json['amountToDriver'] as num?)?.toDouble(),
+      totalTripCost: (json['totalTripCost'] as num?)?.toDouble(),
+      distance: route['plannedDistance']?.toString() ?? json['distance']?.toString(),
+      // endLocation coordinates are [lng, lat] in GeoJSON
+      latitude: endCoords != null && endCoords.length >= 2 ? (endCoords[1] as num).toDouble() : (json['latitude'] as num?)?.toDouble(),
+      longitude: endCoords != null && endCoords.length >= 2 ? (endCoords[0] as num).toDouble() : (json['longitude'] as num?)?.toDouble(),
+      companyName: json['companyName']?.toString() ?? json['company_name']?.toString(),
+      companyMobileNo: json['companyMobileNo']?.toString() ?? json['companyContact']?.toString(),
+      companyLogoPath: json['companyLogoPath']?.toString() ?? json['companyLogo']?.toString(),
+      companyEmail: json['companyEmail']?.toString(),
+      companyAddress: json['companyAddress']?.toString(),
+    );
+  }
+
+  static String? _formatTime(dynamic value) {
+    if (value == null) return null;
+    final dt = DateTime.tryParse(value.toString());
+    if (dt == null) return null;
+    final local = dt.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
 
   Map<String, dynamic> toJson() => {
     "tripId": tripId,

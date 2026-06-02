@@ -22,22 +22,41 @@ class UnassignedTrip {
   });
 
   factory UnassignedTrip.fromJson(Map<String, dynamic> json) {
+    final route = json['route'] as Map<String, dynamic>? ?? {};
+    final startLoc = route['startLocation'] as Map<String, dynamic>? ?? {};
+    final endLoc = route['endLocation'] as Map<String, dynamic>? ?? {};
+    final timeline = json['timeline'] as Map<String, dynamic>? ?? {};
+
+    final scheduledStart = timeline['scheduledStartTime'] ?? json['pickupDate'] ?? json['PickupDate'];
+
     return UnassignedTrip(
-      tripId: json['tripId'] ?? '',
-      tripCode: json['tripCode'] ?? '',
-      pickupLocation: json['pickupLocation'] ?? '',
-      destination: json['destination'] ?? '',
-      pickupDate: json['pickupDate'] != null && json['pickupDate'] != ""
-          ? DateTime.tryParse(json['pickupDate'])
-          : null,
-      pickupTime: json['pickupTime'] ?? '',
-      payRange:
-          json['payRange']?.toString().trim() ??
-          json['PayRange']?.toString().trim() ??
-          '',
-      tripStatus: json['tripStatus'] ?? '',
-      tripType: json['tripType'] ?? '',
+      tripId: json['tripId']?.toString() ?? '',
+      tripCode: json['tripId']?.toString() ?? json['tripCode']?.toString() ?? '',
+      // Backend: route.startLocation.address; legacy: pickupLocation
+      pickupLocation: startLoc['address']?.toString() ?? json['pickupLocation']?.toString() ?? '',
+      // Backend: route.endLocation.address; legacy: destination/deliveryLocation
+      destination: endLoc['address']?.toString() ?? json['destination']?.toString() ?? json['deliveryLocation']?.toString() ?? '',
+      pickupDate: _parseDate(scheduledStart),
+      pickupTime: _formatTime(scheduledStart) ?? json['pickupTime']?.toString() ?? '',
+      // Backend: expectedPay; legacy: payRange
+      payRange: json['expectedPay']?.toString() ?? json['payRange']?.toString().trim() ?? json['PayRange']?.toString().trim() ?? '',
+      // Backend: status; legacy: tripStatus
+      tripStatus: json['status']?.toString() ?? json['tripStatus']?.toString() ?? '',
+      tripType: json['tripType']?.toString() ?? json['tripType']?.toString() ?? 'created',
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null || value == '') return null;
+    return DateTime.tryParse(value.toString());
+  }
+
+  static String? _formatTime(dynamic value) {
+    if (value == null || value == '') return null;
+    final dt = DateTime.tryParse(value.toString());
+    if (dt == null) return null;
+    final local = dt.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 }
 
@@ -89,33 +108,48 @@ class UnassignedTripDetails {
   });
 
   factory UnassignedTripDetails.fromJson(Map<String, dynamic> json) {
+    final route = json['route'] as Map<String, dynamic>? ?? {};
+    final startLoc = route['startLocation'] as Map<String, dynamic>? ?? {};
+    final endLoc = route['endLocation'] as Map<String, dynamic>? ?? {};
+    final timeline = json['timeline'] as Map<String, dynamic>? ?? {};
+
+    final scheduledStart = timeline['scheduledStartTime'] ?? json['pickupDate'] ?? json['PickupDate'];
+
     return UnassignedTripDetails(
-      tripId: json['tripId'] ?? '',
-      tripCode: json['tripCode'] ?? '',
-      pickupLocation: json['pickupLocation'] ?? '',
-      deliveryLocation: json['deliveryLocation'] ?? '',
-      pickupDate: json['pickupDate'] != null && json['pickupDate'] != ""
-          ? DateTime.tryParse(json['pickupDate'])
-          : null,
-      pickupTime: json['pickupTime'] ?? '',
-      specialInstructions: json['specialInstructions'] ?? '',
-      payRange:
-          json['payRange']?.toString().trim() ??
-          json['PayRange']?.toString().trim() ??
-          '',
-      tripStatus: json['tripStatus'] ?? '',
-      vehicleId: json['vehicleId'] ?? '',
-      vehicleNumber: json['vehicleNumber'] ?? '',
-      vehicleModel: json['vehicleModel'] ?? '',
-      manufacturingYear: json['manufacturingYear'],
-      ownershipType: json['ownershipType'] ?? '',
-      vehicleTypeName: json['vehicleTypeName'] ?? '',
-      driverId: json['driverId'],
-      driverName: json['driverName'] ?? '',
-      driverContact: json['driverContact'] ?? '',
-      driverImagePath: json['driverImagePath'] ?? '',
-      companyName: json['companyName'] ?? '',
-      companyMobileNo: json['companyMobileNo'] ?? '',
+      tripId: json['tripId']?.toString() ?? '',
+      tripCode: json['tripId']?.toString() ?? json['tripCode']?.toString() ?? '',
+      pickupLocation: startLoc['address']?.toString() ?? json['pickupLocation']?.toString() ?? '',
+      deliveryLocation: endLoc['address']?.toString() ?? json['deliveryLocation']?.toString() ?? '',
+      pickupDate: _parseDate(scheduledStart),
+      pickupTime: _formatTime(scheduledStart) ?? json['pickupTime']?.toString() ?? '',
+      specialInstructions: json['specialInstructions']?.toString() ?? '',
+      payRange: json['expectedPay']?.toString() ?? json['payRange']?.toString().trim() ?? json['PayRange']?.toString().trim() ?? '',
+      tripStatus: json['status']?.toString() ?? json['tripStatus']?.toString() ?? '',
+      vehicleId: json['vehicleId']?.toString() ?? '',
+      vehicleNumber: json['vehicleNumber']?.toString() ?? '',
+      vehicleModel: json['vehicleModel']?.toString() ?? '',
+      manufacturingYear: (json['manufacturingYear'] as num?)?.toInt(),
+      ownershipType: json['ownershipType']?.toString() ?? '',
+      vehicleTypeName: json['vehicleTypeName']?.toString() ?? json['vehicleType']?.toString() ?? '',
+      driverId: json['driverId']?.toString(),
+      driverName: json['driver_name']?.toString() ?? json['driverName']?.toString() ?? '',
+      driverContact: json['driver_phone']?.toString() ?? json['driverContact']?.toString() ?? '',
+      driverImagePath: json['driverImagePath']?.toString() ?? '',
+      companyName: json['companyName']?.toString() ?? '',
+      companyMobileNo: json['companyMobileNo']?.toString() ?? '',
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null || value == '') return null;
+    return DateTime.tryParse(value.toString());
+  }
+
+  static String? _formatTime(dynamic value) {
+    if (value == null || value == '') return null;
+    final dt = DateTime.tryParse(value.toString());
+    if (dt == null) return null;
+    final local = dt.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 }

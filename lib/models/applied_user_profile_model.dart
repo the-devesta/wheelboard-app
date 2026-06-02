@@ -18,14 +18,46 @@ class AppliedUserProfile {
   });
 
   factory AppliedUserProfile.fromJson(Map<String, dynamic> json) {
+    // Backend `getApplicantProfile` returns
+    // `{ id, email, role, status, profile: {...} }` with the personal fields
+    // nested under `profile`. Fall back to flat keys for legacy payloads.
+    final profile = json['profile'] is Map<String, dynamic>
+        ? json['profile'] as Map<String, dynamic>
+        : json;
+
+    final firstName = profile['firstName']?.toString() ?? '';
+    final lastName = profile['lastName']?.toString() ?? '';
+    final composedName = '$firstName $lastName'.trim();
+    final addressParts = [
+      profile['address']?.toString(),
+      profile['city']?.toString(),
+      profile['state']?.toString(),
+    ].where((p) => p != null && p.isNotEmpty).cast<String>().toList();
+
     return AppliedUserProfile(
-      userId: json['userId']?.toString() ?? '',
-      profileName: json['profileName']?.toString() ?? '',
-      email: json['email']?.toString() ?? '',
-      phone: json['phone']?.toString() ?? '',
-      address: json['address']?.toString() ?? '',
-      profileImage: json['profileImage']?.toString() ?? '',
-      profileType: json['profileType']?.toString() ?? '',
+      userId: json['id']?.toString() ?? json['userId']?.toString() ?? '',
+      profileName: composedName.isNotEmpty
+          ? composedName
+          : (profile['businessName']?.toString() ??
+                profile['companyName']?.toString() ??
+                json['profileName']?.toString() ??
+                ''),
+      email: json['email']?.toString() ?? profile['email']?.toString() ?? '',
+      phone: profile['phoneNumber']?.toString() ??
+          profile['phone']?.toString() ??
+          json['phone']?.toString() ??
+          '',
+      address: addressParts.isNotEmpty
+          ? addressParts.join(', ')
+          : (json['address']?.toString() ?? ''),
+      profileImage: profile['avatar']?.toString() ??
+          profile['profileImage']?.toString() ??
+          json['profileImage']?.toString() ??
+          '',
+      profileType: profile['professionalType']?.toString() ??
+          json['role']?.toString() ??
+          json['profileType']?.toString() ??
+          '',
     );
   }
 

@@ -1,8 +1,8 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../services/auth_service.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
 import '../../models/notification_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
@@ -17,104 +17,85 @@ class NotificationController extends GetxController {
     Future.microtask(() => fetchNotifications());
   }
 
-  /// Fetch notifications for current user
   Future<void> fetchNotifications() async {
     try {
       isLoading.value = true;
+      AppLogger.d('🔔 Fetching notifications');
 
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-      final token = authService.currentToken;
-
-      if (userId.isEmpty) {
-        AppLogger.d("⚠️ User not logged in, cannot fetch notifications");
-        return;
-      }
-
-      AppLogger.d("🔔 Fetching notifications for userId: $userId");
-
-      final response = await HttpHelper.getData(
-        endpoint: '${API.getNotifications}?userId=$userId',
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
+      // JWT on the request already identifies the user — no userId param needed
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.notifications.list,
       );
 
-      AppLogger.d("🔔 Notifications response status: ${response.statusCode}");
-      AppLogger.d("🔔 Notifications response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        notifications.value = data
-            .map((e) => NotificationModel.fromJson(e))
-            .toList();
-        AppLogger.d("✅ Fetched ${notifications.length} notifications");
-      } else {
-        AppLogger.d("❌ Failed to fetch notifications: ${response.statusCode}");
-        SnackBarHelper.error("Failed to load notifications");
-        notifications.value = [];
-      }
+      notifications.value =
+          data.map((e) => NotificationModel.fromJson(e as Map<String, dynamic>)).toList();
+      AppLogger.d('✅ Fetched ${notifications.length} notifications');
+    } on DioException catch (e) {
+      final apiError = e.error;
+      final msg = apiError is ApiException
+          ? apiError.message
+          : 'Failed to load notifications';
+      AppLogger.e('❌ Error fetching notifications: $e');
+      SnackBarHelper.error(msg);
+      notifications.value = [];
     } catch (e) {
-      AppLogger.d("❌ Error fetching notifications: $e");
-      SnackBarHelper.error("Failed to load notifications: ${e.toString()}");
+      AppLogger.e('❌ Error fetching notifications: $e');
       notifications.value = [];
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Mark notification as read
   Future<bool> markAsRead(String notificationId) async {
+    if (notificationId.isEmpty) return false;
     try {
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-
-      AppLogger.d("🔔 Marking notification as read: $notificationId");
-
-      final response = await HttpHelper.postData(
-        endpoint: '${API.markNotificationRead}?notificationId=$notificationId',
-        data: {},
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
+      await ApiClient.instance.patch(
+        ApiEndpoints.notifications.markRead(notificationId),
       );
-
-      AppLogger.d("🔔 Mark read response status: ${response.statusCode}");
-      AppLogger.d("🔔 Mark read response body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Update local state
-        final index = notifications.indexWhere(
-          (notif) => notif.notificationId == notificationId,
-        );
-        if (index != -1) {
-          final updatedNotif = notifications[index].copyWith(isRead: true);
-          final updatedList = List<NotificationModel>.from(notifications);
-          updatedList[index] = updatedNotif;
-          notifications.value = updatedList;
-        }
-        return true;
-      } else {
-        AppLogger.d(
-          "❌ Failed to mark notification as read: ${response.statusCode}",
-        );
-        return false;
-      }
+      _updateLocal(notificationId, isRead: true);
+      return true;
     } catch (e) {
-      AppLogger.d("❌ Error marking notification as read: $e");
+      AppLogger.e('❌ Failed to mark notification as read: $e');
       return false;
     }
   }
 
-  /// Get unread count
-  int get unreadCount {
-    return notifications.where((notif) => !notif.isRead).length;
+  Future<void> markAllAsRead() async {
+    try {
+      await ApiClient.instance.post(ApiEndpoints.notifications.readAll);
+      notifications.value = notifications
+          .map((n) => n.copyWith(isRead: true))
+          .toList();
+    } catch (e) {
+      AppLogger.e('❌ Failed to mark all as read: $e');
+      SnackBarHelper.error('Failed to mark all as read');
+    }
   }
 
-  /// Refresh notifications
-  Future<void> refreshNotifications() async {
-    await fetchNotifications();
+  Future<bool> deleteNotification(String notificationId) async {
+    if (notificationId.isEmpty) return false;
+    try {
+      await ApiClient.instance.delete(
+        ApiEndpoints.notifications.delete(notificationId),
+      );
+      notifications.removeWhere((n) => n.notificationId == notificationId);
+      return true;
+    } catch (e) {
+      AppLogger.e('❌ Failed to delete notification: $e');
+      SnackBarHelper.error('Failed to delete notification');
+      return false;
+    }
+  }
+
+  int get unreadCount => notifications.where((n) => !n.isRead).length;
+
+  Future<void> refreshNotifications() => fetchNotifications();
+
+  void _updateLocal(String id, {required bool isRead}) {
+    final idx = notifications.indexWhere((n) => n.notificationId == id);
+    if (idx == -1) return;
+    final updated = List<NotificationModel>.from(notifications);
+    updated[idx] = updated[idx].copyWith(isRead: isRead);
+    notifications.value = updated;
   }
 }

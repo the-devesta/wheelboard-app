@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'job_form_screen.dart';
 import 'job_application_screen.dart';
+import 'hired_professionals_screen.dart';
 import 'package:wheelboard/utils/share_service.dart';
 import '../../controllers/Transport/job_controller.dart';
 import '../../models/job_model.dart';
+import '../../models/job_stats_model.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_loader.dart';
+import '../../widgets/ui/app_ui.dart';
 
 class JobsScreen extends StatefulWidget {
   const JobsScreen({super.key});
@@ -35,13 +37,20 @@ class _JobsScreenState extends State<JobsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppUi.scaffold,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
 
         title: const Text("Your Jobs", style: TextStyle(color: Colors.black)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Hired Professionals',
+            icon: const Icon(Icons.groups_outlined, color: Colors.black),
+            onPressed: () => Get.to(() => const HiredProfessionalsScreen()),
+          ),
+        ],
       ),
       body: Obx(() {
         if (jobController.isLoading.value && jobController.jobs.isEmpty) {
@@ -49,23 +58,10 @@ class _JobsScreenState extends State<JobsScreen> {
         }
 
         if (jobController.jobs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.work_outline, size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
-                const Text(
-                  "No jobs posted yet",
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Tap the button below to post your first job",
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ],
-            ),
+          return const AppEmptyState(
+            icon: Icons.work_outline,
+            title: "No jobs posted yet",
+            subtitle: "Tap “Post Job” below to create your first listing.",
           );
         }
 
@@ -73,28 +69,38 @@ class _JobsScreenState extends State<JobsScreen> {
           onRefresh: () => jobController.refreshJobs(),
           child: ListView(
             padding: const EdgeInsets.all(16),
-            children: jobController.jobs.asMap().entries.map((entry) {
-              final index = entry.key;
-              final job = entry.value;
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index < jobController.jobs.length - 1 ? 16 : 0,
-                ),
-                child: JobCard(
-                  job: job,
-                  jobController: jobController,
-                  onEdit: () async {
-                    await Get.to(() => PostJobScreen(jobToEdit: job));
-                    // Refresh jobs after returning from edit screen
-                    jobController.refreshJobs();
-                  },
-                  onCardTap: () {
-                    // Navigate to applications screen filtered by this job
-                    Get.to(() => JobApplicationsScreen(jobId: job.jobId));
-                  },
-                ),
-              );
-            }).toList(),
+            children: [
+              Obx(() {
+                final stats = jobController.stats.value;
+                if (stats == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _JobStatsBanner(stats: stats),
+                );
+              }),
+              ...jobController.jobs.asMap().entries.map((entry) {
+                final index = entry.key;
+                final job = entry.value;
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index < jobController.jobs.length - 1 ? 16 : 0,
+                  ),
+                  child: JobCard(
+                    job: job,
+                    jobController: jobController,
+                    onEdit: () async {
+                      await Get.to(() => PostJobScreen(jobToEdit: job));
+                      // Refresh jobs after returning from edit screen
+                      jobController.refreshJobs();
+                    },
+                    onCardTap: () {
+                      // Navigate to applications screen filtered by this job
+                      Get.to(() => JobApplicationsScreen(jobId: job.jobId));
+                    },
+                  ),
+                );
+              }),
+            ],
           ),
         );
       }),
@@ -143,9 +149,11 @@ class JobCard extends StatelessWidget {
     return GestureDetector(
       onTap: onCardTap,
       child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppUi.radius),
+          boxShadow: AppUi.softShadow,
         ),
         child: Column(
           children: [
@@ -282,40 +290,61 @@ class JobCard extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      // Like Button
+                      // Status chip with quick status change (Active/Paused/Closed)
                       Obx(() {
                         final currentJob = jobController.jobs.firstWhere(
                           (j) => j.jobId == job.jobId,
                           orElse: () => job,
                         );
-                        return GestureDetector(
-                          onTap: () {
-                            jobController.toggleJobLike(job.jobId);
-                          },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                currentJob.isLiked
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                size: 22,
-                                color: currentJob.isLiked
-                                    ? AppColors.buttonBg
-                                    : Colors.grey,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                "${currentJob.likeCount}",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: currentJob.isLiked
-                                      ? AppColors.buttonBg
-                                      : Colors.grey,
-                                  fontWeight: FontWeight.w500,
+                        final status = currentJob.status.isNotEmpty
+                            ? currentJob.status
+                            : 'Active';
+                        final color = status == 'Active'
+                            ? Colors.green
+                            : status == 'Paused'
+                                ? Colors.orange
+                                : Colors.grey;
+                        return PopupMenuButton<String>(
+                          tooltip: 'Change status',
+                          onSelected: (s) =>
+                              jobController.updateJobStatus(job.jobId, s),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'Active', child: Text('Active')),
+                            PopupMenuItem(value: 'Paused', child: Text('Paused')),
+                            PopupMenuItem(value: 'Closed', child: Text('Closed')),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                Text(
+                                  status,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, size: 16, color: color),
+                              ],
+                            ),
                           ),
                         );
                       }),
@@ -352,9 +381,9 @@ class JobCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   _infoRow("Duration", job.jobDuration),
                   _infoRow("Openings", job.openings.toString()),
-                  _infoRow("Salary", "₹${job.salary}"),
+                  _infoRow("Salary", job.salary.isNotEmpty ? job.salary : '—'),
                   _infoRow("City", job.city),
-
+                  if (job.views > 0) _infoRow("Views", job.views.toString()),
                   _infoRow("Description", job.description),
                 ],
               ),
@@ -386,4 +415,32 @@ class JobCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Compact statistics banner shown above the employer's job list.
+class _JobStatsBanner extends StatelessWidget {
+  final JobStats stats;
+  const _JobStatsBanner({required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          StatTile(value: '${stats.activeJobs}', label: 'Active', color: AppUi.green),
+          _divider(),
+          StatTile(value: '${stats.totalApplications}', label: 'Applicants'),
+          _divider(),
+          StatTile(value: '${stats.pendingApplications}', label: 'Pending', color: AppUi.amber),
+          _divider(),
+          StatTile(value: '${stats.hiredCount}', label: 'Hired', color: AppUi.blue),
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() =>
+      Container(width: 1, height: 32, color: AppUi.border);
 }

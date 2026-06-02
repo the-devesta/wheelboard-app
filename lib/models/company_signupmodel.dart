@@ -4,6 +4,7 @@ class CompanySignUpModel {
   final String email;
   final String password;
   final String businessCategory;
+  final String contactPerson;
 
   CompanySignUpModel({
     required this.companyName,
@@ -11,6 +12,7 @@ class CompanySignUpModel {
     required this.email,
     required this.password,
     required this.businessCategory,
+    this.contactPerson = '',
   });
 
   Map<String, dynamic> toJson() {
@@ -20,6 +22,7 @@ class CompanySignUpModel {
       "email": email,
       "password": password,
       "businessCategory": businessCategory,
+      "contactPerson": contactPerson,
     };
   }
 }

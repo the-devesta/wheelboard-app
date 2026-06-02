@@ -1,12 +1,11 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/apihelperclass/api_helper.dart';
+import 'package:dio/dio.dart';
+import 'package:wheelboard/core/network/api_client.dart';
+import 'package:wheelboard/core/network/api_endpoints.dart';
+import 'package:wheelboard/core/network/api_exception.dart';
 import 'package:wheelboard/controllers/Professional/add_referral_controller.dart';
-import 'package:wheelboard/services/auth_service.dart';
-import 'package:wheelboard/utils/constants.dart';
-import 'package:wheelboard/utils/error_handler.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
@@ -73,7 +72,6 @@ class NewReferralController extends GetxController {
       return;
     }
 
-    debugPrint('hereeeee111====>>');
     isLoading.value = true;
 
     try {
@@ -96,52 +94,30 @@ class NewReferralController extends GetxController {
         "referralDate": DateTime.now().toIso8601String(),
       };
 
-      debugPrint('data===>>>$requestData');
       AppLogger.d(requestData.toString());
 
-      debugPrint('hereeeee22====>>');
-
-      final response = await HttpHelper.postData(
-        endpoint: API.saveReferal,
+      final data = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiEndpoints.users.saveReferral,
         data: requestData,
       );
 
-      debugPrint('Response: ${response.statusCode} - ${response.body}');
+      addReferralController.getReferrals();
 
-      if (response.statusCode == 200) {
-        addReferralController.getReferrals();
+      SnackBarHelper.success(data['message'] ?? 'Referral added successfully');
 
-        debugPrint('hereeeee33====>>');
-
-        try {
-          final responseData = jsonDecode(response.body);
-          if (responseData['success'] == true) {
-            SnackBarHelper.success('Referral added successfully');
-
-            Future.delayed(Duration(seconds: 2), () {
-              debugPrint('Going back...');
-              Navigator.of(context).pop();
-            });
-            return;
-          }
-        } catch (e) {
-          SnackBarHelper.success('Referral added successfully');
-          Future.delayed(Duration(seconds: 2), () {
-            Navigator.of(context).pop();
-          });
-          return;
+      Future.delayed(const Duration(seconds: 2), () {
+        if (context.mounted) {
+          Navigator.of(context).pop();
         }
-      } else {
-        debugPrint('hereeeee44====>>');
-        SnackBarHelper.error('Server error: ${response.statusCode}');
-      }
-    } catch (e) {
-      debugPrint('hereeeee44====>> Error: $e');
+      });
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to add referral';
+      SnackBarHelper.error(msg);
       AppLogger.d(e.toString());
-      final errorMessage = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMessage);
+    } catch (e) {
+      AppLogger.d(e.toString());
+      SnackBarHelper.error("Something went wrong");
     } finally {
-      debugPrint('hereeeee55====>>');
       isLoading.value = false;
     }
   }

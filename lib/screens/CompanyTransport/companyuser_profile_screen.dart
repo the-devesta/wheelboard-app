@@ -1,684 +1,649 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
 
-import 'package:wheelboard/services/auth_service.dart';
-import 'package:wheelboard/widgets/common_delete_button.dart';
-import 'package:wheelboard/widgets/custom_snackbar.dart';
-import 'package:wheelboard/controllers/Transport/user_profile_controller.dart';
-import 'package:wheelboard/models/user_profile_model.dart';
+import '../../controllers/Transport/dashboard_controller.dart';
+import '../../controllers/Transport/user_profile_controller.dart';
+import '../../core/auth/auth_service.dart';
+import '../../models/user_profile_model.dart';
+import '../../utils/app_logger.dart';
+import '../../widgets/common_delete_button.dart';
+import '../../widgets/custom_snackbar.dart';
 import '../auth/onboarding_screen.dart';
+import '../shared/subscription_screen.dart';
 import 'edit_company_profile.dart';
 import 'switch_profile_popup.dart';
-import '../../utils/app_logger.dart';
 
-class CompanyProfileScreen extends StatefulWidget {
+// ── Design tokens ────────────────────────────────────────────────────────────
+const _primary = Color(0xFFF36969);
+const _primaryLight = Color(0xFFFFF1F1);
+const _bg = Color(0xFFF9FAFB);
+const _cardBg = Colors.white;
+const _textDark = Color(0xFF111827);
+const _textMid = Color(0xFF374151);
+const _textGrey = Color(0xFF6B7280);
+const _border = Color(0xFFE5E7EB);
+
+class CompanyProfileScreen extends StatelessWidget {
   const CompanyProfileScreen({super.key});
 
   @override
-  State<CompanyProfileScreen> createState() => _CompanyProfileScreenState();
-}
-
-class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
-  // Switch states
-  bool isDarkTheme = false;
-  bool smsNotifications = true;
-  bool emailNotifications = false;
-  bool whatsappNotifications = true;
-
-  @override
   Widget build(BuildContext context) {
-    // Initialize controller
-    final controller = Get.put(UserProfileController());
+    final ctrl = Get.put(UserProfileController());
+    final dashCtrl = Get.isRegistered<DashboardController>()
+        ? Get.find<DashboardController>()
+        : Get.put(DashboardController());
 
-    // Fetch profile on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchCurrentUserProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ctrl.fetchCurrentUserProfile();
+      ctrl.syncKycStatus(); // live-sync KYC from /kyc/my-kyc (matches web panel)
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3), // Pink background
-      body: SafeArea(
-        child: Obx(() {
-          if (controller.isLoading.value) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.buttonBg),
-            );
-          }
-
-          if (controller.errorMessage.value.isNotEmpty) {
-            return Center(
+      backgroundColor: _bg,
+      body: Obx(() {
+        if (ctrl.isLoading.value && ctrl.userProfile.value == null) {
+          return const Center(
+            child: CircularProgressIndicator(color: _primary),
+          );
+        }
+        if (ctrl.errorMessage.value.isNotEmpty &&
+            ctrl.userProfile.value == null) {
+          return _ErrorRetry(
+            message: ctrl.errorMessage.value,
+            onRetry: ctrl.fetchCurrentUserProfile,
+          );
+        }
+        final profile = ctrl.userProfile.value;
+        return CustomScrollView(
+          slivers: [
+            _buildSliverHeader(context, profile),
+            SliverToBoxAdapter(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text(controller.errorMessage.value),
+                  _buildStatsRow(dashCtrl),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => controller.fetchCurrentUserProfile(),
-                    child: const Text('Retry'),
-                  ),
+                  _buildKycBanner(profile),
+                  _buildPersonalDetails(context, profile),
+                  const SizedBox(height: 12),
+                  _buildContactInfo(profile),
+                  const SizedBox(height: 12),
+                  _buildPlatformPreferences(ctrl),
+                  const SizedBox(height: 12),
+                  _buildSubscriptionCard(),
+                  const SizedBox(height: 12),
+                  _buildQuickActions(context, profile),
+                  const SizedBox(height: 12),
+                  _buildDangerZone(context, ctrl),
+                  const SizedBox(height: 12),
+                  _buildSupportCard(),
+                  const SizedBox(height: 12),
+                  _buildFooter(),
+                  const SizedBox(height: 32),
                 ],
               ),
-            );
-          }
+            ),
+          ],
+        );
+      }),
+    );
+  }
 
-          final profile = controller.userProfile.value;
+  // ── Sliver header (gradient + avatar) ────────────────────────────────────
 
-          return Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Column(
-                    children: [
-                      _buildProfileHeader(profile),
-                      const SizedBox(height: 16),
-                      // _buildKycBanner(),
-                      const SizedBox(height: 16),
-                      _buildPersonalDetailsCard(profile),
-                      const SizedBox(height: 16),
-                      _buildContactInfoCard(profile),
-                      const SizedBox(height: 16),
-                      _buildPlatformPreferencesCard(),
-                      const SizedBox(height: 16),
-                      _buildSubscriptionPlanCard(),
-                      const SizedBox(height: 16),
-                      _buildQuickActionsCard(),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 16,
-                        ),
+  Widget _buildSliverHeader(BuildContext context, UserProfileModel? profile) {
+    final name = profile?.fullName ?? profile?.companyName ?? 'My Company';
+    final initials = _initials(name);
+    final imgUrl = _imgUrl(profile?.companyLogoPath);
+
+    return SliverAppBar(
+      expandedHeight: 220,
+      pinned: true,
+      backgroundColor: _primary,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+            color: Colors.white, size: 20),
+        onPressed: () => Get.back(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Iconsax.edit, color: Colors.white, size: 20),
+          onPressed: () => Get.to(() => const EditCompanyProfileScreen()),
+          tooltip: 'Edit profile',
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFE84545), Color(0xFFF36969)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 40),
+                // Avatar
+                Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    GestureDetector(
+                      onTap: () =>
+                          Get.to(() => const EditCompanyProfileScreen()),
+                      child: Container(
+                        width: 88,
+                        height: 88,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
-                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
-                        child: CommonDeleteButton(
-                          onConfirm: () {
-                            AuthService().deleteAccount();
-                          },
+                        child: ClipOval(
+                          child: imgUrl != null
+                              ? Image.network(imgUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _initialsAvatar(initials, 88))
+                              : _initialsAvatar(initials, 88),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildSupportCard(),
-                      const SizedBox(height: 12),
+                    ),
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _primary, width: 1.5),
+                      ),
+                      child: const Icon(Iconsax.camera, size: 13, color: _primary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Iconsax.truck, size: 13, color: Colors.white),
+                      const SizedBox(width: 5),
                       Text(
-                        "App v1.3.2",
-                        style: GoogleFonts.poppins(
+                        profile?.businessCategory ?? 'Transport Company',
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFFBDBDBD),
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Terms & Conditions",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: const Color(0xFFBDBDBD),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            '•',
-                            style: TextStyle(color: Color(0xFFBDBDBD)),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Privacy Policy",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: const Color(0xFFBDBDBD),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
-              ),
-            ],
-          );
-        }),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      height: 60,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFF5F5F5))),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 23),
-      child: Row(
+  // ── Stats row ─────────────────────────────────────────────────────────────
+
+  Widget _buildStatsRow(DashboardController dashCtrl) {
+    return Obx(() {
+      final d = dashCtrl.dashboardData.value;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: _cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+          ),
+          child: Row(
+            children: [
+              _statItem('${d?.tripSummary.totalTrips ?? 0}', 'Total Trips',
+                  Iconsax.routing_2, const Color(0xFF3B82F6)),
+              _vDivider(),
+              _statItem('${d?.activeVehicles.activeVehicles ?? 0}',
+                  'Vehicles', Iconsax.truck, const Color(0xFF22C55E)),
+              _vDivider(),
+              _statItem('${d?.jobsSummary.activeJobs ?? 0}', 'Active Jobs',
+                  Iconsax.briefcase, const Color(0xFF8B5CF6)),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _statItem(
+      String value, String label, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 6),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _textDark,
+                  fontFamily: 'Poppins')),
+          const SizedBox(height: 2),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+        ],
+      ),
+    );
+  }
+
+  Widget _vDivider() => Container(
+        width: 1, height: 48, color: _border);
+
+  // ── KYC banner ────────────────────────────────────────────────────────────
+
+  Widget _buildKycBanner(UserProfileModel? profile) {
+    final isVerified = profile?.isKYCCompleted ?? false;
+    if (isVerified) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFBEB),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey.withValues(alpha: 0.1),
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.arrow_back_ios, size: 16),
+              child: const Icon(Iconsax.warning_2,
+                  size: 22, color: Color(0xFFF59E0B)),
             ),
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                'Your Profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFF36969),
-                ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('KYC Verification Pending',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF92400E),
+                          fontFamily: 'Poppins')),
+                  SizedBox(height: 2),
+                  Text('Complete KYC to unlock full platform access.',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF92400E),
+                          fontFamily: 'Poppins')),
+                ],
               ),
             ),
-          ),
-          GestureDetector(
-            onTap: () => Get.to(EditCompanyProfileScreen()),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey.withValues(alpha: 0.1),
-              ),
-              child: const Icon(Icons.edit, size: 22),
-            ),
-          ),
-        ],
+            const Icon(Icons.chevron_right_rounded,
+                color: Color(0xFFF59E0B)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildProfileHeader(UserProfileModel? profile) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => Get.to(const EditCompanyProfileScreen()),
-                child: Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFF36969),
-                      width: 4,
-                    ),
-                    image:
-                        profile?.companyLogoPath != null &&
-                            profile!.companyLogoPath!.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(profile.companyLogoPath!),
-                            fit: BoxFit.cover,
-                            onError: (exception, stackTrace) {
-                              // Handle image load error
-                            },
-                          )
-                        : null,
-                    color:
-                        profile?.companyLogoPath == null ||
-                            profile!.companyLogoPath!.isEmpty
-                        ? Colors.grey[300]
-                        : null,
-                  ),
-                  child:
-                      profile?.companyLogoPath == null ||
-                          profile!.companyLogoPath!.isEmpty
-                      ? const Icon(Icons.business, size: 50, color: Colors.grey)
-                      : null,
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: () => Get.to(const EditCompanyProfileScreen()),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF36969),
-                      shape: BoxShape.circle,
-                      border: Border.fromBorderSide(
-                        BorderSide(color: Colors.white, width: 2),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Company tag
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF36969),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+  // ── Section card helper ───────────────────────────────────────────────────
+
+  Widget _card({
+    required String title,
+    required List<Widget> children,
+    Widget? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.local_shipping, size: 20, color: Colors.white),
-                const SizedBox(width: 8),
-                Text(
-                  profile?.companyName ?? 'N/A',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _textDark,
+                        fontFamily: 'Poppins')),
+                if (trailing != null) trailing,
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, Color iconColor, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: iconColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: _textGrey,
+                        fontFamily: 'Poppins')),
+                const SizedBox(height: 2),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: _textDark,
+                        fontFamily: 'Poppins')),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          // Name
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                profile?.fullName ?? profile?.name ?? 'N/A',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF535353),
-                ),
-              ),
-              Text(
-                ' (Free account)',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF535353),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  // Widget _buildKycBanner() {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  //     decoration: BoxDecoration(
-  //       color: Colors.white,
-  //       borderRadius: BorderRadius.circular(999),
-  //       border: Border.all(color: const Color(0xFFE0E0E0)),
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         const Icon(Icons.lock_outline, size: 18, color: Color(0xFF424242)),
-  //         const SizedBox(width: 12),
-  //         Expanded(
-  //           child: Text(
-  //             'Complete your KYC to unlock full access',
-  //             style: GoogleFonts.poppins(
-  //               fontSize: 14,
-  //               fontWeight: FontWeight.w500,
-  //               color: const Color(0xFF424242),
-  //             ),
-  //           ),
-  //         ),
-  //         const Icon(Icons.chevron_right, size: 16),
-  //       ],
-  //     ),
-  //   );
-  // }
+  // ── Personal details ──────────────────────────────────────────────────────
 
-  Widget _buildPersonalDetailsCard(UserProfileModel? profile) {
-    return _buildCard(
-      title: 'Personal Details',
+  Widget _buildPersonalDetails(
+      BuildContext context, UserProfileModel? profile) {
+    final location = _joinNonEmpty(
+        [profile?.address, profile?.city, profile?.state]);
+    return _card(
+      title: 'Company Details',
       trailing: GestureDetector(
-        onTap: () => Get.to(EditCompanyProfileScreen()),
+        onTap: () => Get.to(() => const EditCompanyProfileScreen()),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(999),
+            color: _primaryLight,
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.edit, size: 14),
-              const SizedBox(width: 4),
-              Text(
-                'Edit Profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-              ),
+            children: const [
+              Icon(Iconsax.edit, size: 12, color: _primary),
+              SizedBox(width: 4),
+              Text('Edit',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _primary,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins')),
             ],
           ),
         ),
       ),
       children: [
-        _buildInfoItem(
-          Icons.person_outline,
-          'Name',
-          profile?.fullName ?? profile?.name ?? 'N/A',
-        ),
-        _buildInfoItem(Icons.lock_outline, 'Change Password', '************'),
-        _buildInfoItem(
-          Icons.location_on,
-          'Location',
-          profile?.address ?? profile?.city ?? profile?.state ?? 'N/A',
-        ),
-        _buildInfoItem(
-          Icons.business,
-          'Company Name',
-          profile?.companyName ?? 'N/A',
-        ),
-        _buildInfoItem(
-          Icons.category,
-          'Business Category',
-          profile?.businessCategory ?? 'N/A',
-        ),
-        _buildInfoItem(
-          Icons.local_shipping,
-          'Fleet Size',
-          profile?.fleetSize ?? 'N/A',
-        ),
-        _buildInfoItem(
-          Icons.account_balance,
-          'GST number',
-          profile?.gstNumber ?? 'N/A',
-        ),
+        _infoRow(Iconsax.building, const Color(0xFF3B82F6), 'Company Name',
+            profile?.companyName ?? '—'),
+        _infoRow(Iconsax.profile_2user, const Color(0xFF22C55E),
+            'Contact Person', profile?.fullName ?? '—'),
+        _infoRow(Iconsax.category, const Color(0xFF8B5CF6), 'Business Category',
+            profile?.businessCategory ?? '—'),
+        _infoRow(Iconsax.truck, const Color(0xFFF36969), 'Fleet Size',
+            profile?.fleetSize ?? '—'),
+        _infoRow(Iconsax.receipt_text, const Color(0xFFF59E0B), 'GST Number',
+            profile?.gstNumber ?? '—'),
+        if (location.isNotEmpty)
+          _infoRow(Iconsax.location, const Color(0xFF0EA5E9), 'Location',
+              location),
       ],
     );
   }
 
-  Widget _buildContactInfoCard(UserProfileModel? profile) {
-    return _buildCard(
+  // ── Contact info ──────────────────────────────────────────────────────────
+
+  Widget _buildContactInfo(UserProfileModel? profile) {
+    return _card(
       title: 'Contact Information',
       children: [
-        _buildEditableItem(
-          Icons.phone,
-          'Mobile Number',
-          profile?.mobileNo ?? 'N/A',
-        ),
-        _buildEditableItem(
-          Icons.email,
-          'Email Address',
-          profile?.email ?? 'N/A',
-        ),
-        _buildEditableItem(
-          Icons.message,
-          'WhatsApp Number',
-          profile?.mobileNo ?? 'N/A',
-        ),
+        _infoRow(Iconsax.call, const Color(0xFF22C55E), 'Mobile Number',
+            profile?.mobileNo ?? '—'),
+        _infoRow(Iconsax.sms, const Color(0xFF3B82F6), 'Email Address',
+            profile?.email ?? '—'),
+        _infoRow(Icons.chat_rounded, const Color(0xFF22C55E), 'WhatsApp',
+            profile?.mobileNo ?? '—'),
       ],
     );
   }
 
-  Widget _buildPlatformPreferencesCard() {
-    return _buildCard(
+  // ── Platform preferences ──────────────────────────────────────────────────
+
+  Widget _buildPlatformPreferences(UserProfileController ctrl) {
+    return _card(
       title: 'Platform Preferences',
       children: [
+        // Language
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.language, size: 22, color: Color(0xFF424242)),
-                const SizedBox(width: 14),
-                Text(
-                  'Language',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF424242),
-                  ),
-                ),
-              ],
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Iconsax.language_circle,
+                  size: 18, color: Color(0xFF3B82F6)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Language',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: _textDark,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w500)),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: const Color(0xFFE0E0E0)),
+                color: _bg,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _border),
               ),
               child: Row(
-                children: [
-                  Text(
-                    'English',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: const Color(0xFF424242),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.keyboard_arrow_down, size: 20),
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('English',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: _textDark,
+                          fontFamily: 'Poppins')),
+                  SizedBox(width: 4),
+                  Icon(Icons.keyboard_arrow_down_rounded,
+                      size: 18, color: _textGrey),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        _buildToggleRow(Icons.dark_mode, 'Dark Theme', isDarkTheme, (val) {
-          setState(() {
-            isDarkTheme = val;
-            Get.changeThemeMode(isDarkTheme ? ThemeMode.dark : ThemeMode.light);
-          });
-        }),
-        const SizedBox(height: 24),
-        _buildToggleRow(Icons.sms, 'SMS Notifications', smsNotifications, (
-          val,
-        ) {
-          setState(() => smsNotifications = val);
-        }),
-        const SizedBox(height: 24),
-        _buildToggleRow(
-          Icons.email,
-          'Email Notifications',
-          emailNotifications,
-          (val) {
-            setState(() => emailNotifications = val);
-          },
-        ),
-        const SizedBox(height: 24),
-        _buildToggleRow(
-          Icons.message,
-          'WhatsApp Notifications',
-          whatsappNotifications,
-          (val) {
-            setState(() => whatsappNotifications = val);
-          },
-        ),
+        const SizedBox(height: 16),
+        const Divider(color: _border, height: 1),
+        const SizedBox(height: 16),
+        Obx(() => _toggleRow(Iconsax.sms, 'SMS Notifications',
+            ctrl.smsNotifications.value, ctrl.toggleSmsNotifications)),
+        const SizedBox(height: 14),
+        Obx(() => _toggleRow(Iconsax.sms_notification, 'Email Notifications',
+            ctrl.emailNotifications.value, ctrl.toggleEmailNotifications)),
+        const SizedBox(height: 14),
+        Obx(() => _toggleRow(Icons.chat_rounded, 'WhatsApp Notifications',
+            ctrl.whatsappNotifications.value,
+            ctrl.toggleWhatsappNotifications)),
       ],
     );
   }
 
-  Widget _buildToggleRow(
-    IconData icon,
-    String title,
-    bool value,
-    Function(bool) onChanged,
-  ) {
+  Widget _toggleRow(IconData icon, String label, bool value,
+      ValueChanged<bool> onChanged) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 18, color: const Color(0xFF424242)),
-            const SizedBox(width: 18),
-            Text(
-              title,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF424242),
-              ),
-            ),
-          ],
+        Icon(icon, size: 20, color: _textGrey),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(label,
+              style: const TextStyle(
+                  fontSize: 14,
+                  color: _textDark,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500)),
         ),
         Switch(
           value: value,
           onChanged: onChanged,
-          activeThumbColor: const Color(0xFF30DB5B),
+          activeTrackColor: _primary,
+          activeThumbColor: Colors.white,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       ],
     );
   }
 
-  Widget _buildSubscriptionPlanCard() {
-    return _buildCard(
-      title: 'Subscription Plans',
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildPlanCard('Starter')),
-            const SizedBox(width: 12),
-            Expanded(child: _buildPlanCard('Pro')),
-            const SizedBox(width: 12),
-            Expanded(child: _buildPlanCard('Enterprise')),
-          ],
-        ),
-      ],
-    );
-  }
+  // ── Subscription ──────────────────────────────────────────────────────────
 
-  Widget _buildPlanCard(String plan) {
-    return Container(
-      height: 88,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFEF5350)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.credit_card, size: 24, color: Color(0xFFEF5350)),
-          const SizedBox(height: 4),
-          Flexible(
-            child: Text(
-              plan,
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFFEF5350),
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+  Widget _buildSubscriptionCard() {
+    return GestureDetector(
+      onTap: () => Get.to(() => const SubscriptionScreen(category: 'fleet_owner')),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(16),
           ),
-        ],
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(Iconsax.crown, size: 24, color: Colors.white),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Subscription Plans',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            fontFamily: 'Poppins')),
+                    SizedBox(height: 3),
+                    Text('View plans & manage your subscription',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white70,
+                            fontFamily: 'Poppins')),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  size: 16, color: Colors.white70),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildQuickActionsCard() {
-    return _buildCard(
+  // ── Quick actions ─────────────────────────────────────────────────────────
+
+  Widget _buildQuickActions(
+      BuildContext context, UserProfileModel? profile) {
+    return _card(
       title: 'Quick Actions',
       children: [
         Row(
           children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _contactUs(),
-                child: _buildActionCard(Icons.phone, 'Contact Us'),
+            _actionTile(Iconsax.call, 'Contact Us', const Color(0xFF22C55E),
+                const Color(0xFFF0FDF4), _contactUs),
+            const SizedBox(width: 10),
+            _actionTile(
+              Iconsax.convert,
+              'Switch Profile',
+              const Color(0xFF3B82F6),
+              const Color(0xFFEFF6FF),
+              () => showSwitchProfilePopup(
+                context,
+                onSwitchToBusiness: () {},
+                onLogout: () async => _logout(),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  showSwitchProfilePopup(
-                    context,
-                    onSwitchToBusiness: () {
-                      AppLogger.d("Switching to Business Account...");
-                    },
-                    onLogout: () async {
-                      await _performLogout();
-                    },
-                  );
-                },
-                child: _buildActionCard(Icons.sync, 'Switch Profile'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Builder(
-                builder: (context) => GestureDetector(
-                  onTap: () {
-                    _showLogoutDialog(context);
-                  },
-                  child: Container(
-                    height: 88,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: const Color(0xFFEF5350)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.logout,
-                          size: 24,
-                          color: Color(0xFFEF5350),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Logout',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFEF5350),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            const SizedBox(width: 10),
+            _actionTile(
+              Iconsax.logout,
+              'Logout',
+              _primary,
+              _primaryLight,
+              () => _showLogoutDialog(context),
             ),
           ],
         ),
@@ -686,52 +651,89 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     );
   }
 
-  Widget _buildActionCard(dynamic icon, String title) {
-    return Container(
-      height: 100,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          if (icon is String)
-            Text(icon, style: const TextStyle(fontSize: 24))
-          else
-            Icon(icon, size: 24, color: const Color(0xFF424242)),
-          const SizedBox(height: 6),
-          Flexible(
-            child: Text(
-              title,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF424242),
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+  Widget _actionTile(IconData icon, String label, Color iconColor, Color bg,
+      VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: iconColor.withValues(alpha: 0.25)),
           ),
-        ],
+          child: Column(
+            children: [
+              Icon(icon, size: 22, color: iconColor),
+              const SizedBox(height: 6),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: iconColor,
+                      fontFamily: 'Poppins'),
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
       ),
     );
   }
 
+  // ── Danger zone ───────────────────────────────────────────────────────────
+
+  Widget _buildDangerZone(
+      BuildContext context, UserProfileController ctrl) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Account',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _textDark,
+                    fontFamily: 'Poppins')),
+            const SizedBox(height: 16),
+            CommonDeleteButton(
+              onConfirm: (password) async {
+                try {
+                  await AuthService.to.deleteAccount(password: password);
+                  Get.offAll(() => const RegisterScreen());
+                } catch (e) {
+                  SnackBarHelper.error(AuthService.extractError(e));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Support card ──────────────────────────────────────────────────────────
+
   Widget _buildSupportCard() {
-    return GestureDetector(
-      onTap: () {
-        SnackBarHelper.info(
-          'Coming Soon! Chat support will be available soon.',
-        );
-      },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF36969),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE84545), Color(0xFFF36969)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -739,64 +741,58 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Having issues with your profile?',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Our team is here to help',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white,
-                    ),
-                  ),
+                children: const [
+                  Text('Having issues with your profile?',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          fontFamily: 'Poppins')),
+                  SizedBox(height: 4),
+                  Text('Our support team is here to help you.',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                          fontFamily: 'Poppins')),
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Chat',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3CD),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'Soon',
-                      style: GoogleFonts.poppins(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF856404),
+            GestureDetector(
+              onTap: () =>
+                  SnackBarHelper.info('Chat support coming soon!'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Chat',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: _primary,
+                            fontFamily: 'Poppins')),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3CD),
+                        borderRadius: BorderRadius.circular(4),
                       ),
+                      child: const Text('Soon',
+                          style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF856404),
+                              fontFamily: 'Poppins')),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -805,185 +801,160 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     );
   }
 
-  Widget _buildCard({
-    required String title,
-    Widget? trailing,
-    required List<Widget> children,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1A1A1A),
-                ),
-              ),
-              const Spacer(),
-              if (trailing != null) trailing,
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
+  // ── Footer ────────────────────────────────────────────────────────────────
+
+  Widget _buildFooter() {
+    return Column(
+      children: [
+        const Text('App v1.3.2',
+            style: TextStyle(
+                fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text('Terms & Conditions',
+                style: TextStyle(
+                    fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text('•',
+                  style: TextStyle(color: _textGrey, fontSize: 11)),
+            ),
+            Text('Privacy Policy',
+                style: TextStyle(
+                    fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+          ],
+        ),
+      ],
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF424242)),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF757575),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF424242),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-  Widget _buildEditableItem(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF424242)),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF757575),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF424242),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              'Edit',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Contact support via phone
   void _contactUs() async {
-    try {
-      final Uri phoneUri = Uri(scheme: 'tel', path: '+917420861942');
-
-      if (await canLaunchUrl(phoneUri)) {
-        await launchUrl(phoneUri);
-      } else {
-        SnackBarHelper.error('Cannot make phone call');
-      }
-    } catch (e) {
-      AppLogger.d('Error launching phone dialer: $e');
-      SnackBarHelper.error('Failed to open phone dialer');
+    final uri = Uri(scheme: 'tel', path: '+917420861942');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      SnackBarHelper.error('Cannot open phone dialer');
     }
   }
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirm Logout"),
-          content: const Text("Are you sure you want to logout?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cancel"),
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Log Out',
+            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: const Text('Are you sure you want to log out?',
+            style: TextStyle(fontFamily: 'Poppins')),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel',
+                style: TextStyle(color: _textGrey, fontFamily: 'Poppins')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await _logout();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _performLogout();
-              },
-              child: const Text("Logout"),
-            ),
-          ],
-        );
-      },
+            child: const Text('Log Out',
+                style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
+          ),
+        ],
+      ),
     );
   }
 
-  /// Perform proper logout using AuthService
-  Future<void> _performLogout() async {
+  Future<void> _logout() async {
     try {
-      AppLogger.d("🚪 Starting logout process...");
-
-      // Call AuthService logout
-      final success = await AuthService.to.logout();
-
-      if (success) {
-        AppLogger.d("✅ Logout successful, navigating to onboarding");
-        // Navigate to onboarding screen after successful logout
-        Get.offAll(() => const RegisterScreen());
-      } else {
-        AppLogger.d("❌ Logout failed");
-        SnackBarHelper.error("Logout failed. Please try again.");
-      }
+      await AuthService.to.logout();
+      Get.offAll(() => const RegisterScreen());
     } catch (e) {
-      AppLogger.d("❌ Error during logout: $e");
-      SnackBarHelper.error("An error occurred during logout.");
+      AppLogger.e('Logout error: $e');
+      SnackBarHelper.error('An error occurred during logout.');
     }
+  }
+
+  // ── Pure helpers ──────────────────────────────────────────────────────────
+
+  String? _imgUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http')) return path;
+    return null;
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    if (parts[0].isNotEmpty) return parts[0][0].toUpperCase();
+    return 'W';
+  }
+
+  Widget _initialsAvatar(String initials, double size) {
+    return Container(
+      width: size,
+      height: size,
+      color: Colors.white.withValues(alpha: 0.25),
+      child: Center(
+        child: Text(initials,
+            style: TextStyle(
+                fontSize: size * 0.35,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                fontFamily: 'Poppins')),
+      ),
+    );
+  }
+
+  String _joinNonEmpty(List<String?> parts) =>
+      parts.where((p) => p != null && p.isNotEmpty).join(', ');
+}
+
+// ── Error / retry widget ─────────────────────────────────────────────────────
+
+class _ErrorRetry extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorRetry({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Iconsax.warning_2, size: 48, color: _primary),
+            const SizedBox(height: 16),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 14, color: _textMid, fontFamily: 'Poppins')),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Iconsax.refresh, size: 16),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

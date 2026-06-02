@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../controllers/Transport/user_profile_controller.dart';
@@ -26,6 +27,9 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
   final TextEditingController _yearsOfExperienceController =
       TextEditingController();
   final TextEditingController _birthDateController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _whatsappController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   final ImagePicker _picker = ImagePicker();
   final ProfileService _profileService = ProfileService();
@@ -190,6 +194,9 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
     setState(() {
       _fullNameController.text = profile.name ?? '';
       _fatherNameController.text = profile.fatherName ?? '';
+      _phoneController.text = profile.mobileNo ?? '';
+      _whatsappController.text = profile.mobileNo ?? '';
+      // description not yet in UserProfileModel — leave blank for first-time edit
 
       // Set state from profile - if not in list, add it temporarily
       _selectedState = profile.state;
@@ -221,6 +228,9 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
     _fatherNameController.dispose();
     _yearsOfExperienceController.dispose();
     _birthDateController.dispose();
+    _phoneController.dispose();
+    _whatsappController.dispose();
+    _descriptionController.dispose();
     _profileWorker?.dispose();
     super.dispose();
   }
@@ -268,6 +278,9 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
         birthDateIso: _selectedDob!.toIso8601String(),
         state: _selectedState ?? '',
         city: _selectedCity ?? '',
+        phoneNumber: _phoneController.text.trim(),
+        whatsappNumber: _whatsappController.text.trim(),
+        description: _descriptionController.text.trim(),
         driverImage: _driverImageFile,
       );
 
@@ -291,22 +304,24 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3),
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 1,
+        shadowColor: const Color(0xFFE5E7EB),
         centerTitle: true,
         title: Text(
-          'Edit Your Profile',
+          'Edit Profile',
           style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E1E1E),
-            letterSpacing: -0.14,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF111827),
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E1E1E)),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 20, color: Color(0xFF111827)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -462,6 +477,30 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                   enabled: _selectedState != null,
                 ),
                 const SizedBox(height: 24),
+                _buildTextField(
+                  controller: _phoneController,
+                  label: 'Mobile Number',
+                  hint: '+91 XXXXX XXXXX',
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: Iconsax.call,
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _whatsappController,
+                  label: 'WhatsApp Number',
+                  hint: '+91 XXXXX XXXXX',
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: Icons.chat_rounded,
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _descriptionController,
+                  label: 'About You (Optional)',
+                  hint: 'Briefly describe your skills and experience…',
+                  maxLines: 3,
+                  prefixIcon: Iconsax.document_text,
+                ),
+                const SizedBox(height: 24),
                 _buildImageUploadField(),
                 const SizedBox(height: 32),
                 SizedBox(
@@ -507,6 +546,8 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
     required String label,
     required String hint,
     TextInputType? keyboardType,
+    IconData? prefixIcon,
+    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,7 +564,11 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          maxLines: maxLines,
           decoration: InputDecoration(
+            prefixIcon: prefixIcon != null
+                ? Icon(prefixIcon, size: 18, color: const Color(0xFF6C7278))
+                : null,
             hintText: hint,
             hintStyle: GoogleFonts.inter(
               fontSize: 14,

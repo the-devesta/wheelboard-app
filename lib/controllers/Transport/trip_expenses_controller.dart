@@ -1,10 +1,12 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'package:flutter/material.dart';
-import 'package:wheelboard/models/trip_expenses_model.dart';
-import 'package:wheelboard/utils/session_manager.dart';
-import 'package:http/http.dart' as http;
-import 'package:wheelboard/utils/constants.dart';
+import '../../models/trip_expenses_model.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/auth/auth_service.dart';
+import '../../widgets/custom_snackbar.dart';
+import '../../utils/app_logger.dart';
 
 class TripExpensesController extends GetxController {
   final isLoading = false.obs;
@@ -15,52 +17,23 @@ class TripExpensesController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     try {
-      // Direct API call - no leading slash (baseUrl already has trailing /)
-      final url = Uri.parse(
-        '${ApiConstants.baseUrl}api/Trip/trip-expenses/$tripId',
+      AppLogger.d('📡 Fetching trip expense summary for tripId: $tripId');
+
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.expenses.tripSummary(tripId),
       );
 
-      debugPrint('📡 Fetching trip expenses from: $url');
-
-      final response = await http.get(url, headers: {'accept': 'text/plain'});
-
-      debugPrint('📡 Response status: ${response.statusCode}');
-      debugPrint('📡 Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        debugPrint('📡 JSON parsed, status: ${jsonResponse['status']}');
-
-        // API returns {"status": true, "data": {...}} - extract the data field
-        final data = jsonResponse['data'] ?? jsonResponse;
-        debugPrint('📡 Data to parse: $data');
-
-        tripExpenses.value = TripExpensesModel.fromJson(data);
-
-        // Log what was loaded
-        debugPrint('✅ Trip expenses loaded successfully');
-        debugPrint('   - Trip Code: ${tripExpenses.value?.tripInfo?.tripCode}');
-        debugPrint('   - Vehicle: ${tripExpenses.value?.tripInfo?.vehicle}');
-        debugPrint('   - Status: ${tripExpenses.value?.tripInfo?.status}');
-        debugPrint(
-          '   - Distance: ${tripExpenses.value?.tripInfo?.distanceKm} km',
-        );
-        debugPrint(
-          '   - Efficiency: ${tripExpenses.value?.tripInfo?.efficiencyPerKm}',
-        );
-        debugPrint('   - Total Expenses: ${tripExpenses.value?.totalExpenses}');
-        debugPrint(
-          '   - Expense Count: ${tripExpenses.value?.expenses?.length ?? 0}',
-        );
-        debugPrint(
-          '   - Breakdown Count: ${tripExpenses.value?.expenseBreakdown?.length ?? 0}',
-        );
-      } else {
-        errorMessage.value = 'Failed to load expenses: ${response.statusCode}';
-      }
+      tripExpenses.value = TripExpensesModel.fromJson(data);
+      AppLogger.d('✅ Trip expenses loaded successfully');
+    } on DioException catch (e) {
+      final msg = e.error is ApiException
+          ? (e.error as ApiException).message
+          : 'Failed to load trip expenses';
+      errorMessage.value = msg;
+      AppLogger.e('❌ Error fetching trip expenses: $e');
     } catch (e) {
       errorMessage.value = 'Error: $e';
-      debugPrint('❌ Error fetching trip expenses: $e');
+      AppLogger.e('❌ Error fetching trip expenses: $e');
     } finally {
       isLoading.value = false;
     }
@@ -68,51 +41,31 @@ class TripExpensesController extends GetxController {
 
   Future<bool> deleteTrip(String tripId) async {
     try {
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString("userId");
+      final userId = AuthService.to.userId;
 
-      if (userId == null) {
-        Get.snackbar("Error", "User not found");
+      if (userId.isEmpty) {
+        SnackBarHelper.error('User not found. Please login again.');
         return false;
       }
 
-      // Direct API call - no leading slash (baseUrl already has trailing /)
-      final url = Uri.parse(
-        '${ApiConstants.baseUrl}api/Trip/delete-trip?tripId=$tripId&userId=$userId',
+      AppLogger.d('📡 Deleting trip: $tripId');
+
+      await ApiClient.instance.delete(
+        ApiEndpoints.trips.delete(tripId),
       );
 
-      debugPrint('📡 Deleting trip at: $url');
-
-      final response = await http.post(url, headers: {'accept': '*/*'});
-
-      debugPrint('📡 Delete response status: ${response.statusCode}');
-      debugPrint('📡 Delete response body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar(
-          'Success',
-          'Trip deleted successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-        return true;
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to delete trip: ${response.statusCode}',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return false;
-      }
+      SnackBarHelper.success('Trip deleted successfully');
+      return true;
+    } on DioException catch (e) {
+      final msg = e.error is ApiException
+          ? (e.error as ApiException).message
+          : 'Failed to delete trip';
+      SnackBarHelper.error(msg);
+      AppLogger.e('❌ Error deleting trip: $e');
+      return false;
     } catch (e) {
-      debugPrint('❌ Error deleting trip: $e');
-      Get.snackbar(
-        'Error',
-        'Error deleting trip: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      SnackBarHelper.error('Error deleting trip: $e');
+      AppLogger.e('❌ Error deleting trip: $e');
       return false;
     }
   }

@@ -1,26 +1,40 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart' as dio;
 import 'package:get/get.dart';
-import 'package:wheelboard/utils/error_handler.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../services/auth_service.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
 import '../../models/job_model.dart';
 import '../../models/job_application_model.dart';
+import '../../models/job_stats_model.dart';
+import '../../models/hired_professional_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
+/// Employer (Company/Business) jobs controller. A 1:1 mirror of the FE
+/// `jobsAPI` employer + hired-professionals endpoints
+/// (`wheelboard-fe/src/lib/api.ts`).
+///
+/// All requests are JSON and derive the employer from the auth token — no
+/// `userId`/`modifiedUserId` is ever sent (the backend rejects extra fields).
 class JobController extends GetxController {
   var isLoading = false.obs;
   var jobs = <JobModel>[].obs;
+  var stats = Rxn<JobStats>();
 
-  // Job Applications
+  // Applications
   var isApplicationsLoading = false.obs;
-  var applications = <JobApplicationModel>[].obs;
-  var allApplications =
-      <JobApplicationModel>[].obs; // Store all applications for filtering
-  var applicationCounts =
-      <String, int>{}.obs; // Map of jobId -> application count
+  var applications = <JobApplication>[].obs; // filtered view
+  var allApplications = <JobApplication>[].obs; // unfiltered
+  var applicationCounts = <String, int>{}.obs; // jobId -> count
+  var applicationStatusFilter = 'All'.obs; // inbox status filter
+  final Map<String, String> _applicationJobMap = {}; // applicationId -> jobId
+
+  // Hired professionals
+  var isHiredLoading = false.obs;
+  var hiredProfessionals = <HiredProfessional>[].obs;
+  var hiredStats = Rxn<HiredProfessionalsStats>();
 
   @override
   void onInit() {
@@ -28,576 +42,469 @@ class JobController extends GetxController {
     fetchJobs();
   }
 
-  /// Fetch jobs for current user
-  Future<void> fetchJobs() async {
+  /// GET /jobs/my-jobs — paginated `{jobs,total,page,totalPages}`.
+  /// The response embeds each job's `applications[]`, so counts/aggregates are
+  /// derived locally without extra requests.
+  Future<void> fetchJobs({Map<String, dynamic>? filters}) async {
     try {
       isLoading.value = true;
 
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-      final token = authService.currentToken;
-
-      if (userId.isEmpty) {
-        AppLogger.d("⚠️ User not logged in, cannot fetch jobs");
-        return;
-      }
-
-      AppLogger.d("💼 Fetching jobs for userId: $userId");
-
-      final response = await HttpHelper.getData(
-        endpoint: '${API.getJobList}$userId',
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.jobs.myJobs,
+        queryParameters: filters,
       );
 
-      AppLogger.d("💼 Jobs response status: ${response.statusCode}");
-      AppLogger.d("💼 Jobs response body: ${response.body}");
+      final jobsList = data['jobs'] as List<dynamic>? ?? [];
+      jobs.value = jobsList
+          .whereType<Map<String, dynamic>>()
+          .map(JobModel.fromJson)
+          .toList();
+      AppLogger.d("✅ Fetched ${jobs.length} jobs");
 
-      if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        jobs.value = data.map((e) => JobModel.fromJson(e)).toList();
-        AppLogger.d("✅ Fetched ${jobs.length} jobs");
-
-        // Fetch application counts for each job
-        _fetchApplicationCounts();
-      } else {
-        AppLogger.d("❌ Failed to fetch jobs: ${response.statusCode}");
-        SnackBarHelper.error("Failed to load jobs");
-      }
+      _rebuildApplicationsFromJobs();
+      fetchStats();
+    } on dio.DioException catch (e) {
+      AppLogger.e("❌ Error fetching jobs: $e");
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to load jobs'));
     } catch (e) {
-      AppLogger.d("❌ Error fetching jobs: $e");
-      SnackBarHelper.error("Failed to load jobs: ${e.toString()}");
+      AppLogger.e("❌ Error fetching jobs: $e");
+      SnackBarHelper.error("Failed to load jobs: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Add a new job
-  Future<bool> addJob({
-    required String role,
-    required String jobDuration,
-    required int openings,
-    required int salary,
+  /// GET /jobs/my-jobs/stats
+  Future<void> fetchStats() async {
+    try {
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.jobs.myJobStats,
+      );
+      stats.value = JobStats.fromJson(data);
+    } catch (e) {
+      AppLogger.d("ℹ️ Failed to fetch job stats: $e");
+    }
+  }
+
+  /// POST /jobs — create a job posting (CreateJobDto).
+  Future<bool> createJob({
+    required String title,
     required String city,
-    required String jobType,
+    required String type, // Driver | Technician | Helper
+    required String salary,
     required String description,
-    List<File>? images, // Images are now optional
+    required int openings,
+    String? location,
+    String? state,
+    int? salaryMin,
+    int? salaryMax,
+    List<String>? requirements,
+    List<String>? benefits,
+    List<String>? skills,
+    String? image,
+    File? imageFile,
+    String? duration,
+    bool? urgent,
+    String? expiresAt,
   }) async {
     try {
       isLoading.value = true;
 
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-
-      if (userId.isEmpty) {
-        SnackBarHelper.error("Please login to post jobs");
-        return false;
+      String? imageUrl = image;
+      if (imageFile != null) {
+        imageUrl = await _uploadImage(imageFile) ?? image;
       }
 
-      AppLogger.d("💼 Adding new job...");
-      AppLogger.d("💼 UserId: $userId");
-      AppLogger.d("💼 Role: $role");
-      AppLogger.d("💼 Images: ${images?.length ?? 0}");
-
-      // Prepare fields for multipart
-      final fields = <String, String?>{
-        'UserId': userId,
-        'Role': role,
-        'JobDuration': jobDuration,
-        'Openings': openings.toString(),
-        'Salary': salary.toString(),
-        'City': city,
-        'JobType': jobType,
-        'Description': description,
+      final payload = <String, dynamic>{
+        'title': title,
+        'location': location ?? city,
+        'city': city,
+        'type': type,
+        'salary': salary,
+        'description': description,
+        'openings': openings,
+        if (state != null && state.isNotEmpty) 'state': state,
+        if (salaryMin != null) 'salaryMin': salaryMin,
+        if (salaryMax != null) 'salaryMax': salaryMax,
+        if (requirements != null) 'requirements': requirements,
+        if (benefits != null) 'benefits': benefits,
+        if (skills != null) 'skills': skills,
+        if (imageUrl != null && imageUrl.isNotEmpty) 'image': imageUrl,
+        if (duration != null && duration.isNotEmpty) 'duration': duration,
+        if (urgent != null) 'urgent': urgent,
+        if (expiresAt != null && expiresAt.isNotEmpty) 'expiresAt': expiresAt,
       };
 
-      // Send multipart request (images are optional now)
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.addJob,
-        fields: fields,
-        files: images ?? [], // Pass empty list if no images
-        fieldKey: 'Images', // API expects 'Images' as field name
-        headers: {'Accept': '*/*'},
+      await ApiClient.instance.post<dynamic>(
+        ApiEndpoints.jobs.create,
+        data: payload,
       );
 
-      AppLogger.d("💼 Add job response status: ${streamedResponse.statusCode}");
-
-      final responseBody = await streamedResponse.stream.bytesToString();
-      AppLogger.d("💼 Add job response body: $responseBody");
-
-      if (streamedResponse.statusCode == 200 ||
-          streamedResponse.statusCode == 201) {
-        AppLogger.d("✅ Successfully added job");
-        SnackBarHelper.success("Job posted successfully!");
-        await fetchJobs(); // Refresh jobs list
-        return true;
-      } else {
-        AppLogger.d("❌ Failed to add job: ${streamedResponse.statusCode}");
-        // Use ErrorHandler for proper backend error message
-        final errorMsg = ErrorHandler.parseError(
-          responseBody,
-          statusCode: streamedResponse.statusCode,
-        );
-        SnackBarHelper.error(errorMsg);
-        return false;
-      }
+      SnackBarHelper.success("Job posted successfully!");
+      await fetchJobs();
+      return true;
+    } on dio.DioException catch (e) {
+      AppLogger.e("❌ Error creating job: $e");
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to post job'));
+      return false;
     } catch (e) {
-      AppLogger.d("❌ Error adding job: $e");
-      final errorMsg = ErrorHandler.handleNetworkError(e);
-      SnackBarHelper.error(errorMsg);
+      AppLogger.e("❌ Error creating job: $e");
+      SnackBarHelper.error("Failed to post job: $e");
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Update an existing job
+  /// PUT /jobs/my-jobs/:id — update a job (UpdateJobDto, includes `status`).
   Future<bool> updateJob({
     required String jobId,
-    required String role,
-    required String jobDuration,
-    required int openings,
-    required int salary,
-    required String city,
-    required String jobType,
-    required String description,
-    List<File>? newImages,
+    String? title,
+    String? city,
+    String? type,
+    String? salary,
+    String? description,
+    int? openings,
+    String? location,
+    String? state,
+    int? salaryMin,
+    int? salaryMax,
+    List<String>? requirements,
+    List<String>? benefits,
+    List<String>? skills,
+    String? image,
+    File? imageFile,
+    String? duration,
+    bool? urgent,
+    String? expiresAt,
+    String? status, // Active | Paused | Closed
   }) async {
     try {
       isLoading.value = true;
 
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-
-      if (userId.isEmpty) {
-        SnackBarHelper.error("Please login to update jobs");
-        return false;
+      String? imageUrl = image;
+      if (imageFile != null) {
+        imageUrl = await _uploadImage(imageFile) ?? image;
       }
 
-      AppLogger.d("💼 Updating job: $jobId");
-      AppLogger.d("💼 UserId: $userId");
-
-      // Prepare fields for multipart
-      final fields = <String, String?>{
-        'JobId': jobId,
-        'UserId': userId,
-        'Role': role,
-        'JobDuration': jobDuration,
-        'Openings': openings.toString(),
-        'Salary': salary.toString(),
-        'City': city,
-        'JobType': jobType,
-        'Description': description,
+      final payload = <String, dynamic>{
+        if (title != null) 'title': title,
+        if (location != null) 'location': location,
+        if (city != null) 'city': city,
+        if (state != null) 'state': state,
+        if (type != null) 'type': type,
+        if (salary != null) 'salary': salary,
+        if (salaryMin != null) 'salaryMin': salaryMin,
+        if (salaryMax != null) 'salaryMax': salaryMax,
+        if (description != null) 'description': description,
+        if (requirements != null) 'requirements': requirements,
+        if (benefits != null) 'benefits': benefits,
+        if (skills != null) 'skills': skills,
+        if (imageUrl != null) 'image': imageUrl,
+        if (openings != null) 'openings': openings,
+        if (duration != null) 'duration': duration,
+        if (urgent != null) 'urgent': urgent,
+        if (expiresAt != null) 'expiresAt': expiresAt,
+        if (status != null) 'status': status,
       };
 
-      // If new images are provided, add them
-      final imagesToUpload = newImages ?? [];
-
-      // Send multipart request with POST method (API expects POST, not PUT)
-      final streamedResponse = await HttpHelper.uploadMultipart(
-        endpoint: API.updateJob,
-        fields: fields,
-        files: imagesToUpload,
-        fieldKey: 'NewImages', // API expects 'NewImages' for update
-        headers: {'Accept': '*/*'},
-        method: 'POST',
+      await ApiClient.instance.put<dynamic>(
+        ApiEndpoints.jobs.updateJob(jobId),
+        data: payload,
       );
 
-      AppLogger.d(
-        "💼 Update job response status: ${streamedResponse.statusCode}",
-      );
-
-      final responseBody = await streamedResponse.stream.bytesToString();
-      AppLogger.d("💼 Update job response body: $responseBody");
-
-      if (streamedResponse.statusCode == 200 ||
-          streamedResponse.statusCode == 201) {
-        AppLogger.d("✅ Successfully updated job");
-        SnackBarHelper.success("Job updated successfully!");
-        await fetchJobs(); // Refresh jobs list
-        return true;
-      } else {
-        AppLogger.d("❌ Failed to update job: ${streamedResponse.statusCode}");
-        AppLogger.d("❌ Response body: $responseBody");
-
-        // Better error message
-        String errorMsg = "Failed to update job";
-        if (streamedResponse.statusCode == 405) {
-          errorMsg = "Update method not allowed. Please try again.";
-        } else if (streamedResponse.statusCode == 400) {
-          errorMsg = "Invalid job data. Please check all fields.";
-        } else if (streamedResponse.statusCode == 404) {
-          errorMsg = "Job not found. It may have been deleted.";
-        }
-
-        SnackBarHelper.error(errorMsg);
-        return false;
-      }
+      SnackBarHelper.success("Job updated successfully!");
+      await fetchJobs();
+      return true;
+    } on dio.DioException catch (e) {
+      AppLogger.e("❌ Error updating job: $e");
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to update job'));
+      return false;
     } catch (e) {
-      AppLogger.d("❌ Error updating job: $e");
-      SnackBarHelper.error("Failed to update job: ${e.toString()}");
+      AppLogger.e("❌ Error updating job: $e");
+      SnackBarHelper.error("Failed to update job: $e");
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Refresh jobs list
-  Future<void> refreshJobs() async {
-    await fetchJobs();
-  }
+  /// PUT /jobs/my-jobs/:id — quick status change (Active/Paused/Closed).
+  Future<bool> updateJobStatus(String jobId, String status) =>
+      updateJob(jobId: jobId, status: status);
 
-  /// Toggle like on a job
-  Future<bool> toggleJobLike(String jobId) async {
+  /// DELETE /jobs/my-jobs/:id
+  Future<bool> deleteJob(String jobId) async {
     try {
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-      final userId = authService.currentUserId;
-
-      if (token.isEmpty || userId.isEmpty) {
-        SnackBarHelper.error("Please login to like jobs");
-        return false;
-      }
-
-      AppLogger.d("👍 Toggling like for job: $jobId");
-      AppLogger.d("👍 User ID: $userId");
-
-      // 🔧 FIX: Send jobId and userId as query parameters (not body)
-      final endpoint = '${API.toggleJobLike}?jobId=$jobId&userId=$userId';
-
-      final response = await HttpHelper.postData(
-        endpoint: endpoint,
-        data: {}, // Empty body
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': '*/*',
-        },
+      await ApiClient.instance.delete<dynamic>(
+        ApiEndpoints.jobs.deleteJob(jobId),
       );
-
-      AppLogger.d("👍 Toggle like response status: ${response.statusCode}");
-      AppLogger.d("👍 Toggle like response body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Parse new response format
-        final responseData = json.decode(response.body);
-        final isLiked = responseData['data']['isLiked'] ?? false;
-        final likeCount = responseData['data']['likeCount'] ?? 0;
-
-        final jobIndex = jobs.indexWhere((job) => job.jobId == jobId);
-        if (jobIndex != -1) {
-          // Update job with actual values from API
-          final updatedJob = jobs[jobIndex].copyWith(
-            likeCount: likeCount,
-            isLiked: isLiked,
-          );
-
-          // Update the job in the list - create new list to trigger GetX reactivity
-          final updatedJobs = List<JobModel>.from(jobs);
-          updatedJobs[jobIndex] = updatedJob;
-          jobs.value = updatedJobs;
-          jobs.refresh(); // Force refresh to ensure UI updates
-
-          final message =
-              responseData['message'] ??
-              (isLiked ? 'Job liked' : 'Job unliked');
-          AppLogger.d("✅ $message");
-        }
-
-        // 🔧 FIX: Refresh jobs list to get updated isLiked from backend
-        // This ensures like state persists even after screen refresh
-        await fetchJobs();
-
-        return true;
-      } else {
-        AppLogger.d("❌ Failed to toggle like: ${response.statusCode}");
-        try {
-          final errorData = json.decode(response.body);
-          final errorMessage =
-              errorData['message'] ??
-              errorData['error'] ??
-              "Failed to toggle like";
-          SnackBarHelper.error(errorMessage);
-        } catch (e) {
-          SnackBarHelper.error("Failed to toggle like");
-        }
-        return false;
-      }
+      jobs.removeWhere((j) => j.id == jobId);
+      SnackBarHelper.success("Job deleted");
+      fetchStats();
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to delete job'));
+      return false;
     } catch (e) {
-      AppLogger.d("❌ Error toggling like: $e");
-      SnackBarHelper.error("Failed to toggle like: ${e.toString()}");
+      SnackBarHelper.error("Failed to delete job: $e");
       return false;
     }
   }
 
-  /// Fetch job applications for a specific job
+  /// GET /jobs/my-jobs/:id/applications
   Future<void> fetchJobApplications(String jobId) async {
     try {
       isApplicationsLoading.value = true;
-
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-
-      AppLogger.d("📋 Fetching applications for jobId: $jobId");
-
-      final response = await HttpHelper.getData(
-        endpoint: '${API.getJobApplications}$jobId',
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Accept': '*/*',
-        },
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.jobs.applications(jobId),
       );
-
-      AppLogger.d("📋 Applications response status: ${response.statusCode}");
-      AppLogger.d("📋 Applications response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        final fetchedApplications = data
-            .map((e) => JobApplicationModel.fromJson(e))
-            .toList();
-
-        allApplications.value = fetchedApplications;
-        applications.value = fetchedApplications;
-        AppLogger.d("✅ Fetched ${applications.length} applications");
-      } else {
-        AppLogger.d("❌ Failed to fetch applications: ${response.statusCode}");
-        SnackBarHelper.error("Failed to load applications");
-        allApplications.value = [];
-        applications.value = [];
+      final fetched = data
+          .whereType<Map<String, dynamic>>()
+          .map(JobApplication.fromJson)
+          .toList();
+      for (final a in fetched) {
+        _applicationJobMap[a.id] = jobId;
       }
+      allApplications.value = fetched;
+      applications.value = fetched;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to load applications'));
+      allApplications.clear();
+      applications.clear();
     } catch (e) {
-      AppLogger.d("❌ Error fetching applications: $e");
-      SnackBarHelper.error("Failed to load applications: ${e.toString()}");
-      allApplications.value = [];
-      applications.value = [];
+      SnackBarHelper.error("Failed to load applications: $e");
+      allApplications.clear();
+      applications.clear();
     } finally {
       isApplicationsLoading.value = false;
     }
   }
 
-  /// Fetch applications for all jobs
+  /// Aggregate every application across all of the employer's jobs. Uses the
+  /// applications embedded in the `my-jobs` response (no extra requests).
   Future<void> fetchAllJobApplications() async {
+    isApplicationsLoading.value = true;
     try {
-      isApplicationsLoading.value = true;
-
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-
-      // First fetch all jobs
-      await fetchJobs();
-
-      if (jobs.isEmpty) {
-        allApplications.value = [];
-        applications.value = [];
-        isApplicationsLoading.value = false;
-        return;
-      }
-
-      AppLogger.d("📋 Fetching applications for all ${jobs.length} jobs");
-
-      final List<JobApplicationModel> allApps = [];
-
-      // Fetch applications for each job
-      for (var job in jobs) {
-        try {
-          final response = await HttpHelper.getData(
-            endpoint: '${API.getJobApplications}${job.jobId}',
-            headers: {
-              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-              'Accept': '*/*',
-            },
-          );
-
-          if (response.statusCode == 200) {
-            final List data = json.decode(response.body);
-            final fetchedApplications = data
-                .map((e) => JobApplicationModel.fromJson(e))
-                .toList();
-            allApps.addAll(fetchedApplications);
-            AppLogger.d(
-              "✅ Fetched ${fetchedApplications.length} applications for job: ${job.role}",
-            );
-          } else {
-            AppLogger.d(
-              "⚠️ Failed to fetch applications for job ${job.jobId}: ${response.statusCode}",
-            );
-          }
-        } catch (e) {
-          AppLogger.d(
-            "⚠️ Error fetching applications for job ${job.jobId}: $e",
-          );
-          // Continue with other jobs even if one fails
-        }
-      }
-
-      allApplications.value = allApps;
-      applications.value = allApps;
-      AppLogger.d(
-        "✅ Fetched total ${allApps.length} applications from all jobs",
-      );
-    } catch (e) {
-      AppLogger.d("❌ Error fetching all applications: $e");
-      SnackBarHelper.error("Failed to load applications: ${e.toString()}");
-      allApplications.value = [];
-      applications.value = [];
+      if (jobs.isEmpty) await fetchJobs();
+      _rebuildApplicationsFromJobs();
     } finally {
       isApplicationsLoading.value = false;
     }
   }
 
-  /// Update job application status (Accept/Reject)
+  void _rebuildApplicationsFromJobs() {
+    final all = <JobApplication>[];
+    final counts = <String, int>{};
+    _applicationJobMap.clear();
+    for (final job in jobs) {
+      counts[job.id] = job.applications.length;
+      for (final a in job.applications) {
+        _applicationJobMap[a.id] = job.id;
+        all.add(a);
+      }
+    }
+    allApplications.value = all;
+    applications.value = all;
+    applicationCounts.value = counts;
+  }
+
+  /// PATCH /jobs/my-jobs/:jobId/applications/:applicationId
+  /// `status` ∈ pending | reviewed | shortlisted | rejected | hired.
   Future<bool> updateApplicationStatus({
     required String applicationId,
-    required String status, // "Accepted" or "Rejected"
+    required String status,
+    String? jobId,
+    String? notes,
   }) async {
+    final resolvedJobId = jobId ?? _applicationJobMap[applicationId];
+    if (resolvedJobId == null || resolvedJobId.isEmpty) {
+      SnackBarHelper.error("Could not determine job for this application");
+      return false;
+    }
+
     try {
-      final authService = AuthService.to;
-      final userId = authService.currentUserId;
-      final token = authService.currentToken;
-
-      if (userId.isEmpty) {
-        SnackBarHelper.error("Please login to update application status");
-        return false;
-      }
-
-      AppLogger.d("📋 Updating application status: $applicationId to $status");
-      AppLogger.d("📋 User ID: $userId");
-
-      final response = await HttpHelper.postData(
-        endpoint: API.updateJobStatus,
+      await ApiClient.instance.patch<dynamic>(
+        ApiEndpoints.jobs.updateApplication(resolvedJobId, applicationId),
         data: {
-          'applicationId': applicationId,
           'status': status,
-          'modifiedUserId': userId,
-        },
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': '*/*',
+          if (notes != null) 'notes': notes,
         },
       );
 
-      AppLogger.d("📋 Update status response: ${response.statusCode}");
-      AppLogger.d("📋 Update status body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Update local state
-        final index = applications.indexWhere(
-          (app) => app.applicationId == applicationId,
-        );
-        if (index != -1) {
-          final updatedApp = applications[index].copyWith(status: status);
-          final updatedList = List<JobApplicationModel>.from(applications);
-          updatedList[index] = updatedApp;
-          applications.value = updatedList;
-
-          // Also update in allApplications
-          final allIndex = allApplications.indexWhere(
-            (app) => app.applicationId == applicationId,
-          );
-          if (allIndex != -1) {
-            final updatedAllList = List<JobApplicationModel>.from(
-              allApplications,
-            );
-            updatedAllList[allIndex] = updatedApp;
-            allApplications.value = updatedAllList;
-          }
-        }
-
-        SnackBarHelper.success(
-          status == 'Accepted'
-              ? "Application accepted successfully!"
-              : "Application rejected",
-        );
-        return true;
-      } else {
-        AppLogger.d("❌ Failed to update status: ${response.statusCode}");
-        try {
-          final errorData = json.decode(response.body);
-          final errorMessage =
-              errorData['message'] ??
-              errorData['error'] ??
-              "Failed to update application status";
-          SnackBarHelper.error(errorMessage);
-        } catch (e) {
-          SnackBarHelper.error("Failed to update application status");
-        }
-        return false;
-      }
+      // Update local state.
+      _patchApplicationStatus(applicationId, status);
+      SnackBarHelper.success("Application marked as $status");
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to update application'));
+      return false;
     } catch (e) {
-      AppLogger.d("❌ Error updating application status: $e");
-      SnackBarHelper.error("Failed to update status: ${e.toString()}");
+      SnackBarHelper.error("Failed to update application: $e");
       return false;
     }
   }
 
-  /// Filter applications by location and role
-  void filterApplications({String? location, String? role}) {
-    var filtered = List<JobApplicationModel>.from(allApplications);
-
-    if (location != null && location.isNotEmpty && location != 'All') {
-      final locationTrimmed = location.trim().toLowerCase();
-      filtered = filtered
-          .where((app) => app.location.trim().toLowerCase() == locationTrimmed)
-          .toList();
-    }
-
-    if (role != null && role.isNotEmpty && role != 'All') {
-      final roleTrimmed = role.trim().toLowerCase();
-      filtered = filtered
-          .where(
-            (app) =>
-                app.jobTitle != null &&
-                app.jobTitle!.trim().toLowerCase() == roleTrimmed,
-          )
-          .toList();
-    }
-
-    applications.value = filtered;
-  }
-
-  /// Fetch application counts for all jobs
-  Future<void> _fetchApplicationCounts() async {
-    try {
-      final authService = AuthService.to;
-      final token = authService.currentToken;
-
-      final Map<String, int> counts = {};
-
-      for (var job in jobs) {
-        try {
-          final response = await HttpHelper.getData(
-            endpoint: '${API.getJobApplications}${job.jobId}',
-            headers: {
-              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-              'Accept': '*/*',
-            },
-          );
-
-          if (response.statusCode == 200) {
-            final List data = json.decode(response.body);
-            counts[job.jobId] = data.length;
-          } else {
-            counts[job.jobId] = 0;
-          }
-        } catch (e) {
-          AppLogger.d("⚠️ Error fetching count for job ${job.jobId}: $e");
-          counts[job.jobId] = 0;
-        }
+  void _patchApplicationStatus(String applicationId, String status) {
+    void patch(RxList<JobApplication> list) {
+      final i = list.indexWhere((a) => a.id == applicationId);
+      if (i != -1) {
+        list[i] = list[i].copyWith(status: status);
+        list.refresh();
       }
+    }
 
-      applicationCounts.value = counts;
-      AppLogger.d("✅ Fetched application counts: $counts");
+    patch(applications);
+    patch(allApplications);
+  }
+
+  /// GET /jobs/my-jobs/:jobId/applications/:applicationId/profile
+  Future<Map<String, dynamic>?> getApplicantProfile(
+    String jobId,
+    String applicationId,
+  ) async {
+    try {
+      return await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.jobs.applicantProfile(jobId, applicationId),
+      );
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to load profile'));
+      return null;
     } catch (e) {
-      AppLogger.d("❌ Error fetching application counts: $e");
+      SnackBarHelper.error("Failed to load profile: $e");
+      return null;
     }
   }
 
-  /// Get application count for a specific job
-  int getApplicationCount(String jobId) {
-    return applicationCounts[jobId] ?? 0;
+  /// Filter the applications view by status (pending/reviewed/.../hired).
+  void filterApplications({String? status}) {
+    if (status == null || status.isEmpty || status == 'All') {
+      applications.value = List<JobApplication>.from(allApplications);
+      return;
+    }
+    final s = status.trim().toLowerCase();
+    applications.value =
+        allApplications.where((a) => a.status == s).toList();
+  }
+
+  int getApplicationCount(String jobId) => applicationCounts[jobId] ?? 0;
+
+  /// The job an application belongs to (resolved during fetch). Used by the
+  /// applications inbox when viewing the aggregated list.
+  String? jobIdForApplication(String applicationId) =>
+      _applicationJobMap[applicationId];
+
+  // ── Hired professionals ───────────────────────────────────────────────────
+
+  /// GET /jobs/hired-professionals
+  Future<void> fetchHiredProfessionals({
+    String? jobId,
+    String? status,
+    String? search,
+  }) async {
+    try {
+      isHiredLoading.value = true;
+      final params = <String, dynamic>{
+        if (jobId != null && jobId.isNotEmpty) 'jobId': jobId,
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (search != null && search.isNotEmpty) 'search': search,
+      };
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.jobs.hiredProfessionals,
+        queryParameters: params.isEmpty ? null : params,
+      );
+      hiredProfessionals.value = data
+          .whereType<Map<String, dynamic>>()
+          .map(HiredProfessional.fromJson)
+          .toList();
+      fetchHiredStats();
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to load hired professionals'));
+      hiredProfessionals.clear();
+    } catch (e) {
+      SnackBarHelper.error("Failed to load hired professionals: $e");
+      hiredProfessionals.clear();
+    } finally {
+      isHiredLoading.value = false;
+    }
+  }
+
+  /// GET /jobs/hired-professionals/stats
+  Future<void> fetchHiredStats() async {
+    try {
+      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.jobs.hiredProfessionalsStats,
+      );
+      hiredStats.value = HiredProfessionalsStats.fromJson(data);
+    } catch (e) {
+      AppLogger.d("ℹ️ Failed to fetch hired stats: $e");
+    }
+  }
+
+  /// PATCH /jobs/hired-professionals/:professionalId/:jobId
+  Future<bool> updateHiredStatus({
+    required String professionalId,
+    required String jobId,
+    required String status, // onboarding | active | completed
+  }) async {
+    try {
+      await ApiClient.instance.patch<dynamic>(
+        ApiEndpoints.jobs.hiredProfessionalStatus(professionalId, jobId),
+        data: {'status': status},
+      );
+      SnackBarHelper.success("Status updated to $status");
+      await fetchHiredProfessionals();
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to update status'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to update status: $e");
+      return false;
+    }
+  }
+
+  /// DELETE /jobs/hired-professionals/:professionalId/:jobId
+  Future<bool> removeHiredProfessional({
+    required String professionalId,
+    required String jobId,
+  }) async {
+    try {
+      await ApiClient.instance.delete<dynamic>(
+        ApiEndpoints.jobs.hiredProfessionalStatus(professionalId, jobId),
+      );
+      hiredProfessionals.removeWhere(
+        (h) => h.id == professionalId && h.hiredJobInfo?.jobId == jobId,
+      );
+      SnackBarHelper.success("Professional removed from hired list");
+      fetchHiredStats();
+      return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_msg(e, fallback: 'Failed to remove professional'));
+      return false;
+    } catch (e) {
+      SnackBarHelper.error("Failed to remove professional: $e");
+      return false;
+    }
+  }
+
+  Future<void> refreshJobs() => fetchJobs();
+
+  /// Upload a picked image and return its hosted URL (reuses the shared
+  /// `/feeds/upload-image` host; jobs store the resulting URL in `image`).
+  Future<String?> _uploadImage(File file) async {
+    final bytes = await file.readAsBytes();
+    final dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    final data = await ApiClient.instance.post<Map<String, dynamic>>(
+      ApiEndpoints.feeds.uploadImage,
+      data: {'image': dataUrl},
+    );
+    return data['url']?.toString();
+  }
+
+  String _msg(dio.DioException e, {String fallback = 'Something went wrong'}) {
+    return e.error is ApiException
+        ? (e.error as ApiException).message
+        : fallback;
   }
 }

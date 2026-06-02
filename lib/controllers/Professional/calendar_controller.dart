@@ -1,9 +1,10 @@
-import 'dart:convert';
 import 'dart:math';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import '../../apihelperclass/api_helper.dart';
-import '../../utils/constants.dart';
-import '../../services/auth_service.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
+import '../../core/network/api_exception.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../models/Professional/calendar_event_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
@@ -39,43 +40,26 @@ class CalendarController extends GetxController {
 
       AppLogger.d("📅 Fetching calendar events for userId: $userId");
 
-      final response = await HttpHelper.getData(
-        endpoint: '${API.getEventsByUserId}$userId',
-        headers: {'UserId': userId, 'Accept': '*/*'},
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.calendar.events,
+        queryParameters: {'userId': userId},
       );
 
-      AppLogger.d("📅 Events response status: ${response.statusCode}");
-      AppLogger.d("📅 Events response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        try {
-          final List data = json.decode(response.body);
-          events.value = data.map((e) => CalendarEvent.fromJson(e)).toList();
-          AppLogger.d("✅ Fetched ${events.length} calendar events");
-          hasError.value = false;
-        } catch (e) {
-          // If response is not valid JSON, treat as empty
-          AppLogger.d("⚠️ Invalid JSON response, treating as empty: $e");
-          events.value = [];
-          hasError.value = false;
-        }
-      } else {
-        // Silently handle error - just show empty calendar
-        AppLogger.d(
-          "⚠️ Failed to fetch events: ${response.statusCode} - Handling silently",
-        );
-        events.value = [];
-        hasError.value = true;
-        errorMessage.value = 'Unable to load events';
-        // Don't show error message to user - just show empty calendar
-      }
+      events.value = data.map((e) => CalendarEvent.fromJson(e)).toList();
+      AppLogger.d("✅ Fetched ${events.length} calendar events");
+      hasError.value = false;
+    } on DioException catch (e) {
+      // Silently handle error - just show empty calendar
+      AppLogger.d("⚠️ Failed to fetch events: $e - Handling silently");
+      events.value = [];
+      hasError.value = true;
+      errorMessage.value = 'Unable to load events';
     } catch (e) {
       // Silently handle error - just show empty calendar
       AppLogger.d("⚠️ Error fetching calendar events (handled silently): $e");
       events.value = [];
       hasError.value = true;
       errorMessage.value = 'Unable to load events';
-      // Don't show error message to user - just show empty calendar
     } finally {
       isLoading.value = false;
     }
@@ -120,50 +104,21 @@ class CalendarController extends GetxController {
 
       AppLogger.d("📅 Saving calendar event:");
       AppLogger.d("📅 Event ID (GUID): $eventId");
-      AppLogger.d("📅 Request Data: ${json.encode(requestData)}");
+      AppLogger.d("📅 Request Data: $requestData");
 
-      final response = await HttpHelper.postData(
-        endpoint: API.saveCalendarEvent,
+      await ApiClient.instance.post(
+        ApiEndpoints.calendar.createEvent,
         data: requestData,
-        headers: {
-          'UserId': userId,
-          'Accept': '*/*',
-          'Content-Type': 'application/json',
-        },
       );
 
-      AppLogger.d("📅 Save event response status: ${response.statusCode}");
-      AppLogger.d("📅 Save event response body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        try {
-          final responseData = json.decode(response.body);
-          if (responseData['message'] != null ||
-              responseData['success'] == true) {
-            SnackBarHelper.success("Event saved successfully!");
-            await fetchEvents(); // Refresh events
-            return true;
-          }
-        } catch (e) {
-          // If response is not JSON but status is 200, consider it success
-          SnackBarHelper.success("Event saved successfully!");
-          await fetchEvents(); // Refresh events
-          return true;
-        }
-      } else {
-        String errorMessage = "Failed to save event";
-        try {
-          final errorData = json.decode(response.body);
-          errorMessage =
-              errorData['message'] ?? errorData['error'] ?? response.body;
-        } catch (e) {
-          errorMessage = response.body.isNotEmpty
-              ? response.body
-              : "Failed: ${response.statusCode}";
-        }
-        SnackBarHelper.error(errorMessage);
-        return false;
-      }
+      SnackBarHelper.success("Event saved successfully!");
+      await fetchEvents(); // Refresh events
+      return true;
+    } on DioException catch (e) {
+      AppLogger.d("❌ Error saving calendar event: $e");
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to save event';
+      SnackBarHelper.error(msg);
+      return false;
     } catch (e) {
       AppLogger.d("❌ Error saving calendar event: $e");
       SnackBarHelper.error("Failed to save event: ${e.toString()}");
@@ -171,8 +126,6 @@ class CalendarController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-
-    return false;
   }
 
   /// Generate proper UUID v4 format (GUID) - Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx

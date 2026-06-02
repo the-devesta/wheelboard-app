@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:wheelboard/controllers/Transport/company_profile_controller.dart';
-import '../../utils/placeservices.dart';
+import 'package:iconsax/iconsax.dart';
+
+import '../../controllers/Transport/company_profile_controller.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/placeservices.dart';
 import '../../utils/constants.dart';
+
+// ── Design tokens ────────────────────────────────────────────────────────────
+const _primary = Color(0xFFF36969);
+const _primaryLight = Color(0xFFFFF1F1);
+const _bg = Color(0xFFF9FAFB);
+const _border = Color(0xFFE5E7EB);
+const _textDark = Color(0xFF111827);
+const _textGrey = Color(0xFF6B7280);
 
 class EditCompanyProfileScreen extends StatefulWidget {
   const EditCompanyProfileScreen({super.key});
@@ -14,46 +24,29 @@ class EditCompanyProfileScreen extends StatefulWidget {
 }
 
 class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
-  final CompanyProfileController controller = Get.put(
-    CompanyProfileController(),
-  );
+  final CompanyProfileController _ctrl = Get.put(CompanyProfileController());
+  final PlacesService _places =
+      PlacesService(apiKey: MapsConstants.googleMapsApiKey);
 
-  final PlacesService placesService = PlacesService(
-    apiKey: MapsConstants.googleMapsApiKey,
-  );
-
-  List<Suggestion> locationSuggestions = [];
-  final FocusNode _locationFocusNode = FocusNode();
-  Worker? _savingWorker;
+  List<Suggestion> _suggestions = [];
+  final FocusNode _locationFocus = FocusNode();
+  Worker? _saveWorker;
 
   @override
   void initState() {
     super.initState();
-    _locationFocusNode.addListener(() {
-      if (!_locationFocusNode.hasFocus) {
-        setState(() {
-          locationSuggestions = [];
-        });
+    _locationFocus.addListener(() {
+      if (!_locationFocus.hasFocus && mounted) {
+        setState(() => _suggestions = []);
       }
     });
-
-    // Listen to isSaving to detect when save completes successfully
-    _savingWorker = ever(controller.isSaving, (bool saving) async {
-      if (!saving) {
-        // Save completed, wait a bit then navigate back
-        await Future.delayed(const Duration(milliseconds: 1200));
+    _saveWorker = ever(_ctrl.isSaving, (bool saving) async {
+      if (!saving && mounted) {
+        await Future.delayed(const Duration(milliseconds: 900));
         if (mounted) {
-          try {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context, true);
-              AppLogger.d("✅ Navigation: Navigator.pop() called from screen");
-            } else {
-              Get.back(result: true);
-              AppLogger.d("✅ Navigation: Get.back() called from screen");
-            }
-          } catch (e) {
-            AppLogger.d("⚠️ Navigation error from screen: $e");
-          }
+          Navigator.canPop(context)
+              ? Navigator.pop(context, true)
+              : Get.back(result: true);
         }
       }
     });
@@ -61,166 +54,113 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
 
   @override
   void dispose() {
-    _savingWorker?.dispose();
-    _locationFocusNode.dispose();
+    _saveWorker?.dispose();
+    _locationFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3),
+      backgroundColor: _bg,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        toolbarHeight: 91,
         backgroundColor: Colors.white,
         elevation: 0,
-        shape: const Border(
-          bottom: BorderSide(color: Color(0xFFFCD2D2), width: 1),
-        ),
+        scrolledUnderElevation: 1,
+        shadowColor: _border,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E1E1E)),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 20, color: _textDark),
           onPressed: () => Get.back(),
         ),
-        title: const Padding(
-          padding: EdgeInsets.only(top: 10),
-          child: Text(
-            'EDIT Your Profile',
+        title: const Text('Edit Company Profile',
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1E1E1E),
-              letterSpacing: -0.14,
-            ),
-          ),
-        ),
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: _textDark,
+                fontFamily: 'Poppins')),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.close, color: Color(0xFF1E1E1E)),
+            icon: const Icon(Icons.close_rounded, color: _textGrey),
             onPressed: () => Get.back(),
           ),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           child: Column(
-            children: [const SizedBox(height: 12), _buildFormCard(controller)],
+            children: [
+              // ── Logo picker ──────────────────────────────────────────
+              _buildLogoPicker(),
+              const SizedBox(height: 20),
+
+              // ── Form card ────────────────────────────────────────────
+              _section('Company Information', [
+                _field('Company Name', _ctrl.companyNameController,
+                    icon: Iconsax.building, required: true),
+                _field('Contact Person', _ctrl.fullNameController,
+                    icon: Iconsax.profile_circle, required: true),
+                _field('Email Address', _ctrl.emailController,
+                    icon: Iconsax.sms,
+                    keyboard: TextInputType.emailAddress,
+                    required: true),
+                _field('Business Category', _ctrl.businessCategoryController,
+                    icon: Iconsax.category),
+                _field('Fleet Size', _ctrl.fleetSizeController,
+                    icon: Iconsax.truck,
+                    keyboard: TextInputType.number,
+                    hint: 'No. of vehicles'),
+                _field('GST Number (Optional)', _ctrl.gstController,
+                    icon: Iconsax.receipt_text),
+              ]),
+
+              const SizedBox(height: 16),
+              _section('Contact Details', [
+                _field('Mobile Number', _ctrl.phoneController,
+                    icon: Iconsax.call,
+                    keyboard: TextInputType.phone),
+                _field('WhatsApp Number', _ctrl.whatsappController,
+                    icon: Icons.chat_rounded,
+                    keyboard: TextInputType.phone),
+              ]),
+
+              const SizedBox(height: 16),
+              _section('Location', [
+                _locationField(),
+              ]),
+
+              const SizedBox(height: 16),
+              _section('About', [
+                _field('Description (Optional)', _ctrl.descriptionController,
+                    icon: Iconsax.document_text,
+                    maxLines: 4,
+                    hint: 'Tell clients about your company…'),
+                _field('Website (Optional)', _ctrl.websiteController,
+                    icon: Iconsax.global,
+                    keyboard: TextInputType.url,
+                    hint: 'https://yourcompany.com'),
+              ]),
+
+              const SizedBox(height: 24),
+              _saveButton(),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFormCard(CompanyProfileController controller) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          _buildLogoPicker(controller),
-          const SizedBox(height: 24),
-          _buildTextField(
-            label: "Company Name",
-            controller: controller.companyNameController,
-            hint: "Enter Company name",
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: "Full Name",
-            controller: controller.fullNameController,
-            hint: "Enter your name",
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: "Email",
-            controller: controller.emailController,
-            hint: "Enter your email",
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: "Enter Business Category",
-            controller: controller.businessCategoryController,
-            hint: "Enter Business...",
-          ),
-          const SizedBox(height: 16),
-          _buildLocationField(controller),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: "Fleet Size",
-            controller: controller.fleetSizeController,
-            hint: "No of vehicles",
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: "Company GST (Optional)",
-            controller: controller.gstController,
-            hint: "Company GST(Optional)",
-          ),
-          const SizedBox(height: 24),
-          _buildSaveButton(controller),
-        ],
-      ),
-    );
-  }
+  // ── Logo picker ───────────────────────────────────────────────────────────
 
-  Widget _buildSaveButton(CompanyProfileController controller) {
-    return Obx(
-      () => GestureDetector(
-        onTap: controller.isSaving.value ? null : controller.saveProfile,
-        child: Container(
-          height: 48,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white, width: 0.8),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFFF8B8B), Color(0xFFF25C5C)],
-            ),
-          ),
-          child: Center(
-            child: controller.isSaving.value
-                ? const SizedBox(
-                    height: 22,
-                    width: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    'Save Now',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: -0.14,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoPicker(CompanyProfileController controller) {
+  Widget _buildLogoPicker() {
     return Obx(() {
-      ImageProvider? imageProvider;
-      if (controller.logoFile != null) {
-        imageProvider = FileImage(controller.logoFile!);
-      } else if (controller.existingLogoUrl != null &&
-          controller.existingLogoUrl!.isNotEmpty) {
-        imageProvider = NetworkImage(controller.existingLogoUrl!);
+      ImageProvider? img;
+      if (_ctrl.logoFile != null) {
+        img = FileImage(_ctrl.logoFile!);
+      } else if (_ctrl.existingLogoUrl?.isNotEmpty == true) {
+        img = NetworkImage(_ctrl.existingLogoUrl!);
       }
 
       return Center(
@@ -228,49 +168,32 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
           alignment: Alignment.bottomRight,
           children: [
             GestureDetector(
-              onTap: controller.pickLogo,
+              onTap: _ctrl.pickLogo,
               child: Container(
-                width: 110,
-                height: 110,
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFF36969), width: 4),
-                  color: Colors.grey.shade200,
-                  image: imageProvider != null
-                      ? DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
-                          onError: (exception, stackTrace) {
-                            // Handle image load error
-                          },
-                        )
+                  border: Border.all(color: _primary, width: 3),
+                  color: _primaryLight,
+                  image: img != null
+                      ? DecorationImage(image: img, fit: BoxFit.cover)
                       : null,
                 ),
-                child: imageProvider == null
-                    ? const Icon(Icons.business, size: 40, color: Colors.grey)
+                child: img == null
+                    ? const Icon(Iconsax.building, size: 40, color: _primary)
                     : null,
               ),
             ),
-            Positioned(
-              bottom: 6,
-              right: 8,
-              child: GestureDetector(
-                onTap: controller.pickLogo,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFF36969),
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: _primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
               ),
+              child: const Icon(Iconsax.camera, size: 14, color: Colors.white),
             ),
           ],
         ),
@@ -278,205 +201,212 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
     });
   }
 
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-    String? hint,
-    TextInputType? keyboardType,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+  // ── Section card ──────────────────────────────────────────────────────────
+
+  Widget _section(String title, List<Widget> children) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (label.isNotEmpty)
-            Text(
-              label,
+          Text(title,
               style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF6C7278),
-                letterSpacing: -0.24,
-              ),
-            ),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: _textDark,
+                  fontFamily: 'Poppins')),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  // ── Text field ────────────────────────────────────────────────────────────
+
+  Widget _field(
+    String label,
+    TextEditingController ctrl, {
+    IconData? icon,
+    TextInputType? keyboard,
+    String? hint,
+    bool required = false,
+    int maxLines = 1,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: _textGrey,
+                      fontFamily: 'Poppins')),
+              if (required)
+                const Text(' *',
+                    style: TextStyle(fontSize: 12, color: _primary)),
+            ],
+          ),
           const SizedBox(height: 6),
           TextField(
-            controller: controller,
-            keyboardType: keyboardType,
+            controller: ctrl,
+            keyboardType: keyboard,
+            maxLines: maxLines,
             decoration: InputDecoration(
-              hintText: hint,
+              hintText: hint ?? 'Enter $label',
               hintStyle: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6C7278),
-              ),
+                  fontSize: 14, color: Color(0xFF9CA3AF), fontFamily: 'Poppins'),
+              prefixIcon:
+                  icon != null ? Icon(icon, size: 18, color: _textGrey) : null,
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFF36969)),
-              ),
+                  horizontal: 14, vertical: 14),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: const Color(0xFFF9FAFB),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: _border)),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: _border)),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: _primary, width: 1.5)),
             ),
+            style: const TextStyle(
+                fontSize: 14, color: _textDark, fontFamily: 'Poppins'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLocationField(CompanyProfileController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Location",
+  // ── Location field ────────────────────────────────────────────────────────
+
+  Widget _locationField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Location',
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF6C7278),
-              letterSpacing: -0.24,
-            ),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: _textGrey,
+                fontFamily: 'Poppins')),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _ctrl.locationController,
+          focusNode: _locationFocus,
+          decoration: InputDecoration(
+            hintText: 'Search location…',
+            hintStyle: const TextStyle(
+                fontSize: 14, color: Color(0xFF9CA3AF), fontFamily: 'Poppins'),
+            prefixIcon: const Icon(Iconsax.location, size: 18, color: _textGrey),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            filled: true,
+            fillColor: const Color(0xFFF9FAFB),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _border)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _border)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _primary, width: 1.5)),
           ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: controller.locationController,
-            focusNode: _locationFocusNode,
-            decoration: InputDecoration(
-              hintText: "Search location...",
-              hintStyle: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6C7278),
-              ),
-              prefixIcon: const Icon(Icons.search, color: Color(0xFF6C7278)),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFF36969)),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            onChanged: (value) async {
-              if (value.isNotEmpty && value.length > 2) {
-                try {
-                  final results = await placesService.fetchSuggestions(value);
-                  if (mounted) {
-                    setState(() {
-                      locationSuggestions = results;
-                    });
-                  }
-                } catch (e) {
-                  AppLogger.e("Error fetching suggestions: $e");
-                  if (mounted) {
-                    setState(() {
-                      locationSuggestions = [];
-                    });
-                  }
-                }
-              } else {
-                if (mounted) {
-                  setState(() {
-                    locationSuggestions = [];
-                  });
-                }
+          onChanged: (v) async {
+            if (v.length > 2) {
+              try {
+                final results = await _places.fetchSuggestions(v);
+                if (mounted) setState(() => _suggestions = results);
+              } catch (e) {
+                AppLogger.e('Location suggestions error: $e');
               }
-            },
-            onTap: () {
-              // Clear suggestions when tapping the field again
-              if (locationSuggestions.isNotEmpty) {
-                setState(() {
-                  locationSuggestions = [];
-                });
-              }
-            },
-          ),
-          if (locationSuggestions.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: const Color(0xFFEDF1F3)),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
+            } else {
+              if (mounted) setState(() => _suggestions = []);
+            }
+          },
+        ),
+        if (_suggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            constraints: const BoxConstraints(maxHeight: 180),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _border),
+              boxShadow: [
+                BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: locationSuggestions.length > 5
-                    ? 5
-                    : locationSuggestions.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final suggestion = locationSuggestions[index];
-                  return ListTile(
-                    dense: true,
-                    leading: const Icon(
-                      Icons.location_on,
-                      color: Color(0xFFF36969),
-                      size: 20,
-                    ),
-                    title: Text(
-                      suggestion.description,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    subtitle: suggestion.subTitle.isNotEmpty
-                        ? Text(
-                            suggestion.subTitle,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6C7278),
-                            ),
-                          )
-                        : null,
-                    onTap: () {
-                      setState(() {
-                        controller.locationController.text =
-                            suggestion.description;
-                        locationSuggestions = [];
-                      });
-                      // Hide keyboard and remove focus
-                      _locationFocusNode.unfocus();
-                      FocusScope.of(context).unfocus();
-                    },
-                  );
-                },
-              ),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2)),
+              ],
             ),
-        ],
-      ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: _suggestions.length.clamp(0, 5),
+              separatorBuilder: (_, __) =>
+                  const Divider(height: 1, color: _border),
+              itemBuilder: (_, i) {
+                final s = _suggestions[i];
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Iconsax.location, size: 18, color: _primary),
+                  title: Text(s.description,
+                      style: const TextStyle(
+                          fontSize: 13, fontFamily: 'Poppins')),
+                  onTap: () {
+                    _ctrl.locationController.text = s.description;
+                    _locationFocus.unfocus();
+                    setState(() => _suggestions = []);
+                  },
+                );
+              },
+            ),
+          ),
+      ],
     );
+  }
+
+  // ── Save button ───────────────────────────────────────────────────────────
+
+  Widget _saveButton() {
+    return Obx(() => SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _ctrl.isSaving.value ? null : _ctrl.saveProfile,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primary,
+              disabledBackgroundColor: _primary.withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: _ctrl.isSaving.value
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white))
+                : const Text('Save Changes',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        fontFamily: 'Poppins')),
+          ),
+        ));
   }
 }

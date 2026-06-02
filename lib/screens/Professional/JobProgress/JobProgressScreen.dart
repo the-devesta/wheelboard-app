@@ -20,7 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:get/get.dart';
 import '../../../controllers/Professional/job_progress_controller.dart';
-import '../../../models/Professional/applied_job_model.dart';
+import '../../../models/job_model.dart';
 import '../JobDetails/JobDetailsScreen.dart';
 import '../../../widgets/custom_loader.dart';
 
@@ -117,14 +117,27 @@ class JobProgressScreen extends StatelessWidget {
                         value: controller.selectedFilter.value,
                         underline: const SizedBox(),
                         style: const TextStyle(color: Colors.black),
-                        items: ["All", "Accepted", "Rejected", "Pending"]
-                            .map(
-                              (value) => DropdownMenuItem(
-                                value: value,
-                                child: Text(value),
-                              ),
-                            )
-                            .toList(),
+                        items:
+                            [
+                                  "All",
+                                  "pending",
+                                  "reviewed",
+                                  "shortlisted",
+                                  "rejected",
+                                  "hired",
+                                ]
+                                .map(
+                                  (value) => DropdownMenuItem(
+                                    value: value,
+                                    child: Text(
+                                      value == 'All'
+                                          ? 'All'
+                                          : value[0].toUpperCase() +
+                                                value.substring(1),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                         onChanged: (value) {
                           if (value != null) {
                             controller.updateFilter(value);
@@ -203,16 +216,37 @@ class JobProgressScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
-                // TODO: Add saved jobs functionality when API is available
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: Text(
-                      "No saved jobs yet",
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
-                    ),
-                  ),
-                ),
+                Obx(() {
+                  if (controller.isSavedLoading.value) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CustomLoader.small(),
+                      ),
+                    );
+                  }
+                  if (controller.savedJobs.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Text(
+                          "No saved jobs yet",
+                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                        ),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: controller.savedJobs
+                        .map(
+                          (job) => JobCard(
+                            job: job,
+                            onUnsave: () => controller.unsaveJob(job.id),
+                          ),
+                        )
+                        .toList(),
+                  );
+                }),
               ],
             ),
           ),
@@ -223,14 +257,46 @@ class JobProgressScreen extends StatelessWidget {
 }
 
 class JobCard extends StatelessWidget {
-  final AppliedJob job;
+  final JobModel job;
 
-  const JobCard({super.key, required this.job});
+  /// When provided this card represents a *saved* job and shows a remove action
+  /// instead of the application status badge.
+  final VoidCallback? onUnsave;
+
+  const JobCard({super.key, required this.job, this.onUnsave});
 
   @override
   Widget build(BuildContext context) {
-    final isAccepted = job.isAccepted;
-    final isRejected = job.isRejected;
+    final app = job.myApplication;
+    final status = app?.status ?? '';
+
+    Color statusBg;
+    Color statusFg;
+    switch (status) {
+      case 'hired':
+        statusBg = Colors.green.shade50;
+        statusFg = Colors.green;
+        break;
+      case 'rejected':
+        statusBg = Colors.red.shade50;
+        statusFg = Colors.red;
+        break;
+      case 'shortlisted':
+        statusBg = const Color(0xFFEDE9FE);
+        statusFg = const Color(0xFF7C3AED);
+        break;
+      case 'reviewed':
+        statusBg = const Color(0xFFDBEAFE);
+        statusFg = const Color(0xFF2563EB);
+        break;
+      default:
+        statusBg = Colors.orange.shade50;
+        statusFg = Colors.orange;
+    }
+
+    final title = job.title.isNotEmpty
+        ? (job.city.isNotEmpty ? "${job.title} - ${job.city}" : job.title)
+        : (job.description.isNotEmpty ? job.description : "Job");
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -255,26 +321,20 @@ class JobCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  job.jobRole.isNotEmpty
-                      ? "${job.jobRole} - ${job.jobCity}"
-                      : job.jobDescription.isNotEmpty
-                      ? job.jobDescription.length > 40
-                            ? "${job.jobDescription.substring(0, 40)}..."
-                            : job.jobDescription
-                      : "Job",
+                  title.length > 40 ? "${title.substring(0, 40)}..." : title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
                 ),
                 Text(
-                  job.jobType.isNotEmpty ? job.jobType : job.jobCity,
+                  job.type.isNotEmpty ? job.type : job.city,
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
-                if (job.salary > 0) ...[
+                if (job.salary.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    "₹${job.salary}",
+                    job.salary,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade700,
@@ -282,11 +342,13 @@ class JobCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 6),
-                Text(
-                  "Applied on ${job.formattedDate}",
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
+                if (app?.appliedDateFormatted.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    "Applied on ${app!.appliedDateFormatted}",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
               ],
             ),
           ),
@@ -295,32 +357,34 @@ class JobCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: isAccepted
-                      ? Colors.green.shade50
-                      : isRejected
-                      ? Colors.red.shade50
-                      : Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  job.status,
-                  style: TextStyle(
-                    color: isAccepted
-                        ? Colors.green
-                        : isRejected
-                        ? Colors.red
-                        : Colors.orange,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12,
+              if (onUnsave != null)
+                GestureDetector(
+                  onTap: onUnsave,
+                  child: const Icon(
+                    Icons.bookmark_remove,
+                    color: Colors.redAccent,
+                    size: 22,
+                  ),
+                )
+              else if (app != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    app.statusLabel,
+                    style: TextStyle(
+                      color: statusFg,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () {
@@ -336,78 +400,6 @@ class JobCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class SavedJobCard extends StatelessWidget {
-  final String title;
-  final String company;
-  final String date;
-
-  const SavedJobCard({
-    super.key,
-    required this.title,
-    required this.company,
-    required this.date,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Left
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              Text(
-                company,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Saved on $date",
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-          // Right
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: const Text("Find Job"),
           ),
         ],
       ),

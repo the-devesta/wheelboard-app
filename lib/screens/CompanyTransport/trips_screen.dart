@@ -1,107 +1,75 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:wheelboard/screens/CompanyTransport/newtripscreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/schedulescreen.dart';
 import 'package:wheelboard/screens/CompanyTransport/bids_screen.dart';
 import 'package:wheelboard/screens/CompanyTransport/trip_details_screen.dart';
 import 'package:wheelboard/controllers/Transport/add_trip_controller.dart';
 import 'package:wheelboard/controllers/Transport/trip_page_controller.dart';
-import 'package:wheelboard/utils/session_manager.dart';
-
 import 'package:wheelboard/models/add_new_trip_model.dart';
 import '../../widgets/custom_loader.dart';
 import 'TripExpenses/TripExpensesScreen.dart';
-import '../../services/auth_service.dart';
-import '../../utils/constants.dart';
+import 'track/CompanyTrackTripScreen.dart';
+import 'pod/PodViewScreen.dart';
+import 'share/share_navigation_sheet.dart';
+import 'package:wheelboard/core/auth/auth_service.dart';
 
-// ---------------------------------------------------------------------------
-// Reusable safe avatar widget – handles null/empty URL and network errors.
-// Uses CachedNetworkImage to handle extension-less URLs (e.g. from API).
-// Falls back to asset, and if asset also fails, shows a person icon.
-// ---------------------------------------------------------------------------
+// ── Design tokens (exact match to Home & Fleet) ───────────────────────────────
+const _primary    = Color(0xFFF36969);
+const _primaryLt  = Color(0xFFFFF1F1);
+const _bg         = Color(0xFFF9FAFB);
+const _card       = Colors.white;
+const _textDark   = Color(0xFF111827);
+const _textMid    = Color(0xFF374151);
+const _textGrey   = Color(0xFF6B7280);
+const _border     = Color(0xFFE5E7EB);
+
+// ── Status palette ────────────────────────────────────────────────────────────
+const _upcomingColor    = Color(0xFFF59E0B);
+const _upcomingBg       = Color(0xFFFFFBEB);
+const _inProcessColor   = Color(0xFF3B82F6);
+const _inProcessBg      = Color(0xFFEFF6FF);
+const _completedColor   = Color(0xFF22C55E);
+const _completedBg      = Color(0xFFF0FDF4);
+
+// ── Safe avatar ───────────────────────────────────────────────────────────────
 class _SafeAvatar extends StatelessWidget {
   final String? imageUrl;
   final double radius;
-  final String fallbackAsset;
-
-  const _SafeAvatar({
-    this.imageUrl,
-    this.radius = 12,
-    this.fallbackAsset = 'assets/driver.png',
-  });
+  const _SafeAvatar({this.imageUrl, this.radius = 12});
 
   @override
   Widget build(BuildContext context) {
     final hasUrl = imageUrl != null && imageUrl!.isNotEmpty;
-
-    // Ultimate fallback widget — shown when both network and asset fail
-    final Widget iconFallback = CircleAvatar(
-      radius: radius,
-      backgroundColor: Colors.grey.shade300,
-      child: Icon(Icons.person, size: radius, color: Colors.grey.shade600),
-    );
-
+    final fallback = CircleAvatar(
+      radius: radius, backgroundColor: Colors.grey.shade300,
+      child: Icon(Icons.person, size: radius, color: Colors.grey.shade600));
     if (hasUrl) {
       return CachedNetworkImage(
         imageUrl: imageUrl!,
-        imageBuilder: (context, imageProvider) => CircleAvatar(
-          radius: radius,
-          backgroundImage: imageProvider,
-          backgroundColor: Colors.grey.shade200,
-        ),
-        placeholder: (context, url) => CircleAvatar(
-          radius: radius,
-          backgroundColor: Colors.grey.shade200,
-          child: SizedBox(
-            width: radius,
-            height: radius,
-            child: const CircularProgressIndicator(strokeWidth: 1.5),
-          ),
-        ),
-        errorWidget: (context, url, error) => CircleAvatar(
-          radius: radius,
-          backgroundColor: Colors.grey.shade200,
-          child: ClipOval(
-            child: Image.asset(
-              fallbackAsset,
-              width: radius * 2,
-              height: radius * 2,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => iconFallback,
-            ),
-          ),
-        ),
-        width: radius * 2,
-        height: radius * 2,
-        fit: BoxFit.cover,
+        imageBuilder: (_, p) => CircleAvatar(radius: radius, backgroundImage: p),
+        placeholder: (_, __) => CircleAvatar(radius: radius, backgroundColor: Colors.grey.shade200,
+          child: SizedBox(width: radius, height: radius, child: const CircularProgressIndicator(strokeWidth: 1.5))),
+        errorWidget: (_, __, ___) => fallback,
+        width: radius * 2, height: radius * 2, fit: BoxFit.cover,
       );
     }
-
-    // No URL → try asset with safe fallback to icon
     return CircleAvatar(
-      radius: radius,
-      backgroundColor: Colors.grey.shade200,
-      child: ClipOval(
-        child: Image.asset(
-          fallbackAsset,
-          width: radius * 2,
-          height: radius * 2,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => iconFallback,
-        ),
-      ),
-    );
+      radius: radius, backgroundColor: Colors.grey.shade200,
+      child: ClipOval(child: Image.asset('assets/driver.png',
+        width: radius * 2, height: radius * 2, fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback)));
   }
 }
 
-// ---------------------------------------------------------------------------
-
+// ── TripPage ──────────────────────────────────────────────────────────────────
 class TripPage extends StatefulWidget {
   final int initialTabIndex;
-
   const TripPage({super.key, this.initialTabIndex = 0});
 
   @override
@@ -109,56 +77,47 @@ class TripPage extends StatefulWidget {
 }
 
 class _TripPageState extends State<TripPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final TripController tripController = Get.put(TripController());
-  final TripPageTabController tabPageController = Get.put(
-    TripPageTabController(),
-    permanent: true,
-  );
-  late TabController _tabController;
+  final TripPageTabController tabPageController =
+      Get.put(TripPageTabController(), permanent: true);
 
-  // Search and Filter Controllers
+  late TabController _tabController;
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
+
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  String _destinationFilter = '';
-  String _bidsFilter = ''; // 'available', 'awaiting', or ''
+  String _searchQuery    = '';
+  String _destFilter     = '';
+  String _bidsFilter     = '';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: 3,
-      vsync: this,
-      initialIndex: widget.initialTabIndex,
-    );
-    // Register tab controller with GetX controller
+    _tabController = TabController(length: 3, vsync: this, initialIndex: widget.initialTabIndex);
     tabPageController.setTabController(_tabController);
+
+    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchTrips();
+      _fadeCtrl.forward();
     });
 
-    // Listen to tab changes from GetX controller
     ever(tabPageController.currentTabIndex, (int index) {
-      if (_tabController.index != index && mounted) {
-        _tabController.animateTo(index);
-      }
+      if (_tabController.index != index && mounted) _tabController.animateTo(index);
     });
 
-    // Listen to search changes
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
-    });
+    _searchController.addListener(() => setState(() => _searchQuery = _searchController.text.toLowerCase()));
   }
 
   @override
   void didUpdateWidget(covariant TripPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialTabIndex != oldWidget.initialTabIndex) {
-      if (_tabController.index != widget.initialTabIndex) {
-        _tabController.animateTo(widget.initialTabIndex);
-      }
+    if (widget.initialTabIndex != oldWidget.initialTabIndex &&
+        _tabController.index != widget.initialTabIndex) {
+      _tabController.animateTo(widget.initialTabIndex);
     }
   }
 
@@ -166,581 +125,205 @@ class _TripPageState extends State<TripPage>
   void dispose() {
     _tabController.dispose();
     _searchController.dispose();
+    _fadeCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _fetchTrips() async {
-    final sessionManager = SessionManager();
-    final userId = await sessionManager.getString("userId");
-    if (userId != null && userId.isNotEmpty) {
-      tripController.fetchTrips(userId);
-    }
+    // Use AuthService (SecureStorage) — not the legacy SessionManager
+    // which no longer holds 'userId' after the migration to SecureStorage.
+    final userId = AuthService.to.userId;
+    tripController.fetchTrips(userId.isNotEmpty ? userId : 'current');
   }
 
-  /// Filter trips based on search query and filters
   List<Trip> _filterTrips(List<Trip> trips) {
-    return trips.where((trip) {
-      // Search filter - search in pickup, delivery location, and trip code
+    return trips.where((t) {
       if (_searchQuery.isNotEmpty) {
-        final matchesSearch =
-            trip.pickupLocation.toLowerCase().contains(_searchQuery) ||
-            trip.deliveryLocation.toLowerCase().contains(_searchQuery) ||
-            trip.tripCode.toLowerCase().contains(_searchQuery) ||
-            (trip.vehicleType?.toLowerCase().contains(_searchQuery) ?? false);
-
-        if (!matchesSearch) return false;
+        final q = _searchQuery;
+        if (!t.pickupLocation.toLowerCase().contains(q) &&
+            !t.deliveryLocation.toLowerCase().contains(q) &&
+            !t.tripCode.toLowerCase().contains(q) &&
+            !(t.vehicleType?.toLowerCase().contains(q) ?? false)) { return false; }
       }
-
-      // Destination filter
-      if (_destinationFilter.isNotEmpty) {
-        if (!trip.deliveryLocation.toLowerCase().contains(
-          _destinationFilter.toLowerCase(),
-        )) {
-          return false;
-        }
-      }
-
-      // Bids filter
-      if (_bidsFilter == 'available') {
-        // Show trips with bids (totalBidCount > 0)
-        if (trip.totalBidCount == 0) return false;
-      } else if (_bidsFilter == 'awaiting') {
-        // Show trips without bids (totalBidCount == 0)
-        if (trip.totalBidCount > 0) return false;
-      }
-
+      if (_destFilter.isNotEmpty &&
+          !t.deliveryLocation.toLowerCase().contains(_destFilter.toLowerCase())) { return false; }
+      if (_bidsFilter == 'available' && t.totalBidCount == 0) { return false; }
+      if (_bidsFilter == 'awaiting'  && t.totalBidCount > 0)  { return false; }
       return true;
     }).toList();
   }
 
-  /// Clear all filters
-  void _clearFilters() {
-    setState(() {
-      _searchController.clear();
-      _searchQuery = '';
-      _destinationFilter = '';
-      _bidsFilter = '';
-    });
-  }
+  void _clearFilters() => setState(() {
+    _searchController.clear();
+    _searchQuery = _destFilter = _bidsFilter = '';
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
-
-      body: SafeArea(
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            // Header + search + recent trips
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Image.asset('assets/headingImg.png', height: 40),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Search + filter
-                    Row(
-                      children: [
-                        // Search Bar with Shadow
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 6,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                decoration: const InputDecoration(
-                                  hintText: "Search Trips",
-                                  border: InputBorder.none,
-                                  icon: Icon(Icons.search),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Filter Icon with Shadow
-                        GestureDetector(
-                          onTap: () => _showFilterDialog(context),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 6,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.tune),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Recent Trips
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Recent Trips",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    Obx(() {
-                      // Apply filters to trips
-                      final filteredTrips = _filterTrips(tripController.trips);
-                      final recentTrips = filteredTrips.take(2).toList();
-
-                      if (tripController.isTripsLoading.value) {
-                        return const SizedBox(
-                          height: 280,
-                          child: CustomLoader.small(),
-                        );
-                      }
-                      if (recentTrips.isEmpty) {
-                        return SizedBox(
-                          height: 280,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.search_off,
-                                  size: 48,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _searchQuery.isNotEmpty ||
-                                          _destinationFilter.isNotEmpty ||
-                                          _bidsFilter.isNotEmpty
-                                      ? "No trips match your filters"
-                                      : "No recent trips",
-                                  style: TextStyle(color: Colors.grey[600]),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-                      return SizedBox(
-                        height: 280,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: recentTrips.asMap().entries.map((entry) {
-                            final trip = entry.value;
-                            final index = entry.key;
-                            final statusColor = _getStatusColor(
-                              trip.tripStatus,
-                            );
-                            final dateStr = trip.pickupDate != null
-                                ? _formatDate(trip.pickupDate!)
-                                : '';
-                            final timeStr = trip.pickupTime.isNotEmpty
-                                ? ' – ${trip.pickupTime.substring(0, trip.pickupTime.length > 5 ? 5 : trip.pickupTime.length)}'
-                                : '';
-
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                right: index < recentTrips.length - 1 ? 16 : 0,
-                              ),
-                              child: tripCard(
-                                title:
-                                    "Trip to ${_getLocationName(trip.deliveryLocation)}",
-                                subtitle:
-                                    "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
-                                tag: trip.tripStatus,
-                                label: trip.vehicleType ?? "Standard",
-                                date: "$dateStr$timeStr",
-                                tagColor: statusColor,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: SafeArea(
+          child: NestedScrollView(
+            headerSliverBuilder: (_, __) => [
+              SliverToBoxAdapter(child: _buildHeader()),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _PinnedTabBar(child: _buildTabBar()),
               ),
+            ],
+            body: _TripsTabViews(
+              tripController: tripController,
+              tabController: _tabController,
+              filterFn: _filterTrips,
             ),
-
-            // Pinned TabBar (styled like your filter pills)
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _TabBarHeader(
-                child: Container(
-                  color: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    // vertical: 8,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCCF6DE),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicator: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      labelPadding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      dividerColor: Colors.transparent,
-                      tabs: [
-                        Tab(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 16,
-                                color: Colors.green[700],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Completed',
-                                style: TextStyle(
-                                  color: Colors.green[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.autorenew,
-                                size: 16,
-                                color: Colors.blue[700],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'In-Process',
-                                style: TextStyle(
-                                  color: Colors.blue[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.access_time,
-                                size: 16,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Upcoming',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-
-          // Tab content
-          body: _TripsTabViews(
-            tripController: tripController,
-            tabController: _tabController,
           ),
         ),
+        floatingActionButton: Obx(() {
+          if (AuthService.to.isProfessional) return const SizedBox.shrink();
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _fab(label: 'Post Trip',  icon: Iconsax.add_circle, onTap: () => Get.to(() => const Newtripscreen())),
+              const SizedBox(height: 8),
+              _fab(label: 'Schedule',   icon: Iconsax.calendar_1,  onTap: () => Get.to(() => const ScheduleTripScreen())),
+            ],
+          );
+        }),
       ),
-
-      // FAB column - matching Figma design
-      floatingActionButton: Obx(() {
-        if (AuthService.to.userType.value.toLowerCase().trim() ==
-            'professional') {
-          return const SizedBox.shrink();
-        }
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // New Trip Button
-            Container(
-              margin: const EdgeInsets.only(bottom: 4),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Get.to(const Newtripscreen());
-                },
-                icon: const Icon(Icons.add_circle, size: 24),
-                label: const Text(
-                  "Post  Trip",
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF26868),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(117, 42),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Color(0xFFDFF5EB), width: 2),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
-            // Schedule Button
-            Container(
-              margin: const EdgeInsets.only(bottom: 4),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Get.to(const ScheduleTripScreen());
-                },
-                icon: const Icon(Icons.calendar_today, size: 24),
-                label: const Text(
-                  "Schedule",
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF26868),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(117, 42),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Color(0xFFDFF5EB), width: 2),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
-          ],
-        );
-      }),
     );
   }
 
-  // --- Helpers from your original code ---
-
-  Color _getStatusColor(String status) {
-    final lowerStatus = status.toLowerCase();
-    if (lowerStatus.contains('complete')) {
-      return Colors.green;
-    } else if (lowerStatus.contains('process') ||
-        lowerStatus.contains('progress') ||
-        lowerStatus.contains('ongoing')) {
-      return Colors.blue;
-    } else if (lowerStatus.contains('upcoming') ||
-        lowerStatus.contains('pending')) {
-      return Colors.orange;
-    }
-    return Colors.grey;
-  }
-
-  String _getLocationName(String location) {
-    if (location.isEmpty) return 'Unknown';
-    final parts = location.split(',');
-    return parts.isNotEmpty ? parts[0].trim() : location;
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
-  }
-
-  static Widget tripCard({
-    required String title,
-    required String subtitle,
-    required String tag,
-    required String label,
-    required String date,
-    required Color tagColor,
-  }) {
+  // ── header (search + stats) ──────────────────────────────────────────────
+  Widget _buildHeader() {
     return Container(
-      width: 250,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      ),
+      color: _card,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Trip Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              AppImages.trip,
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
+          // Title row
+          Row(children: [
+            Expanded(child: Text('Trips',
+              style: GoogleFonts.poppins(
+                fontSize: 22, fontWeight: FontWeight.w700,
+                color: _textDark, letterSpacing: -0.3))),
+            GestureDetector(
+              onTap: () => _showFilterDialog(Get.context!),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _primaryLt,
+                  borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Iconsax.setting_4, color: _primary, size: 20),
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
+          ]),
+          const SizedBox(height: 14),
 
-          // ✔ Completed pill with icon
+          // Search bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            height: 44,
             decoration: BoxDecoration(
-              color: tagColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: tagColor),
+              color: _bg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _border),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check_circle, color: tagColor, size: 11),
-                const SizedBox(width: 3),
-                Flexible(
-                  child: Text(
-                    tag,
-                    style: TextStyle(
-                      color: tagColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+            child: Row(children: [
+              const SizedBox(width: 12),
+              const Icon(Iconsax.search_normal, color: _textGrey, size: 18),
+              const SizedBox(width: 10),
+              Expanded(child: TextField(
+                controller: _searchController,
+                style: GoogleFonts.poppins(fontSize: 13, color: _textDark),
+                decoration: InputDecoration(
+                  hintText: 'Search trips…',
+                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: _textGrey),
+                  border: InputBorder.none,
+                  isDense: true,
                 ),
-              ],
-            ),
+              )),
+              if (_searchQuery.isNotEmpty)
+                GestureDetector(
+                  onTap: () => _searchController.clear(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: const Icon(Icons.close, size: 16, color: _textGrey))),
+            ]),
           ),
+          const SizedBox(height: 16),
 
-          const SizedBox(height: 5),
+          // Stats strip
+          Obx(() {
+            final all = tripController.trips;
+            final upcoming   = all.where((t) => _isUpcoming(t.tripStatus)).length;
+            final inProcess  = all.where((t) => _isInProcess(t.tripStatus)).length;
+            final completed  = all.where((t) => _isCompleted(t.tripStatus)).length;
+            final stats = [
+              _StatDot(label: 'Total',       value: '${all.length}',  color: _primary,       bg: _primaryLt),
+              _StatDot(label: 'Upcoming',    value: '$upcoming',       color: _upcomingColor,  bg: _upcomingBg),
+              _StatDot(label: 'In Progress', value: '$inProcess',      color: _inProcessColor, bg: _inProcessBg),
+              _StatDot(label: 'Completed',   value: '$completed',      color: _completedColor, bg: _completedBg),
+            ];
+            return Row(
+              children: stats.map((s) => Expanded(child: Padding(
+                padding: EdgeInsets.only(right: s == stats.last ? 0 : 8),
+                child: _buildStatCard(s),
+              ))).toList(),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
 
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
+  Widget _buildStatCard(_StatDot s) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2))],
+      ),
+      child: Column(children: [
+        Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(color: s.bg, borderRadius: BorderRadius.circular(9)),
+          child: Center(child: Text(s.value, style: GoogleFonts.poppins(
+            fontSize: 13, fontWeight: FontWeight.w700, color: s.color))),
+        ),
+        const SizedBox(height: 5),
+        Text(s.label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w500, color: _textGrey)),
+      ]),
+    );
+  }
 
-          Row(
-            children: [
-              const Icon(Icons.location_on, size: 11, color: Colors.grey),
-              const SizedBox(width: 3),
-              Expanded(
-                child: Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 11, color: Colors.black54),
-              const SizedBox(width: 3),
-              Flexible(
-                child: Text(
-                  date,
-                  style: const TextStyle(fontSize: 11, color: Colors.black87),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+  // ── tab bar ──────────────────────────────────────────────────────────────
+  Widget _buildTabBar() {
+    return Container(
+      color: _card,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+      child: Column(
+        children: [
+          TabBar(
+            controller: _tabController,
+            indicatorColor: _primary,
+            indicatorWeight: 2.5,
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: _primary,
+            unselectedLabelColor: _textGrey,
+            dividerColor: _border,
+            labelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
+            tabs: const [
+              Tab(text: 'Completed'),
+              Tab(text: 'In Progress'),
+              Tab(text: 'Upcoming'),
             ],
           ),
         ],
@@ -748,309 +331,199 @@ class _TripPageState extends State<TripPage>
     );
   }
 
-  void _showFilterDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          // Initialize with current filter values
-          final destinationController = TextEditingController(
-            text: _destinationFilter,
-          );
-          String tempBidsFilter = _bidsFilter;
-
-          return Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    const Text(
-                      'Filter By',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFF36969),
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {
-                        _clearFilters();
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Clear All'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Destination Field
-                const Text(
-                  'Destination',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: destinationController,
-                    textAlignVertical: TextAlignVertical.center,
-                    decoration: InputDecoration(
-                      hintText: 'Enter destination city...',
-                      hintStyle: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[400],
-                      ),
-                      prefixIcon: Icon(
-                        Icons.location_on,
-                        color: Colors.grey[400],
-                        size: 20,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Status Section
-                const Text(
-                  'Status :',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _filterChip('Completed', false, () {
-                      Navigator.pop(context);
-                      _tabController.animateTo(0);
-                    }),
-                    _filterChip('In-progress', false, () {
-                      Navigator.pop(context);
-                      _tabController.animateTo(1);
-                    }),
-                    _filterChip('Upcoming', false, () {
-                      Navigator.pop(context);
-                      _tabController.animateTo(2);
-                    }),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Bids Section
-                const Text(
-                  'Bids :',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _filterChip(
-                      'Bids Available',
-                      tempBidsFilter == 'available',
-                      () {
-                        setModalState(() {
-                          tempBidsFilter = tempBidsFilter == 'available'
-                              ? ''
-                              : 'available';
-                        });
-                      },
-                    ),
-                    _filterChip(
-                      'Bids Awaiting',
-                      tempBidsFilter == 'awaiting',
-                      () {
-                        setModalState(() {
-                          tempBidsFilter = tempBidsFilter == 'awaiting'
-                              ? ''
-                              : 'awaiting';
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Apply Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _destinationFilter = destinationController.text.trim();
-                        _bidsFilter = tempBidsFilter;
-                      });
-                      Navigator.pop(context);
-                      Get.snackbar(
-                        '✅ Filters Applied',
-                        'Showing filtered trips',
-                        snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: Colors.green.withValues(alpha: 0.8),
-                        colorText: Colors.white,
-                        duration: const Duration(seconds: 2),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF36969),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Apply Filters',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _filterChip(String label, bool isSelected, VoidCallback onTap) {
+  // ── FAB ──────────────────────────────────────────────────────────────────
+  Widget _fab({required String label, required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF36969) : Colors.grey[100],
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFF36969) : Colors.grey[300]!,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: _primary,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFDFF5EB), width: 1.5),
+          boxShadow: [BoxShadow(color: _primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : Colors.black87,
-          ),
-        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Text(label, style: GoogleFonts.poppins(
+            fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+        ]),
       ),
     );
   }
-}
 
-/// Pinned TabBar header delegate
-class _TabBarHeader extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  _TabBarHeader({required this.child});
-
-  @override
-  double get minExtent => 64;
-  @override
-  double get maxExtent => 64;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
+  // ── filter bottom sheet ──────────────────────────────────────────────────
+  void _showFilterDialog(BuildContext context) {
+    final destCtrl = TextEditingController(text: _destFilter);
+    String tempBids = _bidsFilter;
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setModal) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: _card, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Text('Filter Trips', style: GoogleFonts.poppins(
+              fontSize: 18, fontWeight: FontWeight.w700, color: _primary)),
+            const Spacer(),
+            TextButton(
+              onPressed: () { _clearFilters(); Navigator.pop(ctx); },
+              child: Text('Clear All', style: GoogleFonts.poppins(
+                fontSize: 13, color: _textGrey))),
+          ]),
+          const SizedBox(height: 20),
+          Text('Destination', style: GoogleFonts.poppins(
+            fontSize: 13, fontWeight: FontWeight.w600, color: _textMid)),
+          const SizedBox(height: 8),
+          _filterInput(destCtrl, 'Enter destination city…', Iconsax.location),
+          const SizedBox(height: 20),
+          Text('Status', style: GoogleFonts.poppins(
+            fontSize: 13, fontWeight: FontWeight.w600, color: _textMid)),
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _chip('Completed',   () { Navigator.pop(ctx); _tabController.animateTo(0); }),
+            _chip('In Progress', () { Navigator.pop(ctx); _tabController.animateTo(1); }),
+            _chip('Upcoming',    () { Navigator.pop(ctx); _tabController.animateTo(2); }),
+          ]),
+          const SizedBox(height: 20),
+          Text('Bids', style: GoogleFonts.poppins(
+            fontSize: 13, fontWeight: FontWeight.w600, color: _textMid)),
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, children: [
+            _toggleChip('Bids Available', tempBids == 'available', () => setModal(() => tempBids = tempBids == 'available' ? '' : 'available')),
+            _toggleChip('Bids Awaiting',  tempBids == 'awaiting',  () => setModal(() => tempBids = tempBids == 'awaiting'  ? '' : 'awaiting')),
+          ]),
+          const SizedBox(height: 24),
+          SizedBox(width: double.infinity, child: ElevatedButton(
+            onPressed: () {
+              setState(() { _destFilter = destCtrl.text.trim(); _bidsFilter = tempBids; });
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primary, foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0),
+            child: Text('Apply Filters', style: GoogleFonts.poppins(
+              fontSize: 15, fontWeight: FontWeight.w600)),
+          )),
+          const SizedBox(height: 8),
+        ]),
+      )),
+    );
   }
 
-  @override
-  bool shouldRebuild(covariant _TabBarHeader oldDelegate) => false;
+  Widget _filterInput(TextEditingController ctrl, String hint, IconData icon) {
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(
+        color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
+      child: Row(children: [
+        const SizedBox(width: 12),
+        Icon(icon, size: 18, color: _textGrey),
+        const SizedBox(width: 8),
+        Expanded(child: TextField(
+          controller: ctrl,
+          style: GoogleFonts.poppins(fontSize: 13, color: _textDark),
+          decoration: InputDecoration(hintText: hint,
+            hintStyle: GoogleFonts.poppins(fontSize: 13, color: _textGrey),
+            border: InputBorder.none, isDense: true),
+        )),
+      ]),
+    );
+  }
+
+  Widget _chip(String label, VoidCallback onTap) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: _bg, borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border)),
+      child: Text(label, style: GoogleFonts.poppins(
+        fontSize: 12, fontWeight: FontWeight.w500, color: _textMid)),
+    ),
+  );
+
+  Widget _toggleChip(String label, bool active, VoidCallback onTap) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: active ? _primary : _bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: active ? _primary : _border)),
+      child: Text(label, style: GoogleFonts.poppins(
+        fontSize: 12, fontWeight: FontWeight.w500,
+        color: active ? Colors.white : _textMid)),
+    ),
+  );
 }
 
-/// The 3 tab lists
+// ── Status helpers ────────────────────────────────────────────────────────────
+bool _isUpcoming(String s) {
+  final v = s.toLowerCase().trim();
+  return v == 'draft' || v == 'scheduled' || v == 'created' ||
+      v == 'upcoming' || v == 'pending' ||
+      v == 'pending-lr-confirmation' || v == 'awaiting-lr-confirmation' ||
+      v == 'lr-confirmed';
+}
+bool _isInProcess(String s) {
+  final v = s.toLowerCase().trim();
+  return v == 'in-progress' || v == 'in progress' || v == 'inprogress' ||
+      v == 'ongoing' || v == 'active' || v == 'en-route-to-pickup' ||
+      v == 'arrived-at-pickup' || v == 'arrived' ||
+      v == 'awaiting-pod' || v == 'pod-collected' ||
+      v.contains('process') || v.contains('progress');
+}
+bool _isCompleted(String s) {
+  final v = s.toLowerCase().trim();
+  return v == 'completed' || v == 'cancelled' || v == 'done' ||
+      v == 'finished' || v.contains('complete');
+}
+
+Color _statusColor(String s) {
+  if (_isCompleted(s))  return _completedColor;
+  if (_isInProcess(s))  return _inProcessColor;
+  return _upcomingColor;
+}
+Color _statusBg(String s) {
+  if (_isCompleted(s))  return _completedBg;
+  if (_isInProcess(s))  return _inProcessBg;
+  return _upcomingBg;
+}
+String _statusLabel(String s) {
+  if (_isCompleted(s))  return 'Completed';
+  if (_isInProcess(s))  return 'In Progress';
+  return 'Upcoming';
+}
+
+// ── Pinned tab header ─────────────────────────────────────────────────────────
+class _PinnedTabBar extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  const _PinnedTabBar({required this.child});
+  @override double get minExtent => 52;
+  @override double get maxExtent => 52;
+  @override Widget build(_, __, ___) => child;
+  @override bool shouldRebuild(_) => false;
+}
+
+// ── Tab views ─────────────────────────────────────────────────────────────────
 class _TripsTabViews extends StatelessWidget {
   final TripController tripController;
   final TabController tabController;
+  final List<Trip> Function(List<Trip>) filterFn;
+  const _TripsTabViews({required this.tripController, required this.tabController, required this.filterFn});
 
-  const _TripsTabViews({
-    required this.tripController,
-    required this.tabController,
-  });
+  String _loc(String full) => full.isEmpty ? 'Unknown' : full.split(',').first.trim();
 
-  Color _getStatusColor(String status) {
-    final lowerStatus = status.toLowerCase();
-    if (lowerStatus.contains('complete')) {
-      return Colors.green;
-    } else if (lowerStatus.contains('process') ||
-        lowerStatus.contains('progress') ||
-        lowerStatus.contains('ongoing')) {
-      return Colors.blue;
-    } else if (lowerStatus.contains('upcoming') ||
-        lowerStatus.contains('pending')) {
-      return Colors.orange;
-    }
-    return Colors.grey;
-  }
-
-  String _getLocationName(String location) {
-    if (location.isEmpty) return 'Unknown';
-    final parts = location.split(',');
-    return parts.isNotEmpty ? parts[0].trim() : location;
-  }
-
-  String _formatDate(DateTime? date, String time) {
-    if (date == null) return time;
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final dateStr =
-        '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
-    final timeStr = time.isNotEmpty
-        ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
-        : '';
-    return "$dateStr$timeStr";
+  String _fmtDate(DateTime? d, String t) {
+    if (d == null) return t;
+    final ms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final ts = t.length > 5 ? t.substring(0, 5) : t;
+    return '${ms[d.month-1]} ${d.day.toString().padLeft(2,'0')}, ${d.year}${ts.isNotEmpty ? ' · $ts' : ''}';
   }
 
   @override
@@ -1058,703 +531,489 @@ class _TripsTabViews extends StatelessWidget {
     return TabBarView(
       controller: tabController,
       children: [
-        // Completed
-        Obx(() {
-          final completedTrips = tripController.getTripsByStatus('Completed');
-          if (tripController.isTripsLoading.value) {
-            return const CustomLoader(message: "Loading trips...");
-          }
-          if (completedTrips.isEmpty) {
-            return const Center(child: Text("No completed trips"));
-          }
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            children: completedTrips.map((trip) {
-              return GestureDetector(
-                onTap: () {
-                  Get.to(() => TripExpensesScreen(tripId: trip.tripId));
-                },
-                child: _TripTile(
-                  tripId: trip.tripId,
-                  userId: trip.userId,
-                  title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
-                  subtitle:
-                      "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
-                  statusColor: _getStatusColor(trip.tripStatus),
-                  statusText: trip.tripStatus,
-                  date: _formatDate(trip.pickupDate, trip.pickupTime),
-                  chip: trip.vehicleType ?? "Standard",
-                  vehicle: trip.vehicleNumber ?? '',
-                  driver: trip.driverName ?? 'Not assigned',
-                  driverContact: trip.driverContact ?? '',
-                ),
-              );
-            }).toList(),
-          );
-        }),
-
-        // In-Process
-        Obx(() {
-          final inProcessTrips = tripController.getTripsByStatus('In-Process');
-          if (tripController.isTripsLoading.value) {
-            return const CustomLoader(message: "Loading trips...");
-          }
-          if (inProcessTrips.isEmpty) {
-            return const Center(child: Text("No in-process trips"));
-          }
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            children: inProcessTrips.map((trip) {
-              return _TripTile(
-                tripId: trip.tripId,
-                userId: trip.userId,
-                title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
-                subtitle:
-                    "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
-                statusColor: _getStatusColor(trip.tripStatus),
-                statusText: trip.tripStatus,
-                date: _formatDate(trip.pickupDate, trip.pickupTime),
-                chip: trip.vehicleType ?? "Standard",
-                vehicle: trip.vehicleNumber ?? '',
-                driver: trip.driverName ?? 'Not assigned',
-                driverContact: trip.driverContact ?? '',
-                onComplete: () {
-                  tripController.completeTrip(trip.tripId, trip.userId);
-                },
-              );
-            }).toList(),
-          );
-        }),
-
-        // Upcoming
-        Obx(() {
-          final upcomingTrips = tripController.getTripsByStatus('Upcoming');
-          if (tripController.isTripsLoading.value) {
-            return const CustomLoader(message: "Loading trips...");
-          }
-          if (upcomingTrips.isEmpty) {
-            return const Center(child: Text("No upcoming trips"));
-          }
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            children: upcomingTrips.map((trip) {
-              print('Driver Image Path: ${trip.driverImagePath}'); 
-              return _UpcomingTripCard(
-                trip: trip,
-                tripId: trip.tripId,
-                title: "Trip to ${_getLocationName(trip.deliveryLocation)}",
-                subtitle:
-                    "${_getLocationName(trip.pickupLocation)} → ${_getLocationName(trip.deliveryLocation)}",
-                statusColor: _getStatusColor(trip.tripStatus),
-                statusText: trip.tripStatus,
-                date: _formatDate(trip.pickupDate, trip.pickupTime),
-                chip: trip.vehicleType ?? "Standard",
-                assignedTo: trip.driverName ?? 'Not assigned',
-                // assignedToImage: "https://i.pravatar.cc/150?img=4",
-                assignedToImage: trip.driverImagePath,
-                bidsAvailable: trip.totalBidCount,
-              );
-            }).toList(),
-          );
-        }),
+        _tripList(context, 'completed'),
+        _tripList(context, 'in-process'),
+        _tripList(context, 'upcoming'),
       ],
     );
   }
-}
 
-/// Upcoming Trip Card with View Bids functionality
-class _UpcomingTripCard extends StatelessWidget {
-  final Trip trip;
-  final String tripId;
-  final String title;
-  final String subtitle;
-  final String statusText;
-  final Color statusColor;
-  final String date;
-  final String chip;
-  final String assignedTo;
-  // final String assignedToImage;
-  final int bidsAvailable;
-  final String? assignedToImage;
+  Widget _tripList(BuildContext context, String tab) {
+    return Obx(() {
+      if (tripController.isTripsLoading.value) {
+        return const Center(child: CustomLoader(message: 'Loading trips…'));
+      }
+      final all = tripController.getTripsByStatus(
+        tab == 'upcoming' ? 'Upcoming' : tab == 'in-process' ? 'In-Process' : 'Completed');
+      final filtered = filterFn(all);
 
-  const _UpcomingTripCard({
-    required this.trip,
-    required this.tripId,
-    required this.title,
-    required this.subtitle,
-    required this.statusText,
-    required this.statusColor,
-    required this.date,
-    required this.chip,
-    required this.assignedTo,
-    required this.assignedToImage,
-    required this.bidsAvailable,
-  });
+      if (filtered.isEmpty) return _empty(tab);
 
-  @override
-  Widget build(BuildContext context) {
-    // Determine whether the driver is truly assigned
-    final bool isDriverAssigned =
-        assignedTo.isNotEmpty && assignedTo != 'Not assigned';
+      return ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        itemCount: filtered.length,
+        itemBuilder: (_, i) {
+          final trip = filtered[i];
+          return _AnimatedCard(
+            index: i,
+            child: tab == 'upcoming'
+                ? _UpcomingTripCard(
+                    trip: trip,
+                    onViewBids:    () => Get.to(() => BidsScreen(tripId: trip.tripId)),
+                    onDetails:     () => Get.to(() => TripDetailsScreen(trip: trip)),
+                    onShare:       () => _shareTrip(trip),
+                    date: _fmtDate(trip.pickupDate, trip.pickupTime),
+                    from: _loc(trip.pickupLocation),
+                    to:   _loc(trip.deliveryLocation),
+                  )
+                : _TripTile(
+                    trip: trip,
+                    date: _fmtDate(trip.pickupDate, trip.pickupTime),
+                    from: _loc(trip.pickupLocation),
+                    to:   _loc(trip.deliveryLocation),
+                    onComplete:     tab == 'in-process' ? () => tripController.completeTrip(trip.tripId, trip.userId) : null,
+                    onTrack:        tab == 'in-process' ? () => Get.to(() => CompanyTrackTripScreen(tripId: trip.tripId)) : null,
+                    onViewPod:      tab == 'completed'  ? () => Get.to(() => PodViewScreen(tripId: trip.tripId)) : null,
+                    onViewExpenses: tab == 'completed'  ? () => Get.to(() => TripExpensesScreen(tripId: trip.tripId)) : null,
+                  ),
+          );
+        },
+      );
+    });
+  }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Trip Image
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                child: Image.asset(
-                  AppImages.trip,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        statusText,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.teal[50],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        chip,
-                        style: const TextStyle(
-                          color: Colors.teal,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: Colors.black54,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        date,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on,
-                      size: 14,
-                      color: Colors.green,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.person, size: 14, color: Colors.blue),
-                    const SizedBox(width: 6),
-                    const Text(
-                      "Assigned to:",
-                      style: TextStyle(fontSize: 13, color: Colors.black87),
-                    ),
-                    const SizedBox(width: 6),
-                    // Safe avatar using CachedNetworkImage –
-                    // handles extension-less URLs and network failures gracefully
-                    _SafeAvatar(
-                      imageUrl: isDriverAssigned ? assignedToImage : null,
-                      radius: 12,
-                      fallbackAsset: 'assets/driver.png',
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        isDriverAssigned ? assignedTo : 'Unassigned',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: isDriverAssigned
-                              ? Colors.black87
-                              : Colors.orange,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (trip.driverId.isEmpty &&
-                    (trip.driverName == null || trip.driverName!.isEmpty)) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "$bidsAvailable ${bidsAvailable == 1 ? 'Bid' : 'Bids'} Available",
-                      style: TextStyle(
-                        color: Colors.blue[700],
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                // Share Trip + View Bids row
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    // Share Trip Button
-                    _actionButton(
-                      icon: Icons.share,
-                      label: 'Share',
-                      color: const Color(0xFFF36969),
-                      onTap: () => _shareTrip(trip),
-                    ),
-                    if (trip.driverId.isEmpty &&
-                        (trip.driverName == null || trip.driverName!.isEmpty))
-                      // View Bids Button
-                      _actionButton(
-                        icon: Icons.description,
-                        label: 'View Bids',
-                        color: bidsAvailable > 0 ? Colors.blue : Colors.grey,
-                        onTap: bidsAvailable > 0
-                            ? () => Get.to(() => BidsScreen(tripId: tripId))
-                            : null,
-                      ),
-                    // Details Button
-                    _actionButton(
-                      icon: Icons.arrow_forward,
-                      label: 'Details',
-                      color: Colors.green,
-                      onTap: () => Get.to(() => TripDetailsScreen(trip: trip)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  Widget _empty(String tab) {
+    final labels = {'upcoming': 'No upcoming trips', 'in-process': 'No active trips', 'completed': 'No completed trips'};
+    final icons  = {'upcoming': Iconsax.calendar_1, 'in-process': Iconsax.routing, 'completed': Iconsax.tick_circle};
+    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Container(
+        width: 72, height: 72,
+        decoration: BoxDecoration(color: _primaryLt, borderRadius: BorderRadius.circular(20)),
+        child: Icon(icons[tab] ?? Iconsax.routing, color: _primary, size: 32)),
+      const SizedBox(height: 16),
+      Text(labels[tab] ?? 'No trips', style: GoogleFonts.poppins(
+        fontSize: 16, fontWeight: FontWeight.w600, color: _textMid)),
+      const SizedBox(height: 6),
+      Text('Pull to refresh or create a new trip', style: GoogleFonts.poppins(
+        fontSize: 12, color: _textGrey)),
+    ]));
   }
 
   void _shareTrip(Trip trip) {
-    final pickupShort = trip.pickupLocation.split(',').first.trim();
-    final deliveryShort = trip.deliveryLocation.split(',').first.trim();
-
-    final dateStr = trip.pickupDate != null
-        ? '${trip.pickupDate!.day}/${trip.pickupDate!.month}/${trip.pickupDate!.year}'
-        : 'Not scheduled';
-
-    final shareText =
-        '''
-🚚 Trip Details from Wheelboard
-
-📍 From: $pickupShort
-📍 To: $deliveryShort
-📅 Date: $dateStr
-⏰ Time: ${trip.pickupTime.isNotEmpty ? trip.pickupTime : 'Not specified'}
-🚗 Driver: ${trip.driverName ?? 'Not assigned'}
-
-🔗 View on Wheelboard: https://wheelboard.in/trips/${trip.tripId}
-''';
-
-    Share.share(shareText.trim());
-  }
-
-  Widget _actionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
+    // Generate a live navigation share link (OTP + URL) exactly like the web
+    // ShareNavigationModal — instead of a static message.
+    final ctx = Get.context;
+    if (ctx == null) return;
+    // Web passes the Mongo _id (trip.id) to /share-navigation/generate, not the
+    // human-readable tripId code. Fall back to tripId only if _id is missing.
+    final shareId = trip.id.isNotEmpty ? trip.id : trip.tripId;
+    ShareNavigationSheet.show(
+      ctx,
+      tripId: shareId,
+      from: trip.pickupLocation,
+      to: trip.deliveryLocation,
+      vehicleNumber: trip.vehicleNumber,
     );
   }
 }
 
-/// Simple card row for Completed and In-Process trips
-class _TripTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String statusText;
-  final Color statusColor;
-  final String date;
-  final String chip;
-  final String vehicle;
-  final String driver;
-  final String driverContact;
+// ── Animated card wrapper (stagger fade + slide) ──────────────────────────────
+class _AnimatedCard extends StatefulWidget {
+  final int index;
+  final Widget child;
+  const _AnimatedCard({required this.index, required this.child});
+  @override State<_AnimatedCard> createState() => _AnimatedCardState();
+}
+class _AnimatedCardState extends State<_AnimatedCard> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double>   _fade;
+  late Animation<Offset>   _slide;
 
-  final String tripId;
-  final String userId;
-  final VoidCallback? onComplete;
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween(begin: const Offset(0, 0.06), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    Future.delayed(Duration(milliseconds: widget.index * 60), () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+  @override void dispose() { _ctrl.dispose(); super.dispose(); }
 
-  const _TripTile({
-    required this.tripId,
-    required this.userId,
-    required this.title,
-    required this.subtitle,
-    required this.statusText,
-    required this.statusColor,
-    required this.date,
-    required this.chip,
-    this.vehicle = '',
-    this.driver = '',
-    this.driverContact = '',
-    this.onComplete,
+  @override
+  Widget build(BuildContext ctx) => FadeTransition(opacity: _fade,
+    child: SlideTransition(position: _slide, child: widget.child));
+}
+
+// ── Upcoming Trip Card ────────────────────────────────────────────────────────
+class _UpcomingTripCard extends StatelessWidget {
+  final Trip trip;
+  final String date, from, to;
+  final VoidCallback? onViewBids, onDetails, onShare;
+
+  const _UpcomingTripCard({
+    required this.trip, required this.date, required this.from, required this.to,
+    this.onViewBids, this.onDetails, this.onShare,
   });
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri phoneUri = Uri.parse('tel:$phoneNumber');
-    if (await canLaunchUrl(phoneUri)) {
-      await launchUrl(phoneUri);
-    }
+  bool get _hasDriver => trip.driverId.isNotEmpty && (trip.driverName?.isNotEmpty ?? false) && trip.driverName != 'Not assigned';
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = _statusColor(trip.tripStatus);
+    final sb = _statusBg(trip.tripStatus);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: _card, borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ── icon header ───────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: trip.isScheduledTrip ? const Color(0xFFF3E8FF) : const Color(0xFFFFF1F1),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                ),
+                child: Icon(
+                  trip.isScheduledTrip ? Iconsax.calendar_tick : Iconsax.truck_fast, 
+                  color: trip.isScheduledTrip ? const Color(0xFF9333EA) : _primary, 
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      trip.tripId, 
+                      style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: _textDark),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      trip.isScheduledTrip ? 'Scheduled Trip' : 'New Assignment', 
+                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: _textGrey),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _badge(_statusLabel(trip.tripStatus), sc, bg: sb, darkText: true),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // ── body ──────────────────────────────────────────────────
+        Padding(padding: const EdgeInsets.all(16), child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // route
+            Row(children: [
+              const SizedBox(width: 4),
+              Expanded(child: Column(children: [
+                _locRow(from, isStart: true),
+                Padding(padding: const EdgeInsets.only(left: 5),
+                  child: Container(width: 1, height: 16, color: _border)),
+                _locRow(to, isStart: false),
+              ])),
+            ]),
+            const SizedBox(height: 12),
+            const Divider(color: _border, height: 1),
+            const SizedBox(height: 12),
+
+            // meta row
+            Wrap(spacing: 16, runSpacing: 6, children: [
+              _metaChip(Iconsax.calendar_1, date),
+              if (trip.vehicleNumber?.isNotEmpty ?? false)
+                _metaChip(Iconsax.truck, trip.vehicleNumber!),
+              if (trip.payRange.isNotEmpty)
+                _metaChip(Iconsax.money, trip.payRange),
+            ]),
+            const SizedBox(height: 12),
+
+            // assigned driver / bids
+            if (_hasDriver)
+              Row(children: [
+                _SafeAvatar(imageUrl: trip.driverImagePath, radius: 14),
+                const SizedBox(width: 8),
+                Expanded(child: Text(trip.driverName ?? '',
+                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: _textMid),
+                  maxLines: 1, overflow: TextOverflow.ellipsis)),
+              ])
+            else if (trip.totalBidCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: _inProcessBg, borderRadius: BorderRadius.circular(8)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Iconsax.people, size: 14, color: _inProcessColor),
+                  const SizedBox(width: 6),
+                  Text('${trip.totalBidCount} bid${trip.totalBidCount == 1 ? '' : 's'} received',
+                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: _inProcessColor)),
+                ])),
+
+            const SizedBox(height: 14),
+
+            // action buttons — mirrors web /company/trips:
+            //   scheduled trip → Share (navigation link + OTP)
+            //   created trip   → View Bids (open for professional bidding)
+            Row(children: [
+              Expanded(child: trip.isScheduledTrip
+                  ? _filledBtn(icon: Iconsax.share, label: 'Share', onTap: onShare)
+                  : _filledBtn(icon: Iconsax.people, label: 'View Bids', onTap: onViewBids)),
+              const SizedBox(width: 8),
+              Expanded(child: _outlineBtn(icon: Iconsax.eye, label: 'Details', onTap: onDetails)),
+            ]),
+          ],
+        )),
+      ]),
+    );
+  }
+
+  Widget _locRow(String label, {required bool isStart}) {
+    return Row(children: [
+      Container(
+        width: 10, height: 10,
+        decoration: BoxDecoration(
+          color: isStart ? _completedColor : _primary,
+          shape: BoxShape.circle,
+          border: Border.all(color: isStart ? _completedColor.withValues(alpha: 0.3) : _primaryLt, width: 3)),
+      ),
+      const SizedBox(width: 8),
+      Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark))),
+    ]);
+  }
+}
+
+// ── Completed / In-Process Trip Tile ─────────────────────────────────────────
+class _TripTile extends StatelessWidget {
+  final Trip trip;
+  final String date, from, to;
+  final VoidCallback? onComplete, onTrack, onViewPod, onViewExpenses;
+
+  const _TripTile({
+    required this.trip, required this.date, required this.from, required this.to,
+    this.onComplete, this.onTrack, this.onViewPod, this.onViewExpenses,
+  });
+
+  Future<void> _call(String n) async {
+    final uri = Uri.parse('tel:$n');
+    if (await canLaunchUrl(uri)) launchUrl(uri);
   }
 
   @override
   Widget build(BuildContext context) {
+    final sc = _statusColor(trip.tripStatus);
+    final sb = _statusBg(trip.tripStatus);
+    final inProcess = _isInProcess(trip.tripStatus);
+    final completed = _isCompleted(trip.tripStatus);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: const Border(
-          left: BorderSide(color: Color(0xFF4CAF50), width: 4),
-        ),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
+        color: _card, borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Trip Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                AppImages.trip,
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Status pill
+      child: Padding(padding: const EdgeInsets.all(16), child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // status + date
+          Row(children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: statusColor),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    statusText.toLowerCase().contains('complete')
-                        ? Icons.check_circle
-                        : statusText.toLowerCase().contains('process') ||
-                              statusText.toLowerCase().contains('progress')
-                        ? Icons.autorenew
-                        : Icons.access_time,
-                    color: statusColor,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    statusText,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+              decoration: BoxDecoration(color: sb, borderRadius: BorderRadius.circular(20)),
+              child: Text(_statusLabel(trip.tripStatus),
+                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: sc))),
+            const Spacer(),
+            Text(date, style: GoogleFonts.poppins(fontSize: 11, color: _textGrey)),
+          ]),
+          const SizedBox(height: 12),
 
-            // Trip Title
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-
-            // Subtitle (Route)
-            Row(
+          // route visualization
+          Row(children: [
+            Column(children: [
+              _dot(_completedColor),
+              Container(width: 1.5, height: 24, color: _border),
+              _dot(_primary),
+            ]),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.location_on, size: 14, color: Colors.green[600]),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+                Text(from, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 14),
+                Text(to, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
-            ),
-            const SizedBox(height: 10),
+            )),
+          ]),
+          const SizedBox(height: 12),
 
-            // Date Row
-            Row(
-              children: [
-                const Icon(
-                  Icons.calendar_today,
-                  size: 14,
-                  color: Colors.black54,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  date,
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
-                ),
-              ],
-            ),
+          // vehicle + driver chips
+          Wrap(spacing: 8, runSpacing: 6, children: [
+            if (trip.vehicleNumber?.isNotEmpty ?? false)
+              _infoChip(Iconsax.truck, trip.vehicleNumber!),
+            if (trip.vehicleType?.isNotEmpty ?? false)
+              _infoChip(Iconsax.category, trip.vehicleType!),
+            if (trip.driverName?.isNotEmpty ?? false)
+              _infoChip(Iconsax.user, trip.driverName!),
+          ]),
 
-            // Vehicle Row
-            if (vehicle.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.directions_car,
-                    size: 14,
-                    color: Colors.black54,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      vehicle,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+          const SizedBox(height: 14),
+          const Divider(color: _border, height: 1),
+          const SizedBox(height: 12),
+
+          // action buttons
+          if (inProcess) Row(children: [
+            Expanded(child: _outlineBtn(icon: Iconsax.location_tick, label: 'Track', onTap: onTrack)),
+            const SizedBox(width: 8),
+            if (trip.driverContact?.isNotEmpty ?? false)
+              _iconBtn(icon: Iconsax.call, onTap: () => _call(trip.driverContact!)),
+            if (trip.driverContact?.isNotEmpty ?? false) const SizedBox(width: 8),
+            Expanded(child: _filledBtn(
+              icon: Iconsax.tick_circle, label: 'Complete',
+              onTap: () => Get.dialog(AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Text('Complete Trip', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+                content: Text('Are you sure you want to end this trip?', style: GoogleFonts.poppins(fontSize: 14)),
+                actions: [
+                  TextButton(onPressed: Get.back, child: const Text('Cancel')),
+                  ElevatedButton(
+                    onPressed: () { Get.back(); if (onComplete != null) onComplete!(); },
+                    style: ElevatedButton.styleFrom(backgroundColor: _completedColor, elevation: 0),
+                    child: const Text('Confirm', style: TextStyle(color: Colors.white))),
                 ],
-              ),
-            ],
-
-            // Driver Row
-            if (driver.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.person, size: 14, color: Colors.black54),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      driver,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (driverContact.isNotEmpty)
-                    GestureDetector(
-                      onTap: () => _makePhoneCall(driverContact),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.phone,
-                          size: 14,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-            // Complete Trip Button (Only for In-Process trips)
-            if (statusText.toLowerCase().contains('process') ||
-                statusText.toLowerCase().contains('progress') ||
-                statusText.toLowerCase().contains('ongoing')) ...[
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Get.dialog(
-                      AlertDialog(
-                        title: const Text("Complete Trip"),
-                        content: const Text(
-                          "Are you sure you want to end this trip?",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Get.back(),
-                            child: const Text("Cancel"),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              Get.back();
-                              if (onComplete != null) {
-                                onComplete!();
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text("Confirm"),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.check_circle_outline, size: 18),
-                  label: const Text(
-                    "Complete Trip",
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+              ))
+            )),
+          ])
+          else if (completed) Row(children: [
+            Expanded(child: _outlineBtn(icon: Iconsax.receipt_2, label: 'Expenses', onTap: onViewExpenses)),
+            const SizedBox(width: 8),
+            Expanded(child: _filledBtn(icon: Iconsax.document_text, label: 'View POD', onTap: onViewPod, color: _completedColor)),
+          ]),
+        ],
+      )),
     );
   }
+
+  Widget _dot(Color c) => Container(
+    width: 10, height: 10,
+    decoration: BoxDecoration(color: c, shape: BoxShape.circle,
+      border: Border.all(color: c.withValues(alpha: 0.3), width: 3)));
+}
+
+// ── Shared action widgets ─────────────────────────────────────────────────────
+Widget _badge(String label, Color color, {Color? bg, bool darkText = false}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: bg ?? color.withValues(alpha: 0.85),
+      borderRadius: BorderRadius.circular(20)),
+    child: Text(label, style: GoogleFonts.poppins(
+      fontSize: 11, fontWeight: FontWeight.w700,
+      color: darkText ? color : Colors.white)));
+}
+
+Widget _metaChip(IconData icon, String label) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF9FAFB),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: _border),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 14, color: _textGrey),
+      const SizedBox(width: 6),
+      Text(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: _textMid)),
+    ]),
+  );
+}
+
+Widget _infoChip(IconData icon, String label) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF3F4F6),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: _border),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 14, color: _textMid),
+      const SizedBox(width: 6),
+      Text(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: _textDark),
+        maxLines: 1),
+    ]));
+}
+
+Widget _filledBtn({required IconData icon, required String label,
+    VoidCallback? onTap, Color color = _primary}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 38,
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(icon, size: 14, color: Colors.white),
+        const SizedBox(width: 6),
+        Text(label, style: GoogleFonts.poppins(
+          fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+      ]),
+    ),
+  );
+}
+
+Widget _outlineBtn({required IconData icon, required String label, VoidCallback? onTap}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 38,
+      decoration: BoxDecoration(
+        border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(10)),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(icon, size: 14, color: _textMid),
+        const SizedBox(width: 6),
+        Text(label, style: GoogleFonts.poppins(
+          fontSize: 12, fontWeight: FontWeight.w600, color: _textMid)),
+      ]),
+    ),
+  );
+}
+
+Widget _iconBtn({required IconData icon, required VoidCallback onTap}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 38, height: 38,
+      decoration: BoxDecoration(border: Border.all(color: _border), borderRadius: BorderRadius.circular(10)),
+      child: Icon(icon, size: 16, color: _textMid)));
+}
+
+// ── Data models ───────────────────────────────────────────────────────────────
+class _StatDot {
+  final String label, value;
+  final Color color, bg;
+  const _StatDot({required this.label, required this.value, required this.color, required this.bg});
 }

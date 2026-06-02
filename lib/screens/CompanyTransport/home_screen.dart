@@ -1,1071 +1,1133 @@
 import 'package:flutter/material.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
-import 'package:wheelboard/screens/CompanyTransport/dashboard.dart';
-import 'package:wheelboard/screens/CompanyTransport/notification_screen.dart';
-import '../../controllers/Transport/notification_controller.dart';
-import 'banner_carousel.dart';
-import 'fleet_userprofile.dart';
 import 'package:get/get.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:iconsax/iconsax.dart';
+
+import '../../controllers/Professional/feeds_controller.dart';
+import '../../controllers/Transport/dashboard_controller.dart';
+import '../../controllers/Transport/job_controller.dart';
+import '../../controllers/Transport/post_controller.dart';
+import '../../models/job_model.dart';
+import '../../controllers/Transport/notification_controller.dart';
+import '../../controllers/Transport/user_profile_controller.dart';
+import '../../core/auth/auth_service.dart';
+import '../../utils/constants.dart';
+import '../../utils/share_service.dart';
+import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
+import 'banner_carousel.dart';
 import 'companyuser_profile_screen.dart';
+import 'dashboard.dart';
+import 'feed_screen.dart';
+import 'fleet_screen.dart';
+import 'fleet_userprofile.dart';
+import 'job_form_screen.dart';
+import 'job_screen.dart';
+import 'notification_screen.dart';
+import 'professional_list.dart';
 import 'service_dashboard.dart';
 import 'services_screen.dart';
-import '../../utils/share_service.dart';
-import 'job_form_screen.dart';
-import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
-import 'professional_list.dart';
-import 'fleet_screen.dart';
-import '../../controllers/Transport/user_profile_controller.dart';
-import '../../utils/constants.dart';
-import 'package:wheelboard/controllers/Transport/job_controller.dart';
-import 'package:wheelboard/screens/CompanyTransport/job_screen.dart';
-import '../../controllers/Professional/feeds_controller.dart';
-import 'feed_screen.dart';
-import '../../services/auth_service.dart';
-import '../../controllers/Transport/post_controller.dart';
-import '../../widgets/custom_loader.dart';
-import '../../utils/app_logger.dart';
 
-class HomeScreen extends StatelessWidget {
-  HomeScreen({super.key});
-  final List<Map<String, dynamic>> menuItems = [
-    {'icon': 'assets/vehicle.svg', 'label': 'Vehicles'},
-    {'icon': 'assets/professional.svg', 'label': 'Professional'},
-    {'icon': 'assets/expense.svg', 'label': 'Expenses'},
-    {'icon': 'assets/hire.svg', 'label': 'Hire'},
-    {'icon': 'assets/servicelogo.svg', 'label': 'Services'},
-    {'icon': 'assets/dashboard.svg', 'label': 'Dashboard'},
+// ─── Design tokens ─────────────────────────────────────────────────────────
+
+const _primary = Color(0xFFF36969);
+const _primaryLight = Color(0xFFFFF1F1);
+const _bg = Colors.white;
+const _cardBg = Color(0xFFF9FAFB);
+const _textDark = Color(0xFF111827);
+const _textMid = Color(0xFF374151);
+const _textGrey = Color(0xFF6B7280);
+const _border = Color(0xFFE5E7EB);
+
+// ─── HomeScreen ────────────────────────────────────────────────────────────
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
+
+  late UserProfileController _profileCtrl;
+  late JobController _jobCtrl;
+  late FeedsController _feedsCtrl;
+  late NotificationController _notifCtrl;
+  late DashboardController _dashCtrl;
+
+  static const _menuItems = [
+    _MenuItem('Vehicles',      Iconsax.truck,         Icons.directions_car_rounded),
+    _MenuItem('Professionals', Iconsax.people,        Icons.people_outline_rounded),
+    _MenuItem('Expenses',      Iconsax.wallet_3,      Icons.account_balance_wallet_outlined),
+    _MenuItem('Hire',          Iconsax.briefcase,     Icons.work_outline_rounded),
+    _MenuItem('Services',      Iconsax.setting_2,     Icons.build_circle_outlined),
+    _MenuItem('Dashboard',     Iconsax.chart_2,       Icons.bar_chart_rounded),
   ];
 
-  final List<Map<String, dynamic>> stats = [
-    {
-      'label': 'Services',
-      'value': 5,
-      'icon': Icons.work_outline,
-      'bgColor': Color(0xFFFFF1D6),
-      'iconColor': Color(0xFFFBAE4B),
-    },
-    {
-      'label': 'Leads',
-      'value': 12,
-      'icon': Icons.show_chart,
-      'bgColor': Color(0xFFE1FFF3),
-      'iconColor': Color(0xFFFB4B74),
-    },
+  static const _menuColors = [
+    Color(0xFFEFF6FF), // Vehicles - blue
+    Color(0xFFF0FDF4), // Professionals - green
+    Color(0xFFFFFBEB), // Expenses - amber
+    Color(0xFFFFF1F1), // Hire - red
+    Color(0xFFF5F3FF), // Services - purple
+    Color(0xFFF0F9FF), // Dashboard - sky
   ];
-  final String profileImage = 'https://i.pravatar.cc/100';
+
+  static const _menuIconColors = [
+    Color(0xFF3B82F6),
+    Color(0xFF22C55E),
+    Color(0xFFF59E0B),
+    Color(0xFFF36969),
+    Color(0xFF8B5CF6),
+    Color(0xFF0EA5E9),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _profileCtrl = Get.put(UserProfileController());
+    _jobCtrl = Get.put(JobController());
+    _feedsCtrl = Get.put(FeedsController());
+    _notifCtrl = Get.put(NotificationController());
+    _dashCtrl = Get.put(DashboardController());
+
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _profileCtrl.fetchCurrentUserProfile();
+      _notifCtrl.refreshNotifications();
+      _fadeCtrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _fadeCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── Image helpers (secure) ───────────────────────────────────────────────
+
+  String _imageUrl(String path) {
+    if (path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Uri.encodeFull(path);
+    }
+    // Use origin (without /api) for asset paths
+    return Uri.encodeFull('${ApiConstants.origin}/$path'.replaceAll('//', '/').replaceAll(':/', '://'));
+  }
+
+  Map<String, String> get _authHeaders {
+    final token = AuthService.to.currentToken;
+    if (token.isEmpty) return {};
+    return {'Authorization': 'Bearer $token', 'Accept': '*/*'};
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    // Use Get.put to be safe - it will return existing instance if already registered
-    final profileController = Get.put(UserProfileController());
-    final jobController = Get.put(JobController());
-    final feedsController = Get.put(FeedsController());
-    final notificationController = Get.put(NotificationController());
-
-    // Fetch profile and notifications on first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      profileController.fetchCurrentUserProfile();
-      notificationController.refreshNotifications();
-    });
-
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4E3E3,
-      ), // Light pink background from Figma
-      appBar: null,
-      body: SafeArea(
-        child: SingleChildScrollView(
+      backgroundColor: _bg,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// Header
-                Obx(() {
-                  final profile = profileController.userProfile.value;
-                  final companyName =
-                      profile?.displayName ?? 'Delhi Transport.';
-
-                  // Use random profile image - fallback to random avatar service
-                  String profileImageUrl =
-                      'https://i.pravatar.cc/150?img=${DateTime.now().millisecondsSinceEpoch % 70}';
-
-                  // Get profile image URL - handle both full URLs and relative paths
-                  if (profile != null &&
-                      profile.profileImage != null &&
-                      profile.profileImage!.isNotEmpty) {
-                    final imagePath = profile.profileImage!;
-                    // If it's already a full URL, use it as is; otherwise prepend base URL
-                    profileImageUrl =
-                        imagePath.startsWith('http://') ||
-                            imagePath.startsWith('https://')
-                        ? imagePath
-                        : ApiConstants.baseUrl + imagePath;
-                  }
-
-                  return Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Get.to(() => CompanyProfileScreen());
-                        },
-                        child: CircleAvatar(
-                          radius: 25,
-                          backgroundColor: const Color(0xFFF25C5C),
-                          backgroundImage: NetworkImage(profileImageUrl),
-                          onBackgroundImageError: (exception, stackTrace) {
-                            // Link fails
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Welcome!',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w500),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              companyName,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.teal,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Obx(() {
-                        final unreadCount = notificationController.unreadCount;
-
-                        return GestureDetector(
-                          onTap: () {
-                            Get.to(() => const NotificationScreen());
-                          },
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              // Red square with rounded corners and white bell
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors
-                                      .buttonBg, // AppColors.buttonBg (red)
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.notifications,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                              ),
-
-                              // Unread count badge
-                              if (unreadCount > 0)
-                                Positioned(
-                                  top: -2,
-                                  right: -2,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: const BoxDecoration(
-                                      color: Color(
-                                        0xFF317873,
-                                      ), // AppColors.badge
-                                      shape: BoxShape.circle,
-                                    ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 18,
-                                      minHeight: 18,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        unreadCount > 99
-                                            ? '99+'
-                                            : '$unreadCount',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ],
-                  );
-                }),
-                const SizedBox(height: 20),
-
-                /// Banner Image
-                BannerCarousel(),
-                const SizedBox(height: 20),
-
-                /// Menu Grid
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final crossAxisCount = 3;
-
-                    return GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: menuItems.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 0.85,
-                      ),
-                      itemBuilder: (context, index) {
-                        final item = menuItems[index];
-                        return GestureDetector(
-                          onTap: () {
-                            // Handle tap here
-                            AppLogger.d(
-                              'Tapped on item: ${item['label']} (Index: $index)',
-                            );
-
-                            // Vehicles tab
-                            if (index == 0) {
-                              // Navigate to Fleet Vehicles Screen
-                              Get.to(() => FleetVehiclesScreen());
-                            }
-                            // Professional tab
-                            if (index == 1) {
-                              // Navigate to Professional List Screen
-                              Get.to(() => const ProfessionalListScreen());
-                            }
-                            if (index == 2) {
-                              // Expenses - Navigate to Transaction Summary Screen
-                              Get.to(() => TransactionSummaryScreen());
-                            }
-                            if (index == 3) {
-                              // Hire - Navigate to Post Job Screen
-                              Get.to(() => PostJobScreen());
-                            }
-                            if (index == 4) {
-                              // Navigate, show dialog, etc.
-                              Get.to(() => ServiceDashboardScreen());
-                            }
-
-                            if (index == 5) {
-                              // Navigate, show dialog, etc.
-                              Get.to(() => DashboardScreen());
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: _getIconBgColor(index),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: SvgPicture.asset(
-                                      item['icon'],
-                                      height: 30,
-                                      width: 30,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Flexible(
-                                  child: Text(
-                                    item['label'],
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 12,
-                                          color: const Color(0xFF535353),
-                                        ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Recent Jobs Created",
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Get.to(() => const JobsScreen());
-                      },
-                      child: Text(
-                        "view more",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                /// Job Card
-                Obx(() {
-                  if (jobController.isLoading.isTrue) {
-                    return const CustomLoader(message: "Loading jobs...");
-                  }
-
-                  if (jobController.jobs.isEmpty) {
-                    return const Center(child: Text("No recent jobs."));
-                  }
-
-                  // Display first 5 jobs
-                  final recentJobs = jobController.jobs.take(5).toList();
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: recentJobs.length,
-                    itemBuilder: (context, index) {
-                      final job = recentJobs[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            /// Title + Call Now
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      if (job.companyName != null &&
-                                          job.companyName!.isNotEmpty) ...[
-                                        Text(
-                                          job.companyName!,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.buttonBg,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                      ],
-                                      Text(
-                                        job.role,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              color: Colors.grey[600],
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox.shrink(),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-
-                            /// Likes + Applicants
-                            Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    jobController.toggleJobLike(job.jobId);
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        job.isLiked
-                                            ? Icons.thumb_up
-                                            : Icons.thumb_up_alt_outlined,
-                                        size: 16,
-                                        color: job.isLiked
-                                            ? AppColors.buttonBg
-                                            : Colors.grey,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "${job.likeCount} Likes",
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: job.isLiked
-                                                  ? AppColors.buttonBg
-                                                  : null,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Icon(Icons.person_outline, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "${job.openings} Positions",
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-
-                            /// Share + Services
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      // Use ShareService for proper Wheelboard URL
-                                      ShareService.shareJob(
-                                        jobId: job.jobId,
-                                        jobTitle: job.role,
-                                        city: job.city,
-                                        jobType: job.jobType,
-                                        jobDuration: job.jobDuration,
-                                        openings: job.openings,
-                                        salary: job.salary,
-                                        description: job.description,
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF00AEEF),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(
-                                          9999,
-                                        ),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 11,
-                                      ),
-                                    ),
-                                    icon: const Icon(
-                                      Icons.share,
-                                      color: Colors.white,
-                                    ),
-                                    label: Text(
-                                      "Share",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: AppColors.white),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      Get.to(
-                                        () => PostJobScreen(jobToEdit: job),
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(
-                                        0xFFD1E5E2,
-                                      ), // Light green from Figma
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(
-                                          9999,
-                                        ),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 11,
-                                      ),
-                                    ),
-                                    icon: const Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                    ),
-                                    label: Text(
-                                      "Edit",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: const Color(0xFFFF5E5E),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                }),
-
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Popular Feeds",
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Get.to(() => const FeedScreen());
-                      },
-                      child: Text(
-                        "view more",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Obx(() {
-                  if (feedsController.isLoading.isTrue) {
-                    return const CustomLoader(message: "Loading feeds...");
-                  }
-
-                  if (feedsController.feeds.isEmpty) {
-                    return const Center(child: Text("No popular feeds."));
-                  }
-
-                  // Display first 5 feeds
-                  final popularFeeds = feedsController.feeds.take(5).toList();
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: popularFeeds.length,
-                    itemBuilder: (context, index) {
-                      final feed = popularFeeds[index];
-                      return _buildFeedPostCard(context, feed);
-                    },
-                  );
-                }),
-
-                /// Delhi Transport Footer
-                const SizedBox(height: 100), // space for nav bar
-              ],
+          slivers: [
+            _buildSliverHeader(),
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  _buildBanner(),
+                  const SizedBox(height: 16),
+                  _buildStatsStrip(),
+                  const SizedBox(height: 24),
+                  _buildQuickActions(),
+                  const SizedBox(height: 28),
+                  _buildRecentJobs(),
+                  const SizedBox(height: 28),
+                  _buildPopularFeeds(),
+                  const SizedBox(height: 100),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              Get.to(() => ServicesScreen());
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF5252),
-              minimumSize: const Size(137.906, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 14),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SvgPicture.asset(
-                  'assets/servicelogo.svg',
-                  width: 20,
-                  height: 20,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  "Services",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () {
-              Get.to(() => PostJobScreen());
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF5252),
-              minimumSize: const Size(137.906, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.add, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                const Text(
-                  "Post Job",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      /// Bottom Nav Bar
+      floatingActionButton: _buildFABs(),
     );
   }
 
-  Widget _buildFeedPostCard(BuildContext context, Post post) {
-    // Use company logo if available, otherwise use a placeholder
-    final companyLogoUrl =
-        post.companyLogo != null && post.companyLogo!.isNotEmpty
-        ? post.companyLogo!
-        : null;
+  // ── Sliver header ────────────────────────────────────────────────────────
 
+  Widget _buildSliverHeader() {
+    return SliverAppBar(
+      expandedHeight: 0,
+      pinned: true,
+      backgroundColor: _bg,
+      elevation: 0,
+      scrolledUnderElevation: 1,
+      shadowColor: _border,
+      automaticallyImplyLeading: false,
+      flexibleSpace: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Obx(() {
+            final profile = _profileCtrl.userProfile.value;
+            final name = profile?.displayName ?? 'My Company';
+            final initials = _initials(name);
+            final imgPath = profile?.profileImage ?? '';
+            final imgUrl = imgPath.isNotEmpty ? _imageUrl(imgPath) : '';
+
+            return Row(
+              children: [
+                // Avatar
+                GestureDetector(
+                  onTap: () => Get.to(() => CompanyProfileScreen()),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _primaryLight,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _primary.withValues(alpha: 0.25), width: 2),
+                    ),
+                    child: imgUrl.isNotEmpty
+                        ? ClipOval(
+                            child: Image.network(
+                              imgUrl,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              headers: _authHeaders,
+                              errorBuilder: (_, __, ___) =>
+                                  _initialsWidget(initials, 44),
+                            ),
+                          )
+                        : _initialsWidget(initials, 44),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Greeting
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _greeting(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _textGrey,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: _textDark,
+                          fontFamily: 'Poppins',
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Notification bell
+                Obx(() {
+                  final count = _notifCtrl.unreadCount;
+                  return GestureDetector(
+                    onTap: () => Get.to(() => const NotificationScreen()),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: _primaryLight,
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            color: _primary,
+                            size: 22,
+                          ),
+                        ),
+                        if (count > 0)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: _primary,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                              child: Center(
+                                child: Text(
+                                  count > 99 ? '99+' : '$count',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  // ── Banner ───────────────────────────────────────────────────────────────
+
+  Widget _buildBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BannerCarousel(),
+      ),
+    );
+  }
+
+  // ── Stats strip ──────────────────────────────────────────────────────────
+
+  Widget _buildStatsStrip() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Obx(() {
+        final d = _dashCtrl.dashboardData.value;
+        final loading = _dashCtrl.isLoading.value && d == null;
+
+        final stats = [
+          _StatCell(
+            icon: Iconsax.routing_2,
+            color: const Color(0xFF3B82F6),
+            bg: const Color(0xFFEFF6FF),
+            label: 'Total Trips',
+            value: loading ? '—' : '${d?.tripSummary.totalTrips ?? 0}',
+          ),
+          _StatCell(
+            icon: Iconsax.truck,
+            color: const Color(0xFF22C55E),
+            bg: const Color(0xFFF0FDF4),
+            label: 'Active Vehicles',
+            value: loading ? '—' : '${d?.activeVehicles.activeVehicles ?? 0}',
+          ),
+          _StatCell(
+            icon: Iconsax.briefcase,
+            color: const Color(0xFF8B5CF6),
+            bg: const Color(0xFFF5F3FF),
+            label: 'Active Jobs',
+            value: loading ? '—' : '${d?.jobsSummary.activeJobs ?? 0}',
+          ),
+          _StatCell(
+            icon: Iconsax.wallet_3,
+            color: const Color(0xFFF59E0B),
+            bg: const Color(0xFFFFFBEB),
+            label: 'This Month',
+            value: loading
+                ? '—'
+                : '₹${_formatSalary(d?.monthlyExpenses.totalExpenses ?? 0)}',
+          ),
+        ];
+
+        return Row(
+          children: stats
+              .map((s) => Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: s == stats.last ? 0 : 8,
+                      ),
+                      child: _buildStatCard(s),
+                    ),
+                  ))
+              .toList(),
+        );
+      }),
+    );
+  }
+
+  Widget _buildStatCard(_StatCell s) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      child: Column(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: s.bg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(s.icon, size: 18, color: s.color),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            s.value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: _textDark,
+              fontFamily: 'Poppins',
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            s.label,
+            style: const TextStyle(
+              fontSize: 9,
+              color: _textGrey,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Quick actions ────────────────────────────────────────────────────────
+
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          InkWell(
-            onTap: () {
-              // Navigate to dynamic profile screen
-              Get.to(() => FleetUserprofile(companyId: post.companyId));
-            },
-            borderRadius: BorderRadius.circular(50),
-            child: Row(
+          const Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: _textDark,
+              fontFamily: 'Poppins',
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 14),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _menuItems.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.0,
+            ),
+            itemBuilder: (context, i) => _buildActionCard(i),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionCard(int i) {
+    final item = _menuItems[i];
+    final bg = _menuColors[i];
+    final iconColor = _menuIconColors[i];
+
+    return GestureDetector(
+      onTap: () => _handleMenuTap(i),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+              child: Center(
+                child: Icon(item.icon, color: iconColor, size: 24),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _textMid,
+                fontFamily: 'Poppins',
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleMenuTap(int i) {
+    switch (i) {
+      case 0: Get.to(() => FleetVehiclesScreen());
+      case 1: Get.to(() => const ProfessionalListScreen());
+      case 2: Get.to(() => TransactionSummaryScreen());
+      case 3: Get.to(() => PostJobScreen());
+      case 4: Get.to(() => ServiceDashboardScreen());
+      case 5: Get.to(() => DashboardScreen());
+    }
+  }
+
+  // ── Recent Jobs ──────────────────────────────────────────────────────────
+
+  Widget _buildRecentJobs() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader('Recent Jobs', onTap: () => Get.to(() => const JobsScreen())),
+          const SizedBox(height: 14),
+          Obx(() {
+            if (_jobCtrl.isLoading.isTrue) return _shimmerList(3);
+            if (_jobCtrl.jobs.isEmpty) return _emptyState('No jobs posted yet.', Icons.work_outline_rounded);
+            return Column(
+              children: _jobCtrl.jobs.take(5).map(_buildJobCard).toList(),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJobCard(JobModel job) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Company Logo or Profile Avatar
-                companyLogoUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          _formatImageUrl(companyLogoUrl),
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          headers: _imageHeaders(),
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback to initials avatar if logo fails to load
-                            return CircleAvatar(
-                              radius: 20,
-                              backgroundColor: const Color(0xFFFFE6E6),
-                              child: Text(
-                                post.userName.isNotEmpty
-                                    ? post.userName[0].toUpperCase()
-                                    : 'U',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFF25C5C),
-                                  fontSize: 16,
-                                ),
-                              ),
-                            );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value:
-                                      loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : CircleAvatar(
-                        radius: 20,
-                        backgroundColor: const Color(0xFFFFE6E6),
-                        child: Text(
-                          post.userName.isNotEmpty
-                              ? post.userName[0].toUpperCase()
-                              : 'U',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFF25C5C),
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                const SizedBox(width: 10),
+                // Job icon
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _primaryLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.work_outline_rounded, color: _primary, size: 22),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        post.userName.isNotEmpty ? post.userName : "User",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        job.role,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: _textDark,
+                          fontFamily: 'Poppins',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        post.category,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          _chip(job.jobType, const Color(0xFFEFF6FF), const Color(0xFF3B82F6)),
+                          const SizedBox(width: 6),
+                          if (job.city.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.location_on_outlined, size: 12, color: _textGrey),
+                                const SizedBox(width: 2),
+                                Text(
+                                  job.city,
+                                  style: const TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins'),
+                                ),
+                              ],
+                            ),
+                        ],
                       ),
                     ],
                   ),
                 ),
+                // Salary
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      job.salary.isNotEmpty ? job.salary : '—',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _primary,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 10),
+            const SizedBox(height: 12),
+            const Divider(color: _border, height: 1),
+            const SizedBox(height: 12),
 
-          // Post Content
-          if (post.content.isNotEmpty)
-            Text(
-              post.content,
-              style: const TextStyle(color: Colors.black87, fontSize: 14),
-            ),
-
-          // Post Images
-          if (post.imageUrls.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: post.imageUrls.length == 1
-                  ? SizedBox(
-                      width: double.infinity,
-                      height: 200,
-                      child: Image.network(
-                        _formatImageUrl(post.imageUrls[0]),
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        headers: _imageHeaders(),
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            height: 200,
-                            color: Colors.grey[200],
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                value:
-                                    loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 200,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Image.asset(
-                              "assets/truck.png",
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.image_not_supported,
-                                          size: 48,
-                                          color: Colors.grey,
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          "Image not available",
-                                          style: TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                            childAspectRatio: 1,
-                          ),
-                      itemCount: post.imageUrls.length > 4
-                          ? 4
-                          : post.imageUrls.length,
-                      itemBuilder: (context, index) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            child: Image.network(
-                              _formatImageUrl(post.imageUrls[index]),
-                              fit: BoxFit.cover,
-                              headers: _imageHeaders(),
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      color: Colors.grey[200],
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          value:
-                                              loadingProgress
-                                                      .expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                        .cumulativeBytesLoaded /
-                                                    loadingProgress
-                                                        .expectedTotalBytes!
-                                              : null,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[200],
-                                  child: const Icon(Icons.image_not_supported),
-                                );
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-
-          // If no content and no images, show placeholder image
-          if (post.content.isEmpty && post.imageUrls.isEmpty) ...[
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset("assets/truck.png"),
-            ),
-          ],
-
-          const SizedBox(height: 10),
-
-          // Reactions - Now Functional!
-          Obx(() {
-            final feedsController = Get.find<FeedsController>();
-            final isLiked = feedsController.isLiked(post.postId);
-
-            return Row(
+            // Stats + actions
+            Row(
               children: [
-                // Like Button - Functional
-                GestureDetector(
-                  onTap: () {
-                    feedsController.toggleLike(post.postId);
-                  },
-                  child: Icon(
-                    isLiked ? Icons.favorite : Icons.favorite_border,
-                    size: 28,
-                    color: isLiked
-                        ? const Color(0xFFF36969)
-                        : const Color(0xFFFCACAC),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Share Button - Functional
-                GestureDetector(
-                  onTap: () {
-                    ShareService.sharePost(
-                      postId: post.postId,
-                      content: post.content,
-                      userName: post.userName,
-                      category: post.category,
-                    );
-                  },
-                  child: SvgPicture.asset(
-                    'assets/share.svg',
-                    width: 26,
-                    height: 26,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // View Button - Navigate to Feed Screen
-                GestureDetector(
-                  onTap: () {
-                    Get.to(() => const FeedScreen());
-                  },
-                  child: SvgPicture.asset(
-                    'assets/eye.svg',
-                    width: 26,
-                    height: 26,
-                    fit: BoxFit.contain,
-                  ),
+                _statBadge(Icons.people_outline_rounded, '${job.openings} positions'),
+                const SizedBox(width: 12),
+                _statBadge(
+                  Icons.description_outlined,
+                  '${job.applications.length} applicants',
                 ),
                 const Spacer(),
-                // Status badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                _actionBtn(
+                  'Share',
+                  Icons.share_outlined,
+                  const Color(0xFF3B82F6),
+                  () => ShareService.shareJob(
+                    jobId: job.jobId,
+                    jobTitle: job.role,
+                    city: job.city,
+                    jobType: job.jobType,
+                    jobDuration: job.jobDuration,
+                    openings: job.openings,
+                    salary: job.salary,
+                    description: job.description,
                   ),
-                  decoration: BoxDecoration(
-                    color: post.status == 'Pending'
-                        ? Colors.orange[100]
-                        : Colors.green[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    post.status,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: post.status == 'Pending'
-                          ? Colors.orange[800]
-                          : Colors.green[800],
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                ),
+                const SizedBox(width: 8),
+                _actionBtn(
+                  'Edit',
+                  Icons.edit_outlined,
+                  _primary,
+                  () => Get.to(() => PostJobScreen(jobToEdit: job)),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Popular Feeds ────────────────────────────────────────────────────────
+
+  Widget _buildPopularFeeds() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader('Popular Feeds', onTap: () => Get.to(() => const FeedScreen())),
+          const SizedBox(height: 14),
+          Obx(() {
+            if (_feedsCtrl.isLoading.isTrue) return _shimmerList(3);
+            if (_feedsCtrl.feeds.isEmpty) return _emptyState('No posts yet.', Icons.dynamic_feed_outlined);
+            return Column(
+              children: _feedsCtrl.feeds.take(5).map(_buildFeedCard).toList(),
             );
           }),
-          const SizedBox(height: 10),
-
-          // Footer
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(post.timeAgo, style: const TextStyle(color: Colors.grey)),
-              if (post.content.length > 100)
-                const Text(
-                  "Read More",
-                  style: TextStyle(color: Colors.blueAccent),
-                ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Color _getIconBgColor(int index) {
-    // Color mapping for menu items based on Figma design
-    switch (index) {
-      case 0:
-        return const Color(0xFFE3F2FD); // Vehicles - Light blue
-      case 1:
-        return const Color(0xFFE0F7FA); // Professional - Light teal
-      case 2:
-        return const Color(0xFFFFF3E0); // Expenses - Light orange
-      case 3:
-        return const Color(0xFFFCE4EC); // Hire - Light pink
-      case 4:
-        return const Color(0xFFFFF8E1); // Services - Light yellow
-      case 5:
-        return const Color(0xFFE0E0E0); // Dashboard - Light grey
-      default:
-        return Colors.grey;
-    }
+  Widget _buildFeedCard(Post post) {
+    final logo = post.companyLogo?.isNotEmpty == true ? _imageUrl(post.companyLogo!) : '';
+    final initial = post.userName.isNotEmpty ? post.userName[0].toUpperCase() : 'U';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Author row
+            InkWell(
+              onTap: () => Get.to(() => FleetUserprofile(companyId: post.companyId)),
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  logo.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            logo,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            headers: _authHeaders,
+                            errorBuilder: (_, __, ___) => _initialsWidget(initial, 40, radius: 10),
+                          ),
+                        )
+                      : _initialsWidget(initial, 40, radius: 10),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          post.userName.isNotEmpty ? post.userName : 'User',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: _textDark,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                        if (post.category.isNotEmpty)
+                          Text(
+                            post.category,
+                            style: const TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins'),
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Status badge
+                  _chip(
+                    post.status,
+                    post.status.toLowerCase() == 'pending'
+                        ? const Color(0xFFFFFBEB)
+                        : const Color(0xFFF0FDF4),
+                    post.status.toLowerCase() == 'pending'
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF22C55E),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content
+            if (post.content.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                post.content,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: _textMid,
+                  fontFamily: 'Poppins',
+                  height: 1.5,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+
+            // Images
+            if (post.imageUrls.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: post.imageUrls.length == 1
+                    ? Image.network(
+                        _imageUrl(post.imageUrls[0]),
+                        width: double.infinity,
+                        height: 180,
+                        fit: BoxFit.cover,
+                        headers: _authHeaders,
+                        errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                      )
+                    : SizedBox(
+                        height: 120,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: post.imageUrls.take(4).length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 6),
+                          itemBuilder: (_, i) => ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              _imageUrl(post.imageUrls[i]),
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              headers: _authHeaders,
+                              errorBuilder: (_, __, ___) => _imagePlaceholder(width: 120),
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            ],
+
+            const SizedBox(height: 12),
+            const Divider(color: _border, height: 1),
+            const SizedBox(height: 10),
+
+            // Reaction row
+            Row(
+              children: [
+                Obx(() {
+                  final liked = _feedsCtrl.isLiked(post.postId);
+                  return GestureDetector(
+                    onTap: () => _feedsCtrl.toggleLike(post.postId),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          size: 20,
+                          color: liked ? _primary : _textGrey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          liked ? 'Liked' : 'Like',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: liked ? _primary : _textGrey,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(width: 16),
+                GestureDetector(
+                  onTap: () => ShareService.sharePost(
+                    postId: post.postId,
+                    content: post.content,
+                    userName: post.userName,
+                    category: post.category,
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.share_outlined, size: 18, color: _textGrey),
+                      SizedBox(width: 4),
+                      Text(
+                        'Share',
+                        style: TextStyle(fontSize: 12, color: _textGrey, fontFamily: 'Poppins'),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  post.timeAgo,
+                  style: const TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  String _formatImageUrl(String url) {
-    if (url.isEmpty) return url;
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Uri.encodeFull(url);
-    }
-    return Uri.encodeFull(ApiConstants.baseUrl + url);
+  // ── FABs ─────────────────────────────────────────────────────────────────
+
+  Widget _buildFABs() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        FloatingActionButton.extended(
+          heroTag: 'services',
+          onPressed: () => Get.to(() => ServicesScreen()),
+          backgroundColor: _primary,
+          elevation: 3,
+          icon: const Icon(Icons.build_circle_outlined, color: Colors.white, size: 20),
+          label: const Text(
+            'Services',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
+              fontSize: 14,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        FloatingActionButton.extended(
+          heroTag: 'postjob',
+          onPressed: () => Get.to(() => PostJobScreen()),
+          backgroundColor: _primary,
+          elevation: 3,
+          icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+          label: const Text(
+            'Post Job',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  Map<String, String>? _imageHeaders() {
-    final token = AuthService.to.currentToken;
-    if (token.isEmpty) return null;
-    return {'Authorization': 'Bearer $token', 'Accept': '*/*'};
+  // ── Shared helpers ───────────────────────────────────────────────────────
+
+  Widget _sectionHeader(String title, {VoidCallback? onTap}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: _textDark,
+            fontFamily: 'Poppins',
+            letterSpacing: -0.2,
+          ),
+        ),
+        if (onTap != null)
+          GestureDetector(
+            onTap: onTap,
+            child: const Text(
+              'View all',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: _primary,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ),
+      ],
+    );
   }
+
+  Widget _chip(String label, Color bg, Color text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: text, fontFamily: 'Poppins'),
+      ),
+    );
+  }
+
+  Widget _statBadge(IconData icon, String label, {Color? color}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color ?? _textGrey),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 12, color: color ?? _textGrey, fontFamily: 'Poppins')),
+      ],
+    );
+  }
+
+  Widget _actionBtn(String label, IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color, fontFamily: 'Poppins'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _initialsWidget(String initials, double size, {double radius = 100}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: _primaryLight,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: _primary,
+            fontSize: size * 0.35,
+            fontFamily: 'Poppins',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder({double width = double.infinity}) {
+    return Container(
+      width: width,
+      height: 120,
+      color: _cardBg,
+      child: const Center(child: Icon(Icons.image_outlined, color: _textGrey, size: 32)),
+    );
+  }
+
+  Widget _emptyState(String msg, IconData icon) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 36, color: _textGrey),
+          const SizedBox(height: 10),
+          Text(msg, style: const TextStyle(color: _textGrey, fontSize: 13, fontFamily: 'Poppins')),
+        ],
+      ),
+    );
+  }
+
+  Widget _shimmerList(int count) {
+    return Column(
+      children: List.generate(count, (_) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          height: 100,
+          decoration: BoxDecoration(
+            color: _cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+          ),
+        );
+      }),
+    );
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    if (parts[0].isNotEmpty) return parts[0][0].toUpperCase();
+    return 'W';
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning,';
+    if (hour < 17) return 'Good afternoon,';
+    return 'Good evening,';
+  }
+
+  String _formatSalary(num salary) {
+    if (salary >= 100000) return '${(salary / 100000).toStringAsFixed(1)}L';
+    if (salary >= 1000) return '${(salary / 1000).toStringAsFixed(0)}K';
+    return salary.toStringAsFixed(0);
+  }
+}
+
+// ─── Data class for menu items ───────────────────────────────────────────
+
+class _MenuItem {
+  final String label;
+  final IconData icon;
+  final IconData fallbackIcon;
+
+  const _MenuItem(this.label, this.icon, this.fallbackIcon);
+}
+
+// ─── Data class for stats strip ──────────────────────────────────────────
+
+class _StatCell {
+  final IconData icon;
+  final Color color;
+  final Color bg;
+  final String label;
+  final String value;
+
+  const _StatCell({
+    required this.icon,
+    required this.color,
+    required this.bg,
+    required this.label,
+    required this.value,
+  });
 }
