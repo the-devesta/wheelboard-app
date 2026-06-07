@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../../controllers/Professional/unassigned_trips_controller.dart';
 import '../../../models/unassigned_trip_model.dart';
 import '../../../widgets/custom_loader.dart';
-import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../../controllers/Transport/user_profile_controller.dart';
 import '../../../widgets/custom_snackbar.dart';
 
