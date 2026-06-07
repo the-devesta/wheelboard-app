@@ -1,133 +1,106 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
-import '../../CompanyTransport/notification_screen.dart';
+import 'package:iconsax/iconsax.dart';
+
 import '../../../controllers/Transport/notification_controller.dart';
+import '../../../theme/design_system.dart';
+import '../Notification1/Notification1Screen.dart';
+import '../Search/professional_search_screen.dart';
 import '../YourProfile/YourProfileScreen.dart';
 
-/// Professional Header Widget
-/// Red header with back button, title, and notification bell
+/// Professional header — brand gradient bar with profile, search and the
+/// notification bell (now routing to the professional notifications screen,
+/// which shows LR OTP — previously it wrongly opened the company screen).
 class ProfessionalHeaderWidget extends StatelessWidget {
   const ProfessionalHeaderWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return Container(
-      height: screenHeight * 0.07, // Responsive height (~7% of screen height)
       decoration: const BoxDecoration(
-        color: Color(0xFFFF5E5E), // Exact Figma red color
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(8),
-          bottomRight: Radius.circular(8),
-        ),
+        gradient: AppPalette.brandGradient,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.04,
-          ), // Responsive padding (4% of screen width)
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
           child: Row(
             children: [
-              // Menu Icon (Left) - Responsive
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  Get.to(const YourProfileScreen());
-                },
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: Icon(
-                    Icons.menu,
-                    color: Colors.white,
-                    size:
-                        screenWidth *
-                        0.06, // Responsive icon size (6% of screen width)
-                  ),
-                ),
+              _circleAction(
+                icon: Iconsax.menu_1,
+                onTap: () => Get.to(const YourProfileScreen()),
               ),
               const Spacer(),
-              // Title - Centered - Responsive
               Text(
-                "WHEELBOARD",
-                style: GoogleFonts.poppins(
-                  fontSize:
-                      screenWidth *
-                      0.06, // Responsive font size (6% of screen width)
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  letterSpacing: 1.2,
-                ),
+                'WHEELBOARD',
+                style: AppText.h2.on(Colors.white).copyWith(letterSpacing: 1.4),
               ),
               const Spacer(),
-              // Notification Bell - Responsive
+              _circleAction(
+                icon: Iconsax.search_normal_1,
+                onTap: () => Get.to(() => const ProfessionalSearchScreen()),
+              ),
+              AppSpacing.hGapSm,
               Obx(() {
-                final notificationController = Get.put(
-                  NotificationController(),
-                );
-                final unreadCount = notificationController.unreadCount;
-
-                return GestureDetector(
-                  onTap: () {
-                    Get.to(const NotificationScreen());
-                  },
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width:
-                            screenWidth *
-                            0.1, // Responsive width (10% of screen width)
-                        height: screenWidth * 0.1, // Responsive height
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.notifications_outlined,
-                          color: Colors.white,
-                          size:
-                              screenWidth *
-                              0.06, // Responsive icon size (6% of screen width)
-                        ),
-                      ),
-                      if (unreadCount > 0)
-                        Positioned(
-                          top: -2,
-                          right: -2,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF317873),
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 18,
-                              minHeight: 18,
-                            ),
-                            child: Center(
-                              child: Text(
-                                unreadCount > 99 ? '99+' : '$unreadCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                final ctrl = Get.isRegistered<NotificationController>()
+                    ? Get.find<NotificationController>()
+                    : Get.put(NotificationController());
+                final unread = ctrl.unreadCount;
+                return _circleAction(
+                  icon: Iconsax.notification,
+                  badge: unread > 0 ? (unread > 99 ? '99+' : '$unread') : null,
+                  onTap: () => Get.to(() => const Notification1Screen()),
                 );
               }),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _circleAction({
+    required IconData icon,
+    required VoidCallback onTap,
+    String? badge,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.white, size: 21),
+          ),
+          if (badge != null)
+            Positioned(
+              top: -2,
+              right: -2,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                constraints:
+                    const BoxConstraints(minWidth: 18, minHeight: 18),
+                decoration: BoxDecoration(
+                  color: AppPalette.amber,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: Center(
+                  child: Text(badge,
+                      style: AppText.micro.on(Colors.white).size(9)),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

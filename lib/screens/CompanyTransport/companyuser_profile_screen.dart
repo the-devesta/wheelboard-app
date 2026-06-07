@@ -10,8 +10,12 @@ import '../../models/user_profile_model.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/common_delete_button.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../widgets/change_password_sheet.dart';
 import '../auth/onboarding_screen.dart';
 import '../shared/subscription_screen.dart';
+import '../shared/issues/issues_screen.dart';
+import '../shared/legal_screen.dart';
+import '../Professional/KYC/kyc_screen.dart';
 import 'edit_company_profile.dart';
 import 'switch_profile_popup.dart';
 
@@ -103,8 +107,11 @@ class CompanyProfileScreen extends StatelessWidget {
       pinned: true,
       backgroundColor: _primary,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-            color: Colors.white, size: 20),
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: Colors.white,
+          size: 20,
+        ),
         onPressed: () => Get.back(),
       ),
       actions: [
@@ -146,10 +153,12 @@ class CompanyProfileScreen extends StatelessWidget {
                         ),
                         child: ClipOval(
                           child: imgUrl != null
-                              ? Image.network(imgUrl,
+                              ? Image.network(
+                                  imgUrl,
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) =>
-                                      _initialsAvatar(initials, 88))
+                                      _initialsAvatar(initials, 88),
+                                )
                               : _initialsAvatar(initials, 88),
                         ),
                       ),
@@ -162,7 +171,11 @@ class CompanyProfileScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: _primary, width: 1.5),
                       ),
-                      child: const Icon(Iconsax.camera, size: 13, color: _primary),
+                      child: const Icon(
+                        Iconsax.camera,
+                        size: 13,
+                        color: _primary,
+                      ),
                     ),
                   ],
                 ),
@@ -178,8 +191,10 @@ class CompanyProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -225,14 +240,26 @@ class CompanyProfileScreen extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _statItem('${d?.tripSummary.totalTrips ?? 0}', 'Total Trips',
-                  Iconsax.routing_2, const Color(0xFF3B82F6)),
+              _statItem(
+                '${d?.tripSummary.totalTrips ?? 0}',
+                'Total Trips',
+                Iconsax.routing_2,
+                const Color(0xFF3B82F6),
+              ),
               _vDivider(),
-              _statItem('${d?.activeVehicles.activeVehicles ?? 0}',
-                  'Vehicles', Iconsax.truck, const Color(0xFF22C55E)),
+              _statItem(
+                '${d?.activeVehicles.activeVehicles ?? 0}',
+                'Vehicles',
+                Iconsax.truck,
+                const Color(0xFF22C55E),
+              ),
               _vDivider(),
-              _statItem('${d?.jobsSummary.activeJobs ?? 0}', 'Active Jobs',
-                  Iconsax.briefcase, const Color(0xFF8B5CF6)),
+              _statItem(
+                '${d?.jobsSummary.activeJobs ?? 0}',
+                'Active Jobs',
+                Iconsax.briefcase,
+                const Color(0xFF8B5CF6),
+              ),
             ],
           ),
         ),
@@ -240,80 +267,97 @@ class CompanyProfileScreen extends StatelessWidget {
     });
   }
 
-  Widget _statItem(
-      String value, String label, IconData icon, Color color) {
+  Widget _statItem(String value, String label, IconData icon, Color color) {
     return Expanded(
       child: Column(
         children: [
           Icon(icon, size: 20, color: color),
           const SizedBox(height: 6),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: _textDark,
-                  fontFamily: 'Poppins')),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _textDark,
+              fontFamily: 'Poppins',
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: _textGrey,
+              fontFamily: 'Poppins',
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _vDivider() => Container(
-        width: 1, height: 48, color: _border);
+  Widget _vDivider() => Container(width: 1, height: 48, color: _border);
 
   // ── KYC banner ────────────────────────────────────────────────────────────
 
   Widget _buildKycBanner(UserProfileModel? profile) {
     final isVerified = profile?.isKYCCompleted ?? false;
     if (isVerified) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFFBEB),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () => Get.to(() => const KycScreen()),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Iconsax.warning_2,
+                  size: 22,
+                  color: Color(0xFFF59E0B),
+                ),
               ),
-              child: const Icon(Iconsax.warning_2,
-                  size: 22, color: Color(0xFFF59E0B)),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('KYC Verification Pending',
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'KYC Verification Pending',
                       style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF92400E),
-                          fontFamily: 'Poppins')),
-                  SizedBox(height: 2),
-                  Text('Complete KYC to unlock full platform access.',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF92400E),
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Complete KYC to unlock full platform access.',
                       style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF92400E),
-                          fontFamily: 'Poppins')),
-                ],
+                        fontSize: 11,
+                        color: Color(0xFF92400E),
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Color(0xFFF59E0B)),
-          ],
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFFF59E0B)),
+            ],
+          ),
         ),
       ),
     );
@@ -342,12 +386,15 @@ class CompanyProfileScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: _textDark,
-                        fontFamily: 'Poppins')),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _textDark,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
                 if (trailing != null) trailing,
               ],
             ),
@@ -379,18 +426,24 @@ class CompanyProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: _textGrey,
-                        fontFamily: 'Poppins')),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: _textGrey,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: _textDark,
-                        fontFamily: 'Poppins')),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: _textDark,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
               ],
             ),
           ),
@@ -402,9 +455,14 @@ class CompanyProfileScreen extends StatelessWidget {
   // ── Personal details ──────────────────────────────────────────────────────
 
   Widget _buildPersonalDetails(
-      BuildContext context, UserProfileModel? profile) {
-    final location = _joinNonEmpty(
-        [profile?.address, profile?.city, profile?.state]);
+    BuildContext context,
+    UserProfileModel? profile,
+  ) {
+    final location = _joinNonEmpty([
+      profile?.address,
+      profile?.city,
+      profile?.state,
+    ]);
     return _card(
       title: 'Company Details',
       trailing: GestureDetector(
@@ -420,30 +478,57 @@ class CompanyProfileScreen extends StatelessWidget {
             children: const [
               Icon(Iconsax.edit, size: 12, color: _primary),
               SizedBox(width: 4),
-              Text('Edit',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: _primary,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins')),
+              Text(
+                'Edit',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _primary,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Poppins',
+                ),
+              ),
             ],
           ),
         ),
       ),
       children: [
-        _infoRow(Iconsax.building, const Color(0xFF3B82F6), 'Company Name',
-            profile?.companyName ?? '—'),
-        _infoRow(Iconsax.profile_2user, const Color(0xFF22C55E),
-            'Contact Person', profile?.fullName ?? '—'),
-        _infoRow(Iconsax.category, const Color(0xFF8B5CF6), 'Business Category',
-            profile?.businessCategory ?? '—'),
-        _infoRow(Iconsax.truck, const Color(0xFFF36969), 'Fleet Size',
-            profile?.fleetSize ?? '—'),
-        _infoRow(Iconsax.receipt_text, const Color(0xFFF59E0B), 'GST Number',
-            profile?.gstNumber ?? '—'),
+        _infoRow(
+          Iconsax.building,
+          const Color(0xFF3B82F6),
+          'Company Name',
+          profile?.companyName ?? '—',
+        ),
+        _infoRow(
+          Iconsax.profile_2user,
+          const Color(0xFF22C55E),
+          'Contact Person',
+          profile?.fullName ?? '—',
+        ),
+        _infoRow(
+          Iconsax.category,
+          const Color(0xFF8B5CF6),
+          'Business Category',
+          profile?.businessCategory ?? '—',
+        ),
+        _infoRow(
+          Iconsax.truck,
+          const Color(0xFFF36969),
+          'Fleet Size',
+          profile?.fleetSize ?? '—',
+        ),
+        _infoRow(
+          Iconsax.receipt_text,
+          const Color(0xFFF59E0B),
+          'GST Number',
+          profile?.gstNumber ?? '—',
+        ),
         if (location.isNotEmpty)
-          _infoRow(Iconsax.location, const Color(0xFF0EA5E9), 'Location',
-              location),
+          _infoRow(
+            Iconsax.location,
+            const Color(0xFF0EA5E9),
+            'Location',
+            location,
+          ),
       ],
     );
   }
@@ -454,12 +539,24 @@ class CompanyProfileScreen extends StatelessWidget {
     return _card(
       title: 'Contact Information',
       children: [
-        _infoRow(Iconsax.call, const Color(0xFF22C55E), 'Mobile Number',
-            profile?.mobileNo ?? '—'),
-        _infoRow(Iconsax.sms, const Color(0xFF3B82F6), 'Email Address',
-            profile?.email ?? '—'),
-        _infoRow(Icons.chat_rounded, const Color(0xFF22C55E), 'WhatsApp',
-            profile?.mobileNo ?? '—'),
+        _infoRow(
+          Iconsax.call,
+          const Color(0xFF22C55E),
+          'Mobile Number',
+          profile?.mobileNo ?? '—',
+        ),
+        _infoRow(
+          Iconsax.sms,
+          const Color(0xFF3B82F6),
+          'Email Address',
+          profile?.email ?? '—',
+        ),
+        _infoRow(
+          Icons.chat_rounded,
+          const Color(0xFF22C55E),
+          'WhatsApp',
+          profile?.mobileNo ?? '—',
+        ),
       ],
     );
   }
@@ -480,21 +577,26 @@ class CompanyProfileScreen extends StatelessWidget {
                 color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Iconsax.language_circle,
-                  size: 18, color: Color(0xFF3B82F6)),
+              child: const Icon(
+                Iconsax.language_circle,
+                size: 18,
+                color: Color(0xFF3B82F6),
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Language',
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: _textDark,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w500)),
+              child: Text(
+                'Language',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _textDark,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: _bg,
                 borderRadius: BorderRadius.circular(8),
@@ -503,14 +605,20 @@ class CompanyProfileScreen extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  Text('English',
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: _textDark,
-                          fontFamily: 'Poppins')),
+                  Text(
+                    'English',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _textDark,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   SizedBox(width: 4),
-                  Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 18, color: _textGrey),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: _textGrey,
+                  ),
                 ],
               ),
             ),
@@ -519,32 +627,56 @@ class CompanyProfileScreen extends StatelessWidget {
         const SizedBox(height: 16),
         const Divider(color: _border, height: 1),
         const SizedBox(height: 16),
-        Obx(() => _toggleRow(Iconsax.sms, 'SMS Notifications',
-            ctrl.smsNotifications.value, ctrl.toggleSmsNotifications)),
+        Obx(
+          () => _toggleRow(
+            Iconsax.sms,
+            'SMS Notifications',
+            ctrl.smsNotifications.value,
+            ctrl.toggleSmsNotifications,
+          ),
+        ),
         const SizedBox(height: 14),
-        Obx(() => _toggleRow(Iconsax.sms_notification, 'Email Notifications',
-            ctrl.emailNotifications.value, ctrl.toggleEmailNotifications)),
+        Obx(
+          () => _toggleRow(
+            Iconsax.sms_notification,
+            'Email Notifications',
+            ctrl.emailNotifications.value,
+            ctrl.toggleEmailNotifications,
+          ),
+        ),
         const SizedBox(height: 14),
-        Obx(() => _toggleRow(Icons.chat_rounded, 'WhatsApp Notifications',
+        Obx(
+          () => _toggleRow(
+            Icons.chat_rounded,
+            'WhatsApp Notifications',
             ctrl.whatsappNotifications.value,
-            ctrl.toggleWhatsappNotifications)),
+            ctrl.toggleWhatsappNotifications,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _toggleRow(IconData icon, String label, bool value,
-      ValueChanged<bool> onChanged) {
+  Widget _toggleRow(
+    IconData icon,
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Row(
       children: [
         Icon(icon, size: 20, color: _textGrey),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 14,
-                  color: _textDark,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w500)),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: _textDark,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
         Switch(
           value: value,
@@ -561,7 +693,8 @@ class CompanyProfileScreen extends StatelessWidget {
 
   Widget _buildSubscriptionCard() {
     return GestureDetector(
-      onTap: () => Get.to(() => const SubscriptionScreen(category: 'fleet_owner')),
+      onTap: () =>
+          Get.to(() => const SubscriptionScreen(category: 'fleet_owner')),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Container(
@@ -590,23 +723,32 @@ class CompanyProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Subscription Plans',
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            fontFamily: 'Poppins')),
+                    Text(
+                      'Subscription Plans',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
                     SizedBox(height: 3),
-                    Text('View plans & manage your subscription',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white70,
-                            fontFamily: 'Poppins')),
+                    Text(
+                      'View plans & manage your subscription',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white70,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  size: 16, color: Colors.white70),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Colors.white70,
+              ),
             ],
           ),
         ),
@@ -616,15 +758,19 @@ class CompanyProfileScreen extends StatelessWidget {
 
   // ── Quick actions ─────────────────────────────────────────────────────────
 
-  Widget _buildQuickActions(
-      BuildContext context, UserProfileModel? profile) {
+  Widget _buildQuickActions(BuildContext context, UserProfileModel? profile) {
     return _card(
       title: 'Quick Actions',
       children: [
         Row(
           children: [
-            _actionTile(Iconsax.call, 'Contact Us', const Color(0xFF22C55E),
-                const Color(0xFFF0FDF4), _contactUs),
+            _actionTile(
+              Iconsax.call,
+              'Contact Us',
+              const Color(0xFF22C55E),
+              const Color(0xFFF0FDF4),
+              _contactUs,
+            ),
             const SizedBox(width: 10),
             _actionTile(
               Iconsax.convert,
@@ -636,6 +782,14 @@ class CompanyProfileScreen extends StatelessWidget {
                 onSwitchToBusiness: () {},
                 onLogout: () async => _logout(),
               ),
+            ),
+            const SizedBox(width: 10),
+            _actionTile(
+              Iconsax.lock,
+              'Password',
+              const Color(0xFFF59E0B),
+              const Color(0xFFFFFBEB),
+              () => ChangePasswordSheet.show(context),
             ),
             const SizedBox(width: 10),
             _actionTile(
@@ -651,8 +805,13 @@ class CompanyProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _actionTile(IconData icon, String label, Color iconColor, Color bg,
-      VoidCallback onTap) {
+  Widget _actionTile(
+    IconData icon,
+    String label,
+    Color iconColor,
+    Color bg,
+    VoidCallback onTap,
+  ) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -667,13 +826,16 @@ class CompanyProfileScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 22, color: iconColor),
               const SizedBox(height: 6),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: iconColor,
-                      fontFamily: 'Poppins'),
-                  textAlign: TextAlign.center),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: iconColor,
+                  fontFamily: 'Poppins',
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -683,8 +845,7 @@ class CompanyProfileScreen extends StatelessWidget {
 
   // ── Danger zone ───────────────────────────────────────────────────────────
 
-  Widget _buildDangerZone(
-      BuildContext context, UserProfileController ctrl) {
+  Widget _buildDangerZone(BuildContext context, UserProfileController ctrl) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -698,12 +859,15 @@ class CompanyProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Account',
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: _textDark,
-                    fontFamily: 'Poppins')),
+            const Text(
+              'Account',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _textDark,
+                fontFamily: 'Poppins',
+              ),
+            ),
             const SizedBox(height: 16),
             CommonDeleteButton(
               onConfirm: (password) async {
@@ -742,27 +906,34 @@ class CompanyProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  Text('Having issues with your profile?',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          fontFamily: 'Poppins')),
+                  Text(
+                    'Having issues with your profile?',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   SizedBox(height: 4),
-                  Text('Our support team is here to help you.',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                          fontFamily: 'Poppins')),
+                  Text(
+                    'Our support team is here to help you.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                 ],
               ),
             ),
             GestureDetector(
-              onTap: () =>
-                  SnackBarHelper.info('Chat support coming soon!'),
+              onTap: () => Get.to(() => const IssuesScreen()),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 8),
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -770,26 +941,14 @@ class CompanyProfileScreen extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Chat',
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: _primary,
-                            fontFamily: 'Poppins')),
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3CD),
-                        borderRadius: BorderRadius.circular(4),
+                    const Text(
+                      'Get Help',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _primary,
+                        fontFamily: 'Poppins',
                       ),
-                      child: const Text('Soon',
-                          style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF856404),
-                              fontFamily: 'Poppins')),
                     ),
                   ],
                 ),
@@ -806,24 +965,51 @@ class CompanyProfileScreen extends StatelessWidget {
   Widget _buildFooter() {
     return Column(
       children: [
-        const Text('App v1.3.2',
-            style: TextStyle(
-                fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+        const Text(
+          'App v1.3.2',
+          style: TextStyle(
+            fontSize: 11,
+            color: _textGrey,
+            fontFamily: 'Poppins',
+          ),
+        ),
         const SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text('Terms & Conditions',
+          children: [
+            GestureDetector(
+              onTap: () =>
+                  Get.to(() => const LegalScreen(type: LegalType.termsOfService)),
+              child: const Text(
+                'Terms & Conditions',
                 style: TextStyle(
-                    fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Text('•',
-                  style: TextStyle(color: _textGrey, fontSize: 11)),
+                  fontSize: 11,
+                  color: _primary,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Poppins',
+                ),
+              ),
             ),
-            Text('Privacy Policy',
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '•',
+                style: TextStyle(color: _textGrey, fontSize: 11),
+              ),
+            ),
+            GestureDetector(
+              onTap: () =>
+                  Get.to(() => const LegalScreen(type: LegalType.privacyPolicy)),
+              child: const Text(
+                'Privacy Policy',
                 style: TextStyle(
-                    fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+                  fontSize: 11,
+                  color: _primary,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
           ],
         ),
       ],
@@ -846,15 +1032,21 @@ class CompanyProfileScreen extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Log Out',
-            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
-        content: const Text('Are you sure you want to log out?',
-            style: TextStyle(fontFamily: 'Poppins')),
+        title: const Text(
+          'Log Out',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700),
+        ),
+        content: const Text(
+          'Are you sure you want to log out?',
+          style: TextStyle(fontFamily: 'Poppins'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Cancel',
-                style: TextStyle(color: _textGrey, fontFamily: 'Poppins')),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: _textGrey, fontFamily: 'Poppins'),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -864,10 +1056,13 @@ class CompanyProfileScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: _primary,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Log Out',
-                style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
+            child: const Text(
+              'Log Out',
+              style: TextStyle(color: Colors.white, fontFamily: 'Poppins'),
+            ),
           ),
         ],
       ),
@@ -905,12 +1100,15 @@ class CompanyProfileScreen extends StatelessWidget {
       height: size,
       color: Colors.white.withValues(alpha: 0.25),
       child: Center(
-        child: Text(initials,
-            style: TextStyle(
-                fontSize: size * 0.35,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                fontFamily: 'Poppins')),
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: size * 0.35,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            fontFamily: 'Poppins',
+          ),
+        ),
       ),
     );
   }
@@ -936,10 +1134,15 @@ class _ErrorRetry extends StatelessWidget {
           children: [
             const Icon(Iconsax.warning_2, size: 48, color: _primary),
             const SizedBox(height: 16),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 14, color: _textMid, fontFamily: 'Poppins')),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: _textMid,
+                fontFamily: 'Poppins',
+              ),
+            ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: onRetry,
@@ -949,7 +1152,8 @@ class _ErrorRetry extends StatelessWidget {
                 backgroundColor: _primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],

@@ -118,6 +118,46 @@ class SubscriptionService {
     await ApiClient.instance.post<dynamic>('/subscription/cancel');
   }
 
+  // POST /subscription/change-plan  { newPlanId }
+  // Upgrades or downgrades the current subscription.
+  // Returns: { success, message, data: {UserSubscription} }
+  Future<UserSubscription> changePlan(String newPlanId) async {
+    final raw = await ApiClient.instance.post<dynamic>(
+      '/subscription/change-plan',
+      data: {'newPlanId': newPlanId},
+    );
+    final inner = _unwrap(raw);
+    return UserSubscription.fromJson(inner as Map<String, dynamic>);
+  }
+
+  // GET /subscription/check-limit?feature=...
+  // Returns: { success, data: { allowed: bool, current: int, limit: int | null } }
+  Future<Map<String, dynamic>> checkLimit(String feature) async {
+    final raw = await ApiClient.instance.get<dynamic>(
+      '/subscription/check-limit',
+      queryParameters: {'feature': feature},
+    );
+    final inner = _unwrap(raw);
+    if (inner is Map<String, dynamic>) return inner;
+    return {'allowed': true};
+  }
+
+  // GET /subscription/usage-limits
+  // Returns: { success, data: { limits: [...], usage: {...} } }
+  Future<Map<String, dynamic>> getUsageLimits() async {
+    try {
+      final raw = await ApiClient.instance.get<dynamic>(
+        '/subscription/usage-limits',
+      );
+      final inner = _unwrap(raw);
+      if (inner is Map<String, dynamic>) return inner;
+      return {};
+    } catch (e) {
+      AppLogger.d('ℹ️ Usage limits unavailable: $e');
+      return {};
+    }
+  }
+
   // ── Static error message extractor ───────────────────────────────────────
   /// Extracts the human-readable message from a DioException response body.
   static String extractErrorMessage(dynamic error) {

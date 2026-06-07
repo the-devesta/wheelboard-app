@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
+import '../../../theme/design_system.dart';
 
+/// Post-trip celebration + summary for professionals.
+///
+/// Logic is unchanged except a fetch fix: `ApiClient.get` returns the decoded
+/// body directly, so the previous `res.data` always threw and the summary
+/// silently showed "Processing…". We now read the body directly.
 class TripCompletedScreen extends StatefulWidget {
   final String tripId;
   const TripCompletedScreen({super.key, required this.tripId});
@@ -26,14 +32,12 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
 
   Future<void> _fetchDetails() async {
     try {
-      final res = await ApiClient.instance.get(
+      final res = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.trips.details(widget.tripId),
       );
       if (mounted) {
         setState(() {
-          _tripData = res.data is Map<String, dynamic>
-              ? res.data as Map<String, dynamic>
-              : null;
+          _tripData = res is Map<String, dynamic> ? res : null;
           _loading = false;
         });
       }
@@ -78,152 +82,132 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFF27AE60)))
-            : SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // ── celebration header ───────────────────────────
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-
-                    // ── earnings card ────────────────────────────────
-                    _buildEarningsCard(),
-                    const SizedBox(height: 16),
-
-                    // ── trip stats ───────────────────────────────────
-                    _buildStatsRow(),
-                    const SizedBox(height: 16),
-
-                    // ── route summary ────────────────────────────────
-                    if (_from().isNotEmpty || _to().isNotEmpty)
-                      _buildRouteCard(),
-
-                    const SizedBox(height: 32),
-
-                    // ── CTA buttons ──────────────────────────────────
-                    _buildActions(),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+      backgroundColor: AppPalette.bg,
+      body: _loading
+          ? const AppLoading(message: 'Wrapping up your trip…')
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  _header(),
+                  AppSpacing.vGapXl,
+                  _earningsCard(),
+                  AppSpacing.vGapLg,
+                  _statsRow(),
+                  AppSpacing.vGapLg,
+                  if (_from().isNotEmpty || _to().isNotEmpty) _routeCard(),
+                  const SizedBox(height: AppSpacing.xxxl),
+                  _actions(),
+                  const SizedBox(height: 40),
+                ],
               ),
-      ),
+            ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _header() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 44, 24, 32),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF27AE60), Color(0xFF2ECC71)],
+          colors: [Color(0xFF16A34A), Color(0xFF22C55E)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: Column(
         children: [
           Container(
-            width: 80, height: 80,
+            width: 84,
+            height: 84,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.25),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.check_circle, color: Colors.white, size: 48),
+                color: Colors.white.withValues(alpha: 0.25),
+                shape: BoxShape.circle),
+            child: const Icon(Iconsax.tick_circle, color: Colors.white, size: 46),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.vGapLg,
           Text('Trip Completed! 🎉',
-            style: GoogleFonts.poppins(
-              fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white)),
-          const SizedBox(height: 8),
+              style: AppText.h1.on(Colors.white).size(26).weight(FontWeight.w800)),
+          const SizedBox(height: 6),
           Text('Great job! Your delivery has been confirmed.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 14, color: Colors.white.withValues(alpha: 0.9))),
-          const SizedBox(height: 12),
+              textAlign: TextAlign.center,
+              style: AppText.bodySm.on(Colors.white.withValues(alpha: 0.92))),
+          AppSpacing.vGapMd,
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              widget.tripId.toUpperCase(),
-              style: GoogleFonts.poppins(
-                fontSize: 12, fontWeight: FontWeight.w600,
-                color: Colors.white, letterSpacing: 1.2),
-            ),
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: AppRadius.rPill),
+            child: Text(widget.tripId.toUpperCase(),
+                style: AppText.label
+                    .on(Colors.white)
+                    .weight(FontWeight.w600)
+                    .copyWith(letterSpacing: 1.2)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEarningsCard() {
+  Widget _earningsCard() {
     final earnings = _earnings();
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8F5E9),
-            borderRadius: BorderRadius.circular(16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: AppCard(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+                color: AppPalette.greenBg, borderRadius: AppRadius.rXl),
+            child:
+                const Icon(Iconsax.money_recive, color: AppPalette.green, size: 30),
           ),
-          child: const Icon(Icons.currency_rupee, color: Color(0xFF27AE60), size: 32),
-        ),
-        const SizedBox(width: 20),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Trip Earnings',
-              style: GoogleFonts.poppins(
-                fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-            Text(
-              earnings > 0
-                ? '₹${earnings.toStringAsFixed(0)}'
-                : 'Processing...',
-              style: GoogleFonts.poppins(
-                fontSize: 32, fontWeight: FontWeight.w800,
-                color: const Color(0xFF27AE60)),
+          AppSpacing.hGapLg,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Trip Earnings', style: AppText.label),
+                Text(
+                  earnings > 0 ? '₹${earnings.toStringAsFixed(0)}' : 'Processing…',
+                  style: AppText.h1
+                      .on(AppPalette.green)
+                      .size(30)
+                      .weight(FontWeight.w800),
+                ),
+                Text('Earnings credited to your account',
+                    style: AppText.caption),
+              ],
             ),
-            Text('Earnings credited to your account',
-              style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500])),
-          ],
-        )),
-      ]),
+          ),
+        ]),
+      ),
     );
   }
 
-  Widget _buildStatsRow() {
+  Widget _statsRow() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Row(children: [
-        Expanded(child: _statCard(
-          icon: Icons.straighten,
-          value: _distance() > 0 ? '${_distance().toStringAsFixed(0)} km' : 'N/A',
-          label: 'Distance',
-          color: const Color(0xFF3B82F6),
-        )),
-        const SizedBox(width: 12),
-        Expanded(child: _statCard(
-          icon: Icons.timer_outlined,
-          value: _duration(),
-          label: 'Duration',
-          color: const Color(0xFF8B5CF6),
-        )),
+        Expanded(
+          child: _statCard(
+            icon: Iconsax.routing,
+            value: _distance() > 0 ? '${_distance().toStringAsFixed(0)} km' : 'N/A',
+            label: 'Distance',
+            color: AppPalette.blue,
+          ),
+        ),
+        AppSpacing.hGapMd,
+        Expanded(
+          child: _statCard(
+            icon: Iconsax.timer_1,
+            value: _duration(),
+            label: 'Duration',
+            color: AppPalette.purple,
+          ),
+        ),
       ]),
     );
   }
@@ -234,54 +218,40 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
     required String label,
     required Color color,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 8, offset: const Offset(0, 2))],
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(children: [
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+              color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
           child: Icon(icon, color: color, size: 22),
         ),
-        const SizedBox(height: 8),
-        Text(value, style: GoogleFonts.poppins(
-          fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF1F2937))),
-        Text(label, style: GoogleFonts.poppins(
-          fontSize: 11, color: Colors.grey[500])),
+        AppSpacing.vGapSm,
+        Text(value, style: AppText.h3),
+        Text(label, style: AppText.caption),
       ]),
     );
   }
 
-  Widget _buildRouteCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 8)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            const Icon(Icons.route, size: 18, color: Color(0xFFFF5E5E)),
-            const SizedBox(width: 8),
-            Text('Trip Route', style: GoogleFonts.poppins(
-              fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF1F2937))),
-          ]),
-          const SizedBox(height: 16),
-          _routePoint(_from(), const Color(0xFF27AE60), isStart: true),
-          const SizedBox(height: 12),
-          _routePoint(_to(), const Color(0xFFFF5E5E), isStart: false),
-        ],
+  Widget _routeCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Iconsax.routing, size: 18, color: AppPalette.primary),
+              AppSpacing.hGapSm,
+              Text('Trip Route', style: AppText.subtitle),
+            ]),
+            AppSpacing.vGapLg,
+            _routePoint(_from(), AppPalette.green, isStart: true),
+            AppSpacing.vGapMd,
+            _routePoint(_to(), AppPalette.danger, isStart: false),
+          ],
+        ),
       ),
     );
   }
@@ -290,70 +260,52 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
     return Row(children: [
       Column(children: [
         Container(
-          width: 12, height: 12,
+          width: 12,
+          height: 12,
           decoration: BoxDecoration(
-            color: color, shape: BoxShape.circle,
-            border: Border.all(color: color.withValues(alpha: 0.3), width: 4)),
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withValues(alpha: 0.3), width: 4)),
         ),
-        if (isStart)
-          Container(width: 2, height: 20, color: Colors.grey[200]),
+        if (isStart) Container(width: 2, height: 20, color: AppPalette.border),
       ]),
-      const SizedBox(width: 12),
-      Expanded(child: Text(
-        address.isEmpty ? 'N/A' : address,
-        maxLines: 2, overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.poppins(
-          fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF374151)),
-      )),
+      AppSpacing.hGapMd,
+      Expanded(
+        child: Text(address.isEmpty ? 'N/A' : address,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppText.bodySm.on(AppPalette.textMid)),
+      ),
     ]);
   }
 
-  Widget _buildActions() {
+  Widget _actions() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _goHome,
-            icon: const Icon(Icons.home_outlined, size: 20),
-            label: Text('Back to Home',
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF27AE60),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 0,
-            ),
-          ),
+        AppPrimaryButton(
+          label: 'Back to Home',
+          icon: Iconsax.home_2,
+          color: AppPalette.green,
+          onPressed: _goHome,
         ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _goHome,
-            icon: const Icon(Icons.local_shipping_outlined, size: 20),
-            label: Text('View All Trips',
-              style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF27AE60),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              side: const BorderSide(color: Color(0xFF27AE60)),
-            ),
-          ),
+        AppSpacing.vGapMd,
+        AppSecondaryButton(
+          label: 'View All Trips',
+          icon: Iconsax.truck,
+          color: AppPalette.green,
+          onPressed: _goHome,
         ),
       ]),
     );
   }
 
   void _goHome() {
-    // Refresh assigned trips so smart router picks up the new state
+    // Refresh assigned trips so the list reflects the new completed state.
     if (Get.isRegistered<AssignedTripController>()) {
       Get.find<AssignedTripController>().fetchAssignedTrips();
     }
-    // Pop back to the root professional shell
+    // Pop back to the root professional shell.
     Get.until((route) => route.isFirst);
   }
 }

@@ -7,6 +7,7 @@ import 'package:wheelboard/core/network/api_endpoints.dart';
 import 'package:wheelboard/core/network/api_exception.dart';
 import 'package:wheelboard/core/auth/auth_service.dart';
 import 'package:wheelboard/utils/location_service.dart';
+import 'package:wheelboard/utils/trip_status.dart';
 import '../../utils/app_logger.dart';
 
 class AssignedTripController extends GetxController {
@@ -14,6 +15,87 @@ class AssignedTripController extends GetxController {
 
   var assignedTrips = <AssignedTrip>[].obs;
   var isLoading = true.obs;
+
+  /// Whether the last fetch failed (drives the retry/error state in the UI).
+  final hasError = false.obs;
+  final errorMessage = ''.obs;
+
+  /// Local UI filter for the My Trips list, mirroring the web filter tabs:
+  /// 'All' | 'Assigned' | 'In-Process' | 'Completed'.
+  final selectedFilter = 'All'.obs;
+
+  // ── derived classification (single source of truth via TripStatusMapper) ──
+  TripBucket bucketOf(AssignedTrip t) => TripStatusMapper.bucketOf(t.tripStatus);
+
+  bool isAssignedTrip(AssignedTrip t) =>
+      TripStatusMapper.isAssigned(t.tripStatus, t.driverId);
+
+  /// Driver earnings for a trip — mirrors web `financial.driverEarnings || price`
+  /// using the fields available on [AssignedTrip].
+  double earningsOf(AssignedTrip t) {
+    if ((t.amountToDriver ?? 0) > 0) return t.amountToDriver!;
+    if ((t.bidAmount ?? 0) > 0) return t.bidAmount!;
+    if ((t.totalTripCost ?? 0) > 0) return t.totalTripCost!;
+    return _parseAmount(t.payRange) ?? 0;
+  }
+
+  double? _parseAmount(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final match = RegExp(r'[\d.]+').firstMatch(raw.replaceAll(',', ''));
+    return match == null ? null : double.tryParse(match.group(0)!);
+  }
+
+  // ── stats (mirror web `deriveStatsFromTrips`) ─────────────────────────────
+  int get completedCount =>
+      assignedTrips.where((t) => bucketOf(t) == TripBucket.completed).length;
+
+  int get inProcessCount =>
+      assignedTrips.where((t) => bucketOf(t) == TripBucket.inProcess).length;
+
+  int get assignedCount => assignedTrips
+      .where((t) => isAssignedTrip(t) && bucketOf(t) == TripBucket.upcoming)
+      .length;
+
+  int get upcomingCount =>
+      assignedTrips.where((t) => bucketOf(t) == TripBucket.upcoming).length;
+
+  int get activeAndAssignedCount => inProcessCount + assignedCount;
+
+  double get totalEarnings => assignedTrips
+      .where((t) => bucketOf(t) == TripBucket.completed)
+      .fold(0.0, (sum, t) => sum + earningsOf(t));
+
+  double get estimatedEarnings => assignedTrips.where((t) {
+        final b = bucketOf(t);
+        return b == TripBucket.upcoming || b == TripBucket.inProcess;
+      }).fold(0.0, (sum, t) => sum + earningsOf(t));
+
+  /// Default rating until a profile/stats endpoint supplies a real one — matches
+  /// the web default of 4.8.
+  double get rating => 4.8;
+
+  /// Trips visible for the active filter (mirror web `filteredTrips`).
+  List<AssignedTrip> get visibleTrips {
+    bool matches(AssignedTrip t) {
+      final b = bucketOf(t);
+      final isAssigned = isAssignedTrip(t) && b == TripBucket.upcoming;
+      final isInProcess = b == TripBucket.inProcess;
+      final isCompleted = b == TripBucket.completed;
+      switch (selectedFilter.value) {
+        case 'Assigned':
+          return isAssigned;
+        case 'In-Process':
+          return isInProcess;
+        case 'Completed':
+          return isCompleted;
+        case 'All':
+        default:
+          return isAssigned || isInProcess || isCompleted;
+      }
+    }
+
+    return assignedTrips.where(matches).toList();
+  }
 
   @override
   void onInit() {
@@ -24,6 +106,8 @@ class AssignedTripController extends GetxController {
   Future<void> fetchAssignedTrips() async {
     try {
       isLoading(true);
+      hasError(false);
+      errorMessage('');
       final userId = _authService.currentUserId;
 
       // If userId is empty the token may not be loaded yet — still attempt
@@ -110,9 +194,13 @@ class AssignedTripController extends GetxController {
       final msg = apiError is ApiException ? apiError.message : 'Failed to load assigned trips';
       AppLogger.d('❌ Error fetching assigned trips: $msg');
       assignedTrips.value = [];
+      hasError(true);
+      errorMessage(msg);
     } catch (e) {
       AppLogger.d('❌ Error fetching assigned trips: $e');
       assignedTrips.value = [];
+      hasError(true);
+      errorMessage('Something went wrong while loading your trips.');
     } finally {
       isLoading(false);
     }

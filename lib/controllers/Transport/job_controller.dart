@@ -503,8 +503,18 @@ class JobController extends GetxController {
   }
 
   String _msg(dio.DioException e, {String fallback = 'Something went wrong'}) {
-    return e.error is ApiException
-        ? (e.error as ApiException).message
-        : fallback;
+    if (e.error is ApiException) {
+      return (e.error as ApiException).message;
+    }
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final msg = data['message'];
+      if (msg is String && msg.isNotEmpty) return msg;
+      if (msg is List) {
+        final parts = msg.whereType<String>().toList();
+        if (parts.isNotEmpty) return parts.join(' ');
+      }
+    }
+    return fallback;
   }
 }

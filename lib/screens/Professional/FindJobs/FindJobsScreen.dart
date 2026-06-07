@@ -1,55 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:wheelboard/utils/share_service.dart';
-import 'package:wheelboard/screens/CompanyTransport/notification_screen.dart';
-import '../../../controllers/Professional/unassigned_trips_controller.dart';
-import '../../../controllers/Professional/open_jobs_controller.dart';
-import '../../../models/unassigned_trip_model.dart';
-import '../../../models/job_model.dart';
-import '../TripOverview/TripOverviewScreen.dart';
-import '../../../widgets/custom_loader.dart';
-import '../../../widgets/ui/app_ui.dart';
 
-class FindJobsScreen extends StatelessWidget {
+import '../../../controllers/Professional/open_jobs_controller.dart';
+import '../../../controllers/Professional/unassigned_trips_controller.dart';
+import '../../../models/job_model.dart';
+import '../../../models/unassigned_trip_model.dart';
+import '../../../theme/design_system.dart';
+import '../JobDetails/JobDetailsScreen.dart';
+import '../Notification1/Notification1Screen.dart';
+import '../TripOverview/TripOverviewScreen.dart';
+
+/// Find Jobs — modern, brand-consistent job board + open-trip board.
+///
+/// Mirrors the web `/professional/jobs` (search + filters + apply/save/share)
+/// and keeps the app's extra "Trips" tab (open trips to bid on). Removes the old
+/// nested `MaterialApp` anti-pattern and the off-brand colour soup; routes the
+/// bell to the professional notifications screen. All APIs/actions preserved.
+class FindJobsScreen extends StatefulWidget {
   const FindJobsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const JobBoardScreen(),
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
-        fontFamily: 'Poppins',
-        useMaterial3: true,
-      ),
-    );
-  }
+  State<FindJobsScreen> createState() => _FindJobsScreenState();
 }
 
-class JobBoardScreen extends StatefulWidget {
-  const JobBoardScreen({super.key});
-
-  @override
-  State<JobBoardScreen> createState() => _JobBoardScreenState();
-}
-
-class _JobBoardScreenState extends State<JobBoardScreen>
+class _FindJobsScreenState extends State<FindJobsScreen>
     with SingleTickerProviderStateMixin {
-  final UnassignedTripsController tripsController = Get.put(
-    UnassignedTripsController(),
-  );
-  final OpenJobsController jobsController = Get.put(OpenJobsController());
-  final TextEditingController _searchController = TextEditingController();
+  final tripsController = Get.put(UnassignedTripsController());
+  final jobsController = Get.put(OpenJobsController());
+  final _searchController = TextEditingController();
 
-  late TabController _tabController;
+  late final TabController _tabController;
+  String _jobFilter = 'All'; // All | Saved | Applied
+
+  static const _jobFilters = ['All', 'Saved', 'Applied'];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _searchController.addListener(_onSearchChanged);
-    // Fetch jobs on init
     jobsController.fetchOpenJobs();
   }
 
@@ -62,181 +53,133 @@ class _JobBoardScreenState extends State<JobBoardScreen>
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    // Update trips search query
-    tripsController.searchQuery.value = query;
-    // Jobs filtering will be done in the UI using Obx
+    tripsController.searchQuery.value = _searchController.text.toLowerCase();
+    setState(() {}); // re-filter jobs
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
-        if (!didPop) {
-          // Navigate to home screen instead of going back
-          Navigator.of(context).pushReplacementNamed('/professional-home');
-        }
-      },
-      child: Scaffold(
-        backgroundColor: AppUi.scaffold,
-        appBar: AppBar(
-          title: const Text(
-            "Find Jobs",
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              color: Colors.black87,
-            ),
+    return Scaffold(
+      backgroundColor: AppPalette.bg,
+      appBar: AppBar(
+        backgroundColor: AppPalette.card,
+        elevation: 0.5,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        title: Text('Find Jobs', style: AppText.h2),
+        actions: [
+          IconButton(
+            icon: const Icon(Iconsax.notification, color: AppPalette.textDark),
+            onPressed: () => Get.to(() => const Notification1Screen()),
           ),
-          centerTitle: true,
-          automaticallyImplyLeading: false,
-          leading: const SizedBox.shrink(),
-          actions: [
-            IconButton(
-              icon: const Icon(
-                Icons.notifications_none_rounded,
-                color: Colors.black87,
-              ),
-              onPressed: () {
-                // Navigate to notification screen
-                Get.to(() => const NotificationScreen());
-              },
-            ),
-            const SizedBox(width: 8),
-          ],
-          elevation: 0,
-          backgroundColor: Colors.white,
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: const Color(0xFF003366),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: const Color(0xFF003366),
-            indicatorWeight: 3,
-            labelStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 15,
-            ),
-            tabs: const [
-              Tab(text: "Jobs"),
-              Tab(text: "Trips"),
-            ],
-          ),
-        ),
-        body: TabBarView(
+          const SizedBox(width: 4),
+        ],
+        bottom: TabBar(
           controller: _tabController,
-          children: [
-            // Jobs Tab
-            _buildJobsTab(),
-            // Trips Tab
-            _buildTripsTab(),
-          ],
+          labelColor: AppPalette.primary,
+          unselectedLabelColor: AppPalette.textGrey,
+          indicatorColor: AppPalette.primary,
+          indicatorWeight: 3,
+          labelStyle: AppText.subtitle,
+          unselectedLabelStyle: AppText.subtitle,
+          tabs: const [Tab(text: 'Jobs'), Tab(text: 'Trips')],
         ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [_jobsTab(), _tripsTab()],
+      ),
     );
   }
 
-  Widget _buildJobsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Search bar
-          TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              setState(() {}); // Trigger rebuild to filter jobs
-            },
-            decoration: InputDecoration(
-              hintText: "Search by location, role, or company",
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: Colors.grey.shade100,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 0,
-                horizontal: 20,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
+  // ── search field ──────────────────────────────────────────────────────────
+  Widget _searchField(String hint) {
+    return TextField(
+      controller: _searchController,
+      style: AppText.body.on(AppPalette.textDark),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: AppText.bodySm.on(AppPalette.textFaint),
+        prefixIcon: const Icon(Iconsax.search_normal_1,
+            size: 18, color: AppPalette.textGrey),
+        filled: true,
+        fillColor: AppPalette.card,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+        border: OutlineInputBorder(
+            borderRadius: AppRadius.rLg,
+            borderSide: const BorderSide(color: AppPalette.border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: AppRadius.rLg,
+            borderSide: const BorderSide(color: AppPalette.border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: AppRadius.rLg,
+            borderSide: const BorderSide(color: AppPalette.primary)),
+      ),
+    );
+  }
 
-          // Jobs Section - Dynamic from API
-          Obx(() {
-            if (jobsController.isLoading.value) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: CustomLoader(message: "Loading jobs..."),
+  // ── jobs tab ────────────────────────────────────────────────────────────────
+  Widget _jobsTab() {
+    return RefreshIndicator(
+      color: AppPalette.primary,
+      onRefresh: jobsController.refreshOpenJobs,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          _searchField('Search by role, company or location'),
+          AppSpacing.vGapMd,
+          Row(
+            children: _jobFilters.map((f) {
+              final sel = _jobFilter == f;
+              return Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
+                child: GestureDetector(
+                  onTap: () => setState(() => _jobFilter = f),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: sel ? AppPalette.brandGradient : null,
+                      color: sel ? null : AppPalette.card,
+                      borderRadius: AppRadius.rPill,
+                      border: Border.all(
+                          color: sel ? Colors.transparent : AppPalette.border),
+                    ),
+                    child: Text(f,
+                        style: AppText.label
+                            .on(sel ? Colors.white : AppPalette.textMid)
+                            .weight(FontWeight.w600)),
+                  ),
                 ),
               );
+            }).toList(),
+          ),
+          AppSpacing.vGapLg,
+          Obx(() {
+            if (jobsController.isLoading.value &&
+                jobsController.openJobs.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(40),
+                child: AppLoading(message: 'Loading jobs…'),
+              );
             }
-
-            if (jobsController.openJobs.isEmpty) {
+            final jobs = _visibleJobs();
+            if (jobs.isEmpty) {
               return const AppEmptyState(
-                icon: Icons.work_outline,
-                title: "No jobs available",
-                subtitle: "Check back later for new opportunities.",
+                icon: Iconsax.briefcase,
+                title: 'No jobs found',
+                subtitle: 'Try a different search or check back later.',
               );
             }
-
-            // Filter jobs based on search query (Location/City)
-            final searchQuery = _searchController.text.toLowerCase().trim();
-            final filteredJobs = searchQuery.isEmpty
-                ? jobsController.openJobs
-                : jobsController.openJobs.where((job) {
-                    return job.role.toLowerCase().contains(searchQuery) ||
-                        job.city.toLowerCase().contains(searchQuery) ||
-                        job.jobType.toLowerCase().contains(searchQuery) ||
-                        job.description.toLowerCase().contains(searchQuery) ||
-                        (job.companyName ?? '').toLowerCase().contains(
-                          searchQuery,
-                        );
-                  }).toList();
-
-            if (filteredJobs.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Text(
-                    "No matching jobs found.",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              );
-            }
-
             return Column(
-              children: filteredJobs.map((job) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: JobCard(
-                    job: job,
-                    onApply: () async {
-                      if (!job.isApplied) {
-                        final success = await jobsController.applyForJob(
-                          job.jobId,
-                        );
-                        if (success) {
-                          await jobsController.refreshOpenJobs();
-                        }
-                      }
-                    },
-                    onSaveToggle: () async {
-                      await jobsController.toggleSave(job.jobId);
-                    },
-                    isApplying: jobsController.isApplying(job.jobId),
-                  ),
-                );
-              }).toList(),
+              children: jobs
+                  .map((j) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: _jobCard(j),
+                      ))
+                  .toList(),
             );
           }),
         ],
@@ -244,453 +187,230 @@ class _JobBoardScreenState extends State<JobBoardScreen>
     );
   }
 
-  Widget _buildTripsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Search bar
-          TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              setState(() {}); // Trigger rebuild to filter trips
-            },
-            decoration: InputDecoration(
-              hintText: "Search trips by location",
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: Colors.grey.shade100,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 0,
-                horizontal: 20,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          Obx(() {
-            if (tripsController.isLoading.value) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: CustomLoader(message: "Loading trips..."),
-                ),
-              );
-            }
-
-            final displayedTrips = tripsController.filteredTrips;
-
-            if (displayedTrips.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: Text(
-                    "No trips available",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              );
-            }
-
-            return Column(
-              children: displayedTrips.map((trip) {
-                return TripCard(
-                  trip: trip,
-                  onTap: () async {
-                    await tripsController.fetchTripDetails(trip.tripId);
-                    if (tripsController.tripDetails.value != null) {
-                      TripOverviewPopup.show(
-                        context,
-                        tripId: trip.tripId,
-                        tripDetails: tripsController.tripDetails.value!,
-                      );
-                    }
-                  },
-                );
-              }).toList(),
-            );
-          }),
-        ],
-      ),
-    );
+  List<JobModel> _visibleJobs() {
+    var list = jobsController.openJobs.toList();
+    if (_jobFilter == 'Saved') list = list.where((j) => j.isSaved).toList();
+    if (_jobFilter == 'Applied') list = list.where((j) => j.isApplied).toList();
+    final q = _searchController.text.toLowerCase().trim();
+    if (q.isEmpty) return list;
+    return list.where((job) {
+      return job.role.toLowerCase().contains(q) ||
+          job.city.toLowerCase().contains(q) ||
+          job.jobType.toLowerCase().contains(q) ||
+          job.description.toLowerCase().contains(q) ||
+          (job.companyName ?? '').toLowerCase().contains(q);
+    }).toList();
   }
-}
 
-class JobCard extends StatelessWidget {
-  final JobModel job;
-  final VoidCallback onApply;
-  final VoidCallback? onSaveToggle;
-  final bool isApplying;
-
-  const JobCard({
-    super.key,
-    required this.job,
-    required this.onApply,
-    this.onSaveToggle,
-    this.isApplying = false,
-  });
-
-  String _salaryText() => job.salary.isNotEmpty ? job.salary : "Not specified";
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppUi.surface,
-        borderRadius: BorderRadius.circular(AppUi.radius),
-        boxShadow: AppUi.softShadow,
-      ),
+  Widget _jobCard(JobModel job) {
+    return AppCard(
+      onTap: () => Get.to(() => JobDetailsScreen(job: job),
+          transition: Transition.cupertino),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Company name
-          Text(
-            job.companyName ?? "Company",
-            style: const TextStyle(
-              color: Color(0xFF003366),
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 6),
-
-          // Job Role
-          Text(
-            job.role.isNotEmpty ? job.role : "Job Opening",
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Location and Salary row
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: Colors.grey,
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                    color: AppPalette.primaryLight,
+                    borderRadius: AppRadius.rMd),
+                child: const Icon(Iconsax.building_4,
+                    color: AppPalette.primary, size: 20),
               ),
-              const SizedBox(width: 4),
-              Text(
-                job.city.isNotEmpty ? job.city : "Location not specified",
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
-              ),
-              const SizedBox(width: 12),
-              const Icon(Icons.currency_rupee, size: 16, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text(
-                _salaryText(),
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Duration and openings
-          Row(
-            children: [
-              const Icon(Icons.access_time, size: 16, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text(
-                job.jobDuration,
-                style: const TextStyle(fontSize: 13, color: Colors.grey),
-              ),
-              if (job.openings > 0) ...[
-                const SizedBox(width: 12),
-                const Icon(Icons.people_outline, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  "${job.openings} openings",
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Save/bookmark and Openings row
-          Row(
-            children: [
-              // Save / bookmark button
-              GestureDetector(
-                onTap: onSaveToggle,
-                child: Row(
+              AppSpacing.hGapMd,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      job.isSaved
-                          ? Icons.bookmark
-                          : Icons.bookmark_border,
-                      size: 16,
-                      color: job.isSaved
-                          ? const Color(0xFF00AEEF)
-                          : Colors.black,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      job.isSaved ? "Saved" : "Save",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: job.isSaved
-                            ? const Color(0xFF00AEEF)
-                            : const Color(0xFF1F1F1F),
-                      ),
-                    ),
+                    Text(job.companyName?.isNotEmpty == true
+                        ? job.companyName!
+                        : 'Company',
+                        style: AppText.subtitle.on(AppPalette.primary)),
+                    Text(job.role.isNotEmpty ? job.role : 'Job Opening',
+                        style: AppText.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              // Openings count
-              Row(
-                children: [
-                  const Icon(
-                    Icons.people_outline,
-                    size: 14,
-                    color: Colors.black,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    "${job.openings} Openings",
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF1F1F1F),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Share and Apply Buttons Row
-          Row(
-            children: [
-              // Share Button
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    ShareService.shareJob(
-                      jobId: job.jobId,
-                      jobTitle: job.role,
-                      city: job.city,
-                      jobType: job.jobType,
-                      jobDuration: job.jobDuration,
-                      openings: job.openings,
-                      salary: job.salary,
-                      description: job.description,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00AEEF),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  icon: const Icon(Icons.share, size: 14, color: Colors.white),
-                  label: const Text(
-                    "Share",
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Apply Button
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: (isApplying || job.isApplied) ? null : onApply,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: job.isApplied
-                        ? Colors.grey.shade300
-                        : const Color(0xFFFFD500),
-                    foregroundColor: job.isApplied
-                        ? Colors.grey.shade600
-                        : const Color(0xFF003366),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: isApplying
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CustomLoader.small(),
-                        )
-                      : Text(
-                          job.isApplied ? "Applied" : "Apply now",
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+              GestureDetector(
+                onTap: () => jobsController.toggleSave(job.jobId),
+                child: Icon(
+                  job.isSaved ? Iconsax.archive_tick5 : Iconsax.archive_1,
+                  color: job.isSaved ? AppPalette.primary : AppPalette.textFaint,
+                  size: 22,
                 ),
               ),
             ],
           ),
+          AppSpacing.vGapMd,
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            if (job.city.isNotEmpty) _metaChip(Iconsax.location, job.city),
+            _metaChip(Iconsax.money_recive,
+                job.salary.isNotEmpty ? job.salary : 'Not specified'),
+            if (job.jobDuration.isNotEmpty)
+              _metaChip(Iconsax.clock, job.jobDuration),
+            if (job.openings > 0)
+              _metaChip(Iconsax.people, '${job.openings} openings'),
+          ]),
+          AppSpacing.vGapLg,
+          Row(children: [
+            Expanded(
+              child: AppSecondaryButton(
+                label: 'Share',
+                icon: Iconsax.share,
+                color: AppPalette.textMid,
+                onPressed: () => ShareService.shareJob(
+                  jobId: job.jobId,
+                  jobTitle: job.role,
+                  city: job.city,
+                  jobType: job.jobType,
+                  jobDuration: job.jobDuration,
+                  openings: job.openings,
+                  salary: job.salary,
+                  description: job.description,
+                ),
+              ),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: AppPrimaryButton(
+                label: job.isApplied ? 'Applied' : 'Apply now',
+                icon: job.isApplied ? Iconsax.tick_circle : Iconsax.send_2,
+                loading: jobsController.isApplying(job.jobId),
+                color: job.isApplied ? AppPalette.textFaint : AppPalette.primary,
+                onPressed: job.isApplied
+                    ? null
+                    : () async {
+                        final ok = await jobsController.applyForJob(job.jobId);
+                        if (ok) await jobsController.refreshOpenJobs();
+                      },
+              ),
+            ),
+          ]),
         ],
       ),
     );
   }
-}
 
-class TripCard extends StatelessWidget {
-  final UnassignedTrip? trip;
-  final VoidCallback? onTap;
-
-  const TripCard({super.key, this.trip, this.onTap});
-
-  String _getLocationName(String location) {
-    if (location.isEmpty) return 'Unknown';
-    final parts = location.split(',');
-    return parts.isNotEmpty ? parts[0].trim() : location;
-  }
-
-  String _formatDate(DateTime? date, String time) {
-    if (date == null) return time;
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final dateStr =
-        '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
-    final timeStr = time.isNotEmpty
-        ? ' – ${time.substring(0, time.length > 5 ? 5 : time.length)}'
-        : '';
-    return "$dateStr$timeStr";
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (trip == null) {
-      return const SizedBox.shrink();
-    }
-
+  Widget _metaChip(IconData icon, String text) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withValues(alpha: 0.05),
-            offset: const Offset(0, 3),
-            blurRadius: 8,
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration:
+          BoxDecoration(color: AppPalette.bg, borderRadius: AppRadius.rPill),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 14, color: AppPalette.textGrey),
+        const SizedBox(width: 5),
+        Text(text, style: AppText.caption.on(AppPalette.textMid)),
+      ]),
+    );
+  }
+
+  // ── trips tab ───────────────────────────────────────────────────────────────
+  Widget _tripsTab() {
+    return RefreshIndicator(
+      color: AppPalette.primary,
+      onRefresh: () => tripsController.fetchUnassignedTrips(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          _searchField('Search trips by location'),
+          AppSpacing.vGapLg,
+          Obx(() {
+            if (tripsController.isLoading.value) {
+              return const Padding(
+                padding: EdgeInsets.all(40),
+                child: AppLoading(message: 'Loading trips…'),
+              );
+            }
+            final trips = tripsController.filteredTrips;
+            if (trips.isEmpty) {
+              return const AppEmptyState(
+                icon: Iconsax.routing,
+                title: 'No open trips',
+                subtitle: 'New trips you can bid on will appear here.',
+              );
+            }
+            return Column(
+              children: trips
+                  .map((t) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: _tripCard(t),
+                      ))
+                  .toList(),
+            );
+          }),
         ],
       ),
+    );
+  }
+
+  Widget _tripCard(UnassignedTrip trip) {
+    String loc(String s) =>
+        s.isEmpty ? 'Unknown' : (s.split(',').first.trim());
+    return AppCard(
+      onTap: () async {
+        await tripsController.fetchTripDetails(trip.tripId);
+        final details = tripsController.tripDetails.value;
+        if (details != null && mounted) {
+          TripOverviewPopup.show(context,
+              tripId: trip.tripId, tripDetails: details);
+        }
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                "Trip to ${_getLocationName(trip!.destination)}",
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
-              Chip(
-                label: Text(
-                  trip!.tripType,
-                  style: const TextStyle(fontSize: 11, color: Colors.white),
-                ),
-                backgroundColor: Colors.redAccent,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: const VisualDensity(
-                  horizontal: -4,
-                  vertical: -4,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.location_on_outlined, size: 16),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text("From: ${_getLocationName(trip!.pickupLocation)}"),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.location_on_outlined, size: 16),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text("To: ${_getLocationName(trip!.destination)}"),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.calendar_today_outlined, size: 16),
-              const SizedBox(width: 4),
-              Text(_formatDate(trip!.pickupDate, trip!.pickupTime)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.currency_rupee, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                trip!.payRange.isNotEmpty
-                    ? "Pay Range: ${trip!.payRange}"
-                    : "Pay Range: Not specified",
-                style: TextStyle(
-                  color: trip!.payRange.isNotEmpty
-                      ? Colors.black87
-                      : Colors.grey,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: onTap,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 38),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
+          Row(children: [
+            Expanded(
+              child: Text('Trip to ${loc(trip.destination)}',
+                  style: AppText.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ),
-            child: const Text("View Details"),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                  color: AppPalette.primaryLight,
+                  borderRadius: AppRadius.rPill),
+              child: Text(trip.tripType,
+                  style: AppText.micro.on(AppPalette.primary).size(10)),
+            ),
+          ]),
+          AppSpacing.vGapMd,
+          _tripRow(Iconsax.location, 'From: ${loc(trip.pickupLocation)}'),
+          const SizedBox(height: 6),
+          _tripRow(Iconsax.location_tick, 'To: ${loc(trip.destination)}'),
+          const SizedBox(height: 6),
+          _tripRow(Iconsax.money_recive,
+              trip.payRange.isNotEmpty ? 'Pay: ${trip.payRange}' : 'Pay: N/A'),
+          AppSpacing.vGapMd,
+          AppPrimaryButton(
+            label: 'View Details',
+            icon: Iconsax.eye,
+            onPressed: () async {
+              await tripsController.fetchTripDetails(trip.tripId);
+              final details = tripsController.tripDetails.value;
+              if (details != null && mounted) {
+                TripOverviewPopup.show(context,
+                    tripId: trip.tripId, tripDetails: details);
+              }
+            },
           ),
         ],
       ),
     );
+  }
+
+  Widget _tripRow(IconData icon, String text) {
+    return Row(children: [
+      Icon(icon, size: 16, color: AppPalette.textGrey),
+      AppSpacing.hGapSm,
+      Expanded(child: Text(text, style: AppText.bodySm)),
+    ]);
   }
 }

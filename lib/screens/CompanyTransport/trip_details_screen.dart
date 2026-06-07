@@ -5,6 +5,7 @@ import '../../models/add_new_trip_model.dart';
 import 'edit_trip_screen.dart';
 import '../../core/auth/auth_service.dart';
 import '../../controllers/Transport/add_trip_controller.dart';
+import '../../widgets/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -329,21 +330,20 @@ class TripDetailsScreen extends StatelessWidget {
                                         Get.dialog(const Center(child: CircularProgressIndicator(color: Color(0xFFDC2626))), barrierDismissible: false);
                                         // Backend resolves trips by Mongo _id (web parity).
                                         final idToUse = trip.id.isNotEmpty ? trip.id : trip.tripId;
-                                        final bool success = await controller.deleteTrip(idToUse, userId);
+                                        final String? errorMsg = await controller.deleteTrip(idToUse, userId);
+                                        
                                         if (Get.isDialogOpen ?? false) Get.back(); // close loading indicator
 
-                                        if (success) {
+                                        if (errorMsg == null) {
                                           Get.back(); // return to trips screen
-                                          Get.snackbar(
-                                            "Success",
-                                            "Trip deleted successfully",
-                                            snackPosition: SnackPosition.TOP,
-                                            backgroundColor: const Color(0xFF16A34A),
-                                            colorText: Colors.white,
-                                            margin: const EdgeInsets.all(16),
-                                            borderRadius: 12,
-                                            icon: const Icon(Iconsax.tick_circle, color: Colors.white),
-                                          );
+                                          // Overlay-safe (deferred + guarded) so
+                                          // the toast reliably shows after the
+                                          // route transition. A raw Get.snackbar
+                                          // here often silently no-ops.
+                                          SnackBarHelper.success(
+                                              "Trip deleted successfully");
+                                        } else {
+                                          SnackBarHelper.error(errorMsg);
                                         }
                                       },
                                       style: ElevatedButton.styleFrom(

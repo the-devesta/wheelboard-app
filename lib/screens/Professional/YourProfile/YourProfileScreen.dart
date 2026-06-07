@@ -7,14 +7,16 @@ import '../../../controllers/Transport/driver_details_controller.dart';
 import '../../../controllers/Transport/user_profile_controller.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../models/user_profile_model.dart';
-import '../../../services/profile_service.dart';
-import '../../../utils/app_logger.dart';
 import '../../../widgets/common_delete_button.dart';
 import '../../../widgets/custom_snackbar.dart';
+import '../../../widgets/change_password_sheet.dart';
 import '../../auth/onboarding_screen.dart';
 import '../EditYourProfile01/EditYourProfile01Screen.dart';
+import '../KYC/kyc_screen.dart';
 import '../AddReferral/AddReferralScreen.dart';
 import '../../shared/subscription_screen.dart';
+import '../../shared/issues/issues_screen.dart';
+import '../../shared/legal_screen.dart';
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const _primary = Color(0xFFF36969);
@@ -49,7 +51,8 @@ class YourProfileScreen extends StatelessWidget {
       body: Obx(() {
         if (ctrl.isLoading.value && ctrl.userProfile.value == null) {
           return const Center(
-              child: CircularProgressIndicator(color: _primary));
+            child: CircularProgressIndicator(color: _primary),
+          );
         }
         if (ctrl.errorMessage.value.isNotEmpty &&
             ctrl.userProfile.value == null) {
@@ -105,8 +108,11 @@ class YourProfileScreen extends StatelessWidget {
       pinned: true,
       backgroundColor: _primary,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-            color: Colors.white, size: 20),
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: Colors.white,
+          size: 20,
+        ),
         onPressed: () => Get.back(),
       ),
       actions: [
@@ -142,16 +148,17 @@ class YourProfileScreen extends StatelessWidget {
                         height: 88,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border:
-                              Border.all(color: Colors.white, width: 3),
+                          border: Border.all(color: Colors.white, width: 3),
                           color: Colors.white.withValues(alpha: 0.2),
                         ),
                         child: ClipOval(
                           child: (imgUrl != null && imgUrl.isNotEmpty)
-                              ? Image.network(imgUrl,
+                              ? Image.network(
+                                  imgUrl,
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) =>
-                                      _initialsAvatar(initials, 88))
+                                      _initialsAvatar(initials, 88),
+                                )
                               : _initialsAvatar(initials, 88),
                         ),
                       ),
@@ -164,8 +171,11 @@ class YourProfileScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: _primary, width: 1.5),
                       ),
-                      child: const Icon(Iconsax.camera,
-                          size: 13, color: _primary),
+                      child: const Icon(
+                        Iconsax.camera,
+                        size: 13,
+                        color: _primary,
+                      ),
                     ),
                   ],
                 ),
@@ -173,16 +183,22 @@ class YourProfileScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(name,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Poppins')),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
                     if (isVerified) ...[
                       const SizedBox(width: 6),
-                      const Icon(Icons.verified_rounded,
-                          color: Colors.white, size: 18),
+                      const Icon(
+                        Icons.verified_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ],
                   ],
                 ),
@@ -191,7 +207,9 @@ class YourProfileScreen extends StatelessWidget {
                     profile!.professionalType!.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
@@ -199,10 +217,11 @@ class YourProfileScreen extends StatelessWidget {
                     child: Text(
                       profile.professionalType!,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500),
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 6),
@@ -211,12 +230,15 @@ class YourProfileScreen extends StatelessWidget {
                   children: const [
                     Icon(Iconsax.star1, size: 14, color: Colors.amber),
                     SizedBox(width: 4),
-                    Text('4.7 / 5',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w500)),
+                    Text(
+                      '4.7 / 5',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -229,10 +251,13 @@ class YourProfileScreen extends StatelessWidget {
 
   // ── KYC Banner ────────────────────────────────────────────────────────────
 
-  Widget _buildKycBanner(BuildContext context, UserProfileModel? profile,
-      DriverDetailsController driverCtrl) {
-    final isComplete = AuthService.to.isUserKYCCompleted ||
-        (profile?.isKYCCompleted ?? false);
+  Widget _buildKycBanner(
+    BuildContext context,
+    UserProfileModel? profile,
+    DriverDetailsController driverCtrl,
+  ) {
+    final isComplete =
+        AuthService.to.isUserKYCCompleted || (profile?.isKYCCompleted ?? false);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -259,40 +284,54 @@ class YourProfileScreen extends StatelessWidget {
               color: const Color(0xFF22C55E).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Iconsax.shield_tick,
-                size: 22, color: Color(0xFF22C55E)),
+            child: const Icon(
+              Iconsax.shield_tick,
+              size: 22,
+              color: Color(0xFF22C55E),
+            ),
           ),
           const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('KYC Verified',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF14532D),
-                        fontFamily: 'Poppins')),
+                Text(
+                  'KYC Verified',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF14532D),
+                    fontFamily: 'Poppins',
+                  ),
+                ),
                 SizedBox(height: 2),
-                Text('You can apply for jobs and submit bids.',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF166534),
-                        fontFamily: 'Poppins')),
+                Text(
+                  'You can apply for jobs and submit bids.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF166534),
+                    fontFamily: 'Poppins',
+                  ),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.check_circle_rounded,
-              color: Color(0xFF22C55E), size: 22),
+          const Icon(
+            Icons.check_circle_rounded,
+            color: Color(0xFF22C55E),
+            size: 22,
+          ),
         ],
       ),
     );
   }
 
-  Widget _kycIncompleteBanner(BuildContext context, UserProfileModel? profile,
-      DriverDetailsController driverCtrl) {
-    final professionalType =
-        profile?.professionalType?.toLowerCase() ?? '';
+  Widget _kycIncompleteBanner(
+    BuildContext context,
+    UserProfileModel? profile,
+    DriverDetailsController driverCtrl,
+  ) {
+    final professionalType = profile?.professionalType?.toLowerCase() ?? '';
     final isDriver = professionalType.contains('driver');
 
     return Container(
@@ -313,26 +352,35 @@ class YourProfileScreen extends StatelessWidget {
                   color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Iconsax.warning_2,
-                    size: 22, color: Color(0xFFF59E0B)),
+                child: const Icon(
+                  Iconsax.warning_2,
+                  size: 22,
+                  color: Color(0xFFF59E0B),
+                ),
               ),
               const SizedBox(width: 12),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Complete Your KYC',
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF92400E),
-                            fontFamily: 'Poppins')),
+                    Text(
+                      'Complete Your KYC',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF92400E),
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
                     SizedBox(height: 2),
-                    Text('Required to apply for jobs and submit bids.',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF92400E),
-                            fontFamily: 'Poppins')),
+                    Text(
+                      'Required to apply for jobs and submit bids.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF92400E),
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -341,12 +389,9 @@ class YourProfileScreen extends StatelessWidget {
           const SizedBox(height: 12),
           // KYC action item
           GestureDetector(
-            onTap: () => isDriver
-                ? _showDrivingLicenseDialog(context, profile, driverCtrl)
-                : _showPanCardDialog(context, profile),
+            onTap: () => Get.to(() => const KycScreen()),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF59E0B),
                 borderRadius: BorderRadius.circular(10),
@@ -361,14 +406,13 @@ class YourProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    isDriver
-                        ? 'Verify Driving License'
-                        : 'Verify PAN Card',
+                    isDriver ? 'Verify Driving License' : 'Verify PAN Card',
                     style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        fontFamily: 'Poppins'),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                    ),
                   ),
                 ],
               ),
@@ -402,12 +446,15 @@ class YourProfileScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: _textDark,
-                        fontFamily: 'Poppins')),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _textDark,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
                 if (trailing != null) trailing,
               ],
             ),
@@ -419,8 +466,7 @@ class YourProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(IconData icon, Color iconColor, String label,
-      String value) {
+  Widget _infoRow(IconData icon, Color iconColor, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -440,18 +486,24 @@ class YourProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: _textGrey,
-                        fontFamily: 'Poppins')),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: _textGrey,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: _textDark,
-                        fontFamily: 'Poppins')),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: _textDark,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
               ],
             ),
           ),
@@ -463,16 +515,19 @@ class YourProfileScreen extends StatelessWidget {
   // ── Personal details ──────────────────────────────────────────────────────
 
   Widget _buildPersonalDetails(
-      BuildContext context, UserProfileModel? profile) {
-    final location =
-        [profile?.city, profile?.state].whereType<String>().join(', ');
+    BuildContext context,
+    UserProfileModel? profile,
+  ) {
+    final location = [
+      profile?.city,
+      profile?.state,
+    ].whereType<String>().join(', ');
     return _card(
       title: 'Personal Details',
       trailing: GestureDetector(
         onTap: () => Get.to(() => const EditYourProfile01Screen()),
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: _primaryLight,
             borderRadius: BorderRadius.circular(20),
@@ -482,29 +537,47 @@ class YourProfileScreen extends StatelessWidget {
             children: const [
               Icon(Iconsax.edit, size: 12, color: _primary),
               SizedBox(width: 4),
-              Text('Edit',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: _primary,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins')),
+              Text(
+                'Edit',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _primary,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Poppins',
+                ),
+              ),
             ],
           ),
         ),
       ),
       children: [
-        _infoRow(Iconsax.profile_circle, const Color(0xFF3B82F6), 'Full Name',
-            profile?.name ?? '—'),
-        if (profile?.fatherName != null &&
-            profile!.fatherName!.isNotEmpty)
-          _infoRow(Iconsax.profile_2user, const Color(0xFF8B5CF6),
-              "Father's Name", profile.fatherName!),
+        _infoRow(
+          Iconsax.profile_circle,
+          const Color(0xFF3B82F6),
+          'Full Name',
+          profile?.name ?? '—',
+        ),
+        if (profile?.fatherName != null && profile!.fatherName!.isNotEmpty)
+          _infoRow(
+            Iconsax.profile_2user,
+            const Color(0xFF8B5CF6),
+            "Father's Name",
+            profile.fatherName!,
+          ),
         if (profile?.dateOfBirth != null)
-          _infoRow(Iconsax.calendar, const Color(0xFFF59E0B), 'Date of Birth',
-              _formatDate(profile?.dateOfBirth)),
+          _infoRow(
+            Iconsax.calendar,
+            const Color(0xFFF59E0B),
+            'Date of Birth',
+            _formatDate(profile?.dateOfBirth),
+          ),
         if (location.isNotEmpty)
-          _infoRow(Iconsax.location, const Color(0xFF0EA5E9),
-              'City / State', location),
+          _infoRow(
+            Iconsax.location,
+            const Color(0xFF0EA5E9),
+            'City / State',
+            location,
+          ),
       ],
     );
   }
@@ -515,12 +588,24 @@ class YourProfileScreen extends StatelessWidget {
     return _card(
       title: 'Contact Information',
       children: [
-        _infoRow(Iconsax.call, const Color(0xFF22C55E), 'Mobile Number',
-            profile?.mobileNo ?? '—'),
-        _infoRow(Iconsax.sms, const Color(0xFF3B82F6), 'Email Address',
-            profile?.email ?? '—'),
-        _infoRow(Icons.chat_rounded, const Color(0xFF22C55E), 'WhatsApp',
-            profile?.mobileNo ?? '—'),
+        _infoRow(
+          Iconsax.call,
+          const Color(0xFF22C55E),
+          'Mobile Number',
+          profile?.mobileNo ?? '—',
+        ),
+        _infoRow(
+          Iconsax.sms,
+          const Color(0xFF3B82F6),
+          'Email Address',
+          profile?.email ?? '—',
+        ),
+        _infoRow(
+          Icons.chat_rounded,
+          const Color(0xFF22C55E),
+          'WhatsApp',
+          profile?.mobileNo ?? '—',
+        ),
       ],
     );
   }
@@ -540,21 +625,26 @@ class YourProfileScreen extends StatelessWidget {
                 color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Iconsax.language_circle,
-                  size: 18, color: Color(0xFF3B82F6)),
+              child: const Icon(
+                Iconsax.language_circle,
+                size: 18,
+                color: Color(0xFF3B82F6),
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Language',
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: _textDark,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w500)),
+              child: Text(
+                'Language',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _textDark,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: _bg,
                 borderRadius: BorderRadius.circular(8),
@@ -563,14 +653,20 @@ class YourProfileScreen extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  Text('English',
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: _textDark,
-                          fontFamily: 'Poppins')),
+                  Text(
+                    'English',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _textDark,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   SizedBox(width: 4),
-                  Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 18, color: _textGrey),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: _textGrey,
+                  ),
                 ],
               ),
             ),
@@ -579,32 +675,56 @@ class YourProfileScreen extends StatelessWidget {
         const SizedBox(height: 16),
         const Divider(color: _border, height: 1),
         const SizedBox(height: 16),
-        Obx(() => _toggleRow(Iconsax.sms, 'SMS Notifications',
-            ctrl.smsNotifications.value, ctrl.toggleSmsNotifications)),
+        Obx(
+          () => _toggleRow(
+            Iconsax.sms,
+            'SMS Notifications',
+            ctrl.smsNotifications.value,
+            ctrl.toggleSmsNotifications,
+          ),
+        ),
         const SizedBox(height: 14),
-        Obx(() => _toggleRow(Iconsax.sms_notification, 'Email Notifications',
-            ctrl.emailNotifications.value, ctrl.toggleEmailNotifications)),
+        Obx(
+          () => _toggleRow(
+            Iconsax.sms_notification,
+            'Email Notifications',
+            ctrl.emailNotifications.value,
+            ctrl.toggleEmailNotifications,
+          ),
+        ),
         const SizedBox(height: 14),
-        Obx(() => _toggleRow(Icons.chat_rounded, 'WhatsApp Notifications',
+        Obx(
+          () => _toggleRow(
+            Icons.chat_rounded,
+            'WhatsApp Notifications',
             ctrl.whatsappNotifications.value,
-            ctrl.toggleWhatsappNotifications)),
+            ctrl.toggleWhatsappNotifications,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _toggleRow(IconData icon, String label, bool value,
-      ValueChanged<bool> onChanged) {
+  Widget _toggleRow(
+    IconData icon,
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Row(
       children: [
         Icon(icon, size: 20, color: _textGrey),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 14,
-                  color: _textDark,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w500)),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: _textDark,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
         Switch(
           value: value,
@@ -621,8 +741,8 @@ class YourProfileScreen extends StatelessWidget {
 
   Widget _buildSubscriptionCard() {
     return GestureDetector(
-      onTap: () => Get.to(
-          () => const SubscriptionScreen(category: 'professional')),
+      onTap: () =>
+          Get.to(() => const SubscriptionScreen(category: 'professional')),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Container(
@@ -651,23 +771,32 @@ class YourProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Subscription Plans',
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            fontFamily: 'Poppins')),
+                    Text(
+                      'Subscription Plans',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
                     SizedBox(height: 3),
-                    Text('View plans & manage your subscription',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white70,
-                            fontFamily: 'Poppins')),
+                    Text(
+                      'View plans & manage your subscription',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white70,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  size: 16, color: Colors.white70),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Colors.white70,
+              ),
             ],
           ),
         ),
@@ -683,13 +812,31 @@ class YourProfileScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            _actionTile(Iconsax.people, 'Invite & Earn',
-                const Color(0xFF22C55E), const Color(0xFFF0FDF4), () {
-              Get.to(() => AddReferralScreen());
-            }),
+            _actionTile(
+              Iconsax.people,
+              'Invite & Earn',
+              const Color(0xFF22C55E),
+              const Color(0xFFF0FDF4),
+              () {
+                Get.to(() => AddReferralScreen());
+              },
+            ),
             const SizedBox(width: 10),
-            _actionTile(Iconsax.call, 'Contact Us', const Color(0xFF3B82F6),
-                const Color(0xFFEFF6FF), _contactUs),
+            _actionTile(
+              Iconsax.call,
+              'Contact Us',
+              const Color(0xFF3B82F6),
+              const Color(0xFFEFF6FF),
+              _contactUs,
+            ),
+            const SizedBox(width: 10),
+            _actionTile(
+              Iconsax.lock,
+              'Password',
+              const Color(0xFFF59E0B),
+              const Color(0xFFFFFBEB),
+              () => ChangePasswordSheet.show(context),
+            ),
             const SizedBox(width: 10),
             _actionTile(
               Iconsax.logout,
@@ -704,8 +851,13 @@ class YourProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _actionTile(IconData icon, String label, Color iconColor, Color bg,
-      VoidCallback onTap) {
+  Widget _actionTile(
+    IconData icon,
+    String label,
+    Color iconColor,
+    Color bg,
+    VoidCallback onTap,
+  ) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -720,13 +872,16 @@ class YourProfileScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 22, color: iconColor),
               const SizedBox(height: 6),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: iconColor,
-                      fontFamily: 'Poppins'),
-                  textAlign: TextAlign.center),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: iconColor,
+                  fontFamily: 'Poppins',
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -750,12 +905,15 @@ class YourProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Account',
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: _textDark,
-                    fontFamily: 'Poppins')),
+            const Text(
+              'Account',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _textDark,
+                fontFamily: 'Poppins',
+              ),
+            ),
             const SizedBox(height: 16),
             CommonDeleteButton(
               onConfirm: (password) async {
@@ -794,27 +952,34 @@ class YourProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Having issues?',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          fontFamily: 'Poppins')),
+                  Text(
+                    'Having issues?',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   SizedBox(height: 4),
-                  Text('Our support team is ready to help you.',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                          fontFamily: 'Poppins')),
+                  Text(
+                    'Our support team is ready to help you.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                 ],
               ),
             ),
             GestureDetector(
-              onTap: () =>
-                  SnackBarHelper.info('Chat support coming soon!'),
+              onTap: () => Get.to(() => const IssuesScreen()),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 8),
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -822,26 +987,14 @@ class YourProfileScreen extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Chat',
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: _primary,
-                            fontFamily: 'Poppins')),
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3CD),
-                        borderRadius: BorderRadius.circular(4),
+                    const Text(
+                      'Get Help',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _primary,
+                        fontFamily: 'Poppins',
                       ),
-                      child: const Text('Soon',
-                          style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF856404),
-                              fontFamily: 'Poppins')),
                     ),
                   ],
                 ),
@@ -858,231 +1011,55 @@ class YourProfileScreen extends StatelessWidget {
   Widget _buildFooter() {
     return Column(
       children: [
-        const Text('App v1.3.2',
-            style: TextStyle(
-                fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+        const Text(
+          'App v1.3.2',
+          style: TextStyle(
+            fontSize: 11,
+            color: _textGrey,
+            fontFamily: 'Poppins',
+          ),
+        ),
         const SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text('Terms & Conditions',
+          children: [
+            GestureDetector(
+              onTap: () =>
+                  Get.to(() => const LegalScreen(type: LegalType.termsOfService)),
+              child: const Text(
+                'Terms & Conditions',
                 style: TextStyle(
-                    fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Text('•',
-                  style: TextStyle(color: _textGrey, fontSize: 11)),
+                  fontSize: 11,
+                  color: _primary,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Poppins',
+                ),
+              ),
             ),
-            Text('Privacy Policy',
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '•',
+                style: TextStyle(color: _textGrey, fontSize: 11),
+              ),
+            ),
+            GestureDetector(
+              onTap: () =>
+                  Get.to(() => const LegalScreen(type: LegalType.privacyPolicy)),
+              child: const Text(
+                'Privacy Policy',
                 style: TextStyle(
-                    fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+                  fontSize: 11,
+                  color: _primary,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
           ],
         ),
       ],
     );
-  }
-
-  // ── KYC dialogs ───────────────────────────────────────────────────────────
-
-  void _showDrivingLicenseDialog(BuildContext context,
-      UserProfileModel? profile, DriverDetailsController driverCtrl) {
-    final dlCtrl = TextEditingController();
-    final dobCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    DateTime? selectedDob;
-
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(builder: (ctx, setState) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
-          title: const Text('Verify Driving License',
-              style: TextStyle(
-                  fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: dlCtrl,
-                  decoration: InputDecoration(
-                    labelText: 'DL Number',
-                    hintText: 'Enter your driving licence number',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    prefixIcon: const Icon(Iconsax.card),
-                  ),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: dobCtrl,
-                  readOnly: true,
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: ctx,
-                      initialDate: selectedDob ?? DateTime(2000),
-                      firstDate: DateTime(1950),
-                      lastDate: DateTime.now(),
-                      builder: (c, child) => Theme(
-                        data: Theme.of(c).copyWith(
-                          colorScheme: const ColorScheme.light(
-                              primary: _primary,
-                              onPrimary: Colors.white),
-                        ),
-                        child: child!,
-                      ),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        selectedDob = picked;
-                        dobCtrl.text =
-                            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
-                      });
-                    }
-                  },
-                  decoration: InputDecoration(
-                    labelText: 'Date of Birth',
-                    hintText: 'DD/MM/YYYY',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    prefixIcon: const Icon(Iconsax.calendar),
-                  ),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Required' : null,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: const Text('Cancel',
-                  style: TextStyle(color: _textGrey)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  Get.back();
-                  await _verifyDl(profile?.userId ?? '',
-                      dlCtrl.text.trim(), dobCtrl.text.trim());
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10))),
-              child: const Text('Verify',
-                  style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      }),
-    );
-  }
-
-  void _showPanCardDialog(
-      BuildContext context, UserProfileModel? profile) {
-    final panCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Verify PAN Card',
-            style: TextStyle(
-                fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: panCtrl,
-            textCapitalization: TextCapitalization.characters,
-            decoration: InputDecoration(
-              labelText: 'PAN Number (e.g. ABCDE1234F)',
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              prefixIcon: const Icon(Iconsax.document_text),
-            ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Required';
-              if (!RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$')
-                  .hasMatch(v.toUpperCase())) {
-                return 'Invalid PAN format';
-              }
-              return null;
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel',
-                style: TextStyle(color: _textGrey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                Get.back();
-                await _verifyPan(profile?.userId ?? '',
-                    panCtrl.text.trim().toUpperCase());
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: _primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10))),
-            child: const Text('Verify',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _verifyDl(
-      String userId, String dlNumber, String dob) async {
-    try {
-      SnackBarHelper.info('Verifying driving licence…');
-      final result = await ProfileService().verifyDrivingLicence(
-          userId: userId, dlNumber: dlNumber, dob: dob);
-      if (result['success'] == true) {
-        await AuthService.to.updateKYCStatus(true);
-        SnackBarHelper.success(
-            result['message'] ?? 'DL verified successfully');
-        await Future.delayed(const Duration(seconds: 2));
-        Get.find<UserProfileController>().fetchCurrentUserProfile();
-      } else {
-        SnackBarHelper.error('Verification failed');
-      }
-    } catch (e) {
-      AppLogger.e('DL verify error: $e');
-      SnackBarHelper.error('Verification failed — check your inputs');
-    }
-  }
-
-  Future<void> _verifyPan(String userId, String panNumber) async {
-    try {
-      SnackBarHelper.info('Verifying PAN…');
-      final result = await ProfileService()
-          .verifyPanKYC(userId: userId, panNumber: panNumber);
-      if (result['success'] == true) {
-        await AuthService.to.updateKYCStatus(true);
-        SnackBarHelper.success(
-            result['message'] ?? 'PAN verified successfully');
-        await Future.delayed(const Duration(seconds: 2));
-        Get.find<UserProfileController>().fetchCurrentUserProfile();
-      } else {
-        SnackBarHelper.error('Verification failed');
-      }
-    } catch (e) {
-      AppLogger.e('PAN verify error: $e');
-      SnackBarHelper.error('Verification failed — check your inputs');
-    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -1101,16 +1078,21 @@ class YourProfileScreen extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Log Out',
-            style: TextStyle(
-                fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
-        content: const Text('Are you sure you want to log out?',
-            style: TextStyle(fontFamily: 'Poppins')),
+        title: const Text(
+          'Log Out',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700),
+        ),
+        content: const Text(
+          'Are you sure you want to log out?',
+          style: TextStyle(fontFamily: 'Poppins'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Cancel',
-                style: TextStyle(color: _textGrey, fontFamily: 'Poppins')),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: _textGrey, fontFamily: 'Poppins'),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1125,10 +1107,13 @@ class YourProfileScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: _primary,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Log Out',
-                style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
+            child: const Text(
+              'Log Out',
+              style: TextStyle(color: Colors.white, fontFamily: 'Poppins'),
+            ),
           ),
         ],
       ),
@@ -1148,12 +1133,15 @@ class YourProfileScreen extends StatelessWidget {
       height: size,
       color: Colors.white.withValues(alpha: 0.25),
       child: Center(
-        child: Text(initials,
-            style: TextStyle(
-                fontSize: size * 0.35,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                fontFamily: 'Poppins')),
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: size * 0.35,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            fontFamily: 'Poppins',
+          ),
+        ),
       ),
     );
   }
@@ -1163,8 +1151,18 @@ class YourProfileScreen extends StatelessWidget {
     try {
       final d = DateTime.parse(raw);
       const months = [
-        'Jan','Feb','Mar','Apr','May','Jun',
-        'Jul','Aug','Sep','Oct','Nov','Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${d.day} ${months[d.month - 1]} ${d.year}';
     } catch (_) {
@@ -1190,12 +1188,15 @@ class _ErrorRetry extends StatelessWidget {
           children: [
             const Icon(Iconsax.warning_2, size: 48, color: _primary),
             const SizedBox(height: 16),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 14,
-                    color: _textGrey,
-                    fontFamily: 'Poppins')),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: _textGrey,
+                fontFamily: 'Poppins',
+              ),
+            ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: onRetry,
@@ -1205,7 +1206,8 @@ class _ErrorRetry extends StatelessWidget {
                 backgroundColor: _primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],

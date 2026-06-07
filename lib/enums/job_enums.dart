@@ -22,10 +22,12 @@ enum JobRole {
   }
 }
 
-/// Enum for Job Duration
+/// Enum for Job Duration — mirrors FE `CreateJobData.duration` and the backend
+/// `CreateJobDto.duration` accepted values.
 enum JobDuration {
   permanent('Permanent'),
-  contract('Contract');
+  taskBased('Task-based'),
+  temporary('Temporary');
 
   final String value;
   const JobDuration(this.value);
@@ -44,8 +46,10 @@ enum JobDuration {
     // Try partial match
     if (lowerValue.contains('permanent')) {
       return JobDuration.permanent;
-    } else if (lowerValue.contains('contract')) {
-      return JobDuration.contract;
+    } else if (lowerValue.contains('task')) {
+      return JobDuration.taskBased;
+    } else if (lowerValue.contains('temp')) {
+      return JobDuration.temporary;
     }
 
     return null;

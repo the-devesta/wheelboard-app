@@ -10,6 +10,40 @@ import '../../models/add_new_trip_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
 
+/// Canonical trip-status bucketing — an EXACT mirror of the web company Trips
+/// page `mapTripStatus` (wheelboard-fe/src/app/company/trips/page.tsx). Keeping
+/// this identical guarantees the mobile tabs/counts always match the web
+/// company screen (1 Upcoming / 4 In-Process / 1 Completed, etc.).
+///
+/// Returns one of: 'upcoming' | 'in-process' | 'completed'.
+String tripStatusBucket(String rawStatus) {
+  switch (rawStatus.toLowerCase().trim()) {
+    // Completed: finished, POD collected/verified, or in the payment phase.
+    case 'completed':
+    case 'pod-collected':
+    case 'pod-verified':
+    case 'payment-pending':
+    case 'payment-initiated':
+    case 'payment-awaiting-confirmation':
+    case 'payment-confirmed':
+      return 'completed';
+
+    // In-Process: trip is actively being executed (incl. awaiting LR confirm).
+    case 'in-progress':
+    case 'awaiting-pod':
+    case 'pending-lr-confirmation':
+    case 'en-route-to-pickup':
+    case 'arrived-at-pickup':
+      return 'in-process';
+
+    // Upcoming: draft | scheduled | cancelled | created |
+    // awaiting-lr-confirmation | lr-confirmed | arrived | anything unknown.
+    // (Matches the web `default → 'Upcoming'`.)
+    default:
+      return 'upcoming';
+  }
+}
+
 class TripController extends GetxController {
   var drivers = <Driver>[].obs;
   var vehicles = <Vehicle>[].obs;
@@ -276,6 +310,14 @@ class TripController extends GetxController {
           .map((e) => Trip.fromJson(e))
           .toList();
 
+      AppLogger.d("========== TRIP DEBUG ==========");
+      AppLogger.d("API raw response length: ${tripsList.length}");
+      AppLogger.d("Parsed trips length: ${trips.length}");
+      for (final t in trips) {
+        AppLogger.d("Trip ID: ${t.tripId} | DB ID: ${t.id} | Status: ${t.tripStatus}");
+      }
+      AppLogger.d("================================");
+
       AppLogger.d("✅ Fetched ${trips.length} trips");
     } on dio.DioException catch (e) {
       final msg = e.error is ApiException
@@ -291,60 +333,35 @@ class TripController extends GetxController {
   }
 
   List<Trip> getTripsByStatus(String status) {
-    return trips.where((trip) {
-      final s = trip.tripStatus.toLowerCase().trim();
-      switch (status.toLowerCase()) {
-        // ── Upcoming: anything not yet started ──────────────────────────────
-        // Mirrors web mapBackendStatus():
-        //   draft | scheduled | pending-lr-confirmation |
-        //   awaiting-lr-confirmation | lr-confirmed → 'Upcoming'
-        case 'upcoming':
-          return s == 'draft' ||
-              s == 'scheduled' ||
-              s == 'created' ||
-              s == 'upcoming' ||
-              s == 'pending' ||
-              s == 'pending-lr-confirmation' ||
-              s == 'awaiting-lr-confirmation' ||
-              s == 'lr-confirmed';
-
-        // ── In-Process: trip is actively being executed ──────────────────────
-        // Mirrors web:
-        //   en-route-to-pickup | arrived-at-pickup | in-progress |
-        //   arrived | awaiting-pod | pod-collected → 'In-Process'
-        case 'in-process':
-        case 'in process':
-          return s == 'in-progress' ||
-              s == 'in-process' ||
-              s == 'in progress' ||
-              s == 'inprogress' ||
-              s == 'ongoing' ||
-              s == 'active' ||
-              s == 'en-route-to-pickup' ||
-              s == 'arrived-at-pickup' ||
-              s == 'arrived' ||
-              s == 'awaiting-pod' ||
-              s == 'pod-collected' ||
-              s.contains('process') ||
-              s.contains('progress');
-
-        // ── Completed: trip finished or cancelled ────────────────────────────
-        case 'completed':
-          return s == 'completed' ||
-              s == 'cancelled' ||
-              s == 'done' ||
-              s == 'finished' ||
-              s.contains('complete');
-
-        default:
-          return s == status.toLowerCase();
-      }
-    }).toList();
+    // Normalize the requested tab to the canonical bucket name, then filter
+    // using the shared web-parity [tripStatusBucket] mapping so the mobile
+    // tabs are always in lock-step with the web company Trips screen.
+    final normalized = status.toLowerCase().trim();
+    final target = (normalized == 'in-process' || normalized == 'in process')
+        ? 'in-process'
+        : normalized == 'completed'
+            ? 'completed'
+            : 'upcoming';
+    return trips
+        .where((trip) => tripStatusBucket(trip.tripStatus) == target)
+        .toList();
   }
 
   Future<void> refreshTrips(String userId) async => fetchTrips(userId);
 
-  Future<bool> deleteTrip(String tripId, String userId) async {
+  /// Resolve a user-facing message from a Dio error. The auth interceptor does
+  /// not wrap errors as [ApiException], so we read the backend body directly
+  /// (e.g. "Cannot delete a trip that is currently in-process") instead of a
+  /// generic fallback — this is what surfaces the real reason in the UI.
+  String _dioMessage(dio.DioException e, String fallback) {
+    if (e.error is ApiException) return (e.error as ApiException).message;
+    final data = e.response?.data;
+    final code = e.response?.statusCode ?? 0;
+    if (data != null) return ApiException.toFriendlyMessage(data, code);
+    return fallback;
+  }
+
+  Future<String?> deleteTrip(String tripId, String userId) async {
     try {
       isLoading.value = true;
       AppLogger.d('📡 Deleting trip: $tripId');
@@ -354,16 +371,17 @@ class TripController extends GetxController {
       );
 
       await fetchTrips(userId);
-      return true;
+      return null;
     } on dio.DioException catch (e) {
-      final msg = e.error is ApiException
-          ? (e.error as ApiException).message
-          : 'Failed to delete trip';
-      SnackBarHelper.error(msg);
-      return false;
+      if (e.response?.statusCode == 404) {
+        // If it's 404, it might have been already deleted (e.g. from web UI).
+        // Refresh the list so it disappears from the app UI.
+        await fetchTrips(userId);
+        return null; // Consider it a success since it's gone
+      }
+      return _dioMessage(e, 'Failed to delete trip');
     } catch (e) {
-      SnackBarHelper.error('Error deleting trip');
-      return false;
+      return 'Error deleting trip';
     } finally {
       isLoading.value = false;
     }

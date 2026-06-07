@@ -508,7 +508,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _submitProfile,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF25C5C),
+                      backgroundColor: const Color(0xFFF36969),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),

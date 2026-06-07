@@ -23,6 +23,8 @@ import '../CompanyTransport/fleet_userprofile.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 import 'booking_list_screen.dart';
+import 'leads/leads_screen.dart';
+import 'sp_learning_screen.dart';
 import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 
 
@@ -248,10 +250,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            Get.to(
-                              () =>
-                                  BookingListScreen(serviceIds: _allServiceIds),
-                            );
+                            Get.to(() => const LeadsScreen());
                           },
                           child: _buildStatCard(
                             context,
@@ -269,7 +268,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Quick Action Buttons (Earnings, Hire, Active Listing)
+              // Quick Action Buttons (Earnings, Hire, Bookings, Learning)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
@@ -287,7 +286,7 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
@@ -301,17 +300,32 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          Get.to(() => const MyListingsScreen());
+                          Get.to(() =>
+                              BookingListScreen(serviceIds: _allServiceIds));
                         },
                         child: _buildQuickActionCard(
                           context,
-                          icon: Icons.list_alt,
+                          icon: Icons.event_note,
+                          iconBgColor: const Color(0xFFE8F5E9),
+                          label: 'Bookings',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Get.to(() => const SpLearningScreen());
+                        },
+                        child: _buildQuickActionCard(
+                          context,
+                          icon: Icons.school_outlined,
                           iconBgColor: const Color(0xFFFFF3E0),
-                          label: 'Listing',
+                          label: 'Learning',
                         ),
                       ),
                     ),

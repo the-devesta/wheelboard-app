@@ -303,14 +303,13 @@ class _TripDashboardScreenState extends State<TripDashboardScreen>
   // ── active trips section ──────────────────────────────────────────────────
   Widget _buildActiveSection() {
     return Obx(() {
-      final active = _tripCtrl.assignedTrips.where((t) {
-        final s = t.tripStatus.toLowerCase();
-        return s == 'upcoming' || s == 'active' || s == 'in progress' ||
-            s == 'in-progress' || s == 'scheduled' || s == 'draft' ||
-            s == 'pending-lr-confirmation' || s == 'awaiting-lr-confirmation' ||
-            s == 'lr-confirmed' || s == 'en-route-to-pickup' ||
-            s == 'arrived-at-pickup' || s == 'awaiting-pod' || s == 'arrived';
-      }).toList();
+      // Active & Upcoming = everything that is NOT in a terminal/completed
+      // state. Mirrors the web professional page (mapBackendStatus), where any
+      // non-completed status — incl. pod-collected, awaiting-lr-confirmation,
+      // lr-confirmed, arrived — is shown alongside assigned/upcoming trips.
+      final active = _tripCtrl.assignedTrips
+          .where((t) => !_isCompletedProfStatus(t.tripStatus))
+          .toList();
 
       if (active.isEmpty) return const SizedBox.shrink();
       return Padding(
@@ -326,13 +325,23 @@ class _TripDashboardScreenState extends State<TripDashboardScreen>
     });
   }
 
+  // Web-parity completed check for the professional side (mapBackendStatus):
+  // a trip counts as Completed when it is finished OR cancelled.
+  bool _isCompletedProfStatus(String raw) {
+    final s = raw.toLowerCase().trim();
+    return s == 'completed' ||
+        s == 'cancelled' ||
+        s == 'done' ||
+        s == 'finished' ||
+        s.contains('complete');
+  }
+
   // ── completed trips section ───────────────────────────────────────────────
   Widget _buildCompletedSection() {
     return Obx(() {
-      final done = _tripCtrl.assignedTrips.where((t) {
-        final s = t.tripStatus.toLowerCase();
-        return s == 'completed' || s == 'done' || s == 'finished' || s.contains('complete');
-      }).toList();
+      final done = _tripCtrl.assignedTrips
+          .where((t) => _isCompletedProfStatus(t.tripStatus))
+          .toList();
 
       if (done.isEmpty) return const SizedBox.shrink();
       return Padding(

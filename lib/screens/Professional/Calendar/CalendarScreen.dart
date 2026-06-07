@@ -92,7 +92,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             calendarController.refreshEvents();
           });
         },
-        backgroundColor: const Color(0xFFFF5E5E),
+        backgroundColor: const Color(0xFFF36969),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

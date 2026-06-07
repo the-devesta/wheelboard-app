@@ -9,17 +9,20 @@ import '../../controllers/Transport/user_profile_controller.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../CompanyTransport/feed_screen.dart';
-import '../CompanyTransport/job_screen.dart';
 import 'add_service_screen.dart';
 import 'home_screen.dart';
 import 'my_listings_screen.dart';
+import 'sp_job_screen.dart';
+import 'sp_notification_screen.dart';
+import 'sp_learning_screen.dart';
 
-// Service provider nav items (4 tabs)
+// Service provider nav items (5 tabs: Home, Listings, Feeds, Jobs, Notifications)
 const _spNavItems = [
-  AppNavItem(label: 'Home',     icon: Iconsax.home,          activeIcon: Iconsax.home_2),
-  AppNavItem(label: 'Listings', icon: Iconsax.receipt,        activeIcon: Iconsax.receipt_1),
-  AppNavItem(label: 'Feeds',    icon: Iconsax.document_text,  activeIcon: Iconsax.document_text_1),
-  AppNavItem(label: 'Jobs',     icon: Iconsax.briefcase,      activeIcon: Iconsax.briefcase1),
+  AppNavItem(label: 'Home',    icon: Iconsax.home,            activeIcon: Iconsax.home_2),
+  AppNavItem(label: 'Listings',icon: Iconsax.receipt,          activeIcon: Iconsax.receipt_1),
+  AppNavItem(label: 'Feeds',   icon: Iconsax.document_text,    activeIcon: Iconsax.document_text_1),
+  AppNavItem(label: 'Jobs',    icon: Iconsax.briefcase,        activeIcon: Iconsax.briefcase1),
+  AppNavItem(label: 'Alerts',  icon: Iconsax.notification,     activeIcon: Iconsax.notification_1),
 ];
 
 class CompanyServiceProviderMainWrapper extends StatefulWidget {
@@ -40,7 +43,8 @@ class _CompanyServiceProviderMainWrapperState
     const ServiceProviderHomeScreen(),
     const MyListingsScreen(),
     const FeedScreen(),
-    const JobsScreen(),
+    const SpJobScreen(),
+    const SpNotificationScreen(),
   ];
 
   @override
@@ -63,6 +67,9 @@ class _CompanyServiceProviderMainWrapperState
 
     AppLogger.d('✅ Common controllers initialized in Service Provider wrapper');
   }
+
+  // ── Learning is accessible from Home via profile menu ────────────────────
+  void openLearning() => Get.to(() => const SpLearningScreen());
 
   @override
   Widget build(BuildContext context) {

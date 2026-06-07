@@ -32,11 +32,20 @@ class _PodViewScreenState extends State<PodViewScreen> {
   Future<void> _fetchPod() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final res = await ApiClient.instance.get(
+      final res = await ApiClient.instance.get<Map<String, dynamic>>(
         ApiEndpoints.trips.podDetails(widget.tripId),
       );
       setState(() {
-        _pod = res.data is Map<String, dynamic> ? res.data as Map<String, dynamic> : null;
+        final raw = res is Map<String, dynamic> ? res as Map<String, dynamic> : null;
+        if (raw != null && raw['collection'] is Map<String, dynamic>) {
+          // Backend nests POD details under `collection` — merge so UI can read fields at top-level
+          final coll = Map<String, dynamic>.from(raw['collection'] as Map);
+          final merged = Map<String, dynamic>.from(raw);
+          merged.addAll(coll);
+          _pod = merged;
+        } else {
+          _pod = raw;
+        }
         _loading = false;
       });
     } catch (e) {

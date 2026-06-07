@@ -27,8 +27,6 @@ export '../../screens/auth/service_provider_login.dart';
 export '../../screens/auth/otp_screen.dart';
 export '../../screens/auth/verify_email.dart';
 export '../../screens/auth/forgot_password.dart';
-export '../../screens/auth/forget_password_screen.dart'
-    hide ForgotPasswordScreen;
 
 // Auth models
 export '../../models/company_signupmodel.dart';

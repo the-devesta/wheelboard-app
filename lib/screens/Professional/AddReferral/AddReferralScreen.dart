@@ -14,7 +14,7 @@ class AddReferralScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF9FAFB),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Get.to(() => NewReferralScreen()),
-        backgroundColor: const Color(0xFFFF5E5E),
+        backgroundColor: const Color(0xFFF36969),
         icon: const Icon(Icons.person_add, color: Colors.white),
         label: const Text(
           "NEW REFERRAL",
@@ -30,13 +30,13 @@ class AddReferralScreen extends StatelessWidget {
         elevation: 0.5,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFFF5E5E)),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFF36969)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           "Your Referrals",
           style: TextStyle(
-            color: Color(0xFFFF5E5E),
+            color: Color(0xFFF36969),
             fontWeight: FontWeight.w600,
           ),
         ),

@@ -303,6 +303,23 @@ class AuthService extends GetxService {
     return data['message']?.toString() ?? 'Account deleted';
   }
 
+  // ── Change Password ───────────────────────────────────────────────────
+  // Matches: PUT /api/settings/account/password { currentPassword, newPassword }
+  // Same as wheelboard-fe api.changePassword()
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final data = await _api.put<Map<String, dynamic>>(
+      '/settings/account/password',
+      data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      },
+    );
+    return data['message']?.toString() ?? 'Password updated successfully';
+  }
+
   // ── KYC Verification ──────────────────────────────────────────────────
   // Matches: POST /api/auth/verify-pan, POST /api/auth/verify-dl
 

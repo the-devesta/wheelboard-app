@@ -58,6 +58,15 @@ class ApiEndpoints {
 
   // ── Share Navigation ─────────────────────────────────────────────────────
   static const shareNavigation = _ShareNavigationEndpoints();
+
+  // ── Learning ─────────────────────────────────────────────────────────────
+  static const learning = _LearningEndpoints();
+
+  // ── Issues (support tickets) ─────────────────────────────────────────────
+  static const issues = _IssuesEndpoints();
+
+  // ── Leads (service-provider CRM) ─────────────────────────────────────────
+  static const leads = _LeadsEndpoints();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -264,8 +273,11 @@ class _TripEndpoints {
   String get pendingPodVerification => '/trips/pending-pod-verification';
 
   // ── LR (Lorry Receipt) ────────────────────────────────────────────────
-  // POST   /trips/:tripId/lr  — upload LR document (fleet owner)
-  String lrUpload(String tripId) => '/trips/$tripId/lr';
+  // POST   /trips/:tripId/lr/generate  — generate LR (fleet owner, draft trip)
+  String lrGenerate(String tripId) => '/trips/$tripId/lr/generate';
+
+  // PATCH  /trips/:tripId/lr  — update LR after driver rejection (fleet owner)
+  String lrUpdate(String tripId) => '/trips/$tripId/lr';
 
   // GET    /trips/:tripId/lr  — get LR details
   String lrDetails(String tripId) => '/trips/$tripId/lr';
@@ -629,6 +641,90 @@ class _ExpensesEndpoints {
 
   // GET    /expenses  — alias used by older controllers as expenseDetails
   String get expenseDetails => '/expenses';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Learning
+// ─────────────────────────────────────────────────────────────────────────────
+class _LearningEndpoints {
+  const _LearningEndpoints();
+
+  // GET    /learning  (supports ?category=)
+  String get list => '/learning';
+
+  // GET    /learning/categories
+  String get categories => '/learning/categories';
+
+  // GET    /learning/stats
+  String get stats => '/learning/stats';
+
+  // GET    /learning/:id
+  String details(String id) => '/learning/$id';
+
+  // POST   /learning/:id/enroll
+  String enroll(String id) => '/learning/$id/enroll';
+
+  // POST   /learning/:id/progress  { progress }
+  String progress(String id) => '/learning/$id/progress';
+
+  // POST   /learning/:id/rate  { rating }
+  String rate(String id) => '/learning/$id/rate';
+
+  // GET    /learning/:id/my-progress
+  String myProgress(String id) => '/learning/$id/my-progress';
+
+  // POST   /learning/:id/certificate  → { url }
+  String certificate(String id) => '/learning/$id/certificate';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Issues (support tickets)
+// ─────────────────────────────────────────────────────────────────────────────
+class _IssuesEndpoints {
+  const _IssuesEndpoints();
+
+  // POST /issues  { title, description, category?, priority? }
+  String get create => '/issues';
+
+  // GET  /issues/my  — current user's reported issues
+  String get myIssues => '/issues/my';
+
+  // GET  /issues/:id
+  String details(String id) => '/issues/$id';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Leads (service-provider CRM)
+// ─────────────────────────────────────────────────────────────────────────────
+class _LeadsEndpoints {
+  const _LeadsEndpoints();
+
+  // GET   /leads/provider/:providerId  (supports ?status=, ?source=)
+  String providerLeads(String providerId) => '/leads/provider/$providerId';
+
+  // GET   /leads/provider/:providerId/stats
+  String providerStats(String providerId) => '/leads/provider/$providerId/stats';
+
+  // GET   /leads/:id
+  String details(String id) => '/leads/$id';
+
+  // PATCH /leads/:id/status   { status, notes? }
+  String updateStatus(String id) => '/leads/$id/status';
+
+  // PATCH /leads/:id/notes    { notes }
+  String notes(String id) => '/leads/$id/notes';
+
+  // PATCH /leads/:id/contact  { notes? }
+  String contact(String id) => '/leads/$id/contact';
+
+  // PATCH /leads/:id/convert  { notes? }
+  String convert(String id) => '/leads/$id/convert';
+
+  // PATCH /leads/:id/lost     { reason }
+  String lost(String id) => '/leads/$id/lost';
+
+  // PATCH /leads/:id/follow-up { date }
+  String followUp(String id) => '/leads/$id/follow-up';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

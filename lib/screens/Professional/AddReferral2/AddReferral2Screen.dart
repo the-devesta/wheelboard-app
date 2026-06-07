@@ -163,7 +163,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: const Color(0xFFFF5E5E),
+                                    color: const Color(0xFFF36969),
                                   ),
                                 ),
                               ],
@@ -342,7 +342,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFFFF5E5E),
+                      color: const Color(0xFFF36969),
                     ),
                   ),
               ],
@@ -434,7 +434,7 @@ class _AddReferral2ScreenState extends State<AddReferral2Screen> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFFFF5E5E),
+                color: const Color(0xFFF36969),
               ),
             ),
           ),

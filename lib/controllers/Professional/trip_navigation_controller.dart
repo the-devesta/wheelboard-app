@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/network/tracking_socket_service.dart';
 import '../Professional/assigned_trip_controller.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
@@ -34,10 +35,6 @@ class TripNavigationController extends GetxController {
   final eta = 'Calculating...'.obs;
   final progress = 0.0.obs;
 
-  // OTP
-  final otpError = RxnString();
-  final isConfirmingOtp = false.obs;
-
   // start-trip OTP
   final startTripOtpError = RxnString();
   final isStartingTrip = false.obs;
@@ -45,6 +42,11 @@ class TripNavigationController extends GetxController {
   // GPS / location pinging
   StreamSubscription<Position>? _positionStream;
   Timer? _locationPingTimer;
+
+  // Realtime socket broadcast to viewers (company) — web parity.
+  final TrackingSocketService _socket = TrackingSocketService();
+  bool _socketReady = false;
+  String? _socketTripId;
 
   AssignedTripController get _assignedCtrl {
     if (!Get.isRegistered<AssignedTripController>()) {
@@ -87,37 +89,6 @@ class TripNavigationController extends GetxController {
         return TripStep.completed;
       default:
         return TripStep.readyToStart;
-    }
-  }
-
-  // ── OTP confirmation (pending-lr-confirmation) ──────────────────────────
-  Future<bool> confirmOtp(String tripId, String otp) async {
-    if (otp.length != 6) {
-      otpError.value = 'Please enter a valid 6-digit OTP';
-      return false;
-    }
-    isConfirmingOtp.value = true;
-    otpError.value = null;
-    try {
-      await ApiClient.instance.post(
-        ApiEndpoints.trips.confirmOtp(tripId),
-        data: {'otp': otp},
-      );
-      currentStep.value = TripStep.readyToStart;
-      _updateLocalStatus(tripId, 'scheduled');
-      SnackBarHelper.success('Trip confirmed successfully');
-      return true;
-    } on DioException catch (e) {
-      final msg = e.error is ApiException
-          ? (e.error as ApiException).message
-          : e.response?.data?['message'] ?? 'Invalid OTP. Please try again.';
-      otpError.value = msg;
-      return false;
-    } catch (e) {
-      otpError.value = 'Invalid OTP. Please try again.';
-      return false;
-    } finally {
-      isConfirmingOtp.value = false;
     }
   }
 
@@ -293,9 +264,80 @@ class TripNavigationController extends GetxController {
       final pos = currentPosition.value;
       if (pos != null) _pingLocation(tripId, pos);
     });
+
+    // Open the realtime socket so the company viewer sees the driver move live.
+    _ensureSocket(tripId);
+  }
+
+  /// Connect + emit `tracking:start` (once) so the gateway will broadcast our
+  /// `gps:ping`s to the trip room — exactly like the web driver flow.
+  Future<void> _ensureSocket(String tripId) async {
+    if (_socketTripId == tripId && _socket.isConnected) return;
+    _socketTripId = tripId;
+    _socketReady = false;
+    _socket.onConnectionChange = (connected) {
+      if (connected) _startSocketTracking(tripId);
+    };
+    await _socket.connect();
+    if (_socket.isConnected) _startSocketTracking(tripId);
+  }
+
+  Future<void> _startSocketTracking(String tripId) async {
+    if (_socketReady) return;
+    try {
+      final body = await ApiClient.instance
+          .get<dynamic>(ApiEndpoints.trips.details(tripId));
+      final route = (body is Map ? body['route'] : null) as Map?;
+      final end = route?['endLocation']?['coordinates'] as List?;
+      if (end == null || end.length < 2) return;
+      final endLat = (end[1] as num).toDouble();
+      final endLng = (end[0] as num).toDouble();
+      final start = route?['startLocation']?['coordinates'] as List?;
+      final startLat =
+          (start != null && start.length >= 2) ? (start[1] as num).toDouble() : endLat;
+      final startLng =
+          (start != null && start.length >= 2) ? (start[0] as num).toDouble() : endLng;
+      final distKm = (route?['plannedDistance'] as num?)?.toDouble() ?? 0;
+      final durS = (route?['plannedDuration'] as num?)?.toInt() ?? 0;
+      _socket.startTracking(
+        tripId: tripId,
+        route: TrackingSocketService.buildStoredRoute(
+          startLat: startLat,
+          startLng: startLng,
+          endLat: endLat,
+          endLng: endLng,
+          distanceMeters: distKm * 1000,
+          durationSeconds: durS,
+        ),
+        destination: {
+          'latitude': endLat,
+          'longitude': endLng,
+          'formattedAddress':
+              (route?['endLocation']?['address'] ?? 'Destination').toString(),
+        },
+      );
+      _socketReady = true;
+    } catch (e) {
+      AppLogger.e('Socket tracking:start failed: $e');
+    }
   }
 
   Future<void> _pingLocation(String tripId, Position pos) async {
+    // 1) Realtime broadcast over the socket (low latency, viewers see it now).
+    if (_socket.isConnected && _socketReady) {
+      _socket.sendPing(
+        tripId: tripId,
+        ping: {
+          'latitude': pos.latitude,
+          'longitude': pos.longitude,
+          'accuracy': pos.accuracy,
+          'speed': pos.speed,
+          'heading': pos.heading,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+    }
+    // 2) Persist to waypoints over REST (history + polling fallback).
     try {
       await ApiClient.instance.post(
         ApiEndpoints.trips.updateLocation(tripId),
@@ -317,6 +359,10 @@ class TripNavigationController extends GetxController {
     _positionStream = null;
     _locationPingTimer?.cancel();
     _locationPingTimer = null;
+    if (_socketTripId != null) _socket.stopTracking(_socketTripId!);
+    _socket.dispose();
+    _socketReady = false;
+    _socketTripId = null;
   }
 
   void startTrackingForTrip(String tripId) {

@@ -20,6 +20,9 @@ class SubscriptionController extends GetxController {
   final RxBool isLoading = true.obs;
   final RxString errorMessage = ''.obs;
   final Rxn<String> processingPlanId = Rxn<String>();
+  /// Usage limits from GET /subscription/usage-limits
+  final Rxn<Map<String, dynamic>> usageLimits = Rxn<Map<String, dynamic>>();
+  final RxBool changingPlan = false.obs;
 
   late final Razorpay _razorpay;
   SubscriptionPlan? _pendingPaidPlan;
@@ -182,6 +185,56 @@ class SubscriptionController extends GetxController {
     AppLogger.d('External wallet: ${response.walletName}');
     processingPlanId.value = null;
     _pendingPaidPlan = null;
+  }
+
+  // ── Change plan (upgrade / downgrade) ──────────────────────────────────
+
+  /// Switches the active subscription to [newPlan].
+  /// If the new plan is free, calls `changePlan` directly.
+  /// If paid, opens Razorpay for the new amount (backend initiates the order).
+  Future<void> switchPlan(SubscriptionPlan newPlan) async {
+    if (changingPlan.value) return;
+    if (isCurrentPlan(newPlan.id)) {
+      SnackBarHelper.error('You are already on this plan.');
+      return;
+    }
+
+    changingPlan.value = true;
+    try {
+      if (newPlan.pricing.amount == 0) {
+        // Free plan — direct API call
+        final sub = await SubscriptionService.instance.changePlan(newPlan.id);
+        currentSubscription.value = sub;
+        currentPlan.value = newPlan;
+        SnackBarHelper.success('Switched to ${newPlan.name} plan!');
+        await fetchData();
+      } else {
+        // Paid plan — initiate Razorpay with the new plan
+        _pendingPaidPlan = newPlan;
+        final paymentData =
+            await SubscriptionService.instance.initiatePayment(newPlan.id);
+        _openRazorpay(paymentData, newPlan);
+        // changingPlan cleared in Razorpay callbacks via processingPlanId
+      }
+    } on DioException catch (e) {
+      _handleDioError(e, newPlan);
+    } catch (e) {
+      AppLogger.e('❌ switchPlan error: $e');
+      SnackBarHelper.error('Failed to switch plan. Please try again.');
+    } finally {
+      changingPlan.value = false;
+    }
+  }
+
+  // ── Usage limits ─────────────────────────────────────────────────────────
+
+  Future<void> fetchUsageLimits() async {
+    try {
+      final data = await SubscriptionService.instance.getUsageLimits();
+      usageLimits.value = data;
+    } catch (e) {
+      AppLogger.d('ℹ️ fetchUsageLimits skipped: $e');
+    }
   }
 
   // ── Cancel subscription ───────────────────────────────────────────────────

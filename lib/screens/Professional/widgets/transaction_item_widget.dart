@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
-/// Transaction Item Widget
-/// Displays a transaction with date, company name, and amount
+import '../../../theme/design_system.dart';
+
+/// Transaction row — brand design system. Credit/debit coloured amount.
 class TransactionItemWidget extends StatelessWidget {
   final String date;
   final String companyName;
   final String amount;
+  final bool isCredit;
   final double? opacity;
 
   const TransactionItemWidget({
@@ -14,62 +16,52 @@ class TransactionItemWidget extends StatelessWidget {
     required this.date,
     required this.companyName,
     required this.amount,
+    this.isCredit = true,
     this.opacity = 1.0,
   });
 
   @override
   Widget build(BuildContext context) {
+    final accent = isCredit ? AppPalette.green : AppPalette.danger;
     return Opacity(
       opacity: opacity ?? 1.0,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          color: AppPalette.card,
+          borderRadius: AppRadius.rLg,
+          border: Border.all(color: AppPalette.border),
         ),
         child: Row(
           children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle),
+              child: Icon(
+                  isCredit ? Iconsax.arrow_down_1 : Iconsax.arrow_up_3,
+                  size: 18,
+                  color: accent),
+            ),
+            AppSpacing.hGapMd,
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    date,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    companyName,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF6B7280),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(companyName,
+                      style: AppText.subtitle.size(13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text(date, style: AppText.caption),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              amount,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: Color(0xFF1F2937),
-            ),
+            AppSpacing.hGapSm,
+            Text('${isCredit ? '+' : '-'}$amount',
+                style: AppText.subtitle.on(accent).size(15)),
           ],
         ),
       ),

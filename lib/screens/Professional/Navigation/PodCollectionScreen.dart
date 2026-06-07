@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart' as dio;
 
@@ -9,9 +9,13 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../controllers/Professional/trip_navigation_controller.dart';
+import '../../../theme/design_system.dart';
 import '../../../widgets/custom_snackbar.dart';
 import 'TripCompletedScreen.dart';
 
+/// Proof-of-delivery capture (camera/gallery + recipient details) → uploads to
+/// `POST /trips/:id/pod` as multipart, then advances the step machine to
+/// completed. Upload logic is unchanged; only the presentation is modernized.
 class PodCollectionScreen extends StatefulWidget {
   final String tripId;
   const PodCollectionScreen({super.key, required this.tripId});
@@ -21,6 +25,8 @@ class PodCollectionScreen extends StatefulWidget {
 }
 
 class _PodCollectionScreenState extends State<PodCollectionScreen> {
+  static const _accent = AppPalette.purple;
+
   final _recipientNameController = TextEditingController();
   final _recipientPhoneController = TextEditingController();
   final _deliveryNotesController = TextEditingController();
@@ -87,7 +93,7 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
 
       if (_deliveryNotesController.text.trim().isNotEmpty) {
         formData.fields.add(
-          MapEntry('deliveryNotes', _deliveryNotesController.text.trim()));
+            MapEntry('deliveryNotes', _deliveryNotesController.text.trim()));
       }
 
       // POST /trips/:tripId/pod  (mirrors the web navigate page)
@@ -117,7 +123,9 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
               'Failed to upload proof of delivery.';
       if (mounted) setState(() => _uploadError = msg);
     } catch (e) {
-      if (mounted) setState(() => _uploadError = 'Unexpected error. Please try again.');
+      if (mounted) {
+        setState(() => _uploadError = 'Unexpected error. Please try again.');
+      }
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
@@ -126,171 +134,102 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppPalette.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppPalette.card,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFFF5E5E)),
+          icon: const Icon(Iconsax.arrow_left_2, color: AppPalette.textDark),
           onPressed: () => Get.back(),
         ),
         centerTitle: true,
-        title: Text(
-          'Proof of Delivery',
-          style: GoogleFonts.poppins(
-            fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1F2937)),
-        ),
+        title: Text('Proof of Delivery', style: AppText.h3),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── header banner ──────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.assignment_turned_in, color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: 16),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Delivery Confirmation',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
-                    Text(
-                      'Take photos and enter recipient details to complete the trip.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.85))),
-                  ],
-                )),
-              ]),
-            ),
-            const SizedBox(height: 24),
+            _banner(),
+            AppSpacing.vGapXl,
 
-            // ── delivery photos ─────────────────────────────────────────
-            _sectionTitle('Delivery Photos *', Icons.camera_alt),
-            const SizedBox(height: 12),
+            _sectionTitle('Delivery Photos *', Iconsax.camera),
+            AppSpacing.vGapMd,
             _photos.isEmpty ? _emptyPhotoPlaceholder() : _photoGrid(),
-            const SizedBox(height: 12),
+            AppSpacing.vGapMd,
             Row(children: [
-              Expanded(child: _iconButton(
-                icon: Icons.camera_alt,
-                label: 'Camera',
-                onTap: _pickFromCamera,
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _iconButton(
-                icon: Icons.photo_library,
-                label: 'Gallery',
-                onTap: _pickFromGallery,
-              )),
+              Expanded(
+                  child: _pickButton(
+                      icon: Iconsax.camera,
+                      label: 'Camera',
+                      onTap: _pickFromCamera)),
+              AppSpacing.hGapMd,
+              Expanded(
+                  child: _pickButton(
+                      icon: Iconsax.gallery,
+                      label: 'Gallery',
+                      onTap: _pickFromGallery)),
             ]),
-            const SizedBox(height: 24),
+            AppSpacing.vGapXl,
 
-            // ── recipient details ───────────────────────────────────────
-            _sectionTitle('Recipient Details', Icons.person_outline),
-            const SizedBox(height: 12),
+            _sectionTitle('Recipient Details', Iconsax.user),
+            AppSpacing.vGapMd,
             _inputField(
               controller: _recipientNameController,
               label: 'Recipient Name *',
               hint: 'Enter recipient full name',
-              icon: Icons.person,
+              icon: Iconsax.user,
               keyboardType: TextInputType.name,
             ),
-            const SizedBox(height: 12),
+            AppSpacing.vGapMd,
             _inputField(
               controller: _recipientPhoneController,
               label: 'Contact Number *',
               hint: 'Enter recipient phone number',
-              icon: Icons.phone,
+              icon: Iconsax.call,
               keyboardType: TextInputType.phone,
             ),
-            const SizedBox(height: 12),
+            AppSpacing.vGapMd,
             _inputField(
               controller: _deliveryNotesController,
               label: 'Delivery Notes (optional)',
-              hint: 'Any notes about the delivery...',
-              icon: Icons.note,
+              hint: 'Any notes about the delivery…',
+              icon: Iconsax.note_1,
               maxLines: 3,
             ),
-            const SizedBox(height: 24),
+            AppSpacing.vGapXl,
 
-            // ── error banner ────────────────────────────────────────────
-            if (_uploadError != null)
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red[200]!),
-                ),
-                child: Row(children: [
-                  Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(_uploadError!,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12, color: Colors.red[700]))),
-                ]),
+            if (_uploadError != null) ...[
+              AppBanner(
+                text: _uploadError!,
+                icon: Iconsax.warning_2,
+                color: AppPalette.danger,
+                background: AppPalette.dangerBg,
+                borderColor: const Color(0x33EF4444),
               ),
+              AppSpacing.vGapLg,
+            ],
 
-            // ── submit button ───────────────────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: (_canSubmit && !_isUploading) ? _submit : null,
-                icon: _isUploading
-                    ? const SizedBox(
-                        width: 18, height: 18,
-                        child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.check_circle, size: 20),
-                label: Text(
-                  _isUploading ? 'Uploading...' : 'Submit Proof of Delivery',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7C3AED),
-                  disabledBackgroundColor: Colors.grey[300],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
-                ),
-              ),
+            AppPrimaryButton(
+              label: _isUploading ? 'Uploading…' : 'Submit Proof of Delivery',
+              icon: _isUploading ? null : Iconsax.tick_circle,
+              color: _accent,
+              loading: _isUploading,
+              onPressed: _canSubmit ? _submit : null,
             ),
 
             if (!_canSubmit && !_isUploading)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
                 child: Text(
                   _photos.isEmpty
                       ? 'Please add at least one delivery photo.'
                       : 'Please fill in recipient name and contact number.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11, color: Colors.grey[500]),
+                  style: AppText.caption,
                 ),
               ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxxl),
           ],
         ),
       ),
@@ -298,13 +237,46 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
   }
 
   // ── sub-widgets ───────────────────────────────────────────────────────
+  Widget _banner() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+        ),
+        borderRadius: AppRadius.rXl,
+      ),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: AppRadius.rLg),
+          child: const Icon(Iconsax.task_square, color: Colors.white, size: 26),
+        ),
+        AppSpacing.hGapLg,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Delivery Confirmation',
+                  style: AppText.subtitle.on(Colors.white).size(16)),
+              Text(
+                'Take photos and enter recipient details to complete the trip.',
+                style: AppText.caption.on(Colors.white.withValues(alpha: 0.88)),
+              ),
+            ],
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _sectionTitle(String title, IconData icon) {
     return Row(children: [
-      Icon(icon, size: 18, color: const Color(0xFF7C3AED)),
-      const SizedBox(width: 8),
-      Text(title, style: GoogleFonts.poppins(
-        fontSize: 14, fontWeight: FontWeight.w600,
-        color: const Color(0xFF1F2937))),
+      Icon(icon, size: 18, color: _accent),
+      AppSpacing.hGapSm,
+      Text(title, style: AppText.subtitle),
     ]);
   }
 
@@ -312,16 +284,17 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
     return Container(
       height: 140,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!, width: 1.5),
+        color: AppPalette.card,
+        borderRadius: AppRadius.rXl,
+        border: Border.all(color: AppPalette.border, width: 1.5),
       ),
-      child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.add_a_photo_outlined, size: 40, color: Colors.grey[400]),
-        const SizedBox(height: 8),
-        Text('No photos added yet',
-          style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400])),
-      ])),
+      child: Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Iconsax.gallery_add, size: 38, color: AppPalette.textFaint),
+          AppSpacing.vGapSm,
+          Text('No photos added yet', style: AppText.caption),
+        ]),
+      ),
     );
   }
 
@@ -330,24 +303,26 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8),
+          crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8),
       itemCount: _photos.length,
       itemBuilder: (_, i) => Stack(
         fit: StackFit.expand,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.rLg,
             child: Image.file(_photos[i], fit: BoxFit.cover),
           ),
           Positioned(
-            top: 4, right: 4,
+            top: 4,
+            right: 4,
             child: GestureDetector(
               onTap: () => _removePhoto(i),
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
-                  color: Colors.white, shape: BoxShape.circle),
-                child: const Icon(Icons.close, size: 14, color: Colors.red),
+                    color: Colors.white, shape: BoxShape.circle),
+                child:
+                    const Icon(Icons.close, size: 14, color: AppPalette.danger),
               ),
             ),
           ),
@@ -356,7 +331,7 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
     );
   }
 
-  Widget _iconButton({
+  Widget _pickButton({
     required IconData icon,
     required String label,
     required VoidCallback onTap,
@@ -366,17 +341,14 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFF7C3AED).withValues(alpha: 0.4)),
+          color: AppPalette.card,
+          borderRadius: AppRadius.rLg,
+          border: Border.all(color: _accent.withValues(alpha: 0.4)),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, size: 18, color: const Color(0xFF7C3AED)),
-          const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.poppins(
-            fontSize: 13, fontWeight: FontWeight.w600,
-            color: const Color(0xFF7C3AED))),
+          Icon(icon, size: 18, color: _accent),
+          AppSpacing.hGapSm,
+          Text(label, style: AppText.subtitle.on(_accent).size(13)),
         ]),
       ),
     );
@@ -391,36 +363,33 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
     int maxLines = 1,
   }) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: GoogleFonts.poppins(
-        fontSize: 12, fontWeight: FontWeight.w500,
-        color: Colors.grey[600])),
+      Text(label, style: AppText.label),
       const SizedBox(height: 6),
       TextField(
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
-        style: GoogleFonts.poppins(
-          fontSize: 14, color: const Color(0xFF1F2937)),
+        onChanged: (_) => setState(() {}), // refresh submit-button enablement
+        style: AppText.body.on(AppPalette.textDark),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+          hintStyle: AppText.bodySm.on(AppPalette.textFaint),
           prefixIcon: maxLines == 1
-              ? Icon(icon, size: 18, color: Colors.grey[400])
+              ? Icon(icon, size: 18, color: AppPalette.textFaint)
               : null,
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppPalette.card,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[200]!)),
+              borderRadius: AppRadius.rLg,
+              borderSide: const BorderSide(color: AppPalette.border)),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[200]!)),
+              borderRadius: AppRadius.rLg,
+              borderSide: const BorderSide(color: AppPalette.border)),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Color(0xFF7C3AED), width: 1.5)),
+              borderRadius: AppRadius.rLg,
+              borderSide: const BorderSide(color: _accent, width: 1.5)),
           contentPadding: EdgeInsets.symmetric(
-            horizontal: 16, vertical: maxLines > 1 ? 14 : 0),
+              horizontal: 16, vertical: maxLines > 1 ? 14 : 0),
         ),
       ),
     ]);

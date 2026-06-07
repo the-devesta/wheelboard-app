@@ -1,17 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'job_form_screen.dart';
 import 'job_application_screen.dart';
 import 'hired_professionals_screen.dart';
-import 'package:wheelboard/utils/share_service.dart';
 import '../../controllers/Transport/job_controller.dart';
 import '../../models/job_model.dart';
 import '../../models/job_stats_model.dart';
-import '../../utils/constants.dart';
 import '../../widgets/custom_loader.dart';
 import '../../widgets/ui/app_ui.dart';
+
+// Design tokens (consistent with home/fleet/trips)
+const _primary = Color(0xFFF36969);
+const _primaryLt = Color(0xFFFFF1F1);
+const _bg = Color(0xFFF9FAFB);
+const _card = Colors.white;
+const _textDark = Color(0xFF111827);
+const _textGrey = Color(0xFF6B7280);
+const _border = Color(0xFFE5E7EB);
+const _green = Color(0xFF22C55E);
+const _amber = Color(0xFFF59E0B);
+const _blue = Color(0xFF3B82F6);
+const _purple = Color(0xFF7C3AED);
+const _red = Color(0xFFEF4444);
 
 class JobsScreen extends StatefulWidget {
   const JobsScreen({super.key});
@@ -21,83 +33,147 @@ class JobsScreen extends StatefulWidget {
 }
 
 class _JobsScreenState extends State<JobsScreen> {
-  late final JobController jobController;
+  late final JobController _ctrl;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+  String _filterStatus = 'All';
+
+  static const _statusFilters = ['All', 'Active', 'Paused', 'Closed'];
 
   @override
   void initState() {
     super.initState();
-    // Get or create controller instance
-    jobController = Get.put(JobController(), permanent: false);
-    // Refresh jobs when screen is opened
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      jobController.refreshJobs();
+    _ctrl = Get.put(JobController(), permanent: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ctrl.refreshJobs());
+    _searchCtrl.addListener(() {
+      setState(() => _searchQuery = _searchCtrl.text);
     });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<JobModel> get _filtered {
+    final q = _searchQuery.toLowerCase();
+    return _ctrl.jobs.where((j) {
+      final matchSearch = q.isEmpty ||
+          j.title.toLowerCase().contains(q) ||
+          j.city.toLowerCase().contains(q) ||
+          j.type.toLowerCase().contains(q);
+      final matchStatus = _filterStatus == 'All' || j.status == _filterStatus;
+      return matchSearch && matchStatus;
+    }).toList();
+  }
+
+  Future<void> _confirmDelete(JobModel job) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => _DeleteDialog(jobTitle: job.title.isNotEmpty ? job.title : job.type),
+    );
+    if (confirmed == true) {
+      _ctrl.deleteJob(job.jobId);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppUi.scaffold,
+      backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _card,
         elevation: 0,
-
-        title: const Text("Your Jobs", style: TextStyle(color: Colors.black)),
+        scrolledUnderElevation: 1,
+        shadowColor: _border,
+        title: Text(
+          'Job Management',
+          style: GoogleFonts.poppins(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: _textDark,
+          ),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
             tooltip: 'Hired Professionals',
-            icon: const Icon(Icons.groups_outlined, color: Colors.black),
+            icon: const Icon(Iconsax.people, color: _textDark),
             onPressed: () => Get.to(() => const HiredProfessionalsScreen()),
           ),
         ],
       ),
       body: Obx(() {
-        if (jobController.isLoading.value && jobController.jobs.isEmpty) {
-          return const CustomLoader(message: "Loading jobs...");
-        }
-
-        if (jobController.jobs.isEmpty) {
-          return const AppEmptyState(
-            icon: Icons.work_outline,
-            title: "No jobs posted yet",
-            subtitle: "Tap “Post Job” below to create your first listing.",
-          );
+        if (_ctrl.isLoading.value && _ctrl.jobs.isEmpty) {
+          return const Center(child: CustomLoader(message: 'Loading jobs…'));
         }
 
         return RefreshIndicator(
-          onRefresh: () => jobController.refreshJobs(),
+          onRefresh: _ctrl.refreshJobs,
+          color: _primary,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             children: [
+              // Stats grid
               Obx(() {
-                final stats = jobController.stats.value;
+                final stats = _ctrl.stats.value;
                 if (stats == null) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _JobStatsBanner(stats: stats),
-                );
+                final totalViews =
+                    _ctrl.jobs.fold<int>(0, (s, j) => s + j.views);
+                return _StatsGrid(stats: stats, totalViews: totalViews);
               }),
-              ...jobController.jobs.asMap().entries.map((entry) {
-                final index = entry.key;
-                final job = entry.value;
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: index < jobController.jobs.length - 1 ? 16 : 0,
-                  ),
-                  child: JobCard(
-                    job: job,
-                    jobController: jobController,
-                    onEdit: () async {
-                      await Get.to(() => PostJobScreen(jobToEdit: job));
-                      // Refresh jobs after returning from edit screen
-                      jobController.refreshJobs();
-                    },
-                    onCardTap: () {
-                      // Navigate to applications screen filtered by this job
-                      Get.to(() => JobApplicationsScreen(jobId: job.jobId));
-                    },
-                  ),
+              const SizedBox(height: 16),
+
+              // Search bar
+              _SearchBar(controller: _searchCtrl),
+              const SizedBox(height: 10),
+
+              // Filter chips
+              _FilterChips(
+                selected: _filterStatus,
+                options: _statusFilters,
+                onSelected: (s) => setState(() => _filterStatus = s),
+              ),
+              const SizedBox(height: 14),
+
+              // Job cards
+              Obx(() {
+                final jobs = _filtered;
+                if (jobs.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 48),
+                    child: AppEmptyState(
+                      icon: Iconsax.briefcase,
+                      title: _searchQuery.isNotEmpty || _filterStatus != 'All'
+                          ? 'No jobs match your filters'
+                          : 'No jobs posted yet',
+                      subtitle:
+                          _searchQuery.isNotEmpty || _filterStatus != 'All'
+                              ? 'Try adjusting your search or filters'
+                              : 'Tap "Post Job" to create your first listing.',
+                    ),
+                  );
+                }
+                return Column(
+                  children: jobs.asMap().entries.map((e) {
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: e.key < jobs.length - 1 ? 14 : 0,
+                      ),
+                      child: _JobCard(
+                        job: e.value,
+                        ctrl: _ctrl,
+                        onEdit: () async {
+                          await Get.to(() => PostJobScreen(jobToEdit: e.value));
+                          _ctrl.refreshJobs();
+                        },
+                        onTap: () => Get.to(
+                            () => JobApplicationsScreen(jobId: e.value.jobId)),
+                        onDelete: () => _confirmDelete(e.value),
+                      ),
+                    );
+                  }).toList(),
                 );
               }),
             ],
@@ -105,287 +181,495 @@ class _JobsScreenState extends State<JobsScreen> {
         );
       }),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFFFF5C5C),
+        backgroundColor: _primary,
         onPressed: () async {
           await Get.to(() => const PostJobScreen());
-          // Refresh jobs after returning from post job screen
-          jobController.refreshJobs();
+          _ctrl.refreshJobs();
         },
-        icon: SvgPicture.asset(
-          'assets/add_circle.svg',
-          width: 24,
-          height: 24,
-          color: Colors.white,
+        icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+        label: Text(
+          'Post Job',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        label: const Text("Post Job", style: TextStyle(color: Colors.white)),
       ),
     );
   }
 }
 
-class JobCard extends StatelessWidget {
-  final JobModel job;
-  final JobController jobController;
-  final VoidCallback onEdit;
-  final VoidCallback? onCardTap;
+// ── Stats grid ────────────────────────────────────────────────────────────────
 
-  const JobCard({
-    super.key,
-    required this.job,
-    required this.jobController,
-    required this.onEdit,
-    this.onCardTap,
+class _StatsGrid extends StatelessWidget {
+  final JobStats stats;
+  final int totalViews;
+  const _StatsGrid({required this.stats, required this.totalViews});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 2.2,
+      children: [
+        _statCard('${stats.totalJobs}', 'Total Jobs', Iconsax.briefcase,
+            _primary, _primaryLt),
+        _statCard('${stats.activeJobs}', 'Active Jobs', Iconsax.tick_circle,
+            _green, const Color(0xFFDCFCE7)),
+        _statCard('${stats.totalApplications}', 'Applications',
+            Iconsax.user_octagon, _blue, const Color(0xFFDBEAFE)),
+        _statCard('$totalViews', 'Total Views', Iconsax.eye, _purple,
+            const Color(0xFFEDE9FE)),
+      ],
+    );
+  }
+
+  Widget _statCard(String value, String label, IconData icon, Color color,
+      Color bgColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: _textDark,
+                    height: 1.1,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(fontSize: 10, color: _textGrey),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Search bar ────────────────────────────────────────────────────────────────
+
+class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  const _SearchBar({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (_, value, __) {
+        return Container(
+          height: 46,
+          decoration: BoxDecoration(
+            color: _card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: controller,
+            style:
+                GoogleFonts.poppins(fontSize: 13, color: _textDark),
+            decoration: InputDecoration(
+              hintText: 'Search by title, type or city…',
+              hintStyle:
+                  GoogleFonts.poppins(fontSize: 13, color: _textGrey),
+              prefixIcon: const Icon(Icons.search_rounded,
+                  size: 20, color: Color(0xFF9CA3AF)),
+              suffixIcon: value.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close_rounded,
+                          size: 18, color: Color(0xFF9CA3AF)),
+                      onPressed: () => controller.clear(),
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Filter chips ──────────────────────────────────────────────────────────────
+
+class _FilterChips extends StatelessWidget {
+  final List<String> options;
+  final String selected;
+  final ValueChanged<String> onSelected;
+  const _FilterChips({
+    required this.options,
+    required this.selected,
+    required this.onSelected,
   });
 
-  String _getDefaultImage(String role) {
-    if (role.toLowerCase().contains('driver')) {
-      return AppImages.driver;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: options.map((o) {
+        final isActive = o == selected;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: GestureDetector(
+            onTap: () => onSelected(o),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: isActive ? _primary : _card,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color: isActive ? _primary : _border),
+              ),
+              child: Text(
+                o,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isActive ? Colors.white : _textGrey,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ── Job card ──────────────────────────────────────────────────────────────────
+
+class _JobCard extends StatelessWidget {
+  final JobModel job;
+  final JobController ctrl;
+  final VoidCallback onEdit;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _JobCard({
+    required this.job,
+    required this.ctrl,
+    required this.onEdit,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  Color _statusColor(String s) {
+    switch (s) {
+      case 'Active':
+        return _green;
+      case 'Paused':
+        return _amber;
+      default:
+        return _textGrey;
     }
-    return AppImages.mechanics;
+  }
+
+  String _formatDate(DateTime? dt) {
+    if (dt == null) return '—';
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[dt.month - 1]} ${dt.day}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onCardTap,
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppUi.radius),
-          boxShadow: AppUi.softShadow,
-        ),
-        child: Column(
-          children: [
-            // Image with Edit Icon overlay
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  child: job.imagePaths.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: job.imagePaths.first,
-                          width: double.infinity,
-                          height: 140,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            height: 140,
-                            color: Colors.grey[200],
-                            child: const Center(child: CustomLoader.small()),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            height: 140,
-                            color: Colors.grey[200],
-                            child: Image.asset(
-                              _getDefaultImage(job.role),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        )
-                      : Image.asset(
-                          _getDefaultImage(job.role),
-                          width: double.infinity,
-                          height: 140,
-                          fit: BoxFit.cover,
-                        ),
-                ),
-                // Edit Icon on top right corner of image
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: onEdit,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        size: 18,
-                        color: Color(0xFFF36969),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+    return Container(
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ────────────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16)),
+              border: Border(bottom: BorderSide(color: _border)),
             ),
-
-            // Info
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Role & Icons
-                  Row(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              offset: const Offset(0, 4),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              job.role,
-                              style: const TextStyle(
-                                color: Colors.redAccent,
-                                fontWeight: FontWeight.w400,
-                                fontSize: 16,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              job.title.isNotEmpty ? job.title : job.type,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: _textDark,
                               ),
                             ),
-                            Obx(() {
-                              final applicationCount = jobController
-                                  .getApplicationCount(job.jobId);
-                              if (applicationCount > 0) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF317873),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '$applicationCount',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                          ),
+                          if (job.urgent) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(colors: [
+                                  Color(0xFFF97316),
+                                  Color(0xFFEF4444)
+                                ]),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.trending_up,
+                                      size: 10, color: Colors.white),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'Urgent',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
                                     ),
                                   ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            }),
+                                ],
+                              ),
+                            ),
                           ],
-                        ),
+                        ],
                       ),
-                      const Spacer(),
-                      // Status chip with quick status change (Active/Paused/Closed)
-                      Obx(() {
-                        final currentJob = jobController.jobs.firstWhere(
-                          (j) => j.jobId == job.jobId,
-                          orElse: () => job,
-                        );
-                        final status = currentJob.status.isNotEmpty
-                            ? currentJob.status
-                            : 'Active';
-                        final color = status == 'Active'
-                            ? Colors.green
-                            : status == 'Paused'
-                                ? Colors.orange
-                                : Colors.grey;
-                        return PopupMenuButton<String>(
-                          tooltip: 'Change status',
-                          onSelected: (s) =>
-                              jobController.updateJobStatus(job.jobId, s),
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(value: 'Active', child: Text('Active')),
-                            PopupMenuItem(value: 'Paused', child: Text('Paused')),
-                            PopupMenuItem(value: 'Closed', child: Text('Closed')),
-                          ],
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  status,
-                                  style: TextStyle(
-                                    color: color,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Icon(Icons.arrow_drop_down, size: 16, color: color),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                      const SizedBox(width: 12),
-                      // Share Button
-                      GestureDetector(
-                        onTap: () {
-                          ShareService.shareJob(
-                            jobId: job.jobId,
-                            jobTitle: job.role,
-                            city: job.city,
-                            jobType: job.jobType,
-                            jobDuration: job.jobDuration,
-                            openings: job.openings,
-                            salary: job.salary,
-                            description: job.description,
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.share,
-                            size: 18,
-                            color: Color(0xFF6C7278),
-                          ),
-                        ),
+                      const SizedBox(height: 2),
+                      Text(
+                        job.duration.isNotEmpty ? job.duration : 'Permanent',
+                        style:
+                            GoogleFonts.poppins(fontSize: 11, color: _textGrey),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _infoRow("Duration", job.jobDuration),
-                  _infoRow("Openings", job.openings.toString()),
-                  _infoRow("Salary", job.salary.isNotEmpty ? job.salary : '—'),
-                  _infoRow("City", job.city),
-                  if (job.views > 0) _infoRow("Views", job.views.toString()),
-                  _infoRow("Description", job.description),
-                ],
+                ),
+                const SizedBox(width: 8),
+                // Status dropdown
+                Obx(() {
+                  final current = ctrl.jobs.firstWhere(
+                    (j) => j.jobId == job.jobId,
+                    orElse: () => job,
+                  );
+                  final status =
+                      current.status.isNotEmpty ? current.status : 'Active';
+                  final color = _statusColor(status);
+                  return PopupMenuButton<String>(
+                    tooltip: 'Change status',
+                    onSelected: (s) => ctrl.updateJobStatus(job.jobId, s),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'Active', child: Text('Active')),
+                      PopupMenuItem(value: 'Paused', child: Text('Paused')),
+                      PopupMenuItem(value: 'Closed', child: Text('Closed')),
+                    ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                                color: color, shape: BoxShape.circle),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            status,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                            ),
+                          ),
+                          Icon(Icons.arrow_drop_down, size: 14, color: color),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+
+          // ── Info grid: City | Type | Salary | Date ────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+            child: Column(
+              children: [
+                Row(children: [
+                  _infoChip(Icons.location_on_outlined, job.city,
+                      const Color(0xFFF3F4F6), _textDark),
+                  const SizedBox(width: 8),
+                  _infoChip(Icons.work_outline, job.type,
+                      const Color(0xFFEFF6FF), _blue),
+                ]),
+                const SizedBox(height: 8),
+                Row(children: [
+                  _infoChip(
+                      Icons.currency_rupee_outlined,
+                      job.salary.isNotEmpty ? job.salary : '—',
+                      const Color(0xFFF0FDF4),
+                      _green),
+                  const SizedBox(width: 8),
+                  _infoChip(Icons.calendar_today_outlined,
+                      _formatDate(job.createdAt), const Color(0xFFF5F3FF), _purple),
+                ]),
+              ],
+            ),
+          ),
+
+          // ── Stats strip ────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _border),
+              ),
+              child: Obx(() {
+                final appCount = ctrl.getApplicationCount(job.jobId);
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _miniStat(Iconsax.user_octagon, '$appCount',
+                        'Applications', _primary),
+                    Container(width: 1, height: 28, color: _border),
+                    _miniStat(Iconsax.eye, '${job.views}', 'Views', _blue),
+                    Container(width: 1, height: 28, color: _border),
+                    _miniStat(Iconsax.document, '${job.openings}',
+                        'Openings', _green),
+                  ],
+                );
+              }),
+            ),
+          ),
+
+          // ── Action buttons ─────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: _border)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _actionBtn(
+                    icon: Iconsax.eye,
+                    label: 'Applications',
+                    color: _primary,
+                    onTap: onTap,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _squareBtn(icon: Iconsax.edit, color: _blue, onTap: onEdit),
+                const SizedBox(width: 8),
+                _squareBtn(icon: Iconsax.trash, color: _red, onTap: onDelete),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoChip(
+      IconData icon, String text, Color bg, Color fg) {
+    return Expanded(
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 13, color: fg),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                text,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: fg,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -394,53 +678,179 @@ class JobCard extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF8C8C8C),
-              ),
+  Widget _miniStat(
+      IconData icon, String value, String label, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 12, color: color),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: _textDark,
             ),
           ),
-          const Text(": "),
-          Expanded(child: Text(value)),
-        ],
+        ]),
+        Text(
+          label,
+          style: GoogleFonts.poppins(fontSize: 9, color: _textGrey),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionBtn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool filled = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+          color: filled ? color : _card,
+          borderRadius: BorderRadius.circular(10),
+          border: filled ? null : Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: filled ? Colors.white : color),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: filled ? Colors.white : color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _squareBtn(
+      {required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Icon(icon, size: 16, color: color),
       ),
     );
   }
 }
 
-/// Compact statistics banner shown above the employer's job list.
-class _JobStatsBanner extends StatelessWidget {
-  final JobStats stats;
-  const _JobStatsBanner({required this.stats});
+// ── Delete confirmation dialog ─────────────────────────────────────────────────
+
+class _DeleteDialog extends StatelessWidget {
+  final String jobTitle;
+  const _DeleteDialog({required this.jobTitle});
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          StatTile(value: '${stats.activeJobs}', label: 'Active', color: AppUi.green),
-          _divider(),
-          StatTile(value: '${stats.totalApplications}', label: 'Applicants'),
-          _divider(),
-          StatTile(value: '${stats.pendingApplications}', label: 'Pending', color: AppUi.amber),
-          _divider(),
-          StatTile(value: '${stats.hiredCount}', label: 'Hired', color: AppUi.blue),
-        ],
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _red.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Iconsax.trash, size: 28, color: _red),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Delete Job',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _textDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Are you sure you want to delete "$jobTitle"? All applications will also be removed.',
+              style: GoogleFonts.poppins(fontSize: 13, color: _textGrey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(color: _border),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _textGrey,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _red,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Delete',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
-
-  Widget _divider() =>
-      Container(width: 1, height: 32, color: AppUi.border);
 }

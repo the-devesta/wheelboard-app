@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
+
+import '../../../controllers/Professional/earning_summary_controller.dart';
+import '../../../theme/design_system.dart';
+import '../../../utils/format_utils.dart';
 import '../widgets/calendar_header_widget.dart';
 import '../widgets/earning_stat_card_widget.dart';
 import '../widgets/transaction_item_widget.dart';
-import '../../../controllers/Professional/earning_summary_controller.dart';
-import '../../../utils/format_utils.dart';
 
+/// Earning Summary — real data from `GET /trips/professional/stats` (web parity),
+/// brand design system. Stats, month-over-month, earnings chart, transactions.
 class EarningSummaryScreen extends StatelessWidget {
   const EarningSummaryScreen({super.key});
 
@@ -15,228 +19,47 @@ class EarningSummaryScreen extends StatelessWidget {
     final controller = Get.put(EarningSummaryController());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppPalette.bg,
       body: SafeArea(
         child: Column(
           children: [
             const CalendarHeaderWidget(
-              title: 'Earning Summary',
-              showMenu: false,
-            ),
+                title: 'Earning Summary', showMenu: false),
             Expanded(
               child: Obx(() {
-                if (controller.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
+                if (controller.isLoading.value &&
+                    controller.transactions.isEmpty) {
+                  return const AppLoading(message: 'Loading earnings…');
                 }
-
+                if (controller.hasError.value &&
+                    controller.transactions.isEmpty) {
+                  return AppErrorState(
+                    message: controller.errorMessage.value.isEmpty
+                        ? 'Failed to load earnings'
+                        : controller.errorMessage.value,
+                    onRetry: controller.fetchEarningsData,
+                  );
+                }
                 return RefreshIndicator(
-                  onRefresh: () => controller.fetchEarningsData(),
-                  child: SingleChildScrollView(
+                  color: AppPalette.primary,
+                  onRefresh: controller.fetchEarningsData,
+                  child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-                        // Stats Cards
-                        Row(
-                          children: [
-                            Expanded(
-                              child: EarningStatCardWidget(
-                                icon: Icons.account_balance_wallet,
-                                value: FormatUtils.formatAmount(
-                                  controller.totalIncome.value,
-                                ),
-                                label: 'Total income earned',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: EarningStatCardWidget(
-                                icon: Icons.local_shipping,
-                                value: controller.tripsCompleted.value
-                                    .toString(),
-                                label: 'Trips Completed',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: EarningStatCardWidget(
-                                icon: Icons.trending_up,
-                                value: FormatUtils.formatAmount(
-                                  controller.avgEarningPerTrip.value,
-                                ),
-                                label: 'Avg. Earning / Trip',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(child: SizedBox()),
-                          ],
-                        ),
-                        const SizedBox(height: 32),
-                        // Earnings Over Time
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Earnings Over Time',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1F2937),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2F80ED).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'By Month',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF2F80ED),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Chart Placeholder or Simple Custom View
-                        Container(
-                          height: 200,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: controller.earningsChart.isEmpty
-                              ? Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.show_chart,
-                                        size: 48,
-                                        color: Colors.grey[300],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'No data available',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: controller.earningsChart.map((e) {
-                                    final maxAmount = controller.earningsChart
-                                        .map(
-                                          (item) => (item['amount'] as num)
-                                              .toDouble(),
-                                        )
-                                        .reduce((a, b) => a > b ? a : b);
-                                    final heightFactor = maxAmount > 0
-                                        ? (e['amount'] as num).toDouble() /
-                                              maxAmount
-                                        : 0.0;
-
-                                    return Column(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Container(
-                                          width: 30,
-                                          height: 140 * heightFactor,
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color(0xFF2F80ED),
-                                                Color(0xFF56CCF2),
-                                              ],
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          e['month'] ?? '',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 10,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
-                                ),
-                        ),
-                        const SizedBox(height: 32),
-                        // Transaction History Header
-                        Text(
-                          'Transaction History',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1F2937),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Transaction List
-                        if (controller.transactions.isEmpty)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32.0),
-                              child: Text(
-                                'No transactions found',
-                                style: GoogleFonts.poppins(color: Colors.grey),
-                              ),
-                            ),
-                          )
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: controller.transactions.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final transaction =
-                                  controller.transactions[index];
-                              return TransactionItemWidget(
-                                date: FormatUtils.formatDate(
-                                  transaction['date'],
-                                  format: 'dd MMM yyyy',
-                                ),
-                                companyName:
-                                    '${transaction['tripCode'] ?? ''} - ${transaction['vehicleNumber'] ?? ''}',
-                                amount: FormatUtils.formatAmount(
-                                  transaction['amount'],
-                                ),
-                              );
-                            },
-                          ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    children: [
+                      _stats(controller),
+                      AppSpacing.vGapLg,
+                      _monthCompare(controller),
+                      AppSpacing.vGapXl,
+                      Text('Earnings Over Time', style: AppText.h3),
+                      AppSpacing.vGapMd,
+                      _chart(controller),
+                      AppSpacing.vGapXl,
+                      Text('Transaction History', style: AppText.h3),
+                      AppSpacing.vGapMd,
+                      _transactions(controller),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
                   ),
                 );
               }),
@@ -244,6 +67,179 @@ class EarningSummaryScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _stats(EarningSummaryController c) {
+    return Column(children: [
+      Row(children: [
+        Expanded(
+          child: EarningStatCardWidget(
+            icon: Iconsax.wallet_3,
+            value: FormatUtils.formatAmount(c.totalIncome.value),
+            label: 'Total income',
+            iconColor: AppPalette.green,
+          ),
+        ),
+        AppSpacing.hGapMd,
+        Expanded(
+          child: EarningStatCardWidget(
+            icon: Iconsax.truck,
+            value: c.tripsCompleted.value.toString(),
+            label: 'Trips completed',
+            iconColor: AppPalette.blue,
+          ),
+        ),
+      ]),
+      AppSpacing.vGapMd,
+      Row(children: [
+        Expanded(
+          child: EarningStatCardWidget(
+            icon: Iconsax.trend_up,
+            value: FormatUtils.formatAmount(c.avgEarningPerTrip.value),
+            label: 'Avg. / trip',
+            iconColor: AppPalette.primary,
+          ),
+        ),
+        AppSpacing.hGapMd,
+        Expanded(
+          child: EarningStatCardWidget(
+            icon: Iconsax.clock,
+            value: FormatUtils.formatAmount(c.pendingAmount.value),
+            label: 'Pending amount',
+            iconColor: AppPalette.amber,
+          ),
+        ),
+      ]),
+    ]);
+  }
+
+  Widget _monthCompare(EarningSummaryController c) {
+    final pct = c.percentageChange.value;
+    final up = pct >= 0;
+    return AppCard(
+      child: Row(children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('This Month', style: AppText.caption),
+              const SizedBox(height: 2),
+              Text(FormatUtils.formatAmount(c.thisMonthEarnings.value),
+                  style: AppText.h2),
+            ],
+          ),
+        ),
+        Container(width: 1, height: 36, color: AppPalette.border),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Last Month', style: AppText.caption),
+                const SizedBox(height: 2),
+                Text(FormatUtils.formatAmount(c.lastMonthEarnings.value),
+                    style: AppText.h3.on(AppPalette.textMid)),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: (up ? AppPalette.green : AppPalette.danger)
+                .withValues(alpha: 0.12),
+            borderRadius: AppRadius.rPill,
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(up ? Iconsax.arrow_up_3 : Iconsax.arrow_down,
+                size: 13, color: up ? AppPalette.green : AppPalette.danger),
+            const SizedBox(width: 3),
+            Text('${up ? '+' : ''}${pct.toStringAsFixed(0)}%',
+                style: AppText.micro
+                    .on(up ? AppPalette.green : AppPalette.danger)
+                    .weight(FontWeight.w700)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _chart(EarningSummaryController c) {
+    return Container(
+      height: 200,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppPalette.card,
+        borderRadius: AppRadius.rXl,
+        border: Border.all(color: AppPalette.border),
+      ),
+      child: c.earningsChart.isEmpty
+          ? const Center(
+              child: AppEmptyState(
+                  icon: Iconsax.chart_2, title: 'No data available'))
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: c.earningsChart.map((e) {
+                final maxAmount = c.earningsChart
+                    .map((it) => (it['amount'] as num).toDouble())
+                    .fold<double>(0, (a, b) => a > b ? a : b);
+                final factor =
+                    maxAmount > 0 ? (e['amount'] as num).toDouble() / maxAmount : 0.0;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 140 * factor,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppPalette.primary, AppPalette.primaryDark],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(6)),
+                      ),
+                    ),
+                    AppSpacing.vGapSm,
+                    Text('${e['month']}', style: AppText.micro.size(10)),
+                  ],
+                );
+              }).toList(),
+            ),
+    );
+  }
+
+  Widget _transactions(EarningSummaryController c) {
+    if (c.transactions.isEmpty) {
+      return const AppEmptyState(
+        icon: Iconsax.receipt_2,
+        title: 'No transactions yet',
+        subtitle: 'Completed-trip earnings will show up here.',
+      );
+    }
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: c.transactions.length,
+      separatorBuilder: (_, __) => AppSpacing.vGapSm,
+      itemBuilder: (_, i) {
+        final t = c.transactions[i];
+        final from = t['from']?.toString();
+        final to = t['to']?.toString();
+        final label = (from != null && from.isNotEmpty && to != null && to.isNotEmpty)
+            ? '$from → $to'
+            : (t['description']?.toString() ?? 'Trip earning');
+        return TransactionItemWidget(
+          date: FormatUtils.formatDate(t['date'], format: 'dd MMM yyyy'),
+          companyName: label,
+          amount: FormatUtils.formatAmount(t['amount']),
+          isCredit: (t['type']?.toString() ?? 'credit') != 'debit',
+        );
+      },
     );
   }
 }

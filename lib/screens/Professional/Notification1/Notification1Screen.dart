@@ -1,600 +1,461 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 
-/* ===================== Screen ===================== */
+import '../../../controllers/Transport/notification_controller.dart';
+import '../../../models/notification_model.dart';
+import '../../../theme/design_system.dart';
+import '../../../widgets/custom_snackbar.dart';
+import '../TrackTrip/TrackTripScreen.dart';
 
-class Notification1Screen extends StatefulWidget {
+/// Professional notifications — real data, web parity.
+///
+/// Replaces the old static Figma mock. Trip-assignment notifications render a
+/// rich card with the **LR OTP** (Start Code) + copy, route, earnings, distance
+/// and payment info, plus a "Start Trip with OTP" CTA — mirroring the web
+/// `/professional/notifications` page. Everything is backed by
+/// [NotificationController] (`GET /notifications`, mark-read, mark-all-read).
+class Notification1Screen extends StatelessWidget {
   const Notification1Screen({super.key});
 
-  @override
-  State<Notification1Screen> createState() => _Notification1ScreenState();
-}
-
-class _Notification1ScreenState extends State<Notification1Screen> {
-  late List<NotificationItem> items;
-
-  @override
-  void initState() {
-    super.initState();
-    // Sample notifications matching Figma design
-    items = <NotificationItem>[
-      NotificationItem.comment(
-        user: const User(
-          name: "Dennis Nedry",
-          avatar: "https://i.pravatar.cc/100?img=3",
-        ),
-        docTitle: "Isla Nublar SOC2 compliance report",
-        comment: null,
-        time: "Last Wednesday at 9:42 AM",
-        isRead: false,
-      ),
-      NotificationItem.comment(
-        user: const User(
-          name: "Dennis Nedry",
-          avatar: "https://i.pravatar.cc/100?img=5",
-        ),
-        docTitle: "Isla Nublar SOC2 compliance report",
-        comment:
-            "Oh, I finished de-bugging the phones, but the system's compiling for eighteen minutes, or twenty. So, some minor systems may go on and off for a while.",
-        time: "Last Wednesday at 9:42 AM",
-        isRead: false,
-      ),
-      NotificationItem.attachment(
-        user: const User(
-          name: "Dennis Nedry",
-          avatar: "https://i.pravatar.cc/100?img=7",
-        ),
-        docTitle: "Isla Nublar SOC2 compliance report",
-        filename: "landing_paage_ver2.fig",
-        size: "2mb",
-        time: "Last Wednesday at 9:42 AM",
-        isRead: false,
-      ),
-      NotificationItem.comment(
-        user: const User(
-          name: "Dennis Nedry",
-          avatar: "https://i.pravatar.cc/100?img=8",
-        ),
-        docTitle: "Isla Nublar SOC2 compliance report",
-        comment: null,
-        time: "Last Wednesday at 9:42 AM",
-        isRead: true,
-      ),
-    ];
-  }
+  NotificationController get _ctrl => Get.isRegistered<NotificationController>()
+      ? Get.find<NotificationController>()
+      : Get.put(NotificationController());
 
   @override
   Widget build(BuildContext context) {
+    final ctrl = _ctrl;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(
-              bottom: BorderSide(color: Color(0xFFF5F5F5), width: 0.5),
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 10),
-              child: Row(
-                children: [
-                  // Back Button
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.transparent,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.black87,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Title
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        "Notifications",
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFFF36969), // Exact Figma color
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Menu Button
-                  GestureDetector(
-                    onTap: () {
-                      _showOptionsMenu(context);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
-                      child: const Icon(
-                        Icons.more_vert,
-                        color: Colors.black87,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      backgroundColor: AppPalette.bg,
+      appBar: AppBar(
+        backgroundColor: AppPalette.card,
+        elevation: 0.5,
+        centerTitle: false,
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Iconsax.arrow_left_2,
+                    color: AppPalette.textDark),
+                onPressed: () => Navigator.maybePop(context),
+              )
+            : null,
+        title: Text('Notifications', style: AppText.h2),
+        actions: [
+          Obx(() => ctrl.unreadCount > 0
+              ? TextButton(
+                  onPressed: ctrl.markAllAsRead,
+                  child: Text('Mark all read',
+                      style: AppText.label
+                          .on(AppPalette.primary)
+                          .weight(FontWeight.w600)),
+                )
+              : const SizedBox.shrink()),
+        ],
       ),
-      body: items.isEmpty
-          ? _buildEmptyState()
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) {
-                final item = items[i];
-                return Dismissible(
-                  key: ValueKey(item.id),
-                  direction: DismissDirection.horizontal,
-                  background: _buildReadAction(),
-                  secondaryBackground: _buildArchiveAction(),
-                  onDismissed: (direction) {
-                    final removed = item;
-                    setState(() => items.removeAt(i));
+      body: Obx(() {
+        if (ctrl.isLoading.value && ctrl.notifications.isEmpty) {
+          return const AppLoading(message: 'Loading notifications…');
+        }
 
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          direction == DismissDirection.startToEnd
-                              ? 'Read: ${removed.docTitle}'
-                              : 'Archived: ${removed.docTitle}',
-                        ),
-                        backgroundColor: AppColors.buttonBg,
-                        action: SnackBarAction(
-                          label: 'UNDO',
-                          textColor: Colors.white,
-                          onPressed: () {
-                            setState(() => items.insert(i, removed));
-                          },
-                        ),
-                      ),
-                    );
+        return RefreshIndicator(
+          color: AppPalette.primary,
+          onRefresh: ctrl.fetchNotifications,
+          child: ctrl.notifications.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 120),
+                    AppEmptyState(
+                      icon: Iconsax.notification,
+                      title: 'No notifications yet',
+                      subtitle:
+                          "You'll see trip assignments and updates here.",
+                    ),
+                  ],
+                )
+              : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  itemCount: ctrl.notifications.length,
+                  separatorBuilder: (_, __) => AppSpacing.vGapMd,
+                  itemBuilder: (_, i) {
+                    final n = ctrl.notifications[i];
+                    return n.isTripAssignment
+                        ? _TripAssignmentCard(n: n, ctrl: ctrl)
+                        : _RegularCard(n: n, ctrl: ctrl);
                   },
-                  child: NotificationCard(item: item),
-                );
-              },
-            ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.notifications_none_outlined,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "No Notifications",
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "You're all caught up!",
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showOptionsMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.check_circle_outline),
-              title: const Text("Mark all as read"),
-              onTap: () {
-                setState(() {
-                  for (var item in items) {
-                    item.isRead = true;
-                  }
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text("Clear all notifications"),
-              onTap: () {
-                setState(() {
-                  items.clear();
-                });
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReadAction() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF5469D4), // Exact Figma blue color
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: 20),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.mark_email_read, color: Colors.white, size: 24),
-          SizedBox(height: 4),
-          Text(
-            'Read',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildArchiveAction() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF3C4257), // Exact Figma dark gray color
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.only(left: 20),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.archive_outlined, color: Colors.white, size: 24),
-          SizedBox(height: 4),
-          Text(
-            'Archive',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ],
-      ),
+                ),
+        );
+      }),
     );
   }
 }
 
-/* ===================== UI Pieces ===================== */
-
-class NotificationCard extends StatelessWidget {
-  const NotificationCard({super.key, required this.item});
-  final NotificationItem item;
+// ─────────────────────────────────────────────────────────────────────────────
+// Trip-assignment card (with LR OTP)
+// ─────────────────────────────────────────────────────────────────────────────
+class _TripAssignmentCard extends StatelessWidget {
+  final NotificationModel n;
+  final NotificationController ctrl;
+  const _TripAssignmentCard({required this.n, required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: const Color(0xFFDADADA),
-        ), // Exact Figma border color
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF0FDF4), Color(0xFFECFDF5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppRadius.rXl,
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+        boxShadow: [
+          BoxShadow(
+            color: AppPalette.green.withValues(alpha: 0.10),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Unread Indicator
-          if (!item.isRead)
+          // Header
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
-              height: 8,
-              width: 16,
-              margin: const EdgeInsets.only(left: 0, top: 8),
-              alignment: Alignment.topLeft,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF36969), // Red dot
-                  shape: BoxShape.circle,
-                ),
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                  color: AppPalette.green, shape: BoxShape.circle),
+              child: const Icon(Iconsax.truck, color: Colors.white, size: 19),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(n.title.isEmpty ? 'New Trip Assignment' : n.title,
+                      style: AppText.h3),
+                  Text(n.formattedDate, style: AppText.caption),
+                ],
               ),
             ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            if (!n.isRead)
+              Container(
+                width: 9,
+                height: 9,
+                margin: const EdgeInsets.only(top: 4),
+                decoration: const BoxDecoration(
+                    color: AppPalette.green, shape: BoxShape.circle),
+              ),
+          ]),
+
+          if (n.lrNumber != null) ...[
+            AppSpacing.vGapMd,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: AppRadius.rMd),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Iconsax.document_text,
+                    size: 15, color: AppPalette.textGrey),
+                AppSpacing.hGapSm,
+                Text('LR: ', style: AppText.caption),
+                Text(n.lrNumber!,
+                    style: AppText.label
+                        .on(AppPalette.textDark)
+                        .weight(FontWeight.w700)),
+              ]),
+            ),
+          ],
+
+          // LR OTP — prominent
+          if (n.lrOtp != null) ...[
+            AppSpacing.vGapMd,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: AppRadius.rLg,
+                border: Border.all(color: AppPalette.green, width: 2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('START CODE (LR OTP)', style: AppText.micro.size(10)),
+                  AppSpacing.vGapSm,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        n.lrOtp!,
+                        style: AppText.h1.on(AppPalette.green).copyWith(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 8,
+                            ),
+                      ),
+                      InkWell(
+                        borderRadius: AppRadius.rMd,
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: n.lrOtp!));
+                          SnackBarHelper.success('OTP copied to clipboard!');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(9),
+                          decoration: BoxDecoration(
+                              color: AppPalette.greenBg,
+                              borderRadius: AppRadius.rMd),
+                          child: const Icon(Iconsax.copy,
+                              size: 20, color: AppPalette.green),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (n.otpExpiry != null) ...[
+                    AppSpacing.vGapSm,
+                    Text('Expires: ${_pretty(n.otpExpiry!)}',
+                        style: AppText.caption),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
+          // Route
+          if ((n.fromLocation ?? '').isNotEmpty ||
+              (n.toLocation ?? '').isNotEmpty) ...[
+            AppSpacing.vGapMd,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: AppRadius.rLg),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Icon(Iconsax.location, size: 16, color: AppPalette.blue),
+                AppSpacing.hGapSm,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Route', style: AppText.micro.size(10)),
+                      Text(n.fromLocation ?? '—',
+                          style: AppText.subtitle.size(13)),
+                      Text('↓', style: AppText.caption),
+                      Text(n.toLocation ?? '—',
+                          style: AppText.subtitle.size(13)),
+                    ],
+                  ),
+                ),
+              ]),
+            ),
+          ],
+
+          // Earnings + distance
+          AppSpacing.vGapMd,
+          Row(children: [
+            if (n.estimatedEarnings != null)
+              Expanded(
+                child: _miniStat(
+                  bg: AppPalette.greenBg,
+                  icon: Iconsax.money_recive,
+                  color: AppPalette.green,
+                  label: 'Your Earnings',
+                  value: '₹${n.estimatedEarnings!.toStringAsFixed(0)}',
+                ),
+              ),
+            if (n.estimatedEarnings != null && (n.distance ?? '').isNotEmpty)
+              AppSpacing.hGapMd,
+            if ((n.distance ?? '').isNotEmpty)
+              Expanded(
+                child: _miniStat(
+                  bg: AppPalette.blueBg,
+                  icon: Iconsax.routing,
+                  color: AppPalette.blue,
+                  label: 'Distance',
+                  value: '${n.distance} km',
+                ),
+              ),
+          ]),
+
+          // Payment info
+          if ((n.paymentTiming ?? '').isNotEmpty ||
+              (n.paymentMode ?? '').isNotEmpty) ...[
+            AppSpacing.vGapMd,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                  color: AppPalette.amberBg, borderRadius: AppRadius.rLg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '💰 Payment: '
+                    '${n.paymentTiming == "advance" ? "Paid in Advance" : "Payment at Trip End"}'
+                    '${(n.paymentMode ?? "").isNotEmpty ? " (${n.paymentMode == "cash" ? "Cash" : "Online"})" : ""}',
+                    style: AppText.caption
+                        .on(const Color(0xFF92400E))
+                        .weight(FontWeight.w600),
+                  ),
+                  if (n.platformFee != null)
+                    Text(
+                      'Platform fee of ₹${n.platformFee!.toStringAsFixed(0)} already deducted',
+                      style: AppText.caption.on(const Color(0xFFB45309)),
+                    ),
+                ],
+              ),
+            ),
+          ],
+
+          AppSpacing.vGapLg,
+          AppPrimaryButton(
+            label: 'Start Trip with OTP',
+            icon: Iconsax.play_circle,
+            color: AppPalette.green,
+            onPressed: () {
+              if (n.notificationId.isNotEmpty) ctrl.markAsRead(n.notificationId);
+              final tripId = n.tripId;
+              if (tripId != null) {
+                Get.to(() => TrackTripScreen(tripId: tripId),
+                    transition: Transition.cupertino);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat({
+    required Color bg,
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(color: bg, borderRadius: AppRadius.rLg),
+      child: Row(children: [
+        Icon(icon, size: 18, color: color),
+        AppSpacing.hGapSm,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppText.micro.size(10)),
+              Text(value,
+                  style: AppText.subtitle.on(color).size(16),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regular notification card
+// ─────────────────────────────────────────────────────────────────────────────
+class _RegularCard extends StatelessWidget {
+  final NotificationModel n;
+  final NotificationController ctrl;
+  const _RegularCard({required this.n, required this.ctrl});
+
+  ({IconData icon, Color color}) get _glyph {
+    switch (n.type) {
+      case 'success':
+        return (icon: Iconsax.tick_circle, color: AppPalette.green);
+      case 'warning':
+        return (icon: Iconsax.warning_2, color: AppPalette.amber);
+      case 'error':
+        return (icon: Iconsax.close_circle, color: AppPalette.danger);
+      default:
+        return (icon: Iconsax.info_circle, color: AppPalette.blue);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final g = _glyph;
+    final tripId = n.tripId;
+    return AppCard(
+      onTap: () {
+        if (!n.isRead && n.notificationId.isNotEmpty) {
+          ctrl.markAsRead(n.notificationId);
+        }
+      },
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Opacity(
+        opacity: n.isRead ? 0.75 : 1,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+                color: g.color.withValues(alpha: 0.12),
+                borderRadius: AppRadius.rMd),
+            child: Icon(g.icon, color: g.color, size: 19),
+          ),
+          AppSpacing.hGapMd,
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar and Subject Line
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Avatar
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundImage: NetworkImage(item.user.avatar),
-                      backgroundColor: Colors.grey[300],
-                    ),
-                    const SizedBox(width: 16),
-                    // Subject Line
-                    Expanded(child: _buildSubjectLine()),
-                    const SizedBox(width: 20),
-                  ],
-                ),
-                // Comment/Attachment Content
-                if (item.kind == NotificationKind.comment &&
-                    item.comment != null) ...[
-                  const SizedBox(height: 8),
-                  _buildQuotedText(item.comment!),
-                ],
-                if (item.kind == NotificationKind.attachment) ...[
-                  const SizedBox(height: 8),
-                  _buildAttachmentRow(item.filename!, item.size!),
-                ],
-                // Timestamp
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 48),
-                  child: Text(
-                    item.time,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFFA5ACB8), // Exact Figma gray color
-                      height: 1.43, // 20px line height
-                    ),
+                Text(n.title,
+                    style: AppText.subtitle.on(
+                        n.isRead ? AppPalette.textMid : AppPalette.textDark)),
+                if (n.message.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(n.message, style: AppText.bodySm),
                   ),
-                ),
+                AppSpacing.vGapSm,
+                Text(n.formattedDate, style: AppText.caption),
+                if (tripId != null) ...[
+                  AppSpacing.vGapSm,
+                  AppSecondaryButton(
+                    label: 'View Trip',
+                    icon: Iconsax.eye,
+                    color: AppPalette.blue,
+                    expand: false,
+                    onPressed: () {
+                      if (!n.isRead && n.notificationId.isNotEmpty) {
+                        ctrl.markAsRead(n.notificationId);
+                      }
+                      Get.to(() => TrackTripScreen(tripId: tripId),
+                          transition: Transition.cupertino);
+                    },
+                  ),
+                ],
               ],
             ),
           ),
-          // Divider
-          Container(
-            height: 1,
-            color: const Color(0xFFE4E8EE), // Exact Figma divider color
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubjectLine() {
-    final nameParts = item.user.name.split(' ');
-    final firstName = nameParts.first;
-    final lastName = nameParts.length > 1 ? nameParts.skip(1).join(' ') : '';
-
-    String actionText = '';
-    if (item.kind == NotificationKind.attachment) {
-      actionText = 'attached a file to';
-    } else {
-      actionText = 'commented on';
-    }
-
-    return RichText(
-      text: TextSpan(
-        style: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: const Color(0xFF1A1F36), // Exact Figma text color
-          height: 1.43, // 20px line height
-        ),
-        children: [
-          TextSpan(
-            text: firstName,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600, // SemiBold
+          if (!n.isRead)
+            Container(
+              width: 9,
+              height: 9,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                  color: g.color, shape: BoxShape.circle),
             ),
-          ),
-          if (lastName.isNotEmpty) ...[
-            const TextSpan(text: ' '),
-            TextSpan(
-              text: lastName,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-            ),
-          ],
-          TextSpan(
-            text: ' $actionText ',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w400, // Regular
-            ),
-          ),
-          TextSpan(
-            text: item.docTitle,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w700, // Bold
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuotedText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 48, right: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 4,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDDDEE1), // Exact Figma gray
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '"$text"',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF1A1F36),
-                height: 1.43,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAttachmentRow(String filename, String size) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 48, right: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFDDDEE1)),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Icon(
-              Icons.insert_drive_file,
-              size: 16,
-              color: Color(0xFF00AC54), // Green for file icon
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              filename,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF1A1F36),
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            size,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFFA5ACB8),
-            ),
-          ),
-        ],
+        ]),
       ),
     );
   }
 }
 
-/* ===================== Models ===================== */
-
-enum NotificationKind { comment, attachment }
-
-class User {
-  final String name;
-  final String avatar;
-  const User({required this.name, required this.avatar});
-}
-
-class NotificationItem {
-  final String id;
-  final NotificationKind kind;
-  final User user;
-  final String docTitle;
-  final String time;
-  bool isRead;
-  final String? comment;
-  final String? filename;
-  final String? size;
-
-  NotificationItem._({
-    required this.id,
-    required this.kind,
-    required this.user,
-    required this.docTitle,
-    required this.time,
-    this.isRead = false,
-    this.comment,
-    this.filename,
-    this.size,
-  });
-
-  factory NotificationItem.comment({
-    required User user,
-    required String docTitle,
-    required String? comment,
-    required String time,
-    bool isRead = false,
-  }) => NotificationItem._(
-    id: _genId(),
-    kind: NotificationKind.comment,
-    user: user,
-    docTitle: docTitle,
-    comment: comment,
-    time: time,
-    isRead: isRead,
-  );
-
-  factory NotificationItem.attachment({
-    required User user,
-    required String docTitle,
-    required String filename,
-    required String size,
-    required String time,
-    bool isRead = false,
-  }) => NotificationItem._(
-    id: _genId(),
-    kind: NotificationKind.attachment,
-    user: user,
-    docTitle: docTitle,
-    filename: filename,
-    size: size,
-    time: time,
-    isRead: isRead,
-  );
-
-  static String _genId() =>
-      "${DateTime.now().microsecondsSinceEpoch}_${UniqueKey()}";
+String _pretty(String iso) {
+  final dt = DateTime.tryParse(iso);
+  if (dt == null) return iso;
+  final l = dt.toLocal();
+  final hh = l.hour % 12 == 0 ? 12 : l.hour % 12;
+  final mm = l.minute.toString().padLeft(2, '0');
+  final ap = l.hour >= 12 ? 'PM' : 'AM';
+  return '${l.day}/${l.month} $hh:$mm $ap';
 }

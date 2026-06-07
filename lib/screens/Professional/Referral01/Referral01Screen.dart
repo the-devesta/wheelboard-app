@@ -127,7 +127,7 @@ class Referral01Screen extends StatelessWidget {
                                   statusIcon = Icons.pending;
                                   break;
                                 case 'rejected':
-                                  statusColor = const Color(0xFFFF5E5E);
+                                  statusColor = const Color(0xFFF36969);
                                   statusIcon = Icons.cancel;
                                   break;
                                 default:
@@ -245,7 +245,7 @@ class Referral01Screen extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5E5E),
+                    backgroundColor: const Color(0xFFF36969),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),

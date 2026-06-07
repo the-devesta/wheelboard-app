@@ -14,9 +14,10 @@ import 'package:wheelboard/controllers/Transport/trip_page_controller.dart';
 import 'package:wheelboard/models/add_new_trip_model.dart';
 import '../../widgets/custom_loader.dart';
 import 'TripExpenses/TripExpensesScreen.dart';
-import 'track/CompanyTrackTripScreen.dart';
+import '../shared/live_trip_tracking_screen.dart';
 import 'pod/PodViewScreen.dart';
 import 'share/share_navigation_sheet.dart';
+import 'lr/lr_generate_screen.dart';
 import 'package:wheelboard/core/auth/auth_service.dart';
 
 // ── Design tokens (exact match to Home & Fleet) ───────────────────────────────
@@ -463,26 +464,12 @@ class _TripPageState extends State<TripPage>
 }
 
 // ── Status helpers ────────────────────────────────────────────────────────────
-bool _isUpcoming(String s) {
-  final v = s.toLowerCase().trim();
-  return v == 'draft' || v == 'scheduled' || v == 'created' ||
-      v == 'upcoming' || v == 'pending' ||
-      v == 'pending-lr-confirmation' || v == 'awaiting-lr-confirmation' ||
-      v == 'lr-confirmed';
-}
-bool _isInProcess(String s) {
-  final v = s.toLowerCase().trim();
-  return v == 'in-progress' || v == 'in progress' || v == 'inprogress' ||
-      v == 'ongoing' || v == 'active' || v == 'en-route-to-pickup' ||
-      v == 'arrived-at-pickup' || v == 'arrived' ||
-      v == 'awaiting-pod' || v == 'pod-collected' ||
-      v.contains('process') || v.contains('progress');
-}
-bool _isCompleted(String s) {
-  final v = s.toLowerCase().trim();
-  return v == 'completed' || v == 'cancelled' || v == 'done' ||
-      v == 'finished' || v.contains('complete');
-}
+// All delegate to the single web-parity [tripStatusBucket] (add_trip_controller)
+// so tab counts, badges and colours stay perfectly in sync with the web
+// company Trips screen.
+bool _isUpcoming(String s)  => tripStatusBucket(s) == 'upcoming';
+bool _isInProcess(String s) => tripStatusBucket(s) == 'in-process';
+bool _isCompleted(String s) => tripStatusBucket(s) == 'completed';
 
 Color _statusColor(String s) {
   if (_isCompleted(s))  return _completedColor;
@@ -538,18 +525,42 @@ class _TripsTabViews extends StatelessWidget {
     );
   }
 
+  Future<void> _hardRefresh() {
+    // Pull-to-refresh = full re-fetch from the backend (token-auth; userId is
+    // only used for logging). Mirrors the web which refetches the trip list.
+    final userId = AuthService.to.userId;
+    return tripController.fetchTrips(userId.isNotEmpty ? userId : 'current');
+  }
+
   Widget _tripList(BuildContext context, String tab) {
     return Obx(() {
-      if (tripController.isTripsLoading.value) {
+      if (tripController.isTripsLoading.value && tripController.trips.isEmpty) {
         return const Center(child: CustomLoader(message: 'Loading trips…'));
       }
       final all = tripController.getTripsByStatus(
         tab == 'upcoming' ? 'Upcoming' : tab == 'in-process' ? 'In-Process' : 'Completed');
       final filtered = filterFn(all);
 
-      if (filtered.isEmpty) return _empty(tab);
+      // Always wrap in a RefreshIndicator + an always-scrollable list so the
+      // pull-down gesture works even when the tab is empty.
+      if (filtered.isEmpty) {
+        return RefreshIndicator(
+          color: _primary,
+          onRefresh: _hardRefresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              SizedBox(height: MediaQuery.of(context).size.height * 0.5, child: _empty(tab)),
+            ],
+          ),
+        );
+      }
 
-      return ListView.builder(
+      return RefreshIndicator(
+        color: _primary,
+        onRefresh: _hardRefresh,
+        child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         itemCount: filtered.length,
         itemBuilder: (_, i) {
@@ -562,6 +573,8 @@ class _TripsTabViews extends StatelessWidget {
                     onViewBids:    () => Get.to(() => BidsScreen(tripId: trip.tripId)),
                     onDetails:     () => Get.to(() => TripDetailsScreen(trip: trip)),
                     onShare:       () => _shareTrip(trip),
+                    onGenerateLr:  () => _openLrForm(trip, LrFormMode.generate),
+                    onUpdateLr:    () => _openLrForm(trip, LrFormMode.update),
                     date: _fmtDate(trip.pickupDate, trip.pickupTime),
                     from: _loc(trip.pickupLocation),
                     to:   _loc(trip.deliveryLocation),
@@ -571,13 +584,18 @@ class _TripsTabViews extends StatelessWidget {
                     date: _fmtDate(trip.pickupDate, trip.pickupTime),
                     from: _loc(trip.pickupLocation),
                     to:   _loc(trip.deliveryLocation),
+                    // Tapping any tile opens full details (edit/delete/share),
+                    // matching the web where View Details is available on every
+                    // tab — not just Upcoming.
+                    onDetails:      () => Get.to(() => TripDetailsScreen(trip: trip)),
                     onComplete:     tab == 'in-process' ? () => tripController.completeTrip(trip.tripId, trip.userId) : null,
-                    onTrack:        tab == 'in-process' ? () => Get.to(() => CompanyTrackTripScreen(tripId: trip.tripId)) : null,
+                    onTrack:        tab == 'in-process' ? () => Get.to(() => LiveTripTrackingScreen(tripId: trip.id.isNotEmpty ? trip.id : trip.tripId, isDriver: false)) : null,
                     onViewPod:      tab == 'completed'  ? () => Get.to(() => PodViewScreen(tripId: trip.tripId)) : null,
                     onViewExpenses: tab == 'completed'  ? () => Get.to(() => TripExpensesScreen(tripId: trip.tripId)) : null,
                   ),
           );
         },
+      ),
       );
     });
   }
@@ -615,6 +633,16 @@ class _TripsTabViews extends StatelessWidget {
       vehicleNumber: trip.vehicleNumber,
     );
   }
+
+  Future<void> _openLrForm(Trip trip, LrFormMode mode) async {
+    // Backend loadTripContext resolves by Mongo _id first, then human tripId.
+    final tripId = trip.id.isNotEmpty ? trip.id : trip.tripId;
+    final res = await Get.to(() => LrGenerateScreen(tripId: tripId, mode: mode));
+    if (res == true) {
+      final userId = AuthService.to.userId;
+      tripController.fetchTrips(userId.isNotEmpty ? userId : 'current');
+    }
+  }
 }
 
 // ── Animated card wrapper (stagger fade + slide) ──────────────────────────────
@@ -651,11 +679,11 @@ class _AnimatedCardState extends State<_AnimatedCard> with SingleTickerProviderS
 class _UpcomingTripCard extends StatelessWidget {
   final Trip trip;
   final String date, from, to;
-  final VoidCallback? onViewBids, onDetails, onShare;
+  final VoidCallback? onViewBids, onDetails, onShare, onGenerateLr, onUpdateLr;
 
   const _UpcomingTripCard({
     required this.trip, required this.date, required this.from, required this.to,
-    this.onViewBids, this.onDetails, this.onShare,
+    this.onViewBids, this.onDetails, this.onShare, this.onGenerateLr, this.onUpdateLr,
   });
 
   bool get _hasDriver => trip.driverId.isNotEmpty && (trip.driverName?.isNotEmpty ?? false) && trip.driverName != 'Not assigned';
@@ -772,16 +800,13 @@ class _UpcomingTripCard extends StatelessWidget {
 
             const SizedBox(height: 14),
 
-            // action buttons — mirrors web /company/trips:
-            //   scheduled trip → Share (navigation link + OTP)
-            //   created trip   → View Bids (open for professional bidding)
-            Row(children: [
-              Expanded(child: trip.isScheduledTrip
-                  ? _filledBtn(icon: Iconsax.share, label: 'Share', onTap: onShare)
-                  : _filledBtn(icon: Iconsax.people, label: 'View Bids', onTap: onViewBids)),
-              const SizedBox(width: 8),
-              Expanded(child: _outlineBtn(icon: Iconsax.eye, label: 'Details', onTap: onDetails)),
-            ]),
+            // action buttons — status-aware, mirrors web /company/trips:
+            //   draft                   → Generate LR
+            //   lr-rejected             → Update LR (+ rejection note)
+            //   pending-lr-confirmation → Awaiting LR (driver must confirm)
+            //   scheduled trip          → Share (navigation link + OTP)
+            //   created trip            → View Bids
+            _buildActions(),
           ],
         )),
       ]),
@@ -802,17 +827,32 @@ class _UpcomingTripCard extends StatelessWidget {
         style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark))),
     ]);
   }
+
+  Widget _buildActions() {
+    final Widget primary;
+    if (trip.isScheduledTrip) {
+      primary = _filledBtn(icon: Iconsax.share, label: 'Share', onTap: onShare);
+    } else {
+      primary = _filledBtn(icon: Iconsax.people, label: 'View Bids', onTap: onViewBids);
+    }
+
+    return Row(children: [
+      Expanded(child: primary),
+      const SizedBox(width: 8),
+      Expanded(child: _outlineBtn(icon: Iconsax.eye, label: 'Details', onTap: onDetails)),
+    ]);
+  }
 }
 
 // ── Completed / In-Process Trip Tile ─────────────────────────────────────────
 class _TripTile extends StatelessWidget {
   final Trip trip;
   final String date, from, to;
-  final VoidCallback? onComplete, onTrack, onViewPod, onViewExpenses;
+  final VoidCallback? onComplete, onTrack, onViewPod, onViewExpenses, onDetails;
 
   const _TripTile({
     required this.trip, required this.date, required this.from, required this.to,
-    this.onComplete, this.onTrack, this.onViewPod, this.onViewExpenses,
+    this.onComplete, this.onTrack, this.onViewPod, this.onViewExpenses, this.onDetails,
   });
 
   Future<void> _call(String n) async {
@@ -827,7 +867,9 @@ class _TripTile extends StatelessWidget {
     final inProcess = _isInProcess(trip.tripStatus);
     final completed = _isCompleted(trip.tripStatus);
 
-    return Container(
+    return GestureDetector(
+      onTap: onDetails,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: _card, borderRadius: BorderRadius.circular(16),
@@ -914,6 +956,7 @@ class _TripTile extends StatelessWidget {
           ]),
         ],
       )),
+    ),
     );
   }
 

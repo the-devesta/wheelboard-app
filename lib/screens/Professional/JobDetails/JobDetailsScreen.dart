@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../../models/job_model.dart';
-import '../../../models/job_application_model.dart';
-import '../../../constants/apps_colors.dart';
+import 'package:iconsax/iconsax.dart';
 
+import '../../../models/job_application_model.dart';
+import '../../../models/job_model.dart';
+import '../../../theme/design_system.dart';
+
+/// Job details — brand design system. Shows job info, description and (if the
+/// professional has applied) the application status + details.
 class JobDetailsScreen extends StatelessWidget {
   final JobModel job;
 
@@ -15,82 +18,55 @@ class JobDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppPalette.bg,
       body: CustomScrollView(
         slivers: [
-          // Modern App Bar with Gradient
           SliverAppBar(
-            expandedHeight: 120,
-            floating: false,
+            expandedHeight: 110,
             pinned: true,
             elevation: 0,
-            backgroundColor: AppColors.buttonBg,
+            backgroundColor: AppPalette.primary,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Iconsax.arrow_left_2, color: Colors.white),
               onPressed: () => Get.back(),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                "Job Details",
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  color: Colors.white,
-                ),
-              ),
               centerTitle: true,
+              title: Text('Job Details', style: AppText.h3.on(Colors.white)),
               background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.buttonBg, Color(0xFFD32F2F)],
-                  ),
-                ),
+                decoration:
+                    const BoxDecoration(gradient: AppPalette.brandGradient),
               ),
             ),
           ),
-
-          // Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Card with Job Title and Status
-                  _buildHeaderCard(),
-                  const SizedBox(height: 20),
-
-                  // Job Information
+                  _headerCard(),
                   if (_hasJobInfo(job)) ...[
-                    _buildSectionTitle("Job Information", Icons.work_outline),
-                    const SizedBox(height: 12),
-                    _buildJobInfoCard(),
-                    const SizedBox(height: 20),
+                    AppSpacing.vGapXl,
+                    _sectionTitle('Job Information', Iconsax.briefcase),
+                    AppSpacing.vGapMd,
+                    AppCard(child: Column(children: _jobInfoRows())),
                   ],
-
-                  // Job Description
                   if (job.description.isNotEmpty) ...[
-                    _buildSectionTitle(
-                      "Description",
-                      Icons.description_outlined,
+                    AppSpacing.vGapXl,
+                    _sectionTitle('Description', Iconsax.document_text),
+                    AppSpacing.vGapMd,
+                    AppCard(
+                      child: Text(job.description,
+                          style: AppText.body.copyWith(height: 1.6)),
                     ),
-                    const SizedBox(height: 12),
-                    _buildDescriptionCard(),
-                    const SizedBox(height: 20),
                   ],
-
-                  // Application Details
                   if (_hasApplicationInfo(job)) ...[
-                    _buildSectionTitle(
-                      "Application Details",
-                      Icons.assignment_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildApplicationCard(),
+                    AppSpacing.vGapXl,
+                    _sectionTitle('Application Details', Iconsax.task_square),
+                    AppSpacing.vGapMd,
+                    AppCard(child: Column(children: _applicationInfoRows())),
                   ],
-
                   const SizedBox(height: 40),
                 ],
               ),
@@ -101,267 +77,113 @@ class JobDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, Colors.grey.shade50],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (job.title.isNotEmpty)
-                      Text(
-                        job.title,
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.buttonBg,
-                        ),
-                      ),
-                    if (job.city.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            job.city,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              _buildStatusBadge(),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge() {
-    Color bgColor;
-    Color textColor;
-    IconData icon;
-
-    final status = _app?.status ?? '';
-    if (status == 'hired') {
-      bgColor = const Color(0xFF10B981);
-      textColor = Colors.white;
-      icon = Icons.check_circle;
-    } else if (status == 'rejected') {
-      bgColor = const Color(0xFFEF4444);
-      textColor = Colors.white;
-      icon = Icons.cancel;
-    } else if (status == 'shortlisted') {
-      bgColor = const Color(0xFF8B5CF6);
-      textColor = Colors.white;
-      icon = Icons.star;
-    } else if (status == 'reviewed') {
-      bgColor = const Color(0xFF3B82F6);
-      textColor = Colors.white;
-      icon = Icons.visibility;
-    } else {
-      bgColor = const Color(0xFFF59E0B);
-      textColor = Colors.white;
-      icon = Icons.schedule;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: bgColor.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: textColor),
-          const SizedBox(width: 6),
-          Text(
-            _app?.statusLabel ?? 'Applied',
-            style: GoogleFonts.poppins(
-              color: textColor,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: AppColors.buttonBg),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.buttonBg,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildJobInfoCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(children: _buildJobInfoRows()),
-    );
-  }
-
-  Widget _buildDescriptionCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Text(
-        job.description,
-        style: GoogleFonts.poppins(
-          fontSize: 14,
-          color: Colors.grey.shade700,
-          height: 1.6,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildApplicationCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(children: _buildApplicationInfoRows()),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+  Widget _headerCard() {
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.buttonBg.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: AppColors.buttonBg),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
+                Text(job.title.isNotEmpty ? job.title : 'Job Opening',
+                    style: AppText.h1.on(AppPalette.primary).size(22)),
+                if (job.city.isNotEmpty) ...[
+                  AppSpacing.vGapSm,
+                  Row(children: [
+                    const Icon(Iconsax.location,
+                        size: 15, color: AppPalette.textGrey),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text(job.city, style: AppText.bodySm)),
+                  ]),
+                ],
               ],
             ),
           ),
+          AppSpacing.hGapMd,
+          _statusBadge(),
         ],
       ),
     );
   }
 
-  bool _hasJobInfo(JobModel job) {
-    return job.title.isNotEmpty ||
-        job.jobDuration.isNotEmpty ||
-        job.city.isNotEmpty ||
-        job.salary.isNotEmpty;
+  Widget _statusBadge() {
+    final status = _app?.status ?? '';
+    late Color bg;
+    late IconData icon;
+    switch (status) {
+      case 'hired':
+        bg = AppPalette.green;
+        icon = Iconsax.tick_circle;
+        break;
+      case 'rejected':
+        bg = AppPalette.danger;
+        icon = Iconsax.close_circle;
+        break;
+      case 'shortlisted':
+        bg = AppPalette.purple;
+        icon = Iconsax.star1;
+        break;
+      case 'reviewed':
+        bg = AppPalette.blue;
+        icon = Iconsax.eye;
+        break;
+      default:
+        bg = AppPalette.amber;
+        icon = Iconsax.clock;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: bg, borderRadius: AppRadius.rPill),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 15, color: Colors.white),
+        const SizedBox(width: 6),
+        Text(_app?.statusLabel ?? 'Applied',
+            style: AppText.label.on(Colors.white).weight(FontWeight.w600)),
+      ]),
+    );
   }
+
+  Widget _sectionTitle(String title, IconData icon) {
+    return Row(children: [
+      Icon(icon, size: 19, color: AppPalette.primary),
+      AppSpacing.hGapSm,
+      Text(title, style: AppText.h3),
+    ]);
+  }
+
+  Widget _infoRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+              color: AppPalette.primaryLight, borderRadius: AppRadius.rSm),
+          child: Icon(icon, size: 17, color: AppPalette.primary),
+        ),
+        AppSpacing.hGapMd,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppText.label),
+              const SizedBox(height: 2),
+              Text(value,
+                  style: AppText.subtitle.on(AppPalette.textDark).size(14)),
+            ],
+          ),
+        ),
+      ]),
+    );
+  }
+
+  bool _hasJobInfo(JobModel job) =>
+      job.title.isNotEmpty ||
+      job.jobDuration.isNotEmpty ||
+      job.city.isNotEmpty ||
+      job.salary.isNotEmpty;
 
   bool _hasApplicationInfo(JobModel job) {
     final app = job.myApplication;
@@ -372,82 +194,51 @@ class JobDetailsScreen extends StatelessWidget {
         (app.notes ?? app.coverLetter ?? '').isNotEmpty;
   }
 
-  List<Widget> _buildJobInfoRows() {
-    List<Widget> rows = [];
-
+  List<Widget> _jobInfoRows() {
+    final rows = <Widget>[];
     if (job.title.isNotEmpty) {
-      rows.add(_buildInfoRow("Job Role", job.title, Icons.work_outline));
+      rows.add(_infoRow('Job Role', job.title, Iconsax.briefcase));
     }
-
     if (job.city.isNotEmpty) {
-      rows.add(
-        _buildInfoRow("Location", job.city, Icons.location_on_outlined),
-      );
+      rows.add(_infoRow('Location', job.city, Iconsax.location));
     }
-
     if (job.jobDuration.isNotEmpty) {
-      rows.add(_buildInfoRow("Duration", job.jobDuration, Icons.access_time));
+      rows.add(_infoRow('Duration', job.jobDuration, Iconsax.clock));
     }
-
     if (job.salary.isNotEmpty) {
-      rows.add(
-        _buildInfoRow("Salary", job.salary, Icons.currency_rupee),
-      );
+      rows.add(_infoRow('Salary', job.salary, Iconsax.money_recive));
     }
-
-    // Remove bottom padding from last item
-    if (rows.isNotEmpty) {
-      rows[rows.length - 1] = Padding(
-        padding: EdgeInsets.zero,
-        child: rows[rows.length - 1],
-      );
-    }
-
-    return rows;
+    return _trimLast(rows);
   }
 
-  List<Widget> _buildApplicationInfoRows() {
-    List<Widget> rows = [];
+  List<Widget> _applicationInfoRows() {
+    final rows = <Widget>[];
     final app = _app;
     if (app == null) return rows;
-
     if (app.appliedDateFormatted.isNotEmpty) {
       rows.add(
-        _buildInfoRow(
-          "Applied Date",
-          app.appliedDateFormatted,
-          Icons.calendar_today,
-        ),
-      );
+          _infoRow('Applied Date', app.appliedDateFormatted, Iconsax.calendar_1));
     }
-
     if (app.status.isNotEmpty) {
-      rows.add(_buildInfoRow("Status", app.statusLabel, Icons.info_outline));
+      rows.add(_infoRow('Status', app.statusLabel, Iconsax.info_circle));
     }
-
     if ((app.expectedSalary ?? '').isNotEmpty) {
-      rows.add(
-        _buildInfoRow(
-          "Salary Expectation",
-          app.expectedSalary!,
-          Icons.attach_money,
-        ),
-      );
+      rows.add(_infoRow(
+          'Salary Expectation', app.expectedSalary!, Iconsax.money_recive));
     }
-
     final remarks = app.notes ?? app.coverLetter ?? '';
     if (remarks.isNotEmpty) {
-      rows.add(_buildInfoRow("Remarks", remarks, Icons.note_outlined));
+      rows.add(_infoRow('Remarks', remarks, Iconsax.note_1));
     }
+    return _trimLast(rows);
+  }
 
-    // Remove bottom padding from last item
+  /// Removes the trailing bottom padding from the last info row.
+  List<Widget> _trimLast(List<Widget> rows) {
     if (rows.isNotEmpty) {
-      rows[rows.length - 1] = Padding(
-        padding: EdgeInsets.zero,
-        child: rows[rows.length - 1],
-      );
+      rows[rows.length - 1] =
+          Padding(padding: EdgeInsets.zero, child: rows.last);
     }
-
     return rows;
   }
 }

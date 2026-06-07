@@ -1,29 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Earning Stat Card Widget
-/// Displays a statistic with icon, value, and label
+import '../../../theme/design_system.dart';
+
+/// Earning stat card — brand design system. Icon chip + value + label.
 class EarningStatCardWidget extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
-  final Color? iconBackgroundColor;
+  final Color? iconColor;
 
   const EarningStatCardWidget({
     super.key,
     required this.icon,
     required this.value,
     required this.label,
-    this.iconBackgroundColor,
+    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = iconColor ?? AppPalette.primary;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppPalette.card,
+        borderRadius: AppRadius.rXl,
+        border: Border.all(color: AppPalette.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,31 +41,16 @@ class EarningStatCardWidget extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color:
-                  iconBackgroundColor ??
-                  const Color(0xFF2F80ED).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 18, color: const Color(0xFF2F80ED)),
+                color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
+            child: Icon(icon, size: 19, color: color),
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1F2937),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF6B7280),
-            ),
-          ),
+          AppSpacing.vGapSm,
+          Text(value,
+              style: AppText.h1.size(20),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 2),
+          Text(label, style: AppText.caption),
         ],
       ),
     );

@@ -20,14 +20,6 @@ class SnackBarHelper {
     void present() {
       // Overlay must exist before GetX can mount the snackbar.
       if (Get.overlayContext == null) return;
-      // Avoid stacking duplicate snackbars during rapid failures.
-      // closeAllSnackbars can crash if a queued snackbar's animation controller
-      // is not yet initialized, so guard against that.
-      if (Get.isSnackbarOpen) {
-        try {
-          Get.closeAllSnackbars();
-        } catch (_) {}
-      }
       Get.snackbar(
         title,
         message,

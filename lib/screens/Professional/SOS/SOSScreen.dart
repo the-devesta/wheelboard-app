@@ -1,8 +1,16 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../theme/design_system.dart';
+
+/// Emergency SOS — quick access to emergency services.
+///
+/// Data-flow fix: the big SOS button previously showed a fake "Alerts sent to
+/// all contacts" snackbar but called no API (and there is no backend SOS
+/// endpoint on either platform). It now performs a **real** action — opening the
+/// dialer to India's unified emergency number (112) — with honest messaging. The
+/// emergency-contact cards already place real phone calls via the dialer.
 class SOSScreen extends StatefulWidget {
   const SOSScreen({super.key});
 
@@ -18,10 +26,9 @@ class _SOSScreenState extends State<SOSScreen>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat();
   }
 
   @override
@@ -31,38 +38,20 @@ class _SOSScreenState extends State<SOSScreen>
   }
 
   Future<void> _triggerSOS() async {
-    if (_isActivated) {
-      setState(() => _isActivated = false);
-      _controller.duration = const Duration(seconds: 2);
-      _controller.repeat();
-      return;
-    }
-
     setState(() => _isActivated = true);
-    _controller.duration = const Duration(milliseconds: 500); // Faster pulse
+    _controller.duration = const Duration(milliseconds: 600);
     _controller.repeat();
-
-    // Show feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          '🚨 EMERGENCY SOS ACTIVATED! Banners and Alerts sent to all contacts.',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 4),
-      ),
-    );
+    // Real action: open the dialer to the unified emergency number.
+    await _makePhoneCall('112');
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
-      debugPrint('Could not launch $launchUri');
+    final uri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not launch dialer for $phoneNumber')),
+        SnackBar(content: Text('Could not open dialer for $phoneNumber')),
       );
     }
   }
@@ -70,387 +59,241 @@ class _SOSScreenState extends State<SOSScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppPalette.bg,
       appBar: AppBar(
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            margin: const EdgeInsets.only(left: 16),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey.withValues(alpha: 0.1),
-            ),
-            child: const Icon(
-              Icons.arrow_back_ios,
-              size: 16,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        title: Text(
-          'Emergency SOS',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF222B45),
-          ),
-        ),
+        backgroundColor: AppPalette.card,
+        elevation: 0.5,
         centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Iconsax.arrow_left_2, color: AppPalette.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('Emergency SOS', style: AppText.h2),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Quick access to emergency services",
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: const Color(0xFF8F9BB3),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Emergency Alert Section
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                // Determine card color: blinking if activated, static light red if not
-                Color cardColor = const Color(0xFFFFF5F5);
-                if (_isActivated) {
-                  cardColor = _controller.value > 0.5
-                      ? const Color(0xFFFFEBEE)
-                      : const Color(0xFFFFCDD2);
-                }
-
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(20),
-                    border: _isActivated
-                        ? Border.all(color: Colors.red, width: 3)
-                        : null,
-                    boxShadow: _isActivated
-                        ? [
-                            BoxShadow(
-                              color: Colors.red.withValues(alpha: 0.3),
-                              blurRadius: 15,
-                              spreadRadius: 5,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        _isActivated ? 'SOS ACTIVATED' : 'Emergency Alert',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: _isActivated
-                              ? Colors.red
-                              : const Color(0xFF222B45),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Animated SOS Button
-                      SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: GestureDetector(
-                          onTap: _triggerSOS,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Ripple Effect 1
-                              Container(
-                                width: 140 + (_controller.value * 40),
-                                height: 140 + (_controller.value * 40),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(
-                                    0xFFE53935,
-                                  ).withValues(alpha: 0.3 * (1 - _controller.value)),
-                                ),
-                              ),
-                              // Ripple Effect 2 (Delayed)
-                              Builder(
-                                builder: (context) {
-                                  double value =
-                                      (_controller.value + 0.5) % 1.0;
-                                  return Container(
-                                    width: 140 + (value * 40),
-                                    height: 140 + (value * 40),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: const Color(
-                                        0xFFE53935,
-                                      ).withValues(alpha: 0.3 * (1 - value)),
-                                    ),
-                                  );
-                                },
-                              ),
-                              // Main Button
-                              Container(
-                                width: 140,
-                                height: 140,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE53935),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFFE53935,
-                                      ).withValues(alpha: 0.5),
-                                      blurRadius: 20,
-                                      spreadRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _isActivated
-                                          ? Icons.notifications_active
-                                          : Icons.warning_amber_rounded,
-                                      color: Colors.white,
-                                      size: 40,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'SOS',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-                      Text(
-                        _isActivated
-                            ? 'Calling Emergency Services...'
-                            : 'Tap to activate emergency alert',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: _isActivated
-                              ? Colors.red
-                              : const Color(0xFF222B45),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'This will notify your company and emergency contacts',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: const Color(0xFF8F9BB3),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 32),
-            Text(
-              'Emergency Contacts',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF222B45),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Contacts List
-            _buildContactCard(
+            Text('Quick access to emergency services', style: AppText.caption),
+            AppSpacing.vGapLg,
+            _alertCard(),
+            AppSpacing.vGapXl,
+            Text('Emergency Contacts', style: AppText.h3),
+            AppSpacing.vGapMd,
+            _contactCard(
               title: 'Police',
               number: '100',
-              icon: Icons.local_police_outlined,
-              color: const Color(0xFFE3F2FD),
+              icon: Iconsax.shield_tick,
+              tint: AppPalette.blueBg,
               iconColor: const Color(0xFF1565C0),
-              onTap: () => _makePhoneCall('100'),
             ),
-            const SizedBox(height: 16),
-            _buildContactCard(
+            AppSpacing.vGapMd,
+            _contactCard(
               title: 'Ambulance',
               number: '108',
-              icon: Icons.medical_services_outlined,
-              color: const Color(0xFFFFEBEE),
+              icon: Iconsax.health,
+              tint: AppPalette.dangerBg,
               iconColor: const Color(0xFFC62828),
-              onTap: () => _makePhoneCall('108'),
             ),
-            const SizedBox(height: 16),
-            _buildContactCard(
+            AppSpacing.vGapMd,
+            _contactCard(
               title: 'Fire',
               number: '101',
-              icon: Icons.local_fire_department_outlined,
-              color: const Color(0xFFFFF3E0),
+              icon: Iconsax.flash_1,
+              tint: AppPalette.amberBg,
               iconColor: const Color(0xFFEF6C00),
-              onTap: () => _makePhoneCall('101'),
             ),
-            const SizedBox(height: 16),
-            _buildContactCard(
+            AppSpacing.vGapMd,
+            _contactCard(
               title: 'Roadside Assistance',
               number: '1033',
-              icon: Icons.car_crash_outlined,
-              color: const Color(0xFFE0F2F1),
+              icon: Iconsax.truck,
+              tint: AppPalette.greenBg,
               iconColor: const Color(0xFF00695C),
-              onTap: () => _makePhoneCall('1033'),
             ),
-            const SizedBox(height: 16),
-            _buildContactCard(
-              title: 'Roadside Assistance (Toll-Free)',
-              number: '1800-123-4567',
-              icon: Icons.car_repair_outlined,
-              color: const Color(0xFFE8F5E9),
-              iconColor: const Color(0xFF2E7D32),
-              onTap: () => _makePhoneCall('1800-123-4567'),
-            ),
-
-            const SizedBox(height: 32),
-            // Safety Tips Section
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE3F2FD),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.security, color: Color(0xFF1565C0)),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Safety Tips',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1565C0),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSafetyTip('Always keep emergency contacts handy'),
-                  _buildSafetyTip('Share your live location during trips'),
-                  _buildSafetyTip('Keep first aid kit in your vehicle'),
-                  _buildSafetyTip('Regular vehicle maintenance checks'),
-                  _buildSafetyTip('Stay alert and take regular breaks'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+            AppSpacing.vGapXl,
+            _safetyTips(),
+            AppSpacing.vGapLg,
           ],
         ),
       ),
     );
   }
 
-  Widget _buildContactCard({
+  Widget _alertCard() {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          decoration: BoxDecoration(
+            color: _isActivated ? const Color(0xFFFFEBEE) : AppPalette.dangerBg,
+            borderRadius: AppRadius.rXl,
+            border: _isActivated
+                ? Border.all(color: AppPalette.danger, width: 2)
+                : Border.all(color: const Color(0x22EF4444)),
+          ),
+          child: Column(
+            children: [
+              Text(_isActivated ? 'SOS ACTIVATED' : 'Emergency Alert',
+                  style: AppText.h2.on(
+                      _isActivated ? AppPalette.danger : AppPalette.textDark)),
+              AppSpacing.vGapXl,
+              SizedBox(
+                width: 200,
+                height: 200,
+                child: GestureDetector(
+                  onTap: _triggerSOS,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      _ripple(_controller.value),
+                      _ripple((_controller.value + 0.5) % 1.0),
+                      Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          color: AppPalette.danger,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppPalette.danger.withValues(alpha: 0.5),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                                _isActivated
+                                    ? Iconsax.call_calling
+                                    : Iconsax.danger,
+                                color: Colors.white,
+                                size: 38),
+                            const SizedBox(height: 4),
+                            Text('SOS',
+                                style: AppText.h1
+                                    .on(Colors.white)
+                                    .size(24)
+                                    .weight(FontWeight.w800)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              AppSpacing.vGapXl,
+              Text(
+                _isActivated
+                    ? 'Connecting you to emergency services…'
+                    : 'Tap to call emergency services',
+                textAlign: TextAlign.center,
+                style: AppText.subtitle.on(
+                    _isActivated ? AppPalette.danger : AppPalette.textDark),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Connects you directly to 112, India’s unified emergency helpline.',
+                textAlign: TextAlign.center,
+                style: AppText.caption,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _ripple(double value) {
+    return Container(
+      width: 140 + (value * 40),
+      height: 140 + (value * 40),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppPalette.danger.withValues(alpha: 0.25 * (1 - value)),
+      ),
+    );
+  }
+
+  Widget _contactCard({
     required String title,
     required String number,
     required IconData icon,
-    required Color color,
+    required Color tint,
     required Color iconColor,
-    required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => _makePhoneCall(number),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
-        ),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(color: tint, borderRadius: AppRadius.rXl),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
+                  color: Colors.white, shape: BoxShape.circle),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
-            const SizedBox(width: 20),
+            AppSpacing.hGapLg,
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF222B45),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    number,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: const Color(0xFF8F9BB3),
-                    ),
-                  ),
+                  Text(title, style: AppText.subtitle),
+                  Text(number, style: AppText.caption),
                 ],
               ),
             ),
-            Icon(Icons.call_outlined, color: Colors.grey[500]),
+            Icon(Iconsax.call, color: iconColor, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSafetyTip(String tip) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+  Widget _safetyTips() {
+    const tips = [
+      'Always keep emergency contacts handy',
+      'Share your live location during trips',
+      'Keep a first-aid kit in your vehicle',
+      'Do regular vehicle maintenance checks',
+      'Stay alert and take regular breaks',
+    ];
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration:
+          BoxDecoration(color: AppPalette.blueBg, borderRadius: AppRadius.rXl),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 4,
-            height: 4,
-            decoration: const BoxDecoration(
-              color: Color(0xFF1565C0),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              tip,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: const Color(0xFF1565C0),
-                height: 1.5,
-              ),
-            ),
-          ),
+          Row(children: [
+            const Icon(Iconsax.shield_tick, color: AppPalette.blue),
+            AppSpacing.hGapSm,
+            Text('Safety Tips', style: AppText.h3.on(AppPalette.blue)),
+          ]),
+          AppSpacing.vGapLg,
+          ...tips.map((t) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 6),
+                    width: 5,
+                    height: 5,
+                    decoration: const BoxDecoration(
+                        color: AppPalette.blue, shape: BoxShape.circle),
+                  ),
+                  AppSpacing.hGapMd,
+                  Expanded(
+                      child: Text(t,
+                          style: AppText.bodySm.on(const Color(0xFF1E40AF)))),
+                ]),
+              )),
         ],
       ),
     );
