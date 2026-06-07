@@ -146,10 +146,18 @@ class _TripAssignmentCard extends StatelessWidget {
               Container(
                 width: 9,
                 height: 9,
-                margin: const EdgeInsets.only(top: 4),
+                margin: const EdgeInsets.only(top: 4, right: 8),
                 decoration: const BoxDecoration(
                     color: AppPalette.green, shape: BoxShape.circle),
               ),
+            IconButton(
+              icon: const Icon(Iconsax.trash, size: 20, color: AppPalette.danger),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                _showDeleteModal(context, ctrl, n);
+              },
+            ),
           ]),
 
           if (n.lrNumber != null) ...[
@@ -313,10 +321,10 @@ class _TripAssignmentCard extends StatelessWidget {
 
           AppSpacing.vGapLg,
           AppPrimaryButton(
-            label: 'Start Trip with OTP',
+            label: (n.otpVerified || (n.lrStatus != null && n.lrStatus != 'pending')) ? 'Trip Started' : 'Start Trip with OTP',
             icon: Iconsax.play_circle,
-            color: AppPalette.green,
-            onPressed: () {
+            color: (n.otpVerified || (n.lrStatus != null && n.lrStatus != 'pending')) ? AppPalette.textMid : AppPalette.green,
+            onPressed: (n.otpVerified || (n.lrStatus != null && n.lrStatus != 'pending')) ? null : () {
               if (n.notificationId.isNotEmpty) ctrl.markAsRead(n.notificationId);
               final tripId = n.tripId;
               if (tripId != null) {
@@ -440,14 +448,100 @@ class _RegularCard extends StatelessWidget {
             Container(
               width: 9,
               height: 9,
-              margin: const EdgeInsets.only(top: 4),
+              margin: const EdgeInsets.only(top: 4, right: 8),
               decoration: BoxDecoration(
                   color: g.color, shape: BoxShape.circle),
             ),
+          IconButton(
+            icon: const Icon(Iconsax.trash, size: 20, color: AppPalette.danger),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () {
+              _showDeleteModal(context, ctrl, n);
+            },
+          ),
         ]),
       ),
     );
   }
+}
+
+void _showDeleteModal(BuildContext context, NotificationController ctrl, NotificationModel n) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (context) => Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: AppSpacing.xl),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppPalette.danger.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Iconsax.trash, color: AppPalette.danger, size: 32),
+          ),
+          AppSpacing.vGapLg,
+          Text('Delete Notification', style: AppText.h2),
+          AppSpacing.vGapSm,
+          Text(
+            'Are you sure you want to delete this notification? This action cannot be undone.',
+            textAlign: TextAlign.center,
+            style: AppText.body.on(AppPalette.textGrey),
+          ),
+          AppSpacing.vGapXl,
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.rMd),
+                  ),
+                  child: Text('Cancel', style: AppText.subtitle.weight(FontWeight.w600).on(AppPalette.textGrey)),
+                ),
+              ),
+              AppSpacing.hGapMd,
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close the modal first
+                    ctrl.deleteNotification(n.notificationId);
+                    SnackBarHelper.success("Notification deleted");
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppPalette.danger,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.rMd),
+                  ),
+                  child: Text('Delete', style: AppText.subtitle.weight(FontWeight.w600).on(Colors.white)),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
+        ],
+      ),
+    ),
+  );
 }
 
 String _pretty(String iso) {

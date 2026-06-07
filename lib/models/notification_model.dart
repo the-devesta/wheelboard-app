@@ -101,6 +101,8 @@ class NotificationModel {
   String? get otpExpiry => data['otpExpiry']?.toString();
   String? get paymentTiming => data['paymentTiming']?.toString();
   String? get paymentMode => data['paymentMode']?.toString();
+  bool get otpVerified => data['otpVerified'] == true || data['otpVerified'] == 'true';
+  String? get lrStatus => data['lrStatus']?.toString();
 
   num? get estimatedEarnings => _num(data['estimatedEarnings']);
   num? get platformFee => _num(data['platformFee']);

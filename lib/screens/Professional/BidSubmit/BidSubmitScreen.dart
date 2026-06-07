@@ -260,7 +260,8 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
 
             // Submit Bid button
             Obx(() {
-              final isHired = AuthService.to.isUserHired;
+              // final isHired = AuthService.to.isUserHired;
+              final isHired = false; // Check removed to allow hired drivers to bid
               final isSubmitting = controller.isSubmittingBid.value;
 
               final userProfileController = Get.find<UserProfileController>();
@@ -333,6 +334,7 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                               );
 
                               if (success) {
+                                SnackBarHelper.success("Bid placed successfully!");
                                 Navigator.pop(context);
                                 controller.refreshTrips();
                               }

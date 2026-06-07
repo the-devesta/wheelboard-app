@@ -111,8 +111,12 @@ class TripOverviewSheet extends StatelessWidget {
                     ],
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close, color: Colors.redAccent),
+                    onTap: () => Get.back(),
+                    behavior: HitTestBehavior.opaque,
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Icon(Icons.close, color: Colors.redAccent),
+                    ),
                   ),
                 ],
               ),
