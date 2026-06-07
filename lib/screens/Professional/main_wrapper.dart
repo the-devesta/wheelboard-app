@@ -19,7 +19,8 @@ class ProfessionalMainWrapper extends StatefulWidget {
       _ProfessionalMainWrapperState();
 }
 
-class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
+class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper>
+    with WidgetsBindingObserver {
   late int _currentIndex;
 
   // IndexedStack keeps every screen alive — no rebuild on tab switch
@@ -35,6 +36,7 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    WidgetsBinding.instance.addObserver(this);
 
     if (!Get.isRegistered<AssignedTripController>()) {
       Get.put(AssignedTripController(), permanent: true);
@@ -51,6 +53,23 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper> {
         AppLogger.d('⚠️ Could not refresh on startup: $e');
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Resyncing on resume drops any trips a company deleted while the app was
+    // backgrounded — the Professional never sees stale, un-openable trips.
+    if (state == AppLifecycleState.resumed) {
+      try {
+        Get.find<AssignedTripController>().fetchAssignedTrips();
+      } catch (_) {}
+    }
   }
 
   void _onTabTapped(int index) {

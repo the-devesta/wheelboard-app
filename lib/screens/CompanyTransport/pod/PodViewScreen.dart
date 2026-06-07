@@ -36,7 +36,7 @@ class _PodViewScreenState extends State<PodViewScreen> {
         ApiEndpoints.trips.podDetails(widget.tripId),
       );
       setState(() {
-        final raw = res is Map<String, dynamic> ? res as Map<String, dynamic> : null;
+        final raw = res as Map<String, dynamic>;
         if (raw != null && raw['collection'] is Map<String, dynamic>) {
           // Backend nests POD details under `collection` — merge so UI can read fields at top-level
           final coll = Map<String, dynamic>.from(raw['collection'] as Map);

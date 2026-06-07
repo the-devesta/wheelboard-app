@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
@@ -31,14 +33,19 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
   final _recipientPhoneController = TextEditingController();
   final _deliveryNotesController = TextEditingController();
 
+  static const _maxPhotos = 6;
+
   final List<File> _photos = [];
   bool _isUploading = false;
   String? _uploadError;
+  double _uploadProgress = 0.0;
+  Timer? _progressTimer;
 
   final _picker = ImagePicker();
 
   @override
   void dispose() {
+    _progressTimer?.cancel();
     _recipientNameController.dispose();
     _recipientPhoneController.dispose();
     _deliveryNotesController.dispose();
@@ -47,6 +54,10 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
 
   // ── photo picking ────────────────────────────────────────────────────
   Future<void> _pickFromCamera() async {
+    if (_photos.length >= _maxPhotos) {
+      _showMaxPhotoSnack();
+      return;
+    }
     final picked = await _picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 80,
@@ -55,10 +66,29 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
   }
 
   Future<void> _pickFromGallery() async {
+    if (_photos.length >= _maxPhotos) {
+      _showMaxPhotoSnack();
+      return;
+    }
+    final remaining = _maxPhotos - _photos.length;
     final picked = await _picker.pickMultiImage(imageQuality: 80);
     if (picked.isNotEmpty) {
-      setState(() => _photos.addAll(picked.map((x) => File(x.path))));
+      setState(() => _photos.addAll(
+            picked.take(remaining).map((x) => File(x.path)),
+          ));
+      if (picked.length > remaining && mounted) _showMaxPhotoSnack();
     }
+  }
+
+  void _showMaxPhotoSnack() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Maximum $_maxPhotos photos allowed.',
+          style: AppText.label.on(Colors.white)),
+      backgroundColor: AppPalette.amber,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ));
   }
 
   void _removePhoto(int index) => setState(() => _photos.removeAt(index));
@@ -69,11 +99,32 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
       _recipientNameController.text.trim().isNotEmpty &&
       _recipientPhoneController.text.trim().isNotEmpty;
 
+  void _startProgressAnimation() {
+    _uploadProgress = 0.0;
+    // Simulate upload progress: ramp to 85% quickly, hold until real success.
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
+      if (!mounted) {
+        _progressTimer?.cancel();
+        return;
+      }
+      final target = _uploadProgress < 0.5 ? 0.5 : 0.85;
+      final step = _uploadProgress < 0.5 ? 0.04 : 0.008;
+      if (_uploadProgress < target) {
+        setState(() => _uploadProgress =
+            (_uploadProgress + step).clamp(0.0, target));
+      } else {
+        _progressTimer?.cancel();
+      }
+    });
+  }
+
   Future<void> _submit() async {
     setState(() {
       _isUploading = true;
       _uploadError = null;
+      _uploadProgress = 0.0;
     });
+    _startProgressAnimation();
 
     try {
       // Build multipart form data (Dio's FormData, not get's)
@@ -107,6 +158,12 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
         Get.find<TripNavigationController>().currentStep.value =
             TripStep.completed;
       }
+
+      // Snap progress to 100% and fire haptic before navigating.
+      _progressTimer?.cancel();
+      if (mounted) setState(() => _uploadProgress = 1.0);
+      HapticFeedback.mediumImpact();
+      await Future.delayed(const Duration(milliseconds: 400));
 
       SnackBarHelper.success('Proof of delivery uploaded successfully!');
 
@@ -153,7 +210,12 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
             _banner(),
             AppSpacing.vGapXl,
 
-            _sectionTitle('Delivery Photos *', Iconsax.camera),
+            _sectionTitleWithBadge(
+              'Delivery Photos *',
+              Iconsax.camera,
+              '${_photos.length}/$_maxPhotos',
+              _photos.isNotEmpty,
+            ),
             AppSpacing.vGapMd,
             _photos.isEmpty ? _emptyPhotoPlaceholder() : _photoGrid(),
             AppSpacing.vGapMd,
@@ -208,6 +270,29 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
                 borderColor: const Color(0x33EF4444),
               ),
               AppSpacing.vGapLg,
+            ],
+
+            // Upload progress bar — visible while uploading.
+            if (_isUploading) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: _uploadProgress,
+                  minHeight: 6,
+                  backgroundColor: AppPalette.border,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(_accent),
+                ),
+              ),
+              AppSpacing.vGapSm,
+              Text(
+                _uploadProgress >= 1.0
+                    ? 'Upload complete!'
+                    : 'Uploading ${(_uploadProgress * 100).toStringAsFixed(0)}%…',
+                textAlign: TextAlign.center,
+                style: AppText.caption.on(_accent).weight(FontWeight.w600),
+              ),
+              AppSpacing.vGapMd,
             ],
 
             AppPrimaryButton(
@@ -277,6 +362,30 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
       Icon(icon, size: 18, color: _accent),
       AppSpacing.hGapSm,
       Text(title, style: AppText.subtitle),
+    ]);
+  }
+
+  Widget _sectionTitleWithBadge(
+    String title,
+    IconData icon,
+    String badge,
+    bool showBadge,
+  ) {
+    return Row(children: [
+      Icon(icon, size: 18, color: _accent),
+      AppSpacing.hGapSm,
+      Text(title, style: AppText.subtitle),
+      const Spacer(),
+      if (showBadge)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            color: _accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(badge,
+              style: AppText.micro.on(_accent).weight(FontWeight.w700)),
+        ),
     ]);
   }
 

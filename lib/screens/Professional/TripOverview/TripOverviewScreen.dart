@@ -211,7 +211,9 @@ class TripOverviewSheet extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text("₹${tripDetails.payRange}"),
+                    Text(tripDetails.payRange.isNotEmpty
+                        ? "₹${tripDetails.payRange}"
+                        : "Open for Bidding"),
 
                     const SizedBox(height: 10),
 
@@ -359,83 +361,88 @@ class TripOverviewSheet extends StatelessWidget {
                 );
               }),
 
-              const SizedBox(height: 16),
-
-              // Fleet Owner card
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade100,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.business,
-                        color: Colors.redAccent,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Fleet Owner",
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                          Text(
-                            tripDetails.companyName.isNotEmpty
-                                ? tripDetails.companyName
-                                : "N/A",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (tripDetails.companyMobileNo.isNotEmpty)
-                            Text(
-                              tripDetails.companyMobileNo,
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 11,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    if (tripDetails.companyMobileNo.isNotEmpty)
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            CallUtils.makeCall(tripDetails.companyMobileNo),
-                        icon: const Icon(Icons.call, size: 16),
-                        label: const Text("Call"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          textStyle: const TextStyle(fontSize: 13),
+              // Fleet Owner card — only when the API actually provides company
+              // details (this endpoint usually doesn't, so we hide it rather
+              // than render a meaningless "N/A", matching the web).
+              if (tripDetails.companyName.isNotEmpty ||
+                  tripDetails.companyMobileNo.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.business,
+                          color: Colors.redAccent,
+                          size: 20,
                         ),
                       ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Fleet Owner",
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                            Text(
+                              tripDetails.companyName.isNotEmpty
+                                  ? tripDetails.companyName
+                                  : "Fleet Owner",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (tripDetails.companyMobileNo.isNotEmpty)
+                              Text(
+                                tripDetails.companyMobileNo,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 11,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (tripDetails.companyMobileNo.isNotEmpty)
+                        ElevatedButton.icon(
+                          onPressed: () =>
+                              CallUtils.makeCall(tripDetails.companyMobileNo),
+                          icon: const Icon(Icons.call, size: 16),
+                          label: const Text("Call"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            textStyle: const TextStyle(fontSize: 13),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

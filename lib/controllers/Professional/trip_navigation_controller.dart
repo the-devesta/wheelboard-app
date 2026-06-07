@@ -39,6 +39,11 @@ class TripNavigationController extends GetxController {
   final startTripOtpError = RxnString();
   final isStartingTrip = false.obs;
 
+  // LR-confirmation OTP (web parity — the company sends this OTP to the
+  // driver's notifications; the driver just enters it to confirm the LR).
+  final lrOtpError = RxnString();
+  final isConfirmingLr = false.obs;
+
   // GPS / location pinging
   StreamSubscription<Position>? _positionStream;
   Timer? _locationPingTimer;
@@ -92,6 +97,40 @@ class TripNavigationController extends GetxController {
     }
   }
 
+  // ── confirm Lorry Receipt with OTP (web parity) ───────────────────────
+  /// Confirms the LR using the 6-digit OTP the company sent to the driver's
+  /// notifications — exactly the web flow (`POST /trips/:id/confirm-otp` with
+  /// `{ otp }`). On success the trip advances to `scheduled` (ready to start).
+  /// There is no "send/request OTP" step — the OTP already arrives via the
+  /// notification, just like the web panel.
+  Future<bool> confirmLrWithOtp(String tripId, String otp) async {
+    if (otp.length != 6) {
+      lrOtpError.value = 'Please enter a valid 6-digit OTP';
+      return false;
+    }
+    isConfirmingLr.value = true;
+    lrOtpError.value = null;
+    try {
+      await ApiClient.instance.post(
+        ApiEndpoints.trips.confirmOtp(tripId),
+        data: {'otp': otp},
+      );
+      currentStep.value = TripStep.readyToStart;
+      _updateLocalStatus(tripId, 'scheduled');
+      SnackBarHelper.success('Trip confirmed successfully!');
+      return true;
+    } on DioException catch (e) {
+      if (_handleTripGone(tripId, e)) return false;
+      final msg = e.error is ApiException
+          ? (e.error as ApiException).message
+          : e.response?.data?['message'] ?? 'Invalid OTP';
+      lrOtpError.value = msg;
+      return false;
+    } finally {
+      isConfirmingLr.value = false;
+    }
+  }
+
   // ── start pickup journey ──────────────────────────────────────────────
   Future<void> startPickup(String tripId) async {
     isLoading.value = true;
@@ -101,6 +140,7 @@ class TripNavigationController extends GetxController {
       _updateLocalStatus(tripId, 'en-route-to-pickup');
       await _startGps(tripId);
     } on DioException catch (e) {
+      if (_handleTripGone(tripId, e)) return;
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
           : 'Failed to start pickup journey';
@@ -136,6 +176,7 @@ class TripNavigationController extends GetxController {
       SnackBarHelper.success('Trip started successfully!');
       return true;
     } on DioException catch (e) {
+      if (_handleTripGone(tripId, e)) return false;
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
           : e.response?.data?['message'] ?? 'Failed to start trip';
@@ -163,6 +204,7 @@ class TripNavigationController extends GetxController {
       await _startGps(tripId);
       SnackBarHelper.success('Trip started successfully!');
     } on DioException catch (e) {
+      if (_handleTripGone(tripId, e)) return;
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
           : 'Failed to start trip';
@@ -181,6 +223,7 @@ class TripNavigationController extends GetxController {
       _updateLocalStatus(tripId, 'arrived-at-pickup');
       SnackBarHelper.success('Arrived at pickup location');
     } on DioException catch (e) {
+      if (_handleTripGone(tripId, e)) return;
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
           : 'Failed to mark arrival at pickup';
@@ -210,6 +253,7 @@ class TripNavigationController extends GetxController {
       _updateLocalStatus(tripId, 'awaiting-pod');
       SnackBarHelper.success('Arrived at destination. Please upload POD.');
     } on DioException catch (e) {
+      if (_handleTripGone(tripId, e)) return;
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
           : 'Failed to mark arrival at destination';
@@ -228,6 +272,7 @@ class TripNavigationController extends GetxController {
       _updateLocalStatus(tripId, 'completed');
       await _assignedCtrl.fetchAssignedTrips();
     } on DioException catch (e) {
+      if (_handleTripGone(tripId, e)) return;
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
           : 'Failed to complete trip';
@@ -367,6 +412,26 @@ class TripNavigationController extends GetxController {
 
   void startTrackingForTrip(String tripId) {
     _startGps(tripId);
+  }
+
+  // ── helper: self-heal when a trip no longer exists server-side ─────────
+  /// If a per-trip backend call returns 404 (e.g. the company deleted the
+  /// trip), drop it from the local cache, tell the driver, and leave the
+  /// navigation screen — so a deleted trip is never left openable. Returns
+  /// `true` when it handled a NotFound (caller should stop).
+  bool _handleTripGone(String tripId, DioException e) {
+    final err = e.error;
+    final code = err is ApiException ? err.statusCode : e.response?.statusCode;
+    if (code == 404) {
+      _assignedCtrl.removeTripLocally(tripId);
+      SnackBarHelper.error(
+          'This trip is no longer available. It may have been removed.');
+      if (Get.key.currentState?.canPop() ?? false) {
+        Get.back();
+      }
+      return true;
+    }
+    return false;
   }
 
   // ── helper: optimistically update local trip status ───────────────────

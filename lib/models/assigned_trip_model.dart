@@ -36,6 +36,9 @@ class AssignedTrip {
   final double? platformFee;
   final double? amountToDriver;
   final double? totalTripCost;
+  /// Web-parity earnings fallback: backend `price` (used when there is no
+  /// `financial.driverEarnings`). Web card shows `financial.driverEarnings || price`.
+  final double? price;
   final String? distance;
   final double? latitude;
   final double? longitude;
@@ -76,6 +79,7 @@ class AssignedTrip {
     this.platformFee,
     this.amountToDriver,
     this.totalTripCost,
+    this.price,
     this.distance,
     this.latitude,
     this.longitude,
@@ -92,6 +96,10 @@ class AssignedTrip {
     final endLoc = route['endLocation'] as Map<String, dynamic>? ?? {};
     final timeline = json['timeline'] as Map<String, dynamic>? ?? {};
     final bids = json['bids'] as List? ?? [];
+    // The `/trips` list response carries driver earnings inside the nested
+    // `financial` object (same source the web card reads), NOT as a top-level
+    // `amountToDriver`. Parse it here so per-card earnings render correctly.
+    final financial = json['financial'] as Map<String, dynamic>? ?? {};
 
     final scheduledStart = timeline['scheduledStartTime'] ?? json['pickupDate'];
     final parsedDate = scheduledStart != null
@@ -125,8 +133,11 @@ class AssignedTrip {
       bidDescription: json['bidDescription']?.toString() ?? json['notes']?.toString(),
       driverImagePath: json['driverImagePath']?.toString() ?? json['driverPhoto']?.toString(),
       platformFee: (json['platformFee'] as num?)?.toDouble(),
-      amountToDriver: (json['amountToDriver'] as num?)?.toDouble(),
-      totalTripCost: (json['totalTripCost'] as num?)?.toDouble(),
+      amountToDriver: (json['amountToDriver'] as num?)?.toDouble() ??
+          (financial['driverEarnings'] as num?)?.toDouble(),
+      totalTripCost: (json['totalTripCost'] as num?)?.toDouble() ??
+          (financial['tripCost'] as num?)?.toDouble(),
+      price: (json['price'] as num?)?.toDouble(),
       distance: route['plannedDistance']?.toString() ?? json['distance']?.toString(),
       // endLocation coordinates are [lng, lat] in GeoJSON
       latitude: endCoords != null && endCoords.length >= 2 ? (endCoords[1] as num).toDouble() : (json['latitude'] as num?)?.toDouble(),
@@ -175,6 +186,7 @@ class AssignedTrip {
     if (platformFee != null) "platformFee": platformFee,
     if (amountToDriver != null) "amountToDriver": amountToDriver,
     if (totalTripCost != null) "totalTripCost": totalTripCost,
+    if (price != null) "price": price,
     if (distance != null) "distance": distance,
     if (latitude != null) "latitude": latitude,
     if (longitude != null) "longitude": longitude,
@@ -212,6 +224,7 @@ class AssignedTrip {
     double? platformFee,
     double? amountToDriver,
     double? totalTripCost,
+    double? price,
     String? distance,
     double? latitude,
     double? longitude,
@@ -248,6 +261,7 @@ class AssignedTrip {
       platformFee: platformFee ?? this.platformFee,
       amountToDriver: amountToDriver ?? this.amountToDriver,
       totalTripCost: totalTripCost ?? this.totalTripCost,
+      price: price ?? this.price,
       distance: distance ?? this.distance,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,

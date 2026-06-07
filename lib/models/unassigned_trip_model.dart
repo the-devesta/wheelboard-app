@@ -9,6 +9,13 @@ class UnassignedTrip {
   final String tripStatus;
   final String tripType;
 
+  // Rich fields the web shows on each card (read straight from the API shape).
+  final double? distanceKm; // route.plannedDistance / estimatedDistance
+  final int? durationSeconds; // route.plannedDuration
+  final double? price; // price || financial.driverEarnings
+  final int bidsCount; // bids.length
+  final List<String> bidderIds; // bids[].bidderId — used to detect "already bid"
+
   UnassignedTrip({
     required this.tripId,
     required this.tripCode,
@@ -19,13 +26,25 @@ class UnassignedTrip {
     required this.payRange,
     required this.tripStatus,
     required this.tripType,
+    this.distanceKm,
+    this.durationSeconds,
+    this.price,
+    this.bidsCount = 0,
+    this.bidderIds = const [],
   });
+
+  /// `true` when [userId] has already placed a bid on this trip (web parity:
+  /// the card shows "Bid Placed" instead of "Place Bid").
+  bool hasBidFrom(String userId) =>
+      userId.isNotEmpty && bidderIds.contains(userId);
 
   factory UnassignedTrip.fromJson(Map<String, dynamic> json) {
     final route = json['route'] as Map<String, dynamic>? ?? {};
     final startLoc = route['startLocation'] as Map<String, dynamic>? ?? {};
     final endLoc = route['endLocation'] as Map<String, dynamic>? ?? {};
     final timeline = json['timeline'] as Map<String, dynamic>? ?? {};
+    final bids = json['bids'] as List? ?? [];
+    final financial = json['financial'] as Map<String, dynamic>? ?? {};
 
     final scheduledStart = timeline['scheduledStartTime'] ?? json['pickupDate'] ?? json['PickupDate'];
 
@@ -43,6 +62,19 @@ class UnassignedTrip {
       // Backend: status; legacy: tripStatus
       tripStatus: json['status']?.toString() ?? json['tripStatus']?.toString() ?? '',
       tripType: json['tripType']?.toString() ?? json['tripType']?.toString() ?? 'created',
+      distanceKm: (route['plannedDistance'] as num?)?.toDouble() ??
+          (route['estimatedDistance'] as num?)?.toDouble(),
+      durationSeconds: (route['plannedDuration'] as num?)?.toInt(),
+      price: (json['price'] as num?)?.toDouble() ??
+          (financial['driverEarnings'] as num?)?.toDouble(),
+      bidsCount: bids.length,
+      bidderIds: bids
+          .whereType<Map>()
+          .map((b) =>
+              (b['bidderId'] ?? (b['bidder'] is Map ? b['bidder']['id'] : '') ?? '')
+                  .toString())
+          .where((s) => s.isNotEmpty)
+          .toList(),
     );
   }
 

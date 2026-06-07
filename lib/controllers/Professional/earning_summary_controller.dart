@@ -52,9 +52,16 @@ class EarningSummaryController extends GetxController {
       errorMessage.value = '';
 
       // JWT identifies the professional — no userId param (web parity).
-      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+      final raw = await ApiClient.instance.get<Map<String, dynamic>>(
         ApiEndpoints.trips.professionalStats,
       );
+
+      // The backend wraps the payload as `{ message, data: {...stats} }`
+      // (web reads `response.data.data`). Unwrap the envelope here — reading the
+      // top level directly is why earnings always showed ₹0.
+      final data = (raw['data'] is Map<String, dynamic>)
+          ? raw['data'] as Map<String, dynamic>
+          : raw;
 
       totalIncome.value = _d(data['earnings'] ?? data['totalEarnings']);
       tripsCompleted.value = _i(data['completed'] ?? data['completedTrips']);

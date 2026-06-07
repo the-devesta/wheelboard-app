@@ -6,7 +6,6 @@ import '../../core/network/api_exception.dart';
 import '../../models/unassigned_trip_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'package:wheelboard/core/auth/auth_service.dart';
-import '../../utils/kyc_helper.dart';
 import '../../utils/app_logger.dart';
 
 class UnassignedTripsController extends GetxController {
@@ -115,10 +114,10 @@ class UnassignedTripsController extends GetxController {
         return false;
       }
 
-      // Check KYC status before submitting bid
-      if (!KYCHelper.checkAndShowKYCDialog()) {
-        return false;
-      }
+      // KYC / eligibility (incl. the hired-professional rule) is enforced
+      // server-side in `placeBid` — matching the web, which has no client-side
+      // KYC gate. The previous local gate wrongly blocked verified users when
+      // the cached profile flag wasn't loaded, so it has been removed.
 
       final requestData = <String, dynamic>{
         'amount': bidAmount,

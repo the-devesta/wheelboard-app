@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
@@ -30,10 +32,13 @@ class AssignedTripController extends GetxController {
   bool isAssignedTrip(AssignedTrip t) =>
       TripStatusMapper.isAssigned(t.tripStatus, t.driverId);
 
-  /// Driver earnings for a trip — mirrors web `financial.driverEarnings || price`
-  /// using the fields available on [AssignedTrip].
+  /// Driver earnings for a trip — mirrors the web card exactly
+  /// (`financial.driverEarnings || price`). `amountToDriver` is now populated
+  /// from `financial.driverEarnings` in [AssignedTrip.fromJson]; the remaining
+  /// fields stay as defensive fallbacks for older payload shapes.
   double earningsOf(AssignedTrip t) {
-    if ((t.amountToDriver ?? 0) > 0) return t.amountToDriver!;
+    if ((t.amountToDriver ?? 0) > 0) return t.amountToDriver!; // financial.driverEarnings
+    if ((t.price ?? 0) > 0) return t.price!; // backend price (web fallback)
     if ((t.bidAmount ?? 0) > 0) return t.bidAmount!;
     if ((t.totalTripCost ?? 0) > 0) return t.totalTripCost!;
     return _parseAmount(t.payRange) ?? 0;
@@ -45,14 +50,30 @@ class AssignedTripController extends GetxController {
     return match == null ? null : double.tryParse(match.group(0)!);
   }
 
-  // ── stats (mirror web `deriveStatsFromTrips`) ─────────────────────────────
-  int get completedCount =>
+  // ── authoritative stats from `/trips/professional/stats` ──────────────────
+  // The web reads its dashboard numbers from this endpoint (the single source
+  // of truth) and only falls back to trip-derived values when the API returns
+  // nothing. We mirror that exactly so the app shows IDENTICAL figures to the
+  // web for the same account, instead of recomputing earnings from local trip
+  // fields (which diverged).
+  final _apiCompleted = RxnInt();
+  final _apiActive = RxnInt();
+  final _apiAssigned = RxnInt();
+  final _apiTotalEarnings = RxnDouble();
+  final _apiEstimatedEarnings = RxnDouble();
+  final _apiRating = RxnDouble();
+
+  // ── stats (prefer API value, fall back to web `deriveStatsFromTrips`) ──────
+  int get completedCount => _apiCompleted.value ?? _derivedCompletedCount;
+  int get _derivedCompletedCount =>
       assignedTrips.where((t) => bucketOf(t) == TripBucket.completed).length;
 
-  int get inProcessCount =>
+  int get inProcessCount => _apiActive.value ?? _derivedInProcessCount;
+  int get _derivedInProcessCount =>
       assignedTrips.where((t) => bucketOf(t) == TripBucket.inProcess).length;
 
-  int get assignedCount => assignedTrips
+  int get assignedCount => _apiAssigned.value ?? _derivedAssignedCount;
+  int get _derivedAssignedCount => assignedTrips
       .where((t) => isAssignedTrip(t) && bucketOf(t) == TripBucket.upcoming)
       .length;
 
@@ -61,18 +82,21 @@ class AssignedTripController extends GetxController {
 
   int get activeAndAssignedCount => inProcessCount + assignedCount;
 
-  double get totalEarnings => assignedTrips
+  double get totalEarnings => _apiTotalEarnings.value ?? _derivedTotalEarnings;
+  double get _derivedTotalEarnings => assignedTrips
       .where((t) => bucketOf(t) == TripBucket.completed)
       .fold(0.0, (sum, t) => sum + earningsOf(t));
 
-  double get estimatedEarnings => assignedTrips.where((t) {
+  double get estimatedEarnings =>
+      _apiEstimatedEarnings.value ?? _derivedEstimatedEarnings;
+  double get _derivedEstimatedEarnings => assignedTrips.where((t) {
         final b = bucketOf(t);
         return b == TripBucket.upcoming || b == TripBucket.inProcess;
       }).fold(0.0, (sum, t) => sum + earningsOf(t));
 
-  /// Default rating until a profile/stats endpoint supplies a real one — matches
-  /// the web default of 4.8.
-  double get rating => 4.8;
+  /// Rating from the stats endpoint (web default 4.8 until a profile/stats
+  /// endpoint supplies a real one).
+  double get rating => _apiRating.value ?? 4.8;
 
   /// Trips visible for the active filter (mirror web `filteredTrips`).
   List<AssignedTrip> get visibleTrips {
@@ -189,6 +213,11 @@ class AssignedTripController extends GetxController {
           "✅ Fetched and sorted ${assignedTrips.length} assigned trips",
         );
       }
+
+      // Refresh the authoritative dashboard stats alongside the list (web
+      // parity: `useTrips` runs `fetchTrips` + `fetchStats` together). Fire and
+      // forget — a stats failure must never break the trip list.
+      unawaited(fetchProfessionalStats());
     } on DioException catch (e) {
       final apiError = e.error;
       final msg = apiError is ApiException ? apiError.message : 'Failed to load assigned trips';
@@ -203,6 +232,70 @@ class AssignedTripController extends GetxController {
       errorMessage('Something went wrong while loading your trips.');
     } finally {
       isLoading(false);
+    }
+  }
+
+  /// Fetch the professional dashboard stats from the SAME endpoint the web uses
+  /// (`GET /trips/professional/stats`). The backend wraps the payload as
+  /// `{ message, data: {...} }`; we unwrap it (web reads `response.data.data`).
+  /// These authoritative values feed the stats header so the app matches the
+  /// web exactly for the same account.
+  Future<void> fetchProfessionalStats() async {
+    try {
+      final raw = await ApiClient.instance.get<Map<String, dynamic>>(
+        ApiEndpoints.trips.professionalStats,
+      );
+      final data = (raw['data'] is Map<String, dynamic>)
+          ? raw['data'] as Map<String, dynamic>
+          : raw;
+
+      int? readInt(List<String> keys) {
+        for (final k in keys) {
+          final v = data[k];
+          if (v is num) return v.toInt();
+          final p = int.tryParse(v?.toString() ?? '');
+          if (p != null) return p;
+        }
+        return null;
+      }
+
+      double? readDouble(List<String> keys) {
+        for (final k in keys) {
+          final v = data[k];
+          if (v is num) return v.toDouble();
+          final p = double.tryParse(v?.toString().replaceAll(',', '') ?? '');
+          if (p != null) return p;
+        }
+        return null;
+      }
+
+      _apiCompleted.value = readInt(['completed', 'completedTrips']);
+      _apiActive.value = readInt(['inProgress', 'activeTrips', 'active']);
+      _apiAssigned.value = readInt(['assigned', 'assignedTrips']);
+      _apiTotalEarnings.value = readDouble(['earnings', 'totalEarnings']);
+      _apiEstimatedEarnings.value =
+          readDouble(['estimatedEarnings', 'pendingAmount']);
+      _apiRating.value = readDouble(['rating']);
+
+      AppLogger.d(
+          '✅ Professional stats: ₹${_apiTotalEarnings.value}, '
+          '${_apiCompleted.value} completed, ${_apiActive.value} active');
+    } catch (e) {
+      // Non-fatal: the stats header falls back to trip-derived values.
+      AppLogger.d('⚠️ professional stats fetch failed (using derived): $e');
+    }
+  }
+
+  /// Remove a trip from the local cache immediately — used when a trip turns out
+  /// to be gone server-side (e.g. the company deleted it and a per-trip call
+  /// returned 404). Keeps the Professional list synchronized so a deleted trip
+  /// never lingers as a stale, un-openable card.
+  void removeTripLocally(String tripId) {
+    final before = assignedTrips.length;
+    assignedTrips.removeWhere((t) => t.tripId == tripId);
+    if (assignedTrips.length != before) {
+      assignedTrips.refresh();
+      AppLogger.d('🗑️ Removed stale trip $tripId from local cache');
     }
   }
 }
