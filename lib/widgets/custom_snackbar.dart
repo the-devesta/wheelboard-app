@@ -18,19 +18,18 @@ class SnackBarHelper {
     Duration? duration,
   }) {
     void present() {
-      // Overlay must exist before GetX can mount the snackbar.
-      if (Get.overlayContext == null) return;
-      Get.snackbar(
-        title,
-        message,
-        backgroundColor: backgroundColor,
-        colorText: Colors.white,
-        icon: Icon(icon, color: Colors.white),
-        duration: duration ?? const Duration(seconds: 3),
-        snackPosition: SnackPosition.TOP,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-        isDismissible: true,
+      // Get.snackbar can throw asynchronously when GetX holds a stale overlay
+      // context during route transitions. ScaffoldMessenger is quieter here.
+      final context = Get.context ?? Get.key.currentContext;
+      if (context == null) return;
+
+      final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+      scaffoldMessenger?.showSnackBar(
+        SnackBar(
+          content: Text('$title: $message'),
+          backgroundColor: backgroundColor,
+          duration: duration ?? const Duration(seconds: 3),
+        ),
       );
     }
 

@@ -80,6 +80,7 @@ class LoginController extends GetxController {
       AppLogger.d('✅ OTP login successful: ${response.user.role.value}');
       return response;
     } catch (e) {
+      AppLogger.e('OTP login failed after request', error: e);
       SnackBarHelper.error(core.AuthService.extractError(e));
       return null;
     } finally {
@@ -115,6 +116,7 @@ class LoginController extends GetxController {
       AppLogger.d('✅ Password login successful: ${response.user.role.value}');
       return response;
     } catch (e) {
+      AppLogger.e('Password login failed after request', error: e);
       SnackBarHelper.error(core.AuthService.extractError(e));
       return null;
     } finally {

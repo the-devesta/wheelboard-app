@@ -12,6 +12,7 @@ import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
 import '../../utils/constants.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/custom_snackbar.dart';
 
 // ── Design tokens (match Home & Fleet) ────────────────────────────────────────
 const _amber    = Color(0xFFF59E0B);
@@ -277,14 +278,12 @@ class _EditTripScreenState extends State<EditTripScreen> {
         });
         _autoCalculateDistance();
       } else {
-        Get.snackbar('Location', 'Could not get current location. Check permissions.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withValues(alpha: 0.8), colorText: Colors.white);
+        SnackBarHelper.error(
+          'Could not get current location. Check permissions.',
+        );
       }
     } catch (e) {
-      Get.snackbar('Location', 'Failed to get location',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withValues(alpha: 0.8), colorText: Colors.white);
+      SnackBarHelper.error('Failed to get location');
     } finally {
       if (mounted) setState(() => _isLoadingLocation = false);
     }

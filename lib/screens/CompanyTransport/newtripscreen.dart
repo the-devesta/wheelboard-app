@@ -12,6 +12,7 @@ import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
 import '../../utils/constants.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/custom_snackbar.dart';
 
 // ── Design tokens (match Home & Fleet) ────────────────────────────────────────
 const _primary   = Color(0xFFF36969);
@@ -189,7 +190,7 @@ class _NewTripScreenState extends State<Newtripscreen> {
   Future<void> _postTrip() async {
     final userId = AuthService.to.userId;
     if (userId.isEmpty) {
-      Get.snackbar('Error', 'User not logged in');
+      SnackBarHelper.error('User not logged in');
       return;
     }
     final payRange = minPayRangeController.text.isNotEmpty &&
@@ -246,14 +247,12 @@ class _NewTripScreenState extends State<Newtripscreen> {
         });
         _autoCalculateDistance();
       } else {
-        Get.snackbar('Location', 'Could not get current location. Check permissions.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withValues(alpha: 0.8), colorText: Colors.white);
+        SnackBarHelper.error(
+          'Could not get current location. Check permissions.',
+        );
       }
     } catch (e) {
-      Get.snackbar('Location', 'Failed to get location',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withValues(alpha: 0.8), colorText: Colors.white);
+      SnackBarHelper.error('Failed to get location');
     } finally {
       if (mounted) setState(() => _isLoadingLocation = false);
     }

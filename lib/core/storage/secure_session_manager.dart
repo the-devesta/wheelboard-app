@@ -18,6 +18,7 @@ class SecureSessionManager {
   static const _accessTokenKey = 'wb_access_token';
   static const _refreshTokenKey = 'wb_refresh_token';
   static const _userKey = 'wb_user';
+  static const _fallbackPrefix = 'wb_storage_fallback_';
 
   // Legacy keys from old SessionManager (for migration)
   static const _legacyTokenKey = 'authToken';
@@ -30,7 +31,9 @@ class SecureSessionManager {
   SecureSessionManager({FlutterSecureStorage? secure})
       : _secure = secure ??
             const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
+              mOptions: MacOsOptions(
+                usesDataProtectionKeychain: false,
+              ),
               iOptions: IOSOptions(
                 accessibility: KeychainAccessibility.first_unlock,
               ),
@@ -40,18 +43,18 @@ class SecureSessionManager {
 
   /// Store both tokens after login/register — same as `tokenStorage.setTokens()`.
   Future<void> setTokens(AuthTokens tokens) async {
-    await _secure.write(key: _accessTokenKey, value: tokens.accessToken);
-    await _secure.write(key: _refreshTokenKey, value: tokens.refreshToken);
+    await _writeString(_accessTokenKey, tokens.accessToken);
+    await _writeString(_refreshTokenKey, tokens.refreshToken);
   }
 
   /// Get the current access token — same as `tokenStorage.getAccessToken()`.
   Future<String?> getAccessToken() async {
-    return _secure.read(key: _accessTokenKey);
+    return _readString(_accessTokenKey);
   }
 
   /// Get the current refresh token — same as `tokenStorage.getRefreshToken()`.
   Future<String?> getRefreshToken() async {
-    return _secure.read(key: _refreshTokenKey);
+    return _readString(_refreshTokenKey);
   }
 
   /// Get both tokens — same as `tokenStorage.getTokens()`.
@@ -70,12 +73,12 @@ class SecureSessionManager {
   /// Store the user object — same as `tokenStorage.setUser()`.
   Future<void> setUser(AppUser user) async {
     final jsonStr = jsonEncode(user.toJson());
-    await _secure.write(key: _userKey, value: jsonStr);
+    await _writeString(_userKey, jsonStr);
   }
 
   /// Get stored user — same as `tokenStorage.getUser()`.
   Future<AppUser?> getUser() async {
-    final jsonStr = await _secure.read(key: _userKey);
+    final jsonStr = await _readString(_userKey);
     if (jsonStr == null || jsonStr.isEmpty) return null;
     try {
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
@@ -90,9 +93,9 @@ class SecureSessionManager {
 
   /// Clear all auth data — same as `tokenStorage.clearAll()`.
   Future<void> clearAll() async {
-    await _secure.delete(key: _accessTokenKey);
-    await _secure.delete(key: _refreshTokenKey);
-    await _secure.delete(key: _userKey);
+    await _deleteString(_accessTokenKey);
+    await _deleteString(_refreshTokenKey);
+    await _deleteString(_userKey);
   }
 
   // ── Legacy Migration ───────────────────────────────────────────────────
@@ -109,7 +112,7 @@ class SecureSessionManager {
     if (legacyToken != null && legacyToken.isNotEmpty) {
       // Old app only had a single token; store it as accessToken.
       // There is no legacy refresh token.
-      await _secure.write(key: _accessTokenKey, value: legacyToken);
+      await _writeString(_accessTokenKey, legacyToken);
       AppLogger.i('✅ Legacy token migrated to secure storage');
     }
 
@@ -124,5 +127,54 @@ class SecureSessionManager {
 
     await prefs.setBool(_legacyMigratedKey, true);
     AppLogger.i('✅ Legacy session migration complete');
+  }
+
+  String _fallbackKey(String key) => '$_fallbackPrefix$key';
+
+  Future<void> _writeString(String key, String value) async {
+    try {
+      await _secure.write(key: key, value: value);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_fallbackKey(key));
+    } catch (e, stackTrace) {
+      AppLogger.w(
+        'Secure storage write failed; using SharedPreferences fallback for $key',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_fallbackKey(key), value);
+    }
+  }
+
+  Future<String?> _readString(String key) async {
+    try {
+      final value = await _secure.read(key: key);
+      if (value != null && value.isNotEmpty) return value;
+    } catch (e, stackTrace) {
+      AppLogger.w(
+        'Secure storage read failed; using SharedPreferences fallback for $key',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_fallbackKey(key));
+  }
+
+  Future<void> _deleteString(String key) async {
+    try {
+      await _secure.delete(key: key);
+    } catch (e, stackTrace) {
+      AppLogger.w(
+        'Secure storage delete failed for $key',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_fallbackKey(key));
   }
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -17,6 +18,8 @@ import '../../../models/assigned_trip_model.dart';
 import '../../../services/route_service.dart';
 import '../../../theme/design_system.dart';
 import '../../../utils/call_utils.dart';
+import '../../../utils/map_navigation_utils.dart';
+import '../../../widgets/custom_snackbar.dart';
 import '../Navigation/PodCollectionScreen.dart';
 import '../Navigation/TripCompletedScreen.dart';
 
@@ -90,6 +93,11 @@ class _TrackTripScreenState extends State<TrackTripScreen>
   bool _hasFitInitial = false;
   Timer? _resumeFollowTimer;
 
+  bool get _canUseGoogleMap =>
+      kIsWeb ||
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+
   /// Resilient access: the previous `Get.find<AssignedTripController>()` threw
   /// (→ "Failed to load trip") whenever this screen was opened from a route
   /// that hadn't already registered the controller (e.g. Trip Details). Put it
@@ -142,8 +150,9 @@ class _TrackTripScreenState extends State<TrackTripScreen>
   /// destination marker and (for active trips) live GPS. Safe to call again
   /// after the list loads.
   void _initFromTrip(AssignedTripController assignedCtrl) {
-    final trip = assignedCtrl.assignedTrips
-        .firstWhereOrNull((t) => t.tripId == widget.tripId);
+    final trip = assignedCtrl.assignedTrips.firstWhereOrNull(
+      (t) => t.tripId == widget.tripId,
+    );
     if (trip == null || _initialised) return;
     _initialised = true;
 
@@ -186,13 +195,16 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     setState(() {
       _destination = pos;
       _markers.removeWhere((m) => m.markerId.value == 'destination');
-      _markers.add(Marker(
-        markerId: const MarkerId('destination'),
-        position: pos,
-        infoWindow: const InfoWindow(title: 'Destination'),
-        icon: _destMarkerIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-      ));
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('destination'),
+          position: pos,
+          infoWindow: const InfoWindow(title: 'Destination'),
+          icon:
+              _destMarkerIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      );
       _rebuildPolyline();
     });
     _maybeFitInitial();
@@ -204,13 +216,16 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     setState(() {
       _pickup = pos;
       _markers.removeWhere((m) => m.markerId.value == 'pickup');
-      _markers.add(Marker(
-        markerId: const MarkerId('pickup'),
-        position: pos,
-        infoWindow: const InfoWindow(title: 'Pickup'),
-        icon: _pickupMarker ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-      ));
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: pos,
+          infoWindow: const InfoWindow(title: 'Pickup'),
+          icon:
+              _pickupMarker ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        ),
+      );
       _rebuildPolyline();
     });
     _maybeFitInitial();
@@ -353,8 +368,10 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     final lastRouted = _lastRoutedFrom;
     if (lastRouted != null) {
       final deviationKm = _haversineKm(
-        pos.latitude, pos.longitude,
-        lastRouted.latitude, lastRouted.longitude,
+        pos.latitude,
+        pos.longitude,
+        lastRouted.latitude,
+        lastRouted.longitude,
       );
       if (deviationKm > 0.2) {
         _triggerRouteFetch();
@@ -378,16 +395,20 @@ class _TrackTripScreenState extends State<TrackTripScreen>
         double roadDist = 0;
         for (int i = nearIdx; i < route.points.length - 1; i++) {
           roadDist += _haversineKm(
-            route.points[i].latitude, route.points[i].longitude,
-            route.points[i + 1].latitude, route.points[i + 1].longitude,
+            route.points[i].latitude,
+            route.points[i].longitude,
+            route.points[i + 1].latitude,
+            route.points[i + 1].longitude,
           );
         }
         distKm = roadDist;
         routeEtaMin = route.durationMinutes;
       } else {
         distKm = _haversineKm(
-          pos.latitude, pos.longitude,
-          navDest.latitude, navDest.longitude,
+          pos.latitude,
+          pos.longitude,
+          navDest.latitude,
+          navDest.longitude,
         );
       }
 
@@ -404,8 +425,10 @@ class _TrackTripScreenState extends State<TrackTripScreen>
       // "Arriving now" proximity check — always Haversine to final destination.
       if (_destination != null) {
         final toDestKm = _haversineKm(
-          pos.latitude, pos.longitude,
-          _destination!.latitude, _destination!.longitude,
+          pos.latitude,
+          pos.longitude,
+          _destination!.latitude,
+          _destination!.longitude,
         );
         final near = toDestKm < 0.12;
         if (near != _nearDestination && mounted) {
@@ -416,16 +439,20 @@ class _TrackTripScreenState extends State<TrackTripScreen>
       // Progress along the trip (pickup → destination).
       if (_pickup != null && _destination != null) {
         final totalKm = _haversineKm(
-          _pickup!.latitude, _pickup!.longitude,
-          _destination!.latitude, _destination!.longitude,
+          _pickup!.latitude,
+          _pickup!.longitude,
+          _destination!.latitude,
+          _destination!.longitude,
         );
         final toDestKm = _haversineKm(
-          pos.latitude, pos.longitude,
-          _destination!.latitude, _destination!.longitude,
+          pos.latitude,
+          pos.longitude,
+          _destination!.latitude,
+          _destination!.longitude,
         );
         if (totalKm > 0) {
-          _navController.progress.value =
-              ((totalKm - toDestKm) / totalKm).clamp(0.0, 1.0);
+          _navController.progress.value = ((totalKm - toDestKm) / totalKm)
+              .clamp(0.0, 1.0);
         }
       }
     }
@@ -463,16 +490,19 @@ class _TrackTripScreenState extends State<TrackTripScreen>
   void _placeTruckMarker(LatLng p, double heading) {
     setState(() {
       _markers.removeWhere((m) => m.markerId.value == 'truck');
-      _markers.add(Marker(
-        markerId: const MarkerId('truck'),
-        position: p,
-        anchor: const Offset(0.5, 0.5),
-        flat: true,
-        rotation: heading,
-        zIndexInt: 10,
-        icon: _truckMarker ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-      ));
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('truck'),
+          position: p,
+          anchor: const Offset(0.5, 0.5),
+          flat: true,
+          rotation: heading,
+          zIndexInt: 10,
+          icon:
+              _truckMarker ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        ),
+      );
       _rebuildPolyline();
     });
   }
@@ -541,7 +571,8 @@ class _TrackTripScreenState extends State<TrackTripScreen>
       if (!mounted || _mapController == null) return;
       try {
         _programmaticAnimate(
-            CameraUpdate.newLatLngBounds(_boundsFromPoints(pts), 72));
+          CameraUpdate.newLatLngBounds(_boundsFromPoints(pts), 72),
+        );
       } catch (_) {}
     });
   }
@@ -552,7 +583,11 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     double bestDist = double.infinity;
     for (int i = 0; i < pts.length; i++) {
       final d = _haversineKm(
-          pos.latitude, pos.longitude, pts[i].latitude, pts[i].longitude);
+        pos.latitude,
+        pos.longitude,
+        pts[i].latitude,
+        pts[i].longitude,
+      );
       if (d < bestDist) {
         bestDist = d;
         best = i;
@@ -565,10 +600,13 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     _polylines.clear();
 
     final route = _currentRoute;
-    final currentLL = _truckLatLng ??
+    final currentLL =
+        _truckLatLng ??
         (_navController.currentPosition.value != null
-            ? LatLng(_navController.currentPosition.value!.latitude,
-                _navController.currentPosition.value!.longitude)
+            ? LatLng(
+                _navController.currentPosition.value!.latitude,
+                _navController.currentPosition.value!.longitude,
+              )
             : null);
 
     if (route != null && route.points.length > 1) {
@@ -580,56 +618,66 @@ class _TrackTripScreenState extends State<TrackTripScreen>
       final remaining = pts.sublist(splitIdx);
 
       if (completed.length > 1) {
-        _polylines.add(Polyline(
-          polylineId: const PolylineId('travelled'),
-          points: completed,
-          color: AppPalette.textFaint,
-          width: 4,
-          patterns: [PatternItem.dot, PatternItem.gap(14)],
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-        ));
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId('travelled'),
+            points: completed,
+            color: AppPalette.textFaint,
+            width: 4,
+            patterns: [PatternItem.dot, PatternItem.gap(14)],
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+        );
       }
 
       if (remaining.length > 1) {
         // Casing shadow for depth.
-        _polylines.add(Polyline(
-          polylineId: const PolylineId('remaining_casing'),
-          points: remaining,
-          color: AppPalette.primary.withValues(alpha: 0.22),
-          width: 12,
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-        ));
-        _polylines.add(Polyline(
-          polylineId: const PolylineId('remaining'),
-          points: remaining,
-          color: AppPalette.primary,
-          width: 6,
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-        ));
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId('remaining_casing'),
+            points: remaining,
+            color: AppPalette.primary.withValues(alpha: 0.22),
+            width: 12,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+        );
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId('remaining'),
+            points: remaining,
+            color: AppPalette.primary,
+            width: 6,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+        );
       }
     } else if (_destination != null) {
       // Fallback: straight line while route is loading.
       final origin = currentLL ?? _pickup;
       if (origin != null) {
-        _polylines.add(Polyline(
-          polylineId: const PolylineId('remaining_casing'),
-          points: [origin, _destination!],
-          color: AppPalette.primary.withValues(alpha: 0.22),
-          width: 12,
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-        ));
-        _polylines.add(Polyline(
-          polylineId: const PolylineId('remaining'),
-          points: [origin, _destination!],
-          color: AppPalette.primary,
-          width: 6,
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-        ));
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId('remaining_casing'),
+            points: [origin, _destination!],
+            color: AppPalette.primary.withValues(alpha: 0.22),
+            width: 12,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+        );
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId('remaining'),
+            points: [origin, _destination!],
+            color: AppPalette.primary,
+            width: 6,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+        );
       }
     }
   }
@@ -674,9 +722,12 @@ class _TrackTripScreenState extends State<TrackTripScreen>
           _programmaticAnimate(CameraUpdate.newLatLngZoom(pts.first, 15));
         } else {
           _programmaticAnimate(
-              CameraUpdate.newLatLngBounds(_boundsFromPoints(pts), 80));
+            CameraUpdate.newLatLngBounds(_boundsFromPoints(pts), 80),
+          );
         }
-      } catch (_) {/* map not ready yet — ignore */}
+      } catch (_) {
+        /* map not ready yet — ignore */
+      }
     });
   }
 
@@ -700,8 +751,9 @@ class _TrackTripScreenState extends State<TrackTripScreen>
   void _followVehicle(LatLng to) {
     if (_mapController == null) return;
     if (!_followZoomApplied) {
-      _programmaticAnimate(CameraUpdate.newCameraPosition(
-          CameraPosition(target: to, zoom: 16.5)));
+      _programmaticAnimate(
+        CameraUpdate.newCameraPosition(CameraPosition(target: to, zoom: 16.5)),
+      );
       _followZoomApplied = true;
     } else {
       _programmaticAnimate(CameraUpdate.newLatLng(to));
@@ -741,8 +793,7 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     if (_autoFollow && mounted) setState(() => _autoFollow = false);
     // Resume auto-follow after a period of inactivity.
     _resumeFollowTimer?.cancel();
-    _resumeFollowTimer =
-        Timer(const Duration(seconds: 15), _resumeAutoFollow);
+    _resumeFollowTimer = Timer(const Duration(seconds: 15), _resumeAutoFollow);
   }
 
   void _onCameraIdle() => _expectProgrammaticMove = false;
@@ -768,13 +819,36 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     _resumeAutoFollow();
   }
 
+  Future<void> _openExternalNavigation(AssignedTrip trip) async {
+    final dest = _routeDestinationForStep(_navController.currentStep.value);
+    if (dest == null) {
+      SnackBarHelper.error('Navigation is not available for this trip step.');
+      return;
+    }
+    final ok = await MapNavigationUtils.openDirections(
+      origin: _driverLatLng,
+      destination: dest,
+      destinationLabel: dest == _pickup
+          ? trip.pickupLocation
+          : trip.deliveryLocation,
+    );
+    if (!ok) {
+      SnackBarHelper.error('Could not open maps on this device.');
+    }
+  }
+
   // Haversine great-circle distance in km.
   static double _haversineKm(
-      double lat1, double lon1, double lat2, double lon2) {
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const r = 6371.0;
     final dLat = (lat2 - lat1) * math.pi / 180;
     final dLon = (lon2 - lon1) * math.pi / 180;
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(lat1 * math.pi / 180) *
             math.cos(lat2 * math.pi / 180) *
             math.sin(dLon / 2) *
@@ -791,14 +865,17 @@ class _TrackTripScreenState extends State<TrackTripScreen>
   void _initConnectivity() {
     _checkConnectivity();
     _connTimer = Timer.periodic(
-        const Duration(seconds: 8), (_) => _checkConnectivity());
+      const Duration(seconds: 8),
+      (_) => _checkConnectivity(),
+    );
   }
 
   Future<void> _checkConnectivity() async {
     bool ok;
     try {
-      final res = await InternetAddress.lookup('one.one.one.one')
-          .timeout(const Duration(seconds: 4));
+      final res = await InternetAddress.lookup(
+        'one.one.one.one',
+      ).timeout(const Duration(seconds: 4));
       ok = res.isNotEmpty && res.first.rawAddress.isNotEmpty;
     } catch (_) {
       ok = false;
@@ -897,61 +974,74 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     return Scaffold(
       backgroundColor: AppPalette.bg,
       body: Obx(() {
-        final trip = assignedCtrl.assignedTrips.firstWhereOrNull(
+        final trip =
+            assignedCtrl.assignedTrips.firstWhereOrNull(
               (t) => t.tripId == widget.tripId,
             ) ??
             AssignedTrip(
               tripId: widget.tripId,
-              userId: '', vehicleId: '', vehicleNumber: '',
-              vehicleModel: '', vehicleType: '', driverId: '',
-              driverName: 'Loading...', driverContact: '',
-              pickupLocation: '', deliveryLocation: '',
-              pickupDate: DateTime.now(), pickupTime: '',
-              specialInstructions: '', payRange: '',
-              tripCode: '', tripStatus: 'scheduled',
-              createdDate: DateTime.now(), totalBidCount: 0,
+              userId: '',
+              vehicleId: '',
+              vehicleNumber: '',
+              vehicleModel: '',
+              vehicleType: '',
+              driverId: '',
+              driverName: 'Loading...',
+              driverContact: '',
+              pickupLocation: '',
+              deliveryLocation: '',
+              pickupDate: DateTime.now(),
+              pickupTime: '',
+              specialInstructions: '',
+              payRange: '',
+              tripCode: '',
+              tripStatus: 'scheduled',
+              createdDate: DateTime.now(),
+              totalBidCount: 0,
             );
 
         final step = _navController.currentStep.value;
 
         return Stack(
           children: [
-            // Full-screen map — the primary surface.
             Positioned.fill(
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: _destination ?? const LatLng(28.5581811, 77.344654),
-                  zoom: 13,
-                ),
-                onMapCreated: (c) {
-                  _mapController = c;
-                  _maybeFitInitial();
-                },
-                onCameraMoveStarted: _onCameraMoveStarted,
-                onCameraIdle: _onCameraIdle,
-                markers: _markers,
-                polylines: _polylines,
-                myLocationEnabled: false,
-                myLocationButtonEnabled: false,
-                zoomControlsEnabled: false,
-                compassEnabled: false,
-                mapToolbarEnabled: false,
-                rotateGesturesEnabled: true,
-                tiltGesturesEnabled: true,
-                mapType: MapType.normal,
-                style: _mapStyle,
-                padding: EdgeInsets.only(
-                  top: 96,
-                  bottom: size.height * _collapsedFrac + 8,
-                ),
-              ),
+              child: _canUseGoogleMap
+                  ? GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target:
+                            _destination ?? const LatLng(28.5581811, 77.344654),
+                        zoom: 13,
+                      ),
+                      onMapCreated: (c) {
+                        _mapController = c;
+                        _maybeFitInitial();
+                      },
+                      onCameraMoveStarted: _onCameraMoveStarted,
+                      onCameraIdle: _onCameraIdle,
+                      markers: _markers,
+                      polylines: _polylines,
+                      myLocationEnabled: false,
+                      myLocationButtonEnabled: false,
+                      zoomControlsEnabled: false,
+                      compassEnabled: false,
+                      mapToolbarEnabled: false,
+                      rotateGesturesEnabled: true,
+                      tiltGesturesEnabled: true,
+                      mapType: MapType.normal,
+                      style: _mapStyle,
+                      padding: EdgeInsets.only(
+                        top: 96,
+                        bottom: size.height * _collapsedFrac + 8,
+                      ),
+                    )
+                  : _desktopNavigationFallback(trip),
             ),
 
             // Compact live dashboard on top.
             SafeArea(child: _topDashboard(step)),
 
             // Re-center control (only when the driver has taken manual control).
-            if (!_autoFollow)
+            if (_canUseGoogleMap && !_autoFollow)
               Positioned(
                 right: AppSpacing.lg,
                 bottom: size.height * _collapsedFrac + 16,
@@ -968,7 +1058,8 @@ class _TrackTripScreenState extends State<TrackTripScreen>
               // Min (0.16) and max (0.9) are implicit snap points; only the
               // interior "collapsed" rest position needs listing here.
               snapSizes: const [_collapsedFrac],
-              builder: (ctx, scrollCtrl) => _bottomSheet(trip, step, scrollCtrl),
+              builder: (ctx, scrollCtrl) =>
+                  _bottomSheet(trip, step, scrollCtrl),
             ),
           ],
         );
@@ -976,12 +1067,73 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     );
   }
 
+  Widget _desktopNavigationFallback(AssignedTrip trip) {
+    return Container(
+      color: AppPalette.bg,
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 104, AppSpacing.lg, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.map_outlined, color: AppPalette.primary, size: 48),
+          AppSpacing.vGapMd,
+          Text('Map preview unavailable on macOS', style: AppText.h2),
+          AppSpacing.vGapSm,
+          Text(
+            'Run on iPhone, Android, or web to use live Google Maps navigation.',
+            style: AppText.body.on(AppPalette.textGrey),
+          ),
+          AppSpacing.vGapLg,
+          _desktopRouteItem('Pickup', trip.pickupLocation, AppPalette.green),
+          AppSpacing.vGapMd,
+          _desktopRouteItem(
+            'Delivery Destination',
+            trip.deliveryLocation,
+            AppPalette.danger,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _desktopRouteItem(String label, String value, Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          margin: const EdgeInsets.only(top: 5),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        AppSpacing.hGapSm,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppText.caption.on(AppPalette.textGrey)),
+              Text(
+                value.isNotEmpty ? value : 'Not available',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.label.weight(FontWeight.w700),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   // ── top live dashboard ──────────────────────────────────────────────────────
   Widget _topDashboard(TripStep step) {
     final color = _stepColor(step);
     return Padding(
-      padding:
-          const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        0,
+      ),
       child: Row(
         children: [
           _circleBtn(Iconsax.arrow_left_2, () => Get.back()),
@@ -995,45 +1147,51 @@ class _TrackTripScreenState extends State<TrackTripScreen>
                 borderRadius: AppRadius.rPill,
                 boxShadow: _softShadow,
               ),
-              child: Row(children: [
-                // Pulsing status dot.
-                _PulseDot(color: _nearDestination ? AppPalette.amber : color),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Text(
-                    _nearDestination ? 'Arriving now' : _stepLabel(step),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.label
-                        .on(_nearDestination ? AppPalette.amber : color)
-                        .weight(FontWeight.w700),
+              child: Row(
+                children: [
+                  // Pulsing status dot.
+                  _PulseDot(color: _nearDestination ? AppPalette.amber : color),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      _nearDestination ? 'Arriving now' : _stepLabel(step),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.label
+                          .on(_nearDestination ? AppPalette.amber : color)
+                          .weight(FontWeight.w700),
+                    ),
                   ),
-                ),
-                if (_speedKmh > 2) ...[
-                  _statusGlyph(Iconsax.speedometer, AppPalette.blue),
-                  const SizedBox(width: 3),
-                  Text(_speedKmh.toStringAsFixed(0),
+                  if (_speedKmh > 2) ...[
+                    _statusGlyph(Iconsax.speedometer, AppPalette.blue),
+                    const SizedBox(width: 3),
+                    Text(
+                      _speedKmh.toStringAsFixed(0),
                       style: AppText.micro
                           .on(AppPalette.blue)
-                          .weight(FontWeight.w700)),
-                  const SizedBox(width: 8),
+                          .weight(FontWeight.w700),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  // GPS + internet health.
+                  _statusGlyph(
+                    _gpsEnabled ? Iconsax.gps : Iconsax.location_slash,
+                    _gpsEnabled ? AppPalette.green : AppPalette.danger,
+                  ),
+                  const SizedBox(width: 6),
+                  _statusGlyph(
+                    _online ? Iconsax.wifi : Iconsax.wifi_square,
+                    _online ? AppPalette.green : AppPalette.danger,
+                  ),
                 ],
-                // GPS + internet health.
-                _statusGlyph(
-                  _gpsEnabled ? Iconsax.gps : Iconsax.location_slash,
-                  _gpsEnabled ? AppPalette.green : AppPalette.danger,
-                ),
-                const SizedBox(width: 6),
-                _statusGlyph(
-                  _online ? Iconsax.wifi : Iconsax.wifi_square,
-                  _online ? AppPalette.green : AppPalette.danger,
-                ),
-              ]),
+              ),
             ),
           ),
           AppSpacing.hGapMd,
-          _circleBtn(Iconsax.refresh,
-              () => _navController.startTrackingForTrip(widget.tripId)),
+          _circleBtn(
+            Iconsax.refresh,
+            () => _navController.startTrackingForTrip(widget.tripId),
+          ),
         ],
       ),
     );
@@ -1053,13 +1211,19 @@ class _TrackTripScreenState extends State<TrackTripScreen>
         borderRadius: AppRadius.rPill,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Iconsax.gps, size: 17, color: AppPalette.primary),
-            const SizedBox(width: 7),
-            Text('Re-center',
-                style:
-                    AppText.label.on(AppPalette.primary).weight(FontWeight.w700)),
-          ]),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Iconsax.gps, size: 17, color: AppPalette.primary),
+              const SizedBox(width: 7),
+              Text(
+                'Re-center',
+                style: AppText.label
+                    .on(AppPalette.primary)
+                    .weight(FontWeight.w700),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1084,8 +1248,12 @@ class _TrackTripScreenState extends State<TrackTripScreen>
 
   // ── bottom action sheet ─────────────────────────────────────────────────────
   Widget _bottomSheet(
-      AssignedTrip trip, TripStep step, ScrollController scrollCtrl) {
-    final showProgress = step != TripStep.confirmOtp &&
+    AssignedTrip trip,
+    TripStep step,
+    ScrollController scrollCtrl,
+  ) {
+    final showProgress =
+        step != TripStep.confirmOtp &&
         step != TripStep.readyToStart &&
         step != TripStep.completed;
 
@@ -1112,12 +1280,18 @@ class _TrackTripScreenState extends State<TrackTripScreen>
               width: 42,
               height: 4,
               decoration: BoxDecoration(
-                  color: AppPalette.border, borderRadius: AppRadius.rPill),
+                color: AppPalette.border,
+                borderRadius: AppRadius.rPill,
+              ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1148,42 +1322,58 @@ class _TrackTripScreenState extends State<TrackTripScreen>
                 AppSpacing.vGapMd,
 
                 // Live metrics row — ETA / Distance / Progress.
-                Row(children: [
-                  Expanded(
-                    child: Obx(() => _metricTile(
-                        'ETA', _navController.eta.value, Iconsax.timer_1,
-                        AppPalette.blue)),
-                  ),
-                  AppSpacing.hGapSm,
-                  Expanded(
-                    child: Obx(() => _metricTile(
-                        'Distance',
-                        _navController.distanceRemaining.value,
-                        Iconsax.routing,
-                        AppPalette.primary)),
-                  ),
-                  AppSpacing.hGapSm,
-                  Expanded(
-                    child: Obx(() => _metricTile(
-                        'Progress',
-                        '${(_navController.progress.value * 100).toStringAsFixed(0)}%',
-                        Iconsax.chart_2,
-                        AppPalette.green)),
-                  ),
-                ]),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Obx(
+                        () => _metricTile(
+                          'ETA',
+                          _navController.eta.value,
+                          Iconsax.timer_1,
+                          AppPalette.blue,
+                        ),
+                      ),
+                    ),
+                    AppSpacing.hGapSm,
+                    Expanded(
+                      child: Obx(
+                        () => _metricTile(
+                          'Distance',
+                          _navController.distanceRemaining.value,
+                          Iconsax.routing,
+                          AppPalette.primary,
+                        ),
+                      ),
+                    ),
+                    AppSpacing.hGapSm,
+                    Expanded(
+                      child: Obx(
+                        () => _metricTile(
+                          'Progress',
+                          '${(_navController.progress.value * 100).toStringAsFixed(0)}%',
+                          Iconsax.chart_2,
+                          AppPalette.green,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
 
                 if (showProgress) ...[
                   AppSpacing.vGapMd,
-                  Obx(() => ClipRRect(
-                        borderRadius: AppRadius.rPill,
-                        child: LinearProgressIndicator(
-                          value: _navController.progress.value,
-                          backgroundColor: AppPalette.border,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              _stepColor(_navController.currentStep.value)),
-                          minHeight: 7,
+                  Obx(
+                    () => ClipRRect(
+                      borderRadius: AppRadius.rPill,
+                      child: LinearProgressIndicator(
+                        value: _navController.progress.value,
+                        backgroundColor: AppPalette.border,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _stepColor(_navController.currentStep.value),
                         ),
-                      )),
+                        minHeight: 7,
+                      ),
+                    ),
+                  ),
                 ],
                 AppSpacing.vGapLg,
 
@@ -1197,13 +1387,19 @@ class _TrackTripScreenState extends State<TrackTripScreen>
 
                 Text('TRIP ROUTE', style: AppText.micro.size(10)),
                 AppSpacing.vGapSm,
-                _routeItem('Pickup Location', trip.pickupLocation,
-                    AppPalette.green,
-                    isStart: true),
+                _routeItem(
+                  'Pickup Location',
+                  trip.pickupLocation,
+                  AppPalette.green,
+                  isStart: true,
+                ),
                 AppSpacing.vGapMd,
-                _routeItem('Delivery Destination', trip.deliveryLocation,
-                    AppPalette.danger,
-                    isStart: false),
+                _routeItem(
+                  'Delivery Destination',
+                  trip.deliveryLocation,
+                  AppPalette.danger,
+                  isStart: false,
+                ),
                 AppSpacing.vGapLg,
 
                 // Company + contact.
@@ -1244,8 +1440,10 @@ class _TrackTripScreenState extends State<TrackTripScreen>
         color: color.withValues(alpha: 0.12),
         borderRadius: AppRadius.rPill,
       ),
-      child: Text(_stepLabel(step),
-          style: AppText.caption.on(color).weight(FontWeight.w700)),
+      child: Text(
+        _stepLabel(step),
+        style: AppText.caption.on(color).weight(FontWeight.w700),
+      ),
     );
   }
 
@@ -1260,16 +1458,20 @@ class _TrackTripScreenState extends State<TrackTripScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(icon, size: 13, color: color),
-            const SizedBox(width: 5),
-            Text(label, style: AppText.micro.size(9)),
-          ]),
+          Row(
+            children: [
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 5),
+              Text(label, style: AppText.micro.size(9)),
+            ],
+          ),
           const SizedBox(height: 5),
-          Text(value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppText.subtitle.on(AppPalette.textDark).size(14)),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppText.subtitle.on(AppPalette.textDark).size(14),
+          ),
         ],
       ),
     );
@@ -1284,50 +1486,66 @@ class _TrackTripScreenState extends State<TrackTripScreen>
         borderRadius: AppRadius.rLg,
         border: Border.all(color: AppPalette.border),
       ),
-      child: Row(children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-              color: AppPalette.primaryLight, borderRadius: AppRadius.rMd),
-          child:
-              const Icon(Iconsax.building_4, color: AppPalette.primary, size: 20),
-        ),
-        AppSpacing.hGapMd,
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(trip.companyName ?? 'Transport Co.',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.subtitle),
-              if (phone.isNotEmpty)
-                Text(phone, style: AppText.caption),
-            ],
-          ),
-        ),
-        if (phone.isNotEmpty)
-          Material(
-            color: AppPalette.green,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () => CallUtils.makeCall(phone),
-              child: const Padding(
-                padding: EdgeInsets.all(10),
-                child: Icon(Iconsax.call, color: Colors.white, size: 18),
-              ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppPalette.primaryLight,
+              borderRadius: AppRadius.rMd,
+            ),
+            child: const Icon(
+              Iconsax.building_4,
+              color: AppPalette.primary,
+              size: 20,
             ),
           ),
-      ]),
+          AppSpacing.hGapMd,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  trip.companyName ?? 'Transport Co.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.subtitle,
+                ),
+                if (phone.isNotEmpty) Text(phone, style: AppText.caption),
+              ],
+            ),
+          ),
+          if (phone.isNotEmpty)
+            Material(
+              color: AppPalette.green,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => CallUtils.makeCall(phone),
+                child: const Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(Iconsax.call, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _metaGrid(AssignedTrip trip) {
     final items = <List<dynamic>>[
-      [Iconsax.box, 'Trip ID', trip.tripCode.isNotEmpty ? trip.tripCode : trip.tripId],
-      [Iconsax.truck, 'Vehicle', trip.vehicleNumber.isNotEmpty ? trip.vehicleNumber : '—'],
+      [
+        Iconsax.box,
+        'Trip ID',
+        trip.tripCode.isNotEmpty ? trip.tripCode : trip.tripId,
+      ],
+      [
+        Iconsax.truck,
+        'Vehicle',
+        trip.vehicleNumber.isNotEmpty ? trip.vehicleNumber : '—',
+      ],
       [Iconsax.calendar, 'Pickup', _fmtDate(trip.pickupDate, trip.pickupTime)],
       [Iconsax.money, 'Pay', trip.payRange.isNotEmpty ? trip.payRange : '—'],
     ];
@@ -1344,22 +1562,26 @@ class _TrackTripScreenState extends State<TrackTripScreen>
               borderRadius: AppRadius.rLg,
               border: Border.all(color: AppPalette.border),
             ),
-            child: Row(children: [
-              Icon(it[0] as IconData, size: 16, color: AppPalette.textGrey),
-              AppSpacing.hGapSm,
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(it[1] as String, style: AppText.micro.size(9)),
-                    Text(it[2] as String,
+            child: Row(
+              children: [
+                Icon(it[0] as IconData, size: 16, color: AppPalette.textGrey),
+                AppSpacing.hGapSm,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(it[1] as String, style: AppText.micro.size(9)),
+                      Text(
+                        it[2] as String,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppText.label.on(AppPalette.textDark)),
-                  ],
+                        style: AppText.label.on(AppPalette.textDark),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
         );
       }).toList(),
@@ -1367,7 +1589,8 @@ class _TrackTripScreenState extends State<TrackTripScreen>
   }
 
   String _fmtDate(DateTime d, String time) {
-    final ds = '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+    final ds =
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
     return time.isNotEmpty ? '$ds • $time' : ds;
   }
 
@@ -1391,73 +1614,78 @@ class _TrackTripScreenState extends State<TrackTripScreen>
         );
 
       case TripStep.navigatingToPickup:
-        return Row(children: [
-          Expanded(
-            flex: 2,
-            child: _outlineButton(
-              icon: Iconsax.call,
-              label: 'Call',
-              onTap: () => CallUtils.makeCall(
-                  trip.companyMobileNo ?? trip.driverContact),
+        return Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _outlineButton(
+                icon: Iconsax.routing_2,
+                label: 'Navigate',
+                onTap: () => _openExternalNavigation(trip),
+              ),
             ),
-          ),
-          AppSpacing.hGapMd,
-          Expanded(
-            flex: 3,
-            child: _primaryButton(
-              icon: Iconsax.location,
-              label: 'Arrived at Pickup',
-              color: AppPalette.purple,
-              onTap: () => _navController.arriveAtPickup(trip.tripId),
+            AppSpacing.hGapMd,
+            Expanded(
+              flex: 3,
+              child: _primaryButton(
+                icon: Iconsax.location,
+                label: 'Arrived at Pickup',
+                color: AppPalette.purple,
+                onTap: () => _navController.arriveAtPickup(trip.tripId),
+              ),
             ),
-          ),
-        ]);
+          ],
+        );
 
       case TripStep.atPickup:
-        return Row(children: [
-          Expanded(
-            flex: 2,
-            child: _outlineButton(
-              icon: Iconsax.call,
-              label: 'Call',
-              onTap: () => CallUtils.makeCall(
-                  trip.companyMobileNo ?? trip.driverContact),
+        return Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _outlineButton(
+                icon: Iconsax.routing_2,
+                label: 'Navigate',
+                onTap: () => _openExternalNavigation(trip),
+              ),
             ),
-          ),
-          AppSpacing.hGapMd,
-          Expanded(
-            flex: 3,
-            child: _primaryButton(
-              icon: Iconsax.truck,
-              label: 'Start Trip',
-              color: AppPalette.green,
-              onTap: () => _showStartTripModal(trip),
+            AppSpacing.hGapMd,
+            Expanded(
+              flex: 3,
+              child: _primaryButton(
+                icon: Iconsax.truck,
+                label: 'Start Trip',
+                color: AppPalette.green,
+                onTap: () => _showStartTripModal(trip),
+              ),
             ),
-          ),
-        ]);
+          ],
+        );
 
       case TripStep.inTransit:
-        return Row(children: [
-          Expanded(
-            flex: 2,
-            child: _outlineButton(
-              icon: Iconsax.call,
-              label: 'Call',
-              onTap: () => CallUtils.makeCall(
-                  trip.companyMobileNo ?? trip.driverContact),
+        return Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _outlineButton(
+                icon: Iconsax.routing_2,
+                label: 'Navigate',
+                onTap: () => _openExternalNavigation(trip),
+              ),
             ),
-          ),
-          AppSpacing.hGapMd,
-          Expanded(
-            flex: 3,
-            child: Obx(() => AppPrimaryButton(
+            AppSpacing.hGapMd,
+            Expanded(
+              flex: 3,
+              child: Obx(
+                () => AppPrimaryButton(
                   label: 'Arrived at Drop-off',
                   icon: Iconsax.flag,
                   loading: _navController.isLoading.value,
                   onPressed: () => _showArrivalConfirmDialog(trip),
-                )),
-          ),
-        ]);
+                ),
+              ),
+            ),
+          ],
+        );
 
       case TripStep.atDestination:
       case TripStep.podUpload:
@@ -1465,16 +1693,17 @@ class _TrackTripScreenState extends State<TrackTripScreen>
           icon: Iconsax.document_upload,
           label: 'Upload Proof of Delivery',
           color: AppPalette.purple,
-          onTap: () => Get.to(
-            () => PodCollectionScreen(tripId: trip.tripId),
-            transition: Transition.rightToLeft,
-          )?.then((_) {
-            // Refresh status after returning from POD screen
-            final step2 = _navController.currentStep.value;
-            if (step2 == TripStep.completed) {
-              _goToCompletedScreen(trip);
-            }
-          }),
+          onTap: () =>
+              Get.to(
+                () => PodCollectionScreen(tripId: trip.tripId),
+                transition: Transition.rightToLeft,
+              )?.then((_) {
+                // Refresh status after returning from POD screen
+                final step2 = _navController.currentStep.value;
+                if (step2 == TripStep.completed) {
+                  _goToCompletedScreen(trip);
+                }
+              }),
         );
 
       case TripStep.completed:
@@ -1569,10 +1798,12 @@ class _TrackTripScreenState extends State<TrackTripScreen>
               Navigator.of(ctx).pop();
               final pos = _navController.currentPosition.value;
               await _navController.startTripDirect(
-                  trip.tripId, lat: pos?.latitude, lng: pos?.longitude);
+                trip.tripId,
+                lat: pos?.latitude,
+                lng: pos?.longitude,
+              );
             },
-            child: Text('Skip OTP (start without OTP)',
-                style: AppText.caption),
+            child: Text('Skip OTP (start without OTP)', style: AppText.caption),
           ),
         ),
       ),
@@ -1597,20 +1828,26 @@ class _TrackTripScreenState extends State<TrackTripScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                      color: AppPalette.border,
-                      borderRadius: AppRadius.rPill)),
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppPalette.border,
+                  borderRadius: AppRadius.rPill,
+                ),
+              ),
               AppSpacing.vGapXl,
               Container(
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                    color: AppPalette.primaryLight,
-                    borderRadius: AppRadius.rXl),
-                child: const Icon(Iconsax.location_tick,
-                    size: 30, color: AppPalette.primary),
+                  color: AppPalette.primaryLight,
+                  borderRadius: AppRadius.rXl,
+                ),
+                child: const Icon(
+                  Iconsax.location_tick,
+                  size: 30,
+                  color: AppPalette.primary,
+                ),
               ),
               AppSpacing.vGapMd,
               Text('Arrived at Destination?', style: AppText.h2),
@@ -1630,28 +1867,33 @@ class _TrackTripScreenState extends State<TrackTripScreen>
                       'e.g. Delivered successfully, customer received goods',
                   hintStyle: AppText.caption,
                   border: OutlineInputBorder(
-                      borderRadius: AppRadius.rLg,
-                      borderSide:
-                          const BorderSide(color: AppPalette.border)),
+                    borderRadius: AppRadius.rLg,
+                    borderSide: const BorderSide(color: AppPalette.border),
+                  ),
                   focusedBorder: OutlineInputBorder(
-                      borderRadius: AppRadius.rLg,
-                      borderSide:
-                          const BorderSide(color: AppPalette.primary)),
+                    borderRadius: AppRadius.rLg,
+                    borderSide: const BorderSide(color: AppPalette.primary),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
               ),
               AppSpacing.vGapLg,
-              Row(children: [
-                Expanded(
+              Row(
+                children: [
+                  Expanded(
                     child: AppSecondaryButton(
-                  label: 'Cancel',
-                  onPressed: () => Navigator.of(ctx).pop(),
-                )),
-                AppSpacing.hGapMd,
-                Expanded(
-                  flex: 2,
-                  child: Obx(() => AppPrimaryButton(
+                      label: 'Cancel',
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ),
+                  AppSpacing.hGapMd,
+                  Expanded(
+                    flex: 2,
+                    child: Obx(
+                      () => AppPrimaryButton(
                         label: "Yes, I've Arrived",
                         loading: _navController.isLoading.value,
                         onPressed: () async {
@@ -1669,9 +1911,11 @@ class _TrackTripScreenState extends State<TrackTripScreen>
                             transition: Transition.rightToLeft,
                           );
                         },
-                      )),
-                ),
-              ]),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 4),
             ],
           ),
@@ -1708,30 +1952,48 @@ class _TrackTripScreenState extends State<TrackTripScreen>
     );
   }
 
-  Widget _routeItem(String label, String address, Color color,
-      {required bool isStart}) {
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Column(children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withValues(alpha: 0.2), width: 4)),
+  Widget _routeItem(
+    String label,
+    String address,
+    Color color, {
+    required bool isStart,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: color.withValues(alpha: 0.2),
+                  width: 4,
+                ),
+              ),
+            ),
+            if (isStart)
+              Container(width: 2, height: 30, color: AppPalette.border),
+          ],
         ),
-        if (isStart)
-          Container(width: 2, height: 30, color: AppPalette.border),
-      ]),
-      AppSpacing.hGapMd,
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: AppText.micro.size(10)),
-          Text(address.isEmpty ? 'N/A' : address,
-              style: AppText.subtitle.size(13)),
-        ]),
-      ),
-    ]);
+        AppSpacing.hGapMd,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppText.micro.size(10)),
+              Text(
+                address.isEmpty ? 'N/A' : address,
+                style: AppText.subtitle.size(13),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   // Driver-optimised map style: clean road focus, no POI clutter.
@@ -1770,9 +2032,10 @@ class _PulseDot extends StatefulWidget {
 
 class _PulseDotState extends State<_PulseDot>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(seconds: 1))
-        ..repeat(reverse: true);
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 1),
+  )..repeat(reverse: true);
 
   @override
   void dispose() {
@@ -1837,17 +2100,26 @@ class _OtpSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-              width: 42,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: AppPalette.border, borderRadius: AppRadius.rPill)),
+            width: 42,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppPalette.border,
+              borderRadius: AppRadius.rPill,
+            ),
+          ),
           AppSpacing.vGapXl,
           Container(
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-                color: AppPalette.primaryLight, borderRadius: AppRadius.rXl),
-            child: const Icon(Iconsax.lock_1, size: 30, color: AppPalette.primary),
+              color: AppPalette.primaryLight,
+              borderRadius: AppRadius.rXl,
+            ),
+            child: const Icon(
+              Iconsax.lock_1,
+              size: 30,
+              color: AppPalette.primary,
+            ),
           ),
           AppSpacing.vGapMd,
           Text(title, style: AppText.h2),
@@ -1861,50 +2133,69 @@ class _OtpSheet extends StatelessWidget {
             textAlign: TextAlign.center,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             style: AppText.h1.copyWith(
-                fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: 12),
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 12,
+            ),
             decoration: InputDecoration(
               counterText: '',
               hintText: '------',
               hintStyle: AppText.h1.copyWith(
-                  fontSize: 24,
-                  color: AppPalette.border,
-                  letterSpacing: 12),
+                fontSize: 24,
+                color: AppPalette.border,
+                letterSpacing: 12,
+              ),
               border: OutlineInputBorder(
-                  borderRadius: AppRadius.rLg,
-                  borderSide: const BorderSide(color: AppPalette.border)),
+                borderRadius: AppRadius.rLg,
+                borderSide: const BorderSide(color: AppPalette.border),
+              ),
               focusedBorder: OutlineInputBorder(
-                  borderRadius: AppRadius.rLg,
-                  borderSide:
-                      const BorderSide(color: AppPalette.primary, width: 2)),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                borderRadius: AppRadius.rLg,
+                borderSide: const BorderSide(
+                  color: AppPalette.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
           ),
-          Obx(() => error.value != null
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(error.value!,
-                      style: AppText.caption.on(AppPalette.danger)),
-                )
-              : const SizedBox.shrink()),
+          Obx(
+            () => error.value != null
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      error.value!,
+                      style: AppText.caption.on(AppPalette.danger),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
           AppSpacing.vGapLg,
-          Row(children: [
-            Expanded(
+          Row(
+            children: [
+              Expanded(
                 child: AppSecondaryButton(
-              label: 'Cancel',
-              color: AppPalette.textMid,
-              onPressed: onCancel,
-            )),
-            AppSpacing.hGapMd,
-            Expanded(
-              flex: 2,
-              child: Obx(() => AppPrimaryButton(
+                  label: 'Cancel',
+                  color: AppPalette.textMid,
+                  onPressed: onCancel,
+                ),
+              ),
+              AppSpacing.hGapMd,
+              Expanded(
+                flex: 2,
+                child: Obx(
+                  () => AppPrimaryButton(
                     label: 'Confirm',
                     loading: isLoading.value,
                     onPressed: onConfirm,
-                  )),
-            ),
-          ]),
+                  ),
+                ),
+              ),
+            ],
+          ),
           if (extraAction != null) ...[const SizedBox(height: 8), extraAction!],
           const SizedBox(height: 4),
         ],

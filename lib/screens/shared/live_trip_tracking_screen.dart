@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -71,6 +72,11 @@ class _LiveTripTrackingScreenState extends State<LiveTripTrackingScreen> {
   StreamSubscription<Position>? _posStream;
   Timer? _pingTimer;
   Position? _lastPos;
+
+  bool get _canUseGoogleMap =>
+      kIsWeb ||
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
   void initState() {
@@ -510,60 +516,7 @@ class _LiveTripTrackingScreenState extends State<LiveTripTrackingScreen> {
             else ...[
               SizedBox(
                 height: MediaQuery.of(context).size.height * 0.45,
-                child: Stack(children: [
-                  GoogleMap(
-                    initialCameraPosition: const CameraPosition(
-                      target: LatLng(20.5937, 78.9629),
-                      zoom: 4,
-                    ),
-                    onMapCreated: (c) {
-                      _mapController = c;
-                      _rebuildMapItems(animate: true);
-                    },
-                    markers: _markers,
-                    polylines: _polylines,
-                    myLocationButtonEnabled: false,
-                    zoomControlsEnabled: false,
-                  ),
-                  Positioned(
-                    right: 12,
-                    bottom: 12,
-                    child: FloatingActionButton.small(
-                      heroTag: 'recenter',
-                      backgroundColor: Colors.white,
-                      onPressed: () {
-                        final d = _driverLatLng;
-                        if (d != null) {
-                          _mapController?.animateCamera(
-                              CameraUpdate.newLatLngZoom(d, 14));
-                        } else {
-                          _fitBounds([_pickup, _destination]
-                              .whereType<LatLng>()
-                              .toList());
-                        }
-                      },
-                      child: const Icon(Icons.my_location, color: _primary),
-                    ),
-                  ),
-                  if (_driverLatLng == null)
-                    Positioned(
-                      left: 12,
-                      bottom: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Waiting for driver location…',
-                          style: GoogleFonts.poppins(
-                              fontSize: 11, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                ]),
+                child: _canUseGoogleMap ? _mapPanel() : _desktopMapFallback(),
               ),
               Expanded(
                 child: SingleChildScrollView(
@@ -609,6 +562,138 @@ class _LiveTripTrackingScreenState extends State<LiveTripTrackingScreen> {
           icon: const Icon(Icons.refresh, color: _primary, size: 20),
         ),
       ]),
+    );
+  }
+
+  Widget _mapPanel() {
+    return Stack(children: [
+      GoogleMap(
+        initialCameraPosition: const CameraPosition(
+          target: LatLng(20.5937, 78.9629),
+          zoom: 4,
+        ),
+        onMapCreated: (c) {
+          _mapController = c;
+          _rebuildMapItems(animate: true);
+        },
+        markers: _markers,
+        polylines: _polylines,
+        myLocationButtonEnabled: false,
+        zoomControlsEnabled: false,
+      ),
+      Positioned(
+        right: 12,
+        bottom: 12,
+        child: FloatingActionButton.small(
+          heroTag: 'recenter',
+          backgroundColor: Colors.white,
+          onPressed: () {
+            final d = _driverLatLng;
+            if (d != null) {
+              _mapController?.animateCamera(CameraUpdate.newLatLngZoom(d, 14));
+            } else {
+              _fitBounds([_pickup, _destination].whereType<LatLng>().toList());
+            }
+          },
+          child: const Icon(Icons.my_location, color: _primary),
+        ),
+      ),
+      if (_driverLatLng == null)
+        Positioned(
+          left: 12,
+          bottom: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Waiting for driver location...',
+              style: GoogleFonts.poppins(fontSize: 11, color: Colors.white),
+            ),
+          ),
+        ),
+    ]);
+  }
+
+  Widget _desktopMapFallback() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF9FAFB),
+        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.map_outlined, color: _primary, size: 42),
+          const SizedBox(height: 12),
+          Text(
+            'Map preview unavailable on macOS',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _textDark,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Run on iPhone, Android, or web to see the live Google Map.',
+            style: GoogleFonts.poppins(fontSize: 13, color: _textGrey),
+          ),
+          const SizedBox(height: 18),
+          _desktopRouteLine('Pickup', _from(), _green),
+          const SizedBox(height: 10),
+          _desktopRouteLine('Destination', _to(), _primary),
+          if (_driverLatLng == null) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Waiting for driver location...',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _textGrey,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _desktopRouteLine(String label, String value, Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          margin: const EdgeInsets.only(top: 5),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: GoogleFonts.poppins(fontSize: 11, color: _textGrey)),
+              Text(
+                value.isNotEmpty ? value : 'Not available',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _textDark,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

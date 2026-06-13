@@ -12,6 +12,7 @@ import '../../utils/location_service.dart';
 import '../../models/add_new_trip_model.dart';
 import '../../utils/constants.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/custom_snackbar.dart';
 
 // ── Design tokens (match Home & Fleet) ────────────────────────────────────────
 const _primary  = Color(0xFFF36969);
@@ -173,9 +174,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     if (time != null) setState(() => selectedTime = time);
   }
 
-  void _err(String msg) => Get.snackbar('Required', msg,
-      backgroundColor: Colors.red, colorText: Colors.white,
-      snackPosition: SnackPosition.TOP, margin: const EdgeInsets.all(12));
+  void _err(String msg) => SnackBarHelper.error(msg);
 
   Future<void> _scheduleTrip() async {
     final userId = AuthService.to.userId;
@@ -191,7 +190,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     if (selectedDate == null) return _err('Please select a pickup date');
     if (selectedTime == null) return _err('Please select a pickup time');
     if (userId.isEmpty) {
-      Get.snackbar('Error', 'User not logged in');
+      SnackBarHelper.error('User not logged in');
       return;
     }
 
@@ -236,14 +235,12 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
         setState(() => controller.text = address);
         _autoCalculateDistance();
       } else {
-        Get.snackbar('Location', 'Could not get current location. Check permissions.',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.red.withValues(alpha: 0.8), colorText: Colors.white);
+        SnackBarHelper.error(
+          'Could not get current location. Check permissions.',
+        );
       }
     } catch (e) {
-      Get.snackbar('Location', 'Failed to get location',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red.withValues(alpha: 0.8), colorText: Colors.white);
+      SnackBarHelper.error('Failed to get location');
     } finally {
       if (mounted) setState(() => _isLoadingLocation = false);
     }
