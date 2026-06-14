@@ -26,6 +26,9 @@ class SubscriptionController extends GetxController {
 
   late final Razorpay _razorpay;
   SubscriptionPlan? _pendingPaidPlan;
+  /// Razorpay order id of the in-flight checkout, so a dismissed/failed modal
+  /// can tell the backend to clear the pending intent.
+  String? _pendingOrderId;
 
   @override
   void onInit() {
@@ -131,6 +134,8 @@ class SubscriptionController extends GetxController {
       return;
     }
 
+    _pendingOrderId = orderId.isNotEmpty ? orderId : null;
+
     _razorpay.open({
       'key': key,
       'amount': amountPaise,
@@ -168,6 +173,7 @@ class SubscriptionController extends GetxController {
     } finally {
       processingPlanId.value = null;
       _pendingPaidPlan = null;
+      _pendingOrderId = null;
     }
   }
 
@@ -177,6 +183,13 @@ class SubscriptionController extends GetxController {
     if (response.code != 2) {
       SnackBarHelper.error(response.message ?? 'Payment failed. Please try again.');
     }
+    // Clear the pending intent server-side so a dismissed/failed checkout is not
+    // later counted or displayed as a paid subscription.
+    final orderId = _pendingOrderId;
+    if (orderId != null && orderId.isNotEmpty) {
+      SubscriptionService.instance.abandonPayment(orderId);
+    }
+    _pendingOrderId = null;
     processingPlanId.value = null;
     _pendingPaidPlan = null;
   }
@@ -185,6 +198,7 @@ class SubscriptionController extends GetxController {
     AppLogger.d('External wallet: ${response.walletName}');
     processingPlanId.value = null;
     _pendingPaidPlan = null;
+    _pendingOrderId = null;
   }
 
   // ── Change plan (upgrade / downgrade) ──────────────────────────────────
@@ -193,37 +207,85 @@ class SubscriptionController extends GetxController {
   /// If the new plan is free, calls `changePlan` directly.
   /// If paid, opens Razorpay for the new amount (backend initiates the order).
   Future<void> switchPlan(SubscriptionPlan newPlan) async {
-    if (changingPlan.value) return;
+    if (processingPlanId.value != null) return;
     if (isCurrentPlan(newPlan.id)) {
       SnackBarHelper.error('You are already on this plan.');
       return;
     }
 
+    processingPlanId.value = newPlan.id;
     changingPlan.value = true;
     try {
       if (newPlan.pricing.amount == 0) {
-        // Free plan — direct API call
+        // Free target — switch immediately via change-plan (backend supersedes
+        // the old plan atomically). Mirrors wheelboard-fe changePlan().
         final sub = await SubscriptionService.instance.changePlan(newPlan.id);
         currentSubscription.value = sub;
         currentPlan.value = newPlan;
         SnackBarHelper.success('Switched to ${newPlan.name} plan!');
         await fetchData();
+        processingPlanId.value = null;
       } else {
-        // Paid plan — initiate Razorpay with the new plan
+        // Paid target — initiate Razorpay with the new plan.
+        // processingPlanId is cleared in the Razorpay callbacks.
         _pendingPaidPlan = newPlan;
         final paymentData =
             await SubscriptionService.instance.initiatePayment(newPlan.id);
         _openRazorpay(paymentData, newPlan);
-        // changingPlan cleared in Razorpay callbacks via processingPlanId
       }
     } on DioException catch (e) {
+      processingPlanId.value = null;
+      _pendingPaidPlan = null;
       _handleDioError(e, newPlan);
     } catch (e) {
+      processingPlanId.value = null;
+      _pendingPaidPlan = null;
       AppLogger.e('❌ switchPlan error: $e');
       SnackBarHelper.error('Failed to switch plan. Please try again.');
     } finally {
       changingPlan.value = false;
     }
+  }
+
+  // ── Plan tap routing + CTA labels (mirrors wheelboard-fe) ──────────────────
+
+  /// Single entry point for a plan card tap. When the user already has an
+  /// active subscription, switching (upgrade/downgrade/switch) is done in
+  /// place via [switchPlan]; otherwise a fresh [subscribe]. Mirrors
+  /// wheelboard-fe `handleSubscribe` which calls changePlan vs subscribeToPlan.
+  Future<void> onPlanTap(SubscriptionPlan plan) async {
+    if (isCurrentPlan(plan.id)) return;
+    final sub = currentSubscription.value;
+    if (sub != null && sub.isActive) {
+      await switchPlan(plan);
+    } else {
+      await subscribe(plan);
+    }
+  }
+
+  /// Amount of the user's active plan, for upgrade/downgrade labelling.
+  int? get _currentPlanAmount {
+    final sub = currentSubscription.value;
+    if (sub == null || !sub.isActive) return null;
+    for (final p in plans) {
+      if (p.id == sub.planId) return p.pricing.amount.round();
+    }
+    return null;
+  }
+
+  /// CTA label for a plan card. Mirrors wheelboard-fe `getCtaLabel`:
+  /// Current Plan / Get Started Free / Subscribe Now / Upgrade / Downgrade /
+  /// Switch Plan.
+  String ctaLabel(SubscriptionPlan plan) {
+    if (isCurrentPlan(plan.id)) return 'Current Plan';
+    final currentAmount = _currentPlanAmount;
+    final planAmount = plan.pricing.amount.round();
+    if (currentAmount == null) {
+      return planAmount == 0 ? 'Get Started Free' : 'Subscribe Now';
+    }
+    if (planAmount > currentAmount) return 'Upgrade';
+    if (planAmount < currentAmount) return 'Downgrade';
+    return 'Switch Plan';
   }
 
   // ── Usage limits ─────────────────────────────────────────────────────────

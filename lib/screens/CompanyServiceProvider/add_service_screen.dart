@@ -1,21 +1,29 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../controllers/Transport/service_provider_controller.dart';
-import '../../models/add_service_model.dart';
-import '../../models/update_service_model.dart';
+import '../../controllers/Transport/user_profile_controller.dart';
+import '../../core/auth/auth_service.dart';
 import '../../models/service_model.dart';
-import '../../utils/session_manager.dart';
-import '../../utils/placeservices.dart';
-import '../../widgets/custom_snackbar.dart';
-import '../../widgets/custom_loader.dart';
+import '../../models/service_payload.dart';
+import '../../theme/design_system.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
-import '../../controllers/Transport/user_profile_controller.dart';
+import '../../utils/placeservices.dart';
+import '../../widgets/custom_snackbar.dart';
 
+/// Create / edit a service listing. Mirrors the wheelboard-fe `AddServiceModal`
+/// flow and submits the web's JSON contract via [ServiceProviderController]
+/// (`ServicePayload` → `CreateServiceDto`). Free-tier providers transparently
+/// run the one-time listing-fee Razorpay flow inside the controller.
 class AddServiceScreen extends StatefulWidget {
-  final ServiceModel? service; // Optional service for edit mode
+  /// When provided, the screen is in edit mode.
+  final ServiceModel? service;
 
   const AddServiceScreen({super.key, this.service});
 
@@ -27,467 +35,693 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   final _formKey = GlobalKey<FormState>();
   late final ServiceProviderController _controller;
 
-  // Form Controllers
-  final TextEditingController _serviceTitleController = TextEditingController();
-  final TextEditingController _contactNumberController =
-      TextEditingController();
-  final TextEditingController _whatsappNumberController =
-      TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _fullAddressController = TextEditingController();
+  final _titleCtrl = TextEditingController();
+  final _contactCtrl = TextEditingController();
+  final _whatsappCtrl = TextEditingController();
+  final _descriptionCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  final _detailsCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
 
-  int _descriptionLength = 0;
+  int _descLen = 0;
 
-  String _pricingOption = 'Flat Price';
+  // 'Fixed' | 'Hourly' | 'On Request' — same set as the web pricing options.
+  String _pricingType = 'Fixed';
   String _selectedCategory = 'Tyre Services';
-  final Set<String> _selectedDays = {'Mon'};
-  String _businessFrom = '09:00';
-  String _businessTo = '18:00';
+
+  // Full day names (Monday…Sunday) — what the backend `availability.days` holds.
+  static const _dayOptions = <(String, String)>[
+    ('Mon', 'Monday'),
+    ('Tue', 'Tuesday'),
+    ('Wed', 'Wednesday'),
+    ('Thu', 'Thursday'),
+    ('Fri', 'Friday'),
+    ('Sat', 'Saturday'),
+    ('Sun', 'Sunday'),
+  ];
+  final Set<String> _selectedDays = {
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  };
+
+  String _from = '09:00';
+  String _to = '18:00';
   bool _isVisible = true;
-  final List<File> _selectedImages = [];
+
+  // Existing (stored) image URLs kept on edit, plus newly picked files.
+  final List<String> _existingImages = [];
+  final List<File> _newImages = [];
   final ImagePicker _imagePicker = ImagePicker();
 
-  // Google Places Service
-  final PlacesService _placesService = PlacesService(
-    apiKey: MapsConstants.googleMapsApiKey,
-  );
-  List<Suggestion> _addressSuggestions = [];
+  final PlacesService _places =
+      PlacesService(apiKey: MapsConstants.googleMapsApiKey);
+  List<Suggestion> _suggestions = [];
 
-  // Category options
-  List<String> _categoryOptions = [
+  List<String> _categoryOptions = const [
     'Tyre Services',
     'Vehicle Services',
     'Tyre Retreader',
     'Other',
   ];
 
+  bool get _isEdit => widget.service != null;
+  int get _imageCount => _existingImages.length + _newImages.length;
+
   @override
   void initState() {
     super.initState();
     _controller = Get.put(ServiceProviderController(), permanent: false);
 
-    // Dynamic Category Loading from User Profile
-    final userProfileController = Get.put(UserProfileController());
-    final profile = userProfileController.userProfile.value;
-
-    if (profile != null &&
-        profile.servicesOffered != null &&
-        profile.servicesOffered!.isNotEmpty) {
-      final services = profile.servicesOffered!
+    // Categories come from the provider's profile `servicesOffered` when set,
+    // otherwise fall back to the canonical four.
+    final profile = Get.put(UserProfileController()).userProfile.value;
+    final offered = profile?.servicesOffered;
+    if (offered != null && offered.trim().isNotEmpty) {
+      final parsed = offered
           .split(',')
           .map((e) => e.trim())
           .where((e) => e.isNotEmpty)
           .toList();
-      if (services.isNotEmpty) {
-        _categoryOptions = services;
-        // Reset selected category to first valid option if current one is not in list
-        if (!_categoryOptions.contains(_selectedCategory)) {
-          _selectedCategory = _categoryOptions.first;
-        }
+      if (parsed.isNotEmpty) {
+        _categoryOptions = parsed;
+        _selectedCategory = parsed.first;
       }
     }
 
-    _descriptionController.addListener(() {
-      setState(() {
-        _descriptionLength = _descriptionController.text.length;
-      });
-    });
+    _descriptionCtrl.addListener(
+        () => setState(() => _descLen = _descriptionCtrl.text.length));
 
-    // Populate form if editing
-    if (widget.service != null) {
-      _populateFormForEdit();
-    }
+    if (_isEdit) _populateForEdit();
   }
 
-  void _populateFormForEdit() {
-    final service = widget.service!;
-    _serviceTitleController.text = service.serviceTitle;
-    _contactNumberController.text = service.contactNumber ?? '';
-    _whatsappNumberController.text = service.whatsappNumber ?? '';
-    _descriptionController.text = service.description ?? '';
-    _priceController.text = service.amount?.toString() ?? '';
-    _cityController.text = service.city;
-    _fullAddressController.text = service.fullAddress;
-    _pricingOption = service.pricingOption ?? 'Flat Price';
+  void _populateForEdit() {
+    final s = widget.service!;
+    _titleCtrl.text = s.serviceTitle;
+    _contactCtrl.text = s.contactNumber ?? '';
+    _whatsappCtrl.text = s.whatsappNumber ?? '';
+    _descriptionCtrl.text = s.description ?? '';
+    _priceCtrl.text = s.amount?.toString() ?? '';
+    _cityCtrl.text = s.city;
+    _addressCtrl.text = s.fullAddress;
+    _descLen = _descriptionCtrl.text.length;
 
-    // Set category from serviceCategory first, then fallback to businessType
-    String categoryToSet = _categoryOptions.isNotEmpty
-        ? _categoryOptions.first
-        : 'Tyre Services'; // Default fallback
-
-    if (service.serviceCategory != null &&
-        service.serviceCategory!.isNotEmpty) {
-      categoryToSet = service.serviceCategory!;
-    } else if (service.businessType.isNotEmpty) {
-      categoryToSet = service.businessType;
-    }
-
-    // Handle legacy 'Tyre Repair' mapping
-    if (categoryToSet == 'Tyre Repair') {
-      categoryToSet = 'Tyre Services';
-    }
-
-    // Validate that the category exists in _categoryOptions
-    if (_categoryOptions.contains(categoryToSet)) {
-      _selectedCategory = categoryToSet;
-    } else if (_categoryOptions.isNotEmpty) {
-      _selectedCategory = _categoryOptions.first;
+    // Pricing type — normalize legacy values to the web set.
+    final pt = (s.pricingOption ?? '').toLowerCase();
+    if (pt.contains('hour')) {
+      _pricingType = 'Hourly';
+    } else if (pt.contains('request') || pt.contains('quote')) {
+      _pricingType = 'On Request';
     } else {
-      _categoryOptions.add(categoryToSet);
-      _selectedCategory = categoryToSet;
+      _pricingType = 'Fixed';
     }
 
-    _isVisible = service.isAvailable;
-    if (service.daysOpen != null && service.daysOpen!.isNotEmpty) {
-      _selectedDays.clear();
-      _selectedDays.addAll(service.daysOpen!.split(','));
+    // Category — accept the stored category if it's a known option.
+    var cat = s.serviceCategory?.trim();
+    if (cat == 'Tyre Repair') cat = 'Tyre Services';
+    if (cat != null && cat.isNotEmpty) {
+      if (!_categoryOptions.contains(cat)) {
+        _categoryOptions = [..._categoryOptions, cat];
+      }
+      _selectedCategory = cat;
     }
-    if (service.businessHoursFrom != null) {
-      _businessFrom = service.businessHoursFrom!;
+
+    _isVisible = s.isAvailable;
+
+    if (s.daysOpen != null && s.daysOpen!.trim().isNotEmpty) {
+      _selectedDays
+        ..clear()
+        ..addAll(s.daysOpen!
+            .split(',')
+            .map((e) => _normalizeDay(e.trim()))
+            .where((e) => e.isNotEmpty));
     }
-    if (service.businessHoursTo != null) {
-      _businessTo = service.businessHoursTo!;
+    if (s.businessHoursFrom != null && s.businessHoursFrom!.isNotEmpty) {
+      _from = s.businessHoursFrom!;
     }
-    _descriptionLength = _descriptionController.text.length;
+    if (s.businessHoursTo != null && s.businessHoursTo!.isNotEmpty) {
+      _to = s.businessHoursTo!;
+    }
+
+    _existingImages.addAll(s.images);
   }
+
+  String _normalizeDay(String value) {
+    final v = value.toLowerCase();
+    for (final (short, full) in _dayOptions) {
+      if (v == short.toLowerCase() || v == full.toLowerCase()) return full;
+    }
+    return value; // unknown → keep as-is
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _contactCtrl.dispose();
+    _whatsappCtrl.dispose();
+    _descriptionCtrl.dispose();
+    _priceCtrl.dispose();
+    _detailsCtrl.dispose();
+    _cityCtrl.dispose();
+    _addressCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── UI ────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F9),
+      backgroundColor: AppPalette.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        shadowColor: Colors.grey.shade200,
+        backgroundColor: AppPalette.card,
+        surfaceTintColor: AppPalette.card,
+        elevation: 0.5,
+        shadowColor: Colors.black12,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Iconsax.arrow_left_2, color: AppPalette.textDark),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          widget.service != null ? 'Edit Service' : 'Add New Service',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
         centerTitle: true,
+        title: Text(_isEdit ? 'Edit Service' : 'Add New Service',
+            style: AppText.h3),
       ),
       body: Form(
         key: _formKey,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildServiceDetailsSection(),
-                      const SizedBox(height: 24),
-                      _buildPricingSection(),
-                      const SizedBox(height: 24),
-                      _buildBusinessHoursSection(),
-                      const SizedBox(height: 24),
-                      _buildLocationSection(),
-                      const SizedBox(height: 24),
-                      _buildImageGallerySection(),
-                      const SizedBox(height: 24),
-                      _buildVisibilitySection(),
-                      const SizedBox(height: 100), // Space for bottom buttons
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 120),
+          children: [
+            _FadeInUp(index: 0, child: _detailsSection()),
+            AppSpacing.vGapLg,
+            _FadeInUp(index: 1, child: _pricingSection()),
+            AppSpacing.vGapLg,
+            _FadeInUp(index: 2, child: _hoursSection()),
+            AppSpacing.vGapLg,
+            _FadeInUp(index: 3, child: _locationSection()),
+            AppSpacing.vGapLg,
+            _FadeInUp(index: 4, child: _gallerySection()),
+            AppSpacing.vGapLg,
+            _FadeInUp(index: 5, child: _visibilitySection()),
+          ],
         ),
       ),
-      bottomNavigationBar: _buildBottomButtons(),
+      bottomNavigationBar: _bottomBar(),
     );
   }
 
-  Widget _buildSection(String title, List<Widget> children) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+  Widget _sectionCard({required String title, IconData? icon, required List<Widget> children}) {
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (title.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+          if (title.isNotEmpty) ...[
+            Row(children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: AppPalette.primary),
+                AppSpacing.hGapSm,
+              ],
+              Text(title, style: AppText.title),
+            ]),
+            AppSpacing.vGapLg,
+          ],
           ...children,
         ],
       ),
     );
   }
 
-  Widget _buildServiceDetailsSection() {
-    return _buildSection('', [
-      _CustomTextField(
-        labelText: 'Service Title *',
-        controller: _serviceTitleController,
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Service title is required';
-          }
-          return null;
-        },
-      ),
-      const SizedBox(height: 16),
-      // Category Dropdown
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Category *',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedCategory,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF0075FF)),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            items: _categoryOptions.map((category) {
-              return DropdownMenuItem<String>(
-                value: category,
-                child: Text(category, style: const TextStyle(fontSize: 15)),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _selectedCategory = value;
-                });
-              }
-            },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Category is required';
-              }
+  Widget _detailsSection() {
+    return _sectionCard(
+      title: 'Service Details',
+      icon: Iconsax.box,
+      children: [
+        _field(
+          label: 'Service Title *',
+          controller: _titleCtrl,
+          hint: 'e.g., Professional Tyre Repair',
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'Service title is required' : null,
+        ),
+        AppSpacing.vGapLg,
+        _dropdown(),
+        AppSpacing.vGapLg,
+        _field(
+          label: 'Contact Number *',
+          controller: _contactCtrl,
+          hint: '+91 98765 43210',
+          keyboardType: TextInputType.phone,
+          prefixIcon: Iconsax.call,
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) return 'Contact number is required';
+            if (v.trim().length < 10) return 'Enter a valid contact number';
+            return null;
+          },
+        ),
+        AppSpacing.vGapLg,
+        _field(
+          label: 'WhatsApp Number (optional)',
+          controller: _whatsappCtrl,
+          hint: '+91 98765 43210',
+          keyboardType: TextInputType.phone,
+          prefixIcon: Iconsax.message,
+        ),
+        AppSpacing.vGapLg,
+        _field(
+          label: 'Description *',
+          controller: _descriptionCtrl,
+          hint: 'Brief description of your service',
+          maxLines: 4,
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) return 'Description is required';
+            if (v.length > 500) return 'Description cannot exceed 500 characters';
+            return null;
+          },
+        ),
+        const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text('$_descLen/500',
+              style: AppText.caption
+                  .on(_descLen > 500 ? AppPalette.danger : AppPalette.textFaint)),
+        ),
+      ],
+    );
+  }
+
+  Widget _pricingSection() {
+    final showAmount = _pricingType != 'On Request';
+    return _sectionCard(
+      title: 'Pricing',
+      icon: Iconsax.money_4,
+      children: [
+        Row(
+          children: [
+            _pricingChip('Fixed', 'Fixed Price'),
+            AppSpacing.hGapSm,
+            _pricingChip('On Request', 'On Request'),
+            AppSpacing.hGapSm,
+            _pricingChip('Hourly', 'Hourly'),
+          ],
+        ),
+        if (showAmount) ...[
+          AppSpacing.vGapLg,
+          _field(
+            label: _pricingType == 'Hourly' ? 'Rate / hour *' : 'Amount *',
+            controller: _priceCtrl,
+            hint: '2500',
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            prefixIcon: Iconsax.money,
+            validator: (v) {
+              if (!showAmount) return null;
+              if (v == null || v.trim().isEmpty) return 'Amount is required';
+              final n = double.tryParse(v.trim());
+              if (n == null || n <= 0) return 'Enter a valid amount';
               return null;
             },
           ),
         ],
-      ),
-      const SizedBox(height: 16),
-      _CustomTextField(
-        labelText: 'Contact number *',
-        controller: _contactNumberController,
-        keyboardType: TextInputType.phone,
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Contact number is required';
-          }
-          if (value.length < 10) {
-            return 'Please enter a valid contact number';
-          }
-          return null;
-        },
-      ),
-      const SizedBox(height: 16),
-      _CustomTextField(
-        labelText: 'Whatsapp number (optional)',
-        controller: _whatsappNumberController,
-        keyboardType: TextInputType.phone,
-      ),
-      const SizedBox(height: 16),
-      _CustomTextField(
-        labelText: 'Description *',
-        maxLines: 4,
-        minLines: 1,
-        controller: _descriptionController,
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Description is required';
-          }
-          if (value.length > 500) {
-            return 'Description cannot exceed 500 characters';
-          }
-          return null;
-        },
-      ),
-      const SizedBox(height: 8),
-      Align(
-        alignment: Alignment.centerRight,
-        child: Text(
-          '$_descriptionLength/500',
-          style: TextStyle(
-            color: _descriptionLength > 500 ? Colors.red : Colors.grey,
-          ),
+        AppSpacing.vGapLg,
+        _field(
+          label: 'Pricing Note (optional)',
+          controller: _detailsCtrl,
+          hint: 'e.g., per tyre, inclusive of taxes',
         ),
-      ),
-    ]);
+      ],
+    );
   }
 
-  Widget _buildPricingSection() {
-    return _buildSection('Pricing Option *', [
-      Row(
-        children: [
-          _buildRadio('Flat Price'),
-          const SizedBox(width: 24),
-          _buildRadio('On Request'),
-        ],
-      ),
-      const SizedBox(height: 16),
-      _CustomTextField(
-        labelText: _pricingOption == 'Flat Price'
-            ? 'Amount *'
-            : 'Amount (optional)',
-        prefixIcon: const Icon(Icons.currency_rupee, color: Colors.grey),
-        controller: _priceController,
-        keyboardType: TextInputType.number,
-        enabled: _pricingOption == 'Flat Price',
-        validator: _pricingOption == 'Flat Price'
-            ? (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Amount is required for flat price';
-                }
-                if (double.tryParse(value) == null ||
-                    double.parse(value) <= 0) {
-                  return 'Please enter a valid amount';
-                }
-                return null;
-              }
-            : null,
-      ),
-    ]);
+  Widget _hoursSection() {
+    return _sectionCard(
+      title: 'Business Hours',
+      icon: Iconsax.clock,
+      children: [
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: _dayOptions.map((d) => _dayChip(d.$1, d.$2)).toList(),
+        ),
+        AppSpacing.vGapLg,
+        Row(
+          children: [
+            Expanded(child: _timeField('Start Time', _from, true)),
+            AppSpacing.hGapMd,
+            Expanded(child: _timeField('End Time', _to, false)),
+          ],
+        ),
+      ],
+    );
   }
 
-  Widget _buildRadio(String value) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _pricingOption = value;
-        });
-      },
-      child: Row(
-        children: [
-          Radio<String>(
-            value: value,
-            groupValue: _pricingOption,
-            onChanged: (newValue) {
-              setState(() {
-                _pricingOption = newValue!;
-              });
-            },
-            activeColor: const Color(0xFF0075FF),
+  Widget _locationSection() {
+    return _sectionCard(
+      title: 'Location',
+      icon: Iconsax.location,
+      children: [
+        Text('Business Address', style: AppText.label),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _addressCtrl,
+          style: AppText.body.on(AppPalette.textDark),
+          decoration: _inputDecoration(
+            hint: 'Search for your business address',
+            suffix: const Icon(Iconsax.location, color: AppPalette.primary, size: 20),
           ),
-          Text(value),
-        ],
-      ),
+          onChanged: (value) async {
+            if (value.isEmpty) {
+              setState(() => _suggestions = []);
+              return;
+            }
+            try {
+              final results = await _places.fetchSuggestions(value);
+              if (mounted) setState(() => _suggestions = results);
+            } catch (e) {
+              AppLogger.e('Error fetching address suggestions: $e');
+            }
+          },
+        ),
+        if (_suggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: AppSpacing.sm),
+            constraints: const BoxConstraints(maxHeight: 200),
+            decoration: BoxDecoration(
+              color: AppPalette.card,
+              borderRadius: AppRadius.rLg,
+              border: Border.all(color: AppPalette.border),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: _suggestions.length,
+              separatorBuilder: (_, __) =>
+                  const Divider(height: 1, color: AppPalette.border),
+              itemBuilder: (context, i) {
+                final s = _suggestions[i];
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Iconsax.location,
+                      color: AppPalette.primary, size: 18),
+                  title: Text(s.description,
+                      style: AppText.bodySm.on(AppPalette.textDark),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  subtitle: s.subTitle.isEmpty
+                      ? null
+                      : Text(s.subTitle,
+                          style: AppText.caption,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                  onTap: () {
+                    setState(() {
+                      _addressCtrl.text = s.description;
+                      if (s.city.isNotEmpty) _cityCtrl.text = s.city;
+                      _suggestions = [];
+                    });
+                    FocusScope.of(context).unfocus();
+                  },
+                );
+              },
+            ),
+          ),
+        AppSpacing.vGapLg,
+        _field(
+          label: 'City *',
+          controller: _cityCtrl,
+          hint: 'City',
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'City is required' : null,
+        ),
+      ],
     );
   }
 
-  Widget _buildBusinessHoursSection() {
-    return _buildSection('Business Hours', [
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          _buildDayChip('Mon'),
-          _buildDayChip('Tue'),
-          _buildDayChip('Wed'),
-          _buildDayChip('Thu'),
-          _buildDayChip('Fri'),
-          _buildDayChip('Sat'),
-          _buildDayChip('Sun'),
-        ],
-      ),
-      const SizedBox(height: 16),
-      Row(
-        children: [
-          Expanded(child: _buildTimePicker('From', '09:00')),
-          const SizedBox(width: 16),
-          Expanded(child: _buildTimePicker('To', '18:00')),
-        ],
-      ),
-    ]);
-  }
-
-  Widget _buildDayChip(String day) {
-    final isSelected = _selectedDays.contains(day);
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (isSelected) {
-            _selectedDays.remove(day);
-          } else {
-            _selectedDays.add(day);
-          }
-        });
-      },
-      child: Chip(
-        label: Text(day),
-        backgroundColor: isSelected
-            ? const Color(0xFFE83B4F)
-            : Colors.grey.shade200,
-        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
-      ),
+  Widget _gallerySection() {
+    return _sectionCard(
+      title: 'Image Gallery',
+      icon: Iconsax.gallery,
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
+            childAspectRatio: 1,
+          ),
+          itemCount: _imageCount < 4 ? _imageCount + 1 : 4,
+          itemBuilder: (context, i) {
+            if (i < _existingImages.length) {
+              return _imageTile(
+                child: Image.network(_existingImages[i], fit: BoxFit.cover),
+                onRemove: () => setState(() => _existingImages.removeAt(i)),
+              );
+            }
+            final fileIdx = i - _existingImages.length;
+            if (fileIdx < _newImages.length) {
+              return _imageTile(
+                child: Image.file(_newImages[fileIdx], fit: BoxFit.cover),
+                onRemove: () => setState(() => _newImages.removeAt(fileIdx)),
+              );
+            }
+            return _addImageTile();
+          },
+        ),
+        AppSpacing.vGapSm,
+        Text('Max 4 images · JPG/PNG · 2MB each', style: AppText.caption),
+      ],
     );
   }
 
-  Widget _buildTimePicker(String label, String time) {
-    final isFrom = label == 'From';
-    final currentTime = isFrom ? _businessFrom : _businessTo;
+  Widget _visibilitySection() {
+    return _sectionCard(
+      title: '',
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  color: AppPalette.greenBg, borderRadius: AppRadius.rMd),
+              child: const Icon(Iconsax.eye, color: AppPalette.green, size: 20),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Service Visibility', style: AppText.subtitle),
+                  Text(
+                      _isVisible
+                          ? 'Published — visible to companies'
+                          : 'Hidden — saved as draft',
+                      style: AppText.caption),
+                ],
+              ),
+            ),
+            Switch(
+              value: _isVisible,
+              activeThumbColor: AppPalette.green,
+              onChanged: (v) => setState(() => _isVisible = v),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
+  Widget _bottomBar() {
+    return Container(
+      padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg,
+          AppSpacing.md + MediaQuery.of(context).padding.bottom),
+      decoration: BoxDecoration(
+        color: AppPalette.card,
+        border: Border(top: BorderSide(color: AppPalette.border)),
+      ),
+      child: Obx(() {
+        final loading = _controller.isLoading.value;
+        return Row(
+          children: [
+            Expanded(
+              child: AppSecondaryButton(
+                label: 'Save as Draft',
+                color: AppPalette.textGrey,
+                onPressed: loading ? null : () => _save(publish: false),
+              ),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              flex: 2,
+              child: AppPrimaryButton(
+                label: _isEdit ? 'Update Service' : 'List Service',
+                icon: _isEdit ? Iconsax.tick_circle : Iconsax.add_circle,
+                loading: loading,
+                onPressed: () => _save(publish: true),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  // ── Reusable building blocks ───────────────────────────────────────────────
+
+  Widget _field({
+    required String label,
+    required TextEditingController controller,
+    String? hint,
+    int maxLines = 1,
+    TextInputType? keyboardType,
+    IconData? prefixIcon,
+    String? Function(String?)? validator,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
-        const SizedBox(height: 8),
+        Text(label, style: AppText.label),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          validator: validator,
+          style: AppText.body.on(AppPalette.textDark),
+          textInputAction:
+              maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
+          decoration: _inputDecoration(
+            hint: hint,
+            prefix: prefixIcon == null
+                ? null
+                : Icon(prefixIcon, size: 20, color: AppPalette.textFaint),
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration({String? hint, Widget? prefix, Widget? suffix}) {
+    OutlineInputBorder border(Color c) => OutlineInputBorder(
+          borderRadius: AppRadius.rLg,
+          borderSide: BorderSide(color: c),
+        );
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: AppText.body.on(AppPalette.textFaint),
+      prefixIcon: prefix,
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: AppPalette.bg,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: border(AppPalette.border),
+      enabledBorder: border(AppPalette.border),
+      focusedBorder: border(AppPalette.primary),
+      errorBorder: border(AppPalette.danger),
+      focusedErrorBorder: border(AppPalette.danger),
+    );
+  }
+
+  Widget _dropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Category *', style: AppText.label),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          initialValue:
+              _categoryOptions.contains(_selectedCategory) ? _selectedCategory : null,
+          isExpanded: true,
+          icon: const Icon(Iconsax.arrow_down_1, size: 18),
+          style: AppText.body.on(AppPalette.textDark),
+          decoration: _inputDecoration(),
+          items: _categoryOptions
+              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+              .toList(),
+          onChanged: (v) => setState(() => _selectedCategory = v ?? _selectedCategory),
+          validator: (v) =>
+              (v == null || v.isEmpty) ? 'Category is required' : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _pricingChip(String value, String label) {
+    final selected = _pricingType == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _pricingType = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? AppPalette.primaryLight : AppPalette.bg,
+            borderRadius: AppRadius.rLg,
+            border: Border.all(
+                color: selected ? AppPalette.primary : AppPalette.border,
+                width: selected ? 1.4 : 1),
+          ),
+          child: Text(label,
+              textAlign: TextAlign.center,
+              style: AppText.bodySm.weight(FontWeight.w600).on(
+                  selected ? AppPalette.primary : AppPalette.textGrey)),
+        ),
+      ),
+    );
+  }
+
+  Widget _dayChip(String short, String full) {
+    final selected = _selectedDays.contains(full);
+    return GestureDetector(
+      onTap: () => setState(() {
+        if (selected) {
+          _selectedDays.remove(full);
+        } else {
+          _selectedDays.add(full);
+        }
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? AppPalette.primary : AppPalette.bg,
+          borderRadius: AppRadius.rPill,
+          border: Border.all(
+              color: selected ? AppPalette.primary : AppPalette.border),
+        ),
+        child: Text(short,
+            style: AppText.bodySm
+                .weight(FontWeight.w600)
+                .on(selected ? Colors.white : AppPalette.textGrey)),
+      ),
+    );
+  }
+
+  Widget _timeField(String label, String value, bool isFrom) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppText.label),
+        const SizedBox(height: 6),
         GestureDetector(
-          onTap: () => _selectTime(context, isFrom),
+          onTap: () => _pickTime(isFrom),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(10),
+              color: AppPalette.bg,
+              border: Border.all(color: AppPalette.border),
+              borderRadius: AppRadius.rLg,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(currentTime),
-                const Icon(Icons.access_time, color: Colors.grey),
+                Text(value, style: AppText.body.on(AppPalette.textDark)),
+                const Icon(Iconsax.clock, size: 18, color: AppPalette.textFaint),
               ],
             ),
           ),
@@ -496,243 +730,21 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     );
   }
 
-  Future<void> _selectTime(BuildContext context, bool isFrom) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        final timeString =
-            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-        if (isFrom) {
-          _businessFrom = timeString;
-        } else {
-          _businessTo = timeString;
-        }
-      });
-    }
-  }
-
-  Widget _buildLocationSection() {
-    return _buildSection('Location', [
-      // Full Address with Google Places Autocomplete
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Full Address *',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: _fullAddressController,
-            decoration: InputDecoration(
-              hintText: 'Search for your business address',
-              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF0075FF)),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              suffixIcon: const Icon(
-                Icons.location_on,
-                color: Color(0xFF0075FF),
-              ),
-            ),
-            onChanged: (value) async {
-              if (value.isNotEmpty) {
-                try {
-                  final results = await _placesService.fetchSuggestions(value);
-                  setState(() => _addressSuggestions = results);
-                } catch (e) {
-                  AppLogger.e('Error fetching address suggestions: $e');
-                }
-              } else {
-                setState(() => _addressSuggestions = []);
-              }
-            },
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Address is required';
-              }
-              return null;
-            },
-          ),
-          if (_addressSuggestions.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: _addressSuggestions.length,
-                separatorBuilder: (_, __) =>
-                    Divider(height: 1, color: Colors.grey.shade200),
-                itemBuilder: (context, index) {
-                  final suggestion = _addressSuggestions[index];
-                  return ListTile(
-                    dense: true,
-                    leading: const Icon(
-                      Icons.location_on_outlined,
-                      color: Color(0xFF0075FF),
-                      size: 12,
-                    ),
-                    title: Text(
-                      suggestion.description,
-                      style: const TextStyle(fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: suggestion.subTitle.isNotEmpty
-                        ? Text(
-                            suggestion.subTitle,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          )
-                        : null,
-                    onTap: () {
-                      setState(() {
-                        _fullAddressController.text = suggestion.description;
-                        // Auto-fill city if available
-                        if (suggestion.city.isNotEmpty) {
-                          _cityController.text = suggestion.city;
-                        }
-                        _addressSuggestions.clear();
-                      });
-                    },
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
-      const SizedBox(height: 16),
-      _CustomTextField(
-        labelText: 'City *',
-        controller: _cityController,
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'City is required';
-          }
-          return null;
-        },
-      ),
-    ]);
-  }
-
-  Widget _buildImageGallerySection() {
-    return _buildSection('Image Gallery', [
-      GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1,
-        ),
-        itemCount: 4,
-        itemBuilder: (context, index) {
-          if (index < _selectedImages.length) {
-            return _buildImageItem(_selectedImages[index], index);
-          }
-          return _buildImagePlaceholder(index);
-        },
-      ),
-      const SizedBox(height: 8),
-      const Text(
-        'Max 4 images, .jpg/.png, 2MB each',
-        style: TextStyle(color: Colors.grey, fontSize: 12),
-      ),
-    ]);
-  }
-
-  Widget _buildImagePlaceholder(int index) {
-    return GestureDetector(
-      onTap: () => _pickImage(index),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.grey.shade300,
-            width: 1,
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_a_photo, color: Color(0xFF00B894)),
-            SizedBox(height: 8),
-            Text('Add Image', style: TextStyle(color: Color(0xFF00B894))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageItem(File image, int index) {
+  Widget _imageTile({required Widget child, required VoidCallback onRemove}) {
     return Stack(
+      fit: StackFit.expand,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(
-            image,
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.cover,
-          ),
-        ),
+        ClipRRect(borderRadius: AppRadius.rLg, child: child),
         Positioned(
           top: 4,
           right: 4,
           child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedImages.removeAt(index);
-              });
-            },
+            onTap: onRemove,
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.close, color: Colors.white, size: 16),
+                  color: AppPalette.danger, shape: BoxShape.circle),
+              child: const Icon(Iconsax.trash, color: Colors.white, size: 14),
             ),
           ),
         ),
@@ -740,361 +752,176 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     );
   }
 
-  Future<void> _pickImage(int index) async {
-    if (_selectedImages.length >= 4) {
-      SnackBarHelper.error("Maximum 4 images allowed");
-      return;
-    }
-
-    try {
-      final ImageSource? source = await showModalBottomSheet<ImageSource>(
-        context: context,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  Widget _addImageTile() {
+    return GestureDetector(
+      onTap: _pickImage,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppPalette.primaryLight,
+          borderRadius: AppRadius.rLg,
+          border: Border.all(color: AppPalette.primary.withValues(alpha: 0.4)),
         ),
-        builder: (BuildContext context) {
-          return SafeArea(
-            child: Wrap(
-              children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.camera_alt,
-                    color: Color(0xFF00B894),
-                  ),
-                  title: const Text('Take Photo'),
-                  onTap: () => Navigator.pop(context, ImageSource.camera),
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.photo_library,
-                    color: Color(0xFF00B894),
-                  ),
-                  title: const Text('Choose from Gallery'),
-                  onTap: () => Navigator.pop(context, ImageSource.gallery),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.cancel, color: Colors.grey),
-                  title: const Text('Cancel'),
-                  onTap: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-
-      if (source != null) {
-        final XFile? pickedFile = await _imagePicker.pickImage(
-          source: source,
-          imageQuality: 80,
-          maxWidth: 1920,
-          maxHeight: 1920,
-        );
-
-        if (pickedFile != null) {
-          final file = File(pickedFile.path);
-          final fileSizeInMB = await file.length() / (1024 * 1024);
-
-          if (fileSizeInMB > 2) {
-            SnackBarHelper.error("Image size should be less than 2MB");
-            return;
-          }
-
-          setState(() {
-            if (index < _selectedImages.length) {
-              _selectedImages[index] = file;
-            } else {
-              _selectedImages.add(file);
-            }
-          });
-        }
-      }
-    } catch (e) {
-      SnackBarHelper.error("Failed to pick image: ${e.toString()}");
-    }
-  }
-
-  Widget _buildVisibilitySection() {
-    return _buildSection('', [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Service Visibility',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              SizedBox(height: 4),
-              Text('Mark as Available', style: TextStyle(color: Colors.grey)),
-            ],
-          ),
-          Switch(
-            value: _isVisible,
-            onChanged: (value) {
-              setState(() {
-                _isVisible = value;
-              });
-            },
-            activeThumbColor: const Color(0xFF00B894),
-          ),
-        ],
-      ),
-    ]);
-  }
-
-  Widget _buildBottomButtons() {
-    return Obx(
-      () => Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _controller.isLoading.value
-                    ? null
-                    : () {
-                        // Save as draft - same as publish but with isVisible = false
-                        _saveService(isVisible: false);
-                      },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  side: BorderSide(color: Colors.grey.shade300),
-                ),
-                child: const Text(
-                  'Save as Draft',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _controller.isLoading.value
-                    ? null
-                    : () {
-                        _saveService(isVisible: true);
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF36969),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _controller.isLoading.value
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CustomLoader.small(color: Colors.white),
-                      )
-                    : const Text(
-                        'Save & Publish',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-              ),
-            ),
+            Icon(Iconsax.gallery_add, color: AppPalette.primary),
+            SizedBox(height: 6),
+            Text('Add Image',
+                style: TextStyle(
+                    color: AppPalette.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600)),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _saveService({required bool isVisible}) async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+  // ── Actions ────────────────────────────────────────────────────────────────
 
-    if (_selectedDays.isEmpty) {
-      SnackBarHelper.error("Please select at least one day");
-      return;
+  Future<void> _pickTime(bool isFrom) async {
+    final parts = (isFrom ? _from : _to).split(':');
+    final initial = TimeOfDay(
+      hour: int.tryParse(parts.first) ?? 9,
+      minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+    );
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked != null) {
+      final str =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+      setState(() => isFrom ? _from = str : _to = str);
     }
+  }
 
-    if (_pricingOption == 'Flat Price' &&
-        _priceController.text.trim().isEmpty) {
-      SnackBarHelper.error("Please enter amount for flat price");
+  Future<void> _pickImage() async {
+    if (_imageCount >= 4) {
+      SnackBarHelper.error('Maximum 4 images allowed');
       return;
     }
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppPalette.card,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Wrap(children: [
+          ListTile(
+            leading: const Icon(Iconsax.camera, color: AppPalette.primary),
+            title: Text('Take Photo', style: AppText.subtitle),
+            onTap: () => Navigator.pop(context, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Iconsax.gallery, color: AppPalette.primary),
+            title: Text('Choose from Gallery', style: AppText.subtitle),
+            onTap: () => Navigator.pop(context, ImageSource.gallery),
+          ),
+          ListTile(
+            leading: const Icon(Iconsax.close_circle, color: AppPalette.textGrey),
+            title: Text('Cancel', style: AppText.subtitle.on(AppPalette.textGrey)),
+            onTap: () => Navigator.pop(context),
+          ),
+        ]),
+      ),
+    );
+    if (source == null) return;
 
     try {
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString("userId");
-
-      if (userId == null || userId.isEmpty) {
-        SnackBarHelper.error("User ID not found. Please login again.");
+      final picked = await _imagePicker.pickImage(
+          source: source, imageQuality: 80, maxWidth: 1920, maxHeight: 1920);
+      if (picked == null) return;
+      final file = File(picked.path);
+      final sizeMb = await file.length() / (1024 * 1024);
+      if (sizeMb > 2) {
+        SnackBarHelper.error('Image size should be less than 2MB');
         return;
       }
-
-      final daysOpen = _selectedDays.join(',');
-      final isFlatPrice = _pricingOption == 'Flat Price';
-      final price = isFlatPrice
-          ? double.tryParse(_priceController.text.trim()) ?? 0.0
-          : 0.0;
-
-      Map<String, dynamic>? result;
-
-      // Check if we're editing an existing service
-      if (widget.service != null) {
-        // Update existing service
-        final updateModel = UpdateServiceModel(
-          serviceId: widget.service!.serviceId,
-          userId: userId,
-          serviceTitle: _serviceTitleController.text.trim(),
-          fullAddress: _fullAddressController.text.trim(),
-          city: _cityController.text.trim(),
-          contactNumber: _contactNumberController.text.trim(),
-          whatsappNumber: _whatsappNumberController.text.trim().isEmpty
-              ? null
-              : _whatsappNumberController.text.trim(),
-          description: _descriptionController.text.trim(),
-          isFlatPrice: isFlatPrice,
-          price: price,
-          isVisible: isVisible,
-          daysOpen: daysOpen,
-          businessFrom: _businessFrom,
-          businessTo: _businessTo,
-          modifiedBy: userId,
-          serviceCategory: _selectedCategory,
-          newImages: _selectedImages.isNotEmpty ? _selectedImages : null,
-        );
-
-        result = await _controller.updateService(updateModel);
-      } else {
-        // Add new service
-        final serviceModel = AddServiceModel(
-          userId: userId,
-          serviceTitle: _serviceTitleController.text.trim(),
-          fullAddress: _fullAddressController.text.trim(),
-          city: _cityController.text.trim(),
-          contactNumber: _contactNumberController.text.trim(),
-          whatsappNumber: _whatsappNumberController.text.trim().isEmpty
-              ? null
-              : _whatsappNumberController.text.trim(),
-          description: _descriptionController.text.trim(),
-          isFlatPrice: isFlatPrice,
-          price: price,
-          isVisible: isVisible,
-          daysOpen: daysOpen,
-          businessFrom: _businessFrom,
-          businessTo: _businessTo,
-          createdBy: userId,
-          serviceCategory: _selectedCategory,
-          images: _selectedImages,
-        );
-
-        result = await _controller.addService(serviceModel);
-      }
-
-      if (result != null && result['success'] == true) {
-        // Clear form and go back
-        if (widget.service == null) {
-          _clearForm();
-        }
-        Navigator.of(context).pop(true); // Return true to indicate success
-      }
+      setState(() => _newImages.add(file));
     } catch (e) {
-      SnackBarHelper.error("Failed to save service: ${e.toString()}");
+      SnackBarHelper.error('Failed to pick image: $e');
     }
   }
 
-  void _clearForm() {
-    _serviceTitleController.clear();
-    _contactNumberController.clear();
-    _whatsappNumberController.clear();
-    _descriptionController.clear();
-    _priceController.clear();
-    _cityController.clear();
-    _fullAddressController.clear();
-    setState(() {
-      _pricingOption = 'Flat Price';
-      _selectedDays.clear();
-      _selectedDays.add('Mon');
-      _businessFrom = '09:00';
-      _businessTo = '18:00';
-      _isVisible = true;
-      _selectedImages.clear();
-    });
-  }
+  Future<void> _save({required bool publish}) async {
+    if (!_formKey.currentState!.validate()) return;
 
-  @override
-  void dispose() {
-    _serviceTitleController.dispose();
-    _contactNumberController.dispose();
-    _whatsappNumberController.dispose();
-    _descriptionController.dispose();
-    _priceController.dispose();
-    _cityController.dispose();
-    _fullAddressController.dispose();
-    super.dispose();
+    if (_selectedDays.isEmpty) {
+      SnackBarHelper.error('Please select at least one working day');
+      return;
+    }
+
+    final userId = AuthService.to.userId;
+    if (userId.isEmpty) {
+      SnackBarHelper.error('User ID not found. Please login again.');
+      return;
+    }
+
+    final user = AuthService.to.currentUser.value;
+    final businessName = (user?.profile['businessName'] ??
+            user?.profile['companyName'] ??
+            (user?.fullName.isNotEmpty == true ? user!.fullName : null) ??
+            'My Business')
+        .toString();
+
+    final amount = _pricingType == 'On Request'
+        ? null
+        : double.tryParse(_priceCtrl.text.trim());
+
+    final address = _addressCtrl.text.trim();
+    final city = _cityCtrl.text.trim();
+    final location = address.isNotEmpty ? address : city;
+
+    final payload = ServicePayload(
+      title: _titleCtrl.text.trim(),
+      category: _selectedCategory,
+      categoryColor: ServicePayload.colorForCategory(_selectedCategory),
+      description: _descriptionCtrl.text.trim(),
+      status: publish ? 'Published' : 'Draft',
+      businessId: userId,
+      businessName: businessName,
+      pricingType: _pricingType,
+      amount: amount,
+      pricingDetails: _detailsCtrl.text.trim().isEmpty
+          ? null
+          : _detailsCtrl.text.trim(),
+      days: _selectedDays.toList(),
+      hours: '$_from - $_to',
+      location: location,
+      phone: _contactCtrl.text.trim(),
+      email: null,
+      existingImages: _existingImages,
+      newImages: _newImages,
+      tags: const [],
+    );
+
+    HapticFeedback.lightImpact();
+
+    final result = _isEdit
+        ? await _controller.updateService(widget.service!.serviceId, payload)
+        : await _controller.addService(payload);
+
+    if (result != null && result['success'] == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 }
 
-class _CustomTextField extends StatelessWidget {
-  final String labelText;
-  final int? maxLines;
-  final int? minLines;
-  final Widget? prefixIcon;
-  final TextEditingController? controller;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-  final bool enabled;
-
-  const _CustomTextField({
-    required this.labelText,
-    this.maxLines,
-    this.minLines,
-    this.prefixIcon,
-    this.controller,
-    this.keyboardType,
-    this.validator,
-    this.enabled = true,
-  });
+/// Lightweight staggered fade + slide-up entrance for form sections.
+class _FadeInUp extends StatelessWidget {
+  final int index;
+  final Widget child;
+  const _FadeInUp({required this.index, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines ?? 1,
-      minLines: minLines ?? 1,
-      keyboardType: keyboardType,
-      validator: validator,
-      enabled: enabled,
-      textInputAction: maxLines != null && maxLines! > 1
-          ? TextInputAction.newline
-          : TextInputAction.next,
-      decoration: InputDecoration(
-        labelText: labelText,
-        labelStyle: const TextStyle(color: Colors.grey),
-        prefixIcon: prefixIcon,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF0075FF)),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: maxLines != null && maxLines! > 1 ? 12 : 16,
-        ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 350 + index * 70),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, c) => Opacity(
+        opacity: t.clamp(0, 1),
+        child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: c),
       ),
+      child: child,
     );
   }
 }

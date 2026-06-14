@@ -1,33 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
 import 'package:get/get.dart';
-import '../CompanyTransport/banner_carousel.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../theme/design_system.dart';
+import '../CompanyTransport/banner_carousel.dart';
+import 'complete_profile_screen.dart';
 import 'profile_screen.dart';
 import 'earnings_screen.dart';
 import 'add_service_screen.dart';
 import 'my_listings_screen.dart';
 import 'service_details_screen.dart';
+import 'booking_list_screen.dart';
+import 'leads/leads_screen.dart';
+import 'sp_learning_screen.dart';
+import 'sp_notification_screen.dart';
 import '../CompanyTransport/job_screen.dart';
-
-import '../CompanyTransport/notification_screen.dart';
+import '../CompanyTransport/feed_screen.dart';
+import '../CompanyTransport/fleet_userprofile.dart';
 import '../../controllers/Transport/notification_controller.dart';
 import '../../controllers/Transport/user_profile_controller.dart';
 import '../../controllers/Professional/feeds_controller.dart';
 import '../../controllers/Transport/post_controller.dart';
-import '../CompanyTransport/feed_screen.dart';
-import '../../widgets/custom_loader.dart';
 import '../../models/service_model.dart';
 import '../../utils/share_service.dart';
-import '../CompanyTransport/fleet_userprofile.dart';
-import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
-import 'booking_list_screen.dart';
-import 'leads/leads_screen.dart';
-import 'sp_learning_screen.dart';
 import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 
-
+/// Service-provider Home dashboard — rebuilt on the Wheelboard design system
+/// (`theme/design_system.dart`). Replaces the legacy `AppColors` + ad-hoc
+/// styling. All data/actions are preserved: stats (services/leads/conversion),
+/// quick actions (earnings/hire/bookings/learning), My Services (edit/publish),
+/// and Popular Feeds. KPIs now come from the real lead stats (see P1).
 class ServiceProviderHomeScreen extends StatefulWidget {
   const ServiceProviderHomeScreen({super.key});
 
@@ -46,482 +50,64 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   void initState() {
     super.initState();
     _homeController = Get.put(ServiceProviderHomeController());
-    // Fetch notifications and profile on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notificationController.fetchNotifications();
       userProfileController.fetchCurrentUserProfile();
     });
   }
 
-  // Getters for controller data
-  List<ServiceModel> get _services => _homeController.services;
-  bool get _isLoadingServices => _homeController.isLoadingServices.value;
-  int get _totalLeads => _homeController.totalLeads.value;
-  List<String> get _allServiceIds => _homeController.allServiceIds;
-  Map<String, String> get _serviceImages => _homeController.serviceImages;
-
-  // Controller methods
-  Future<void> _togglePublishStatus(String serviceId) async {
-    await _homeController.togglePublishStatus(serviceId);
+  Future<void> _refresh() async {
+    await _homeController.fetchMyServices();
+    notificationController.fetchNotifications();
+    userProfileController.fetchCurrentUserProfile();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: SafeArea(
+      backgroundColor: AppPalette.bg,
+      body: RefreshIndicator(
+        color: AppPalette.primary,
+        onRefresh: _refresh,
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Section
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    // Profile Picture
-                    Obx(() {
-                      final profile = userProfileController.userProfile.value;
-                      // 🔧 FIX: Use businessLogoPath directly like profile_screen.dart
-                      final logoPath = profile?.businessLogoPath;
-
-                      // 🔍 DEBUG: Log profile data
-                      if (profile != null) {
-                        AppLogger.d(
-                          "🔍 SP Profile - Type: ${profile.userType}, Logo: $logoPath",
-                        );
-                      } else {
-                        AppLogger.d("🔍 SP Profile is NULL");
-                      }
-
-                      return GestureDetector(
-                        onTap: () {
-                          Get.to(() => const ServiceProviderProfileScreen());
-                        },
-                        child: logoPath != null && logoPath.isNotEmpty
-                            ? CircleAvatar(
-                                radius: 28,
-                                backgroundColor: const Color(0xFFE0E0E0),
-                                backgroundImage: NetworkImage(logoPath),
-                                onBackgroundImageError:
-                                    (exception, stackTrace) {
-                                      AppLogger.d(
-                                        "❌ Error loading logo: $exception",
-                                      );
-                                    },
-                              )
-                            : const CircleAvatar(
-                                radius: 33,
-                                backgroundColor: Color(0xFFE0E0E0),
-                                child: Icon(
-                                  Icons.business,
-                                  size: 33,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                      );
-                    }),
-                    const SizedBox(width: 12),
-                    // Welcome Text
-                    Expanded(
-                      child: Obx(() {
-                        final profile = userProfileController.userProfile.value;
-                        final businessName =
-                            profile?.businessName ??
-                            profile?.displayName ??
-                            'Welcome';
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Welcome!',
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: const Color(0xFF333333),
-                                    fontSize: 16,
-                                  ),
-                            ),
-                            Text(
-                              businessName,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF333333),
-                                    fontSize: 20,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        );
-                      }),
-                    ),
-                    // Notification Bell
-                    Obx(() {
-                      final unreadCount = notificationController.unreadCount;
-
-                      return GestureDetector(
-                        onTap: () {
-                          Get.to(const NotificationScreen());
-                        },
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF36969),
-                                borderRadius: BorderRadius.circular(11),
-                              ),
-                              child: const Icon(
-                                Icons.notifications,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                            if (unreadCount > 0)
-                              Positioned(
-                                top: -2,
-                                right: -2,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF317873),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 18,
-                                    minHeight: 18,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      unreadCount > 99 ? '99+' : '$unreadCount',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-
-              // Banner Carousel
+              _header(),
+              AppSpacing.vGapLg,
+              _profileNudge(),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: BannerCarousel(),
               ),
-              const SizedBox(height: 20),
-
-              // Stats Cards (Services & Leads)
+              AppSpacing.vGapLg,
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Obx(() {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            Get.to(() => const MyListingsScreen());
-                          },
-                          child: _buildStatCard(
-                            context,
-                            icon: Icons.work_outline,
-                            iconBgColor: const Color(0xFFFFE5C2),
-                            iconColor: const Color(0xFFFBAE4B),
-                            label: 'Services',
-                            value: '${_services.length}',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            Get.to(() => const LeadsScreen());
-                          },
-                          child: _buildStatCard(
-                            context,
-                            icon: Icons.show_chart,
-                            iconBgColor: const Color(0xFFD0FAE6),
-                            iconColor: const Color(0xFF00B894),
-                            label: 'Leads',
-                            value: '$_totalLeads',
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }),
+                child: _statsRow(),
               ),
-              const SizedBox(height: 16),
-
-              // Quick Action Buttons (Earnings, Hire, Bookings, Learning)
+              AppSpacing.vGapMd,
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Get.to(() => const EarningsScreen());
-                        },
-                        child: _buildQuickActionCard(
-                          context,
-                          icon: Icons.account_balance_wallet,
-                          iconBgColor: const Color(0xFFE3F2FD),
-                          label: 'Earnings',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Get.to(() => const JobsScreen());
-                        },
-                        child: _buildQuickActionCard(
-                          context,
-                          icon: Icons.handshake,
-                          iconBgColor: const Color(0xFFFCE4EC),
-                          label: 'Hire',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Get.to(() =>
-                              BookingListScreen(serviceIds: _allServiceIds));
-                        },
-                        child: _buildQuickActionCard(
-                          context,
-                          icon: Icons.event_note,
-                          iconBgColor: const Color(0xFFE8F5E9),
-                          label: 'Bookings',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Get.to(() => const SpLearningScreen());
-                        },
-                        child: _buildQuickActionCard(
-                          context,
-                          icon: Icons.school_outlined,
-                          iconBgColor: const Color(0xFFFFF3E0),
-                          label: 'Learning',
-                        ),
-                      ),
-                    ),
-                  ],
+                child: _quickActions(),
+              ),
+              AppSpacing.vGapXl,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _servicesSection(),
+              ),
+              AppSpacing.vGapXl,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _sectionHeader(
+                  'Popular Feeds',
+                  viewLabel: 'View more',
+                  onView: () => Get.to(() => const FeedScreen()),
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // My Services Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'My Services',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: const Color(0xFF2D3436),
-                              ),
-                        ),
-                        if (_services.isNotEmpty)
-                          TextButton(
-                            onPressed: () {
-                              Get.to(() => const MyListingsScreen());
-                            },
-                            child: Text(
-                              'View All',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: const Color(0xFF00AAFF),
-                                    fontSize: 14,
-                                  ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Obx(() {
-                      if (_isLoadingServices) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: CustomLoader.small(),
-                          ),
-                        );
-                      }
-
-                      if (_services.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.inbox_outlined,
-                                size: 48,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'No services yet',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Create your first service to get started',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[500],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return Column(
-                        children: List.generate(
-                          _services.length > 2 ? 2 : _services.length,
-                          (index) {
-                            final service = _services[index];
-                            final serviceImage =
-                                _serviceImages[service.serviceId] ?? '';
-
-                            return Column(
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    Get.to(
-                                      () => ServiceDetailsScreen(
-                                        serviceId: service.serviceId,
-                                      ),
-                                    );
-                                  },
-                                  child: _buildServiceCardFromModel(
-                                    context,
-                                    service: service,
-                                    imageUrl: serviceImage,
-                                  ),
-                                ),
-                                if (index <
-                                    (_services.length > 2
-                                        ? 1
-                                        : _services.length - 1))
-                                  const SizedBox(height: 12),
-                              ],
-                            );
-                          },
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Popular Feeds Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Popular Feeds',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        color: const Color(0xFF535353),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Get.to(() => const FeedScreen());
-                      },
-                      child: Text(
-                        'view more',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF00AAFF),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Feed Cards - Dynamic from API
-              Obx(() {
-                if (feedsController.isLoading.isTrue) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: CustomLoader(message: "Loading feeds..."),
-                  );
-                }
-
-                if (feedsController.feeds.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Center(child: Text("No popular feeds.")),
-                  );
-                }
-
-                // Display first 3 feeds
-                final popularFeeds = feedsController.feeds.take(3).toList();
-
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: popularFeeds.length,
-                  itemBuilder: (context, index) {
-                    final feed = popularFeeds[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index < popularFeeds.length - 1 ? 12 : 0,
-                      ),
-                      child: _buildFeedPostCard(context, feed),
-                    );
-                  },
-                );
-              }),
-              const SizedBox(height: 100), // Space for bottom nav and FAB
+              AppSpacing.vGapMd,
+              _feedsList(),
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -529,316 +115,419 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
-    required String label,
-    required String value,
-  }) {
+  // ── Header (brand gradient) ────────────────────────────────────────────────
+  Widget _header() {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+      decoration: const BoxDecoration(
+        gradient: AppPalette.brandGradient,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            children: [
+              Obx(() {
+                final profile = userProfileController.userProfile.value;
+                final logo = profile?.businessLogoPath;
+                final hasLogo = logo != null && logo.isNotEmpty;
+                return GestureDetector(
+                  onTap: () =>
+                      Get.to(() => const ServiceProviderProfileScreen()),
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.white.withValues(alpha: 0.25),
+                    backgroundImage: hasLogo ? NetworkImage(logo) : null,
+                    child: hasLogo
+                        ? null
+                        : const Icon(Icons.storefront,
+                            color: Colors.white, size: 24),
+                  ),
+                );
+              }),
+              AppSpacing.hGapMd,
+              Expanded(
+                child: Obx(() {
+                  final profile = userProfileController.userProfile.value;
+                  final name = profile?.businessName ??
+                      profile?.displayName ??
+                      'Welcome';
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Welcome back',
+                          style: AppText.caption.on(Colors.white70)),
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.h2.on(Colors.white),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+              Obx(() {
+                final unread = notificationController.unreadCount;
+                return GestureDetector(
+                  onTap: () => Get.to(() => const SpNotificationScreen()),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: AppRadius.rMd,
+                        ),
+                        child: const Icon(Iconsax.notification,
+                            color: Colors.white, size: 22),
+                      ),
+                      if (unread > 0)
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppPalette.amber,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            constraints: const BoxConstraints(
+                                minWidth: 18, minHeight: 18),
+                            child: Center(
+                              child: Text(
+                                unread > 99 ? '99+' : '$unread',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// "Complete your profile" banner (mirrors web /business/home): shown when
+  /// the business profile is missing type/address/city. Tap → complete-profile.
+  Widget _profileNudge() {
+    return Obx(() {
+      final p = userProfileController.userProfile.value;
+      if (p == null) return const SizedBox.shrink();
+      final complete = (p.businessType ?? '').isNotEmpty &&
+          (p.address ?? '').isNotEmpty &&
+          (p.city ?? '').isNotEmpty;
+      if (complete) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: GestureDetector(
+          onTap: () => Get.to(() => const ServiceProviderCompleteProfileScreen()),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppPalette.amberBg,
+              borderRadius: AppRadius.rLg,
+              border: Border.all(color: const Color(0x33F59E0B)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppPalette.amber.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Iconsax.info_circle,
+                      size: 18, color: AppPalette.amber),
+                ),
+                AppSpacing.hGapMd,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Complete your profile',
+                          style: AppText.subtitle.on(const Color(0xFF92400E))),
+                      Text(
+                        'Add business details to get better visibility and leads.',
+                        style: AppText.caption.on(const Color(0xFF92400E)),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Iconsax.arrow_right_3,
+                    size: 16, color: AppPalette.amber),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  Widget _statsRow() {
+    return Obx(() {
+      final stats = _homeController.leadStats.value;
+      final conv = stats?.conversionRate ?? 0;
+      return Row(
+        children: [
+          Expanded(
+            child: _statCard(
+              Iconsax.briefcase,
+              AppPalette.amber,
+              'Services',
+              '${_homeController.services.length}',
+              () => Get.to(() => const MyListingsScreen()),
+            ),
+          ),
+          AppSpacing.hGapMd,
+          Expanded(
+            child: _statCard(
+              Iconsax.chart_2,
+              AppPalette.green,
+              'Leads',
+              '${_homeController.totalLeads.value}',
+              () => Get.to(() => const LeadsScreen()),
+            ),
+          ),
+          AppSpacing.hGapMd,
+          Expanded(
+            child: _statCard(
+              Icons.percent,
+              AppPalette.blue,
+              'Conv.',
+              '${conv.toStringAsFixed(0)}%',
+              () => Get.to(() => const LeadsScreen()),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _statCard(IconData icon, Color color, String label, String value,
+      VoidCallback onTap) {
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: AppRadius.rSm,
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          AppSpacing.vGapSm,
+          Text(value, style: AppText.h2),
+          Text(label,
+              maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.caption),
+        ],
+      ),
+    );
+  }
+
+  // ── Quick actions ────────────────────────────────────────────────────────
+  Widget _quickActions() {
+    return Row(
+      children: [
+        _qa(Iconsax.money_recive, 'Earnings',
+            () => Get.to(() => const EarningsScreen())),
+        AppSpacing.hGapSm,
+        _qa(Iconsax.people, 'Hire', () => Get.to(() => const JobsScreen())),
+        AppSpacing.hGapSm,
+        _qa(
+          Iconsax.calendar_1,
+          'Bookings',
+          () => Get.to(
+              () => BookingListScreen(serviceIds: _homeController.allServiceIds)),
+        ),
+        AppSpacing.hGapSm,
+        _qa(Icons.school_outlined, 'Learning',
+            () => Get.to(() => const SpLearningScreen())),
+      ],
+    );
+  }
+
+  Widget _qa(IconData icon, String label, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+          decoration: BoxDecoration(
+            color: AppPalette.card,
+            borderRadius: AppRadius.rLg,
+            border: Border.all(color: AppPalette.border),
+          ),
+          child: Column(
             children: [
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: iconBgColor,
-                  shape: BoxShape.circle,
+                  color: AppPalette.primaryLight,
+                  borderRadius: AppRadius.rMd,
                 ),
-                child: Icon(icon, color: iconColor, size: 22),
+                child: Icon(icon, color: AppPalette.primary, size: 20),
               ),
-              const SizedBox(width: 8),
+              AppSpacing.vGapSm,
               Text(
                 label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 15,
-                  color: const Color(0xFF535353),
-                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.caption.weight(FontWeight.w600),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
-              color: const Color(0xFF2D3436),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildQuickActionCard(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconBgColor,
-    required String label,
-  }) {
-    return Container(
-      height: 110, // Fixed height for uniformity
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center, // Center content vertically
-        children: [
-          Container(
-            width: 40, // Slightly smaller icon container
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: const Color(0xFF535353), size: 20),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-              fontSize: 13, // Slightly smaller font
-              color: const Color(0xFF535353),
-            ),
-            maxLines: 2, // Allow 2 lines
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+  // ── My Services ──────────────────────────────────────────────────────────
+  Widget _servicesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('My Services',
+            onView: () => Get.to(() => const MyListingsScreen())),
+        AppSpacing.vGapMd,
+        Obx(() {
+          if (_homeController.isLoadingServices.value) {
+            return const Padding(
+              padding: EdgeInsets.all(20),
+              child: AppLoading(),
+            );
+          }
+          final services = _homeController.services;
+          if (services.isEmpty) {
+            return const AppCard(
+              child: AppEmptyState(
+                icon: Iconsax.box,
+                title: 'No services yet',
+                subtitle: 'Create your first service to get started.',
+              ),
+            );
+          }
+          final shown = services.take(2).toList();
+          return Column(
+            children: [
+              for (final s in shown)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _serviceCard(s),
+                ),
+            ],
+          );
+        }),
+      ],
     );
   }
 
-  Widget _buildServiceCardFromModel(
-    BuildContext context, {
-    required ServiceModel service,
-    String imageUrl = '',
-  }) {
+  Widget _serviceCard(ServiceModel service) {
+    final img = _homeController.serviceImages[service.serviceId] ?? '';
     final title = service.serviceTitle.isNotEmpty
         ? service.serviceTitle
         : 'Untitled Service';
-    // Use serviceCategory if available, otherwise fallback to businessType or city
-    final tag =
-        (service.serviceCategory != null && service.serviceCategory!.isNotEmpty)
+    final tag = (service.serviceCategory != null &&
+            service.serviceCategory!.isNotEmpty)
         ? service.serviceCategory!
         : (service.businessType.isNotEmpty
-              ? service.businessType
-              : (service.city.isNotEmpty ? service.city : 'Service'));
-    final description = service.description ?? 'No description available';
+            ? service.businessType
+            : (service.city.isNotEmpty ? service.city : 'Service'));
+    final desc = service.description ?? 'No description available';
+    final published = service.isAvailable;
 
-    // Try to get image from API response if available
-    String serviceImage = imageUrl;
-
-    return _buildServiceCard(
-      context,
-      imageUrl: serviceImage,
-      title: title,
-      tag: tag,
-      description: description.length > 100
-          ? '${description.substring(0, 100)}...'
-          : description,
-      isPublished: service.isAvailable,
-      onEdit: () {
-        Get.to(() => AddServiceScreen(service: service));
-      },
-      onTogglePublish: () {
-        _togglePublishStatus(service.serviceId);
-      },
-    );
-  }
-
-  Widget _buildServiceCard(
-    BuildContext context, {
-    required String imageUrl,
-    required String title,
-    required String tag,
-    required String description,
-    required bool isPublished,
-    required VoidCallback onEdit,
-    required VoidCallback onTogglePublish,
-  }) {
-    return Container(
+    return AppCard(
+      onTap: () =>
+          Get.to(() => ServiceDetailsScreen(serviceId: service.serviceId)),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Service Image
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: imageUrl.isEmpty ? const Color(0xFFF0F0F0) : null,
-                  border: imageUrl.isEmpty
-                      ? Border.all(
-                          color: const Color(0xFFE0E0E0),
-                          style: BorderStyle.solid,
-                        )
-                      : null,
+              ClipRRect(
+                borderRadius: AppRadius.rMd,
+                child: SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: img.isEmpty
+                      ? Image.asset(AppImages.service, fit: BoxFit.cover)
+                      : Image.network(
+                          img,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              Image.asset(AppImages.service, fit: BoxFit.cover),
+                        ),
                 ),
-                child: imageUrl.isEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          AppImages.service,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              AppImages.service,
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        ),
-                      ),
               ),
-              const SizedBox(width: 12),
-              // Service Details
+              AppSpacing.hGapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title and Tag
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            title,
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  color: const Color(0xFF2D3436),
-                                ),
-                          ),
+                          child: Text(title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.subtitle),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD0FAE6),
-                            borderRadius: BorderRadius.circular(9999),
-                          ),
-                          child: Text(
-                            tag,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  fontSize: 11,
-                                  color: const Color(0xFF00B894),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                          ),
-                        ),
+                        AppSpacing.hGapSm,
+                        _chip(tag),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    // Description
-                    Text(
-                      description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 13,
-                        color: const Color(0xFF828282),
-                        height: 1.4,
-                      ),
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    Text(desc,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.caption),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Action Buttons - Edit and Unpublish
+          AppSpacing.vGapMd,
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onEdit,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    side: const BorderSide(color: Color(0xFF00B894)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  icon: const Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: Color(0xFF00B894),
-                  ),
-                  label: const Text(
-                    'Edit',
-                    style: TextStyle(
-                      color: Color(0xFF00B894),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                child: AppSecondaryButton(
+                  label: 'Edit',
+                  icon: Icons.edit_outlined,
+                  onPressed: () =>
+                      Get.to(() => AddServiceScreen(service: service)),
                 ),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMd,
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onTogglePublish,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    side: BorderSide(
-                      color: isPublished
-                          ? const Color(0xFF808080)
-                          : Colors.blue,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  icon: Icon(
-                    isPublished
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 16,
-                    color: isPublished ? const Color(0xFF808080) : Colors.blue,
-                  ),
-                  label: Text(
-                    isPublished ? 'Unpublish' : 'Publish',
-                    style: TextStyle(
-                      color: isPublished
-                          ? const Color(0xFF808080)
-                          : Colors.blue,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                child: AppSecondaryButton(
+                  label: published ? 'Unpublish' : 'Publish',
+                  icon: published
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: published ? AppPalette.textGrey : AppPalette.blue,
+                  onPressed: () =>
+                      _homeController.togglePublishStatus(service.serviceId),
                 ),
               ),
             ],
@@ -848,33 +537,99 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     );
   }
 
-  /// Build feed post card - same style as Transport home screen
+  Widget _chip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppPalette.greenBg,
+        borderRadius: AppRadius.rPill,
+      ),
+      child: Text(text, style: AppText.micro.on(AppPalette.green)),
+    );
+  }
+
+  Widget _sectionHeader(String title,
+      {VoidCallback? onView, String viewLabel = 'View All'}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: AppText.h3),
+        if (onView != null)
+          GestureDetector(
+            onTap: onView,
+            child: Text(viewLabel, style: AppText.subtitle.on(AppPalette.primary)),
+          ),
+      ],
+    );
+  }
+
+  // ── Popular Feeds ────────────────────────────────────────────────────────
+  Widget _feedsList() {
+    return Obx(() {
+      if (feedsController.isLoading.isTrue) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: AppLoading(message: 'Loading feeds…'),
+        );
+      }
+      if (feedsController.feeds.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: AppEmptyState(
+            icon: Iconsax.document_text,
+            title: 'No popular feeds',
+          ),
+        );
+      }
+      final popularFeeds = feedsController.feeds.take(3).toList();
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: popularFeeds.length,
+        itemBuilder: (context, index) {
+          final feed = popularFeeds[index];
+          return Padding(
+            padding: EdgeInsets.only(
+                bottom: index < popularFeeds.length - 1 ? 12 : 0),
+            child: _buildFeedPostCard(context, feed),
+          );
+        },
+      );
+    });
+  }
+
+  /// Feed post card — ported from the previous implementation (renders real
+  /// feed data: author, content, image, like/share/view, status, time).
   Widget _buildFeedPostCard(BuildContext context, Post post) {
-    // Use company logo if available, otherwise use a placeholder
     final companyLogoUrl =
         post.companyLogo != null && post.companyLogo!.isNotEmpty
-        ? post.companyLogo!
-        : null;
+            ? post.companyLogo!
+            : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: AppPalette.card,
+        borderRadius: AppRadius.rXl,
+        border: Border.all(color: AppPalette.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           InkWell(
-            onTap: () {
-              Get.to(FleetUserprofile(companyId: post.companyId));
-            },
+            onTap: () => Get.to(FleetUserprofile(companyId: post.companyId)),
             borderRadius: BorderRadius.circular(50),
             child: Row(
               children: [
-                // Company Logo or Profile Avatar
                 companyLogoUrl != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(20),
@@ -883,72 +638,20 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
                           width: 40,
                           height: 40,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback to initials avatar if logo fails to load
-                            return CircleAvatar(
-                              radius: 20,
-                              backgroundColor: const Color(0xFFFFE6E6),
-                              child: Text(
-                                post.userName.isNotEmpty
-                                    ? post.userName[0].toUpperCase()
-                                    : 'U',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFF25C5C),
-                                  fontSize: 16,
-                                ),
-                              ),
-                            );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value:
-                                      loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
+                          errorBuilder: (_, __, ___) => _avatarFallback(post),
                         ),
                       )
-                    : CircleAvatar(
-                        radius: 20,
-                        backgroundColor: const Color(0xFFFFE6E6),
-                        child: Text(
-                          post.userName.isNotEmpty
-                              ? post.userName[0].toUpperCase()
-                              : 'U',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFF25C5C),
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
+                    : _avatarFallback(post),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        post.userName.isNotEmpty ? post.userName : "User",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        post.userName.isNotEmpty ? post.userName : 'User',
+                        style: AppText.subtitle,
                       ),
-                      Text(
-                        post.category,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
+                      Text(post.category, style: AppText.caption),
                     ],
                   ),
                 ),
@@ -956,138 +659,78 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
             ),
           ),
           const SizedBox(height: 10),
-
-          // Post Content
           if (post.content.isNotEmpty)
-            Text(
-              post.content,
-              style: const TextStyle(color: Colors.black87, fontSize: 14),
-            ),
-
-          // Post Images
+            Text(post.content, style: AppText.bodySm),
           if (post.imageUrls.isNotEmpty) ...[
             const SizedBox(height: 10),
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.rLg,
               child: Image.network(
                 _formatImageUrl(post.imageUrls[0]),
                 width: double.infinity,
                 height: 200,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 200,
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 48,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  );
-                },
+                errorBuilder: (_, __, ___) => Container(
+                  height: 200,
+                  color: AppPalette.bg,
+                  child: const Center(
+                    child: Icon(Icons.image_not_supported,
+                        size: 48, color: AppPalette.textFaint),
+                  ),
+                ),
               ),
             ),
           ],
-
-          // If no content and no images, show placeholder
           if (post.content.isEmpty && post.imageUrls.isEmpty) ...[
             const SizedBox(height: 10),
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                "assets/truck.png",
-                height: 150,
-                fit: BoxFit.cover,
-              ),
+              borderRadius: AppRadius.rLg,
+              child: Image.asset('assets/truck.png',
+                  height: 150, width: double.infinity, fit: BoxFit.cover),
             ),
           ],
-
           const SizedBox(height: 10),
-
-          // Reactions
           Obx(() {
             final isLiked = feedsController.isLiked(post.postId);
             return Row(
               children: [
-                // Like Button
                 GestureDetector(
                   onTap: () => feedsController.toggleLike(post.postId),
                   child: Icon(
                     isLiked ? Icons.favorite : Icons.favorite_border,
-                    size: 28,
-                    color: isLiked
-                        ? const Color(0xFFF36969)
-                        : const Color(0xFFFCACAC),
+                    size: 26,
+                    color: isLiked ? AppPalette.primary : AppPalette.textFaint,
                   ),
                 ),
-                const SizedBox(width: 10),
-                // Share Button
+                const SizedBox(width: 12),
                 GestureDetector(
-                  onTap: () {
-                    ShareService.sharePost(
-                      postId: post.postId,
-                      content: post.content,
-                      userName: post.userName,
-                      category: post.category,
-                    );
-                  },
-                  child: SvgPicture.asset(
-                    'assets/share.svg',
-                    width: 26,
-                    height: 26,
+                  onTap: () => ShareService.sharePost(
+                    postId: post.postId,
+                    content: post.content,
+                    userName: post.userName,
+                    category: post.category,
                   ),
+                  child: SvgPicture.asset('assets/share.svg',
+                      width: 24, height: 24),
                 ),
-                const SizedBox(width: 10),
-                // View Button
+                const SizedBox(width: 12),
                 GestureDetector(
                   onTap: () => Get.to(() => const FeedScreen()),
-                  child: SvgPicture.asset(
-                    'assets/eye.svg',
-                    width: 26,
-                    height: 26,
-                  ),
+                  child:
+                      SvgPicture.asset('assets/eye.svg', width: 24, height: 24),
                 ),
                 const Spacer(),
-                // Status badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: post.status == 'Pending'
-                        ? Colors.orange[100]
-                        : Colors.green[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    post.status,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: post.status == 'Pending'
-                          ? Colors.orange[800]
-                          : Colors.green[800],
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                _feedStatusBadge(post.status),
               ],
             );
           }),
-          const SizedBox(height: 10),
-
-          // Footer
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(post.timeAgo, style: const TextStyle(color: Colors.grey)),
+              Text(post.timeAgo, style: AppText.caption),
               if (post.content.length > 100)
-                const Text(
-                  "Read More",
-                  style: TextStyle(color: Colors.blueAccent),
-                ),
+                Text('Read More', style: AppText.caption.on(AppPalette.blue)),
             ],
           ),
         ],
@@ -1095,16 +738,33 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     );
   }
 
-  /// Format image URL helper
+  Widget _avatarFallback(Post post) {
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: AppPalette.primaryLight,
+      child: Text(
+        post.userName.isNotEmpty ? post.userName[0].toUpperCase() : 'U',
+        style: AppText.subtitle.on(AppPalette.primary),
+      ),
+    );
+  }
+
+  Widget _feedStatusBadge(String status) {
+    final pending = status == 'Pending';
+    final color = pending ? AppPalette.amber : AppPalette.green;
+    final bg = pending ? AppPalette.amberBg : AppPalette.greenBg;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: AppRadius.rPill),
+      child: Text(status, style: AppText.micro.on(color)),
+    );
+  }
+
   String _formatImageUrl(String url) {
     if (url.isEmpty) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
     String cleanPath = url.replaceAll('\\', '/');
-    if (cleanPath.startsWith('/')) {
-      cleanPath = cleanPath.substring(1);
-    }
+    if (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
     return '${ApiConstants.baseUrl}/$cleanPath';
   }
 }

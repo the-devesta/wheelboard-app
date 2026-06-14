@@ -25,6 +25,15 @@ class _LeadsScreenState extends State<LeadsScreen> {
   bool _loading = true;
   String? _error;
   String _filter = 'All';
+  String _source = 'All';
+
+  static const _sources = [
+    'All',
+    'Service Assignment',
+    'Direct Inquiry',
+    'Website',
+    'Referral',
+  ];
 
   String get _providerId => AuthService.to.userId;
 
@@ -59,8 +68,11 @@ class _LeadsScreenState extends State<LeadsScreen> {
     }
   }
 
-  List<Lead> get _filtered =>
-      _filter == 'All' ? _leads : _leads.where((l) => l.status == _filter).toList();
+  List<Lead> get _filtered => _leads.where((l) {
+        final byStatus = _filter == 'All' || l.status == _filter;
+        final bySource = _source == 'All' || l.source == _source;
+        return byStatus && bySource;
+      }).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +87,29 @@ class _LeadsScreenState extends State<LeadsScreen> {
         ),
         centerTitle: false,
         title: Text('Leads', style: AppText.h2),
+        actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Filter by source',
+            icon: Icon(
+                _source == 'All' ? Iconsax.filter : Iconsax.filter_tick,
+                color: _source == 'All' ? AppPalette.textGrey : AppPalette.primary),
+            onSelected: (v) => setState(() => _source = v),
+            itemBuilder: (_) => _sources
+                .map((s) => PopupMenuItem(
+                      value: s,
+                      child: Row(children: [
+                        if (s == _source)
+                          const Icon(Iconsax.tick_circle,
+                              size: 16, color: AppPalette.primary)
+                        else
+                          const SizedBox(width: 16),
+                        AppSpacing.hGapSm,
+                        Text(s == 'All' ? 'All Sources' : s, style: AppText.bodySm),
+                      ]),
+                    ))
+                .toList(),
+          ),
+        ],
       ),
       body: _loading
           ? const AppLoading(message: 'Loading leads…')
@@ -113,18 +148,31 @@ class _LeadsScreenState extends State<LeadsScreen> {
   }
 
   Widget _statsStrip() {
-    return Row(children: [
-      _stat('Total', '${_stats.total}', Iconsax.people, AppPalette.blue),
-      AppSpacing.hGapMd,
-      _stat('Converted', '${_stats.converted}', Iconsax.tick_circle, AppPalette.green),
-      AppSpacing.hGapMd,
-      _stat('Conv. rate', '${_stats.conversionRate.toStringAsFixed(0)}%',
-          Iconsax.chart_2, AppPalette.primary),
-    ]);
+    String money(double v) =>
+        v >= 1000 ? '₹${(v / 1000).toStringAsFixed(1)}k' : '₹${v.toStringAsFixed(0)}';
+    return SizedBox(
+      height: 104,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _stat('Total Leads', '${_stats.total}', Iconsax.people, AppPalette.blue),
+          AppSpacing.hGapMd,
+          _stat('Conv. Rate', '${_stats.conversionRate.toStringAsFixed(0)}%',
+              Iconsax.chart_2, AppPalette.green),
+          AppSpacing.hGapMd,
+          _stat('Total Value', money(_stats.totalValue), Iconsax.money_recive,
+              AppPalette.purple),
+          AppSpacing.hGapMd,
+          _stat('Converted', '${_stats.converted}', Iconsax.tick_circle,
+              AppPalette.primary),
+        ],
+      ),
+    );
   }
 
   Widget _stat(String label, String value, IconData icon, Color color) {
-    return Expanded(
+    return SizedBox(
+      width: 132,
       child: AppCard(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:wheelboard/utils/format_utils.dart';
-import 'package:wheelboard/controllers/ServiceProvider/service_earnings_controller.dart';
-import 'package:wheelboard/models/ServiceProvider/service_earnings_model.dart';
-import 'package:wheelboard/utils/constants.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:wheelboard/screens/CompanyServiceProvider/register_payment_screen.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:intl/intl.dart';
 
+import '../../controllers/ServiceProvider/service_earnings_controller.dart';
+import '../../models/ServiceProvider/service_earnings_model.dart';
+import '../../theme/design_system.dart';
+import 'register_payment_screen.dart';
+
+/// Earnings dashboard — mirrors wheelboard-fe `business/earnings`: summary,
+/// service breakdown, an earnings chart, payment history and a period toggle.
 class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
 
@@ -16,579 +18,372 @@ class EarningsScreen extends StatefulWidget {
 }
 
 class _EarningsScreenState extends State<EarningsScreen> {
-  String selectedFilter = 'This Month';
+  late final ServiceEarningsController _c;
+
+  static const _periods = ['monthly', 'quarterly', 'yearly'];
+
+  @override
+  void initState() {
+    super.initState();
+    _c = Get.isRegistered<ServiceEarningsController>()
+        ? Get.find<ServiceEarningsController>()
+        : Get.put(ServiceEarningsController());
+  }
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ServiceEarningsController());
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppPalette.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
-          onPressed: () => Get.back(),
-        ),
+        backgroundColor: AppPalette.card,
+        elevation: 0.5,
+        leading: const BackButton(color: AppPalette.textDark),
         centerTitle: false,
-        title: Text(
-          'Earnings',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1F2937),
-          ),
-        ),
+        title: Text('Earnings', style: AppText.h2),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppPalette.primary,
+        icon: const Icon(Iconsax.wallet_add, color: Colors.white, size: 20),
+        label: Text('Register Payment',
+            style: AppText.subtitle.on(Colors.white)),
+        onPressed: () => Get.to(() => const RegisterPaymentScreen()),
       ),
       body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+        if (_c.isLoading.value && _c.dashboardData.value == null) {
+          return const AppLoading(message: 'Loading earnings…');
         }
-
-        final data = controller.dashboardData.value;
-        if (data == null) {
-          return _buildEmptyState(controller);
-        }
-
+        final data = _c.dashboardData.value;
         return RefreshIndicator(
-          onRefresh: () => controller.fetchEarningsDashboard(),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                // Total Earnings Card
-                _buildTotalEarningsCard(data.totalEarnings),
-                const SizedBox(height: 24),
-
-                // Service Breakdown Section
-                _buildSectionHeader("Service Breakdown"),
-                const SizedBox(height: 16),
-                ...data.serviceBreakdown
-                    .map((s) => _buildServiceBreakdownCard(s))
-                    ,
-
-                const SizedBox(height: 24),
-
-                // Earnings Over Time Section
-                _buildSectionHeader(
-                  "Earnings Over Time",
-                  trailing: _buildChartFilterDropdown(),
-                ),
-                const SizedBox(height: 16),
-                _buildEarningsChart(data.earningsChart),
-
-                const SizedBox(height: 24),
-
-                // Payment History Section
-                _buildSectionHeader("Payment History"),
-                const SizedBox(height: 16),
-                ...data.paymentHistory
-                    .map((p) => _buildPaymentHistoryCard(p))
-                    ,
-
-                const SizedBox(height: 24),
-
-                // Action Buttons
-                _buildOutlinedActionButton(
-                  label: "Export as PDF",
-                  icon: Icons.file_download_outlined,
-                  onPressed: () {
-                    // Logic to export as PDF
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildFilledActionButton(
-                  label: "Register New Payment",
-                  onPressed: () => Get.to(() => const RegisterPaymentScreen()),
-                ),
-                const SizedBox(height: 40),
-              ],
-            ),
+          color: AppPalette.primary,
+          onRefresh: () async {
+            await _c.fetchEarningsDashboard();
+            await _c.fetchMyPayments();
+          },
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            children: [
+              _periodToggle(),
+              AppSpacing.vGapLg,
+              _summaryCard(data),
+              AppSpacing.vGapLg,
+              _chartCard(data),
+              AppSpacing.vGapLg,
+              _breakdownCard(data),
+              AppSpacing.vGapLg,
+              _paymentHistoryCard(),
+            ],
           ),
         );
       }),
     );
   }
 
-  Widget _buildEmptyState(ServiceEarningsController controller) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          const Text("No earnings data found"),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => controller.fetchEarningsDashboard(),
-            child: const Text("Retry"),
-          ),
-        ],
-      ),
-    );
+  Widget _periodToggle() {
+    return Obx(() {
+      final sel = _c.selectedPeriod.value;
+      return Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+            color: AppPalette.card,
+            borderRadius: AppRadius.rLg,
+            border: Border.all(color: AppPalette.border)),
+        child: Row(
+          children: _periods.map((p) {
+            final active = sel == p;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => _c.setPeriod(p),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: active ? AppPalette.primary : Colors.transparent,
+                    borderRadius: AppRadius.rMd,
+                  ),
+                  child: Text(
+                    p[0].toUpperCase() + p.substring(1),
+                    style: AppText.label
+                        .on(active ? Colors.white : AppPalette.textGrey),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    });
   }
 
-  Widget _buildTotalEarningsCard(double total) {
+  Widget _summaryCard(ServiceEarningsModel? data) {
+    final total = data?.totalEarnings ?? 0;
+    final completed = data?.completedBookings ?? 0;
+    final cash = data?.cashEarnings ?? 0;
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF36969), Color(0xFFF87171)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+          gradient: AppPalette.brandGradient, borderRadius: AppRadius.rXl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Total Earnings',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.9),
+          Row(children: [
+            const Icon(Iconsax.empty_wallet, color: Colors.white70, size: 18),
+            AppSpacing.hGapSm,
+            Text('Total Earnings', style: AppText.label.on(Colors.white70)),
+          ]),
+          AppSpacing.vGapSm,
+          Text('₹${NumberFormat('#,##,###').format(total)}',
+              style: AppText.h1.on(Colors.white).size(34)),
+          AppSpacing.vGapLg,
+          Row(children: [
+            _summaryStat(Iconsax.task_square, '$completed', 'Completed'),
+            Container(width: 1, height: 34, color: Colors.white24),
+            _summaryStat(Iconsax.money_recive,
+                '₹${NumberFormat('#,##,###').format(cash)}', 'Cash'),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryStat(IconData icon, String value, String label) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4, left: 4),
+        child: Row(children: [
+          Icon(icon, color: Colors.white, size: 18),
+          AppSpacing.hGapSm,
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(value, style: AppText.subtitle.on(Colors.white)),
+            Text(label, style: AppText.caption.on(Colors.white70)),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _chartCard(ServiceEarningsModel? data) {
+    final chart = data?.earningsChart ?? const [];
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Earnings Trend', style: AppText.h3),
+          AppSpacing.vGapLg,
+          if (chart.isEmpty)
+            SizedBox(
+              height: 80,
+              child: Center(
+                  child: Text('No earnings data for this period',
+                      style: AppText.caption)),
+            )
+          else
+            _BarChart(data: chart),
+        ],
+      ),
+    );
+  }
+
+  Widget _breakdownCard(ServiceEarningsModel? data) {
+    final items = data?.serviceBreakdown ?? const [];
+    final maxAmount = items.isEmpty
+        ? 1.0
+        : items.map((e) => e.totalAmount).reduce((a, b) => a > b ? a : b);
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Service Breakdown', style: AppText.h3),
+          AppSpacing.vGapMd,
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text('No completed services yet', style: AppText.caption),
+            )
+          else
+            ...items.map((s) => _breakdownRow(s, maxAmount)),
+        ],
+      ),
+    );
+  }
+
+  Widget _breakdownRow(ServiceBreakdown s, double maxAmount) {
+    final pct = maxAmount <= 0 ? 0.0 : (s.totalAmount / maxAmount).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                    s.serviceTitle.isEmpty ? 'Service' : s.serviceTitle,
+                    style: AppText.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              Text('₹${NumberFormat('#,##,###').format(s.totalAmount)}',
+                  style: AppText.subtitle.on(AppPalette.primary)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: AppRadius.rPill,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: pct),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutCubic,
+              builder: (_, v, __) => LinearProgressIndicator(
+                value: v,
+                minHeight: 7,
+                backgroundColor: AppPalette.bg,
+                valueColor:
+                    const AlwaysStoppedAnimation(AppPalette.primary),
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            FormatUtils.formatAmount(total),
-            style: GoogleFonts.poppins(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              _buildFilterTab("This Week"),
-              const SizedBox(width: 8),
-              _buildFilterTab("This Month"),
-              const SizedBox(width: 8),
-              _buildFilterTab("Custom"),
-            ],
-          ),
+          Text('${s.bookingCount} booking${s.bookingCount == 1 ? '' : 's'}',
+              style: AppText.caption),
         ],
       ),
     );
   }
 
-  Widget _buildFilterTab(String label) {
-    bool isSelected = selectedFilter == label;
-    return GestureDetector(
-      onTap: () => setState(() => selectedFilter = label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.white.withValues(alpha: 0.2)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+  Widget _paymentHistoryCard() {
+    return Obx(() {
+      final payments = _c.myPayments;
+      return AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Text('Payment History', style: AppText.h3),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => Get.to(() => const RegisterPaymentScreen()),
+                icon:
+                    const Icon(Iconsax.add, size: 16, color: AppPalette.primary),
+                label:
+                    Text('Add', style: AppText.label.on(AppPalette.primary)),
+              ),
+            ]),
+            if (payments.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child:
+                    Text('No payments recorded yet', style: AppText.caption),
+              )
+            else
+              ...payments.take(20).map(_paymentRow),
+          ],
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
+      );
+    });
   }
 
-  Widget _buildSectionHeader(String title, {Widget? trailing}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF1F2937),
-          ),
-        ),
-        if (trailing != null) trailing,
-      ],
-    );
-  }
-
-  Widget _buildChartFilterDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5E7EB),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Text(
-            "By Month",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              color: const Color(0xFF3B82F6),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xFF3B82F6)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceBreakdownCard(ServiceBreakdown service) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+  Widget _paymentRow(PaymentHistory p) {
+    String date = p.paymentDate;
+    final dt = DateTime.tryParse(date);
+    if (dt != null) date = DateFormat('dd MMM yyyy').format(dt);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF1F1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              _getServiceIcon(service.serviceTitle),
-              color: const Color(0xFFF36969),
-              size: 24,
-            ),
+                color: AppPalette.greenBg, borderRadius: AppRadius.rMd),
+            child: const Icon(Iconsax.money_recive,
+                size: 18, color: AppPalette.green),
           ),
-          const SizedBox(width: 16),
+          AppSpacing.hGapMd,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  service.serviceTitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-                Text(
-                  "Last booking: ${_getTimeAgo(service.lastBookingDate)}",
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: const Color(0xFF6B7280),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text(
-                      FormatUtils.formatAmount(service.totalAmount),
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF111827),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "${service.bookingCount} bookings",
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                  ],
-                ),
+                Text(p.serviceTitle,
+                    style: AppText.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                Text(date, style: AppText.caption),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+          Text('+₹${NumberFormat('#,##,###').format(p.paymentAmount)}',
+              style: AppText.subtitle.on(AppPalette.green)),
         ],
       ),
     );
   }
+}
 
-  IconData _getServiceIcon(String title) {
-    if (title.toLowerCase().contains("tyre")) {
-      return Icons
-          .help_outline; // Figma shows a question mark in a circle for tyre? Actually it looks like a help icon.
-    } else if (title.toLowerCase().contains("engine")) {
-      return Icons.build_outlined;
-    } else if (title.toLowerCase().contains("battery")) {
-      return Icons.battery_charging_full_outlined;
-    }
-    return Icons.settings_outlined;
-  }
+/// Simple animated bar chart for the earnings trend.
+class _BarChart extends StatelessWidget {
+  final List<EarningsChartData> data;
+  const _BarChart({required this.data});
 
-  String _getTimeAgo(String? dateString) {
-    if (dateString == null) return "Never";
-    try {
-      final date = DateTime.parse(dateString);
-      final now = DateTime.now();
-      final difference = now.difference(date);
-
-      if (difference.inDays == 0) return "Today";
-      if (difference.inDays == 1) return "Yesterday";
-      if (difference.inDays < 7) return "${difference.inDays} days ago";
-      if (difference.inDays < 30) {
-        int weeks = (difference.inDays / 7).floor();
-        return "$weeks week${weeks > 1 ? 's' : ''} ago";
-      }
-      return formatDateShort(dateString);
-    } catch (_) {
-      return "Recently";
-    }
-  }
-
-  Widget _buildEarningsChart(List<EarningsChartData> chartData) {
-    if (chartData.isEmpty) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: Text("No data for chart")),
-      );
-    }
-
-    return Container(
-      height: 240,
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 20, right: 10, left: 0, bottom: 0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: LineChart(
-        LineChartData(
-          gridData: const FlGridData(show: false),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            leftTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                interval: 1,
-                getTitlesWidget: (value, meta) {
-                  int index = value.toInt();
-                  if (index >= 0 && index < chartData.length) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        chartData[index].monthName.substring(0, 3),
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          color: const Color(0xFF6B7280),
-                          fontWeight: index == 4
-                              ? FontWeight.w700
-                              : FontWeight.w400, // May as active
-                        ),
-                      ),
-                    );
-                  }
-                  return const Text('');
-                },
-              ),
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: chartData.asMap().entries.map((e) {
-                return FlSpot(e.key.toDouble(), e.value.totalAmount);
-              }).toList(),
-              isCurved: true,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF438883), Color(0xFF438883)],
-              ),
-              barWidth: 3,
-              isStrokeCapRound: true,
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (spot, percent, barData, index) {
-                  if (index == 3) {
-                    // Highlight index 4 (April/May area)
-                    return FlDotCirclePainter(
-                      radius: 6,
-                      color: const Color(0xFF438883),
-                      strokeWidth: 2,
-                      strokeColor: Colors.white,
-                    );
-                  }
-                  return FlDotCirclePainter(
-                    radius: 0,
-                    color: Colors.transparent,
-                  );
-                },
-              ),
-              belowBarData: BarAreaData(
-                show: true,
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF438883).withValues(alpha: 0.3),
-                    const Color(0xFF438883).withValues(alpha: 0.0),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-          ],
-          lineTouchData: LineTouchData(
-            enabled: true,
-            touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (_) => const Color(0xFFD1FAE5),
-              tooltipBorder: const BorderSide(
-                color: Color(0xFF438883),
-                width: 1,
-              ),
-              getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                return touchedSpots.map((LineBarSpot touchedSpot) {
-                  return LineTooltipItem(
-                    FormatUtils.formatAmount(touchedSpot.y),
-                    const TextStyle(
-                      color: Color(0xFF438883),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  );
-                }).toList();
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPaymentHistoryCard(PaymentHistory payment) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
+  @override
+  Widget build(BuildContext context) {
+    final maxVal =
+        data.map((e) => e.totalAmount).fold<double>(0, (p, e) => e > p ? e : p);
+    final shown = data.length > 12 ? data.sublist(data.length - 12) : data;
+    return SizedBox(
+      height: 160,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                payment.serviceTitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1F2937),
-                ),
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: shown.map((d) {
+          final ratio = maxVal <= 0 ? 0.0 : (d.totalAmount / maxVal);
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    d.totalAmount >= 1000
+                        ? '${(d.totalAmount / 1000).toStringAsFixed(0)}k'
+                        : d.totalAmount.toStringAsFixed(0),
+                    style: AppText.micro,
+                  ),
+                  const SizedBox(height: 4),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: ratio),
+                    duration: const Duration(milliseconds: 700),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, v, __) => Container(
+                      height: (110 * v).clamp(3.0, 110.0),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [AppPalette.primary, AppPalette.primaryDark],
+                        ),
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(6)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _label(d.monthName),
+                    style: AppText.micro.weight(FontWeight.w400),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              Text(
-                formatDateShort(payment.paymentDate),
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-            ],
-          ),
-          Text(
-            FormatUtils.formatAmount(payment.paymentAmount),
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1F2937),
             ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildOutlinedActionButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, color: const Color(0xFFF36969)),
-        label: Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFF36969),
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFF36969)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilledActionButton({
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFF36969),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 0,
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
+  String _label(String raw) {
+    final dt = DateTime.tryParse(raw);
+    if (dt != null) return DateFormat('d/M').format(dt);
+    return raw.length > 4 ? raw.substring(0, 3) : raw;
   }
 }

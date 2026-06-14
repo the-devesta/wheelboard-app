@@ -13,6 +13,7 @@ import '../../core/auth/auth_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/share_service.dart';
 import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
+import '../shared/subscription_screen.dart';
 import 'banner_carousel.dart';
 import 'companyuser_profile_screen.dart';
 import 'dashboard.dart';
@@ -64,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen>
     _MenuItem('Hire',          Iconsax.briefcase,     Icons.work_outline_rounded),
     _MenuItem('Services',      Iconsax.setting_2,     Icons.build_circle_outlined),
     _MenuItem('Dashboard',     Iconsax.chart_2,       Icons.bar_chart_rounded),
+    _MenuItem('Subscription',  Iconsax.crown,         Icons.workspace_premium_rounded),
   ];
 
   static const _menuColors = [
@@ -73,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen>
     Color(0xFFFFF1F1), // Hire - red
     Color(0xFFF5F3FF), // Services - purple
     Color(0xFFF0F9FF), // Dashboard - sky
+    Color(0xFFFFF7ED), // Subscription - orange
   ];
 
   static const _menuIconColors = [
@@ -82,6 +85,7 @@ class _HomeScreenState extends State<HomeScreen>
     Color(0xFFF36969),
     Color(0xFF8B5CF6),
     Color(0xFF0EA5E9),
+    Color(0xFFF97316),
   ];
 
   @override
@@ -522,6 +526,7 @@ class _HomeScreenState extends State<HomeScreen>
       case 3: Get.to(() => PostJobScreen());
       case 4: Get.to(() => ServiceDashboardScreen());
       case 5: Get.to(() => DashboardScreen());
+      case 6: Get.to(() => const SubscriptionScreen(category: 'fleet_owner'));
     }
   }
 

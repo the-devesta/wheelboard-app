@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../../controllers/Transport/notification_controller.dart';
 import '../../models/notification_model.dart';
 import '../../widgets/custom_loader.dart';
+import 'booking_details_screen.dart';
+import 'leads/lead_detail_screen.dart';
 
 // Design tokens — match CompanyTransport notification_screen
 const _primary = Color(0xFFF36969);
@@ -230,6 +232,7 @@ class _SpNotificationCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           if (isUnread) controller.markAsRead(notification.notificationId);
+          _openTarget(notification);
         },
         child: Container(
           margin: const EdgeInsets.only(bottom: 10),
@@ -340,6 +343,19 @@ class _SpNotificationCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Deep-link a notification to the relevant detail screen.
+  void _openTarget(NotificationModel n) {
+    final leadId = n.leadId;
+    if (leadId != null) {
+      Get.to(() => LeadDetailScreen(leadId: leadId));
+      return;
+    }
+    final serviceId = n.serviceId;
+    if (serviceId != null && n.isServiceBooking) {
+      Get.to(() => BookingDetailsScreen(serviceId: serviceId));
+    }
   }
 
   Color _typeColor(String type) {

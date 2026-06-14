@@ -27,6 +27,8 @@ class ServiceModel {
   final String? businessId;
   final String? categoryColor;
   final double? rating;
+  final String? flagReason;
+  final bool isFlagged;
 
   ServiceModel({
     required this.serviceId,
@@ -53,6 +55,8 @@ class ServiceModel {
     this.businessId,
     this.categoryColor,
     this.rating,
+    this.flagReason,
+    this.isFlagged = false,
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -119,6 +123,8 @@ class ServiceModel {
       businessId: json['businessId']?.toString(),
       categoryColor: json['categoryColor']?.toString(),
       rating: (json['rating'] as num?)?.toDouble(),
+      flagReason: json['flagReason']?.toString(),
+      isFlagged: json['isFlagged'] == true || statusStr.toLowerCase() == 'flagged',
     );
   }
 
@@ -148,6 +154,8 @@ class ServiceModel {
       businessId: other.businessId ?? businessId,
       categoryColor: other.categoryColor ?? categoryColor,
       rating: other.rating ?? rating,
+      flagReason: other.flagReason ?? flagReason,
+      isFlagged: other.isFlagged,
     );
   }
 }

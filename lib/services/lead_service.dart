@@ -89,6 +89,18 @@ class LeadService {
   Future<Lead> addNotes(String id, String notes) => _patch(
       ApiEndpoints.leads.notes(id), {'notes': notes}, 'Failed to add notes');
 
+  Future<Lead> scheduleFollowUp(String id, DateTime date) => _patch(
+      ApiEndpoints.leads.followUp(id), {'date': date.toIso8601String()},
+      'Failed to schedule follow-up');
+
+  Future<void> deleteLead(String id) async {
+    try {
+      await ApiClient.instance.delete<dynamic>(ApiEndpoints.leads.details(id));
+    } on DioException catch (e) {
+      throw Exception(_msg(e, 'Failed to delete lead'));
+    }
+  }
+
   String _msg(DioException e, String fallback) {
     if (e.error is ApiException) return (e.error as ApiException).message;
     final data = e.response?.data;

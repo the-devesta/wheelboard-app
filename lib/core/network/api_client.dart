@@ -195,10 +195,21 @@ class _AuthInterceptor extends Interceptor {
       AppLogger.e('Response: ${err.response?.data}');
     }
 
-    // Attempt refresh once on 401, but never for the refresh endpoint itself
-    if (statusCode == 401 &&
-        !path.contains('/auth/refresh-token') &&
-        !_isRefreshing) {
+    // A 401 from an auth entry-point (login / register / OTP / forgot-password)
+    // means bad credentials or invalid input — NOT an expired session. It must
+    // propagate to the caller so the screen can show the real message ("Invalid
+    // credentials"). Never refresh or force-logout for these: doing so wipes
+    // state and fires `Get.offAllNamed('/login')`, which races the error
+    // snackbar and crashes with "No Overlay widget found".
+    final isAuthEntryPoint = path.contains('/auth/login') ||
+        path.contains('/auth/register') ||
+        path.contains('/auth/request-otp') ||
+        path.contains('/auth/refresh-token') ||
+        path.contains('/auth/forgot-password') ||
+        path.contains('/auth/reset-password');
+
+    // Attempt refresh once on 401 for authenticated endpoints only.
+    if (statusCode == 401 && !isAuthEntryPoint && !_isRefreshing) {
       _isRefreshing = true;
       try {
         final refreshToken = await _sessionManager.getRefreshToken();

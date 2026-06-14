@@ -31,6 +31,26 @@ class SnackBarHelper {
           duration: duration ?? const Duration(seconds: 3),
         ),
       );
+      // Overlay must exist before GetX can mount the snackbar.
+      if (Get.overlayContext == null) return;
+      // Guard against rare overlay races (e.g. a snackbar firing while a route
+      // is being replaced) — a transient UI failure must never crash the app.
+      try {
+        Get.snackbar(
+          title,
+          message,
+          backgroundColor: backgroundColor,
+          colorText: Colors.white,
+          icon: Icon(icon, color: Colors.white),
+          duration: duration ?? const Duration(seconds: 3),
+          snackPosition: SnackPosition.TOP,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+          isDismissible: true,
+        );
+      } catch (_) {
+        // Overlay not mountable right now — drop the toast rather than throw.
+      }
     }
 
     // If we're mid-build/transition, wait for the frame to settle.

@@ -118,6 +118,28 @@ class NotificationModel {
   bool get isTripAssignment =>
       (dataType?.startsWith('trip_assignment') ?? false) || lrOtp != null;
 
+  // ── service-provider payload accessors (mirror notification.data.*) ────────
+  String? get serviceId {
+    final s = data['serviceId']?.toString();
+    return (s == null || s.isEmpty) ? null : s;
+  }
+
+  String? get bookingId {
+    final s = (data['bookingId'] ?? data['assignmentId'])?.toString();
+    return (s == null || s.isEmpty) ? null : s;
+  }
+
+  String? get leadId {
+    final s = (data['leadId'] ?? data['lead'])?.toString();
+    return (s == null || s.isEmpty) ? null : s;
+  }
+
+  /// A service booking/payment notification that should deep-link to the booking
+  /// (backend sets data.type like 'service_payment_received'/'service_completed'
+  /// plus bookingId + serviceId).
+  bool get isServiceBooking =>
+      (dataType?.startsWith('service') ?? false) || bookingId != null;
+
   String get formattedDate {
     try {
       final date = DateTime.parse(createdDate);

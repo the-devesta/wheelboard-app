@@ -1,6 +1,7 @@
 class ServiceEarningsModel {
   final double totalEarnings;
   final double cashEarnings;
+  final int completedBookings;
   final List<ServiceBreakdown> serviceBreakdown;
   final List<EarningsChartData> earningsChart;
   final List<PaymentHistory> paymentHistory;
@@ -8,6 +9,7 @@ class ServiceEarningsModel {
   ServiceEarningsModel({
     required this.totalEarnings,
     this.cashEarnings = 0.0,
+    this.completedBookings = 0,
     required this.serviceBreakdown,
     required this.earningsChart,
     required this.paymentHistory,
@@ -21,10 +23,13 @@ class ServiceEarningsModel {
     return ServiceEarningsModel(
       totalEarnings: total,
       cashEarnings: cash,
+      completedBookings:
+          ((json['completedBookings'] ?? json['completedJobs'] ?? 0) as num).toInt(),
       serviceBreakdown: (json['serviceBreakdown'] as List? ?? [])
           .map((i) => ServiceBreakdown.fromJson(i))
           .toList(),
-      earningsChart: (json['earningsChart'] as List? ?? [])
+      // Backend returns `timeSeriesData`; older builds used `earningsChart`.
+      earningsChart: ((json['earningsChart'] ?? json['timeSeriesData']) as List? ?? [])
           .map((i) => EarningsChartData.fromJson(i))
           .toList(),
       paymentHistory: (json['paymentHistory'] as List? ?? [])
@@ -50,11 +55,13 @@ class ServiceBreakdown {
   });
 
   factory ServiceBreakdown.fromJson(Map<String, dynamic> json) {
+    // Backend earnings analytics groups by category:
+    // { serviceCategory, earnings, bookings }.
     return ServiceBreakdown(
       serviceId: json['serviceId'] ?? '',
-      serviceTitle: json['serviceTitle'] ?? '',
-      totalAmount: (json['totalAmount'] ?? 0.0).toDouble(),
-      bookingCount: json['bookingCount'] ?? 0,
+      serviceTitle: json['serviceTitle'] ?? json['serviceCategory'] ?? '',
+      totalAmount: ((json['totalAmount'] ?? json['earnings'] ?? 0) as num).toDouble(),
+      bookingCount: ((json['bookingCount'] ?? json['bookings'] ?? 0) as num).toInt(),
       lastBookingDate: json['lastBookingDate'],
     );
   }
@@ -72,10 +79,12 @@ class EarningsChartData {
   });
 
   factory EarningsChartData.fromJson(Map<String, dynamic> json) {
+    // timeSeriesData uses { date, earnings }; older builds used
+    // { monthNumber, monthName, totalAmount }.
     return EarningsChartData(
-      monthNumber: json['monthNumber'] ?? 0,
-      monthName: json['monthName'] ?? '',
-      totalAmount: (json['totalAmount'] ?? 0.0).toDouble(),
+      monthNumber: ((json['monthNumber'] ?? 0) as num).toInt(),
+      monthName: (json['monthName'] ?? json['date'] ?? '').toString(),
+      totalAmount: ((json['totalAmount'] ?? json['earnings'] ?? 0) as num).toDouble(),
     );
   }
 }
@@ -94,11 +103,17 @@ class PaymentHistory {
   });
 
   factory PaymentHistory.fromJson(Map<String, dynamic> json) {
+    // `/services/payments/my` (mapManualPayment) uses id / serviceName /
+    // purposeOfPayment; keep the older keys as fallbacks.
     return PaymentHistory(
-      paymentId: json['paymentId'] ?? '',
-      serviceTitle: json['serviceTitle'] ?? '',
-      paymentAmount: (json['paymentAmount'] ?? 0.0).toDouble(),
-      paymentDate: json['paymentDate'] ?? '',
+      paymentId: (json['paymentId'] ?? json['id'] ?? '').toString(),
+      serviceTitle: (json['serviceTitle'] ??
+              json['serviceName'] ??
+              json['purposeOfPayment'] ??
+              'Payment')
+          .toString(),
+      paymentAmount: ((json['paymentAmount'] ?? 0) as num).toDouble(),
+      paymentDate: (json['paymentDate'] ?? json['createdDate'] ?? '').toString(),
     );
   }
 }

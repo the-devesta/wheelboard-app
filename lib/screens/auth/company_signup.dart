@@ -8,7 +8,7 @@ import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../CompanyTransport/complete_company_profile.dart';
 import 'login.dart';
-import 'service_provider_login.dart';
+import 'service_provider_register_screen.dart';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -115,11 +115,7 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
       'businessCategory': _selectedCategory,
     };
 
-    if (_isServiceProvider) {
-      Get.offAll(() => const AlliedBusinessRegistrationScreen(), arguments: args);
-    } else {
-      Get.offAll(() => CompanyCompleteProfile(), arguments: args);
-    }
+    Get.offAll(() => CompanyCompleteProfile(), arguments: args);
   }
 
   @override
@@ -320,7 +316,9 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
                 label: 'Service Provider',
                 icon: Icons.store_mall_directory_rounded,
                 selected: _isServiceProvider,
-                onTap: () => setState(() => _selectedCategory = 'Service Provider'),
+                // Service Provider now has its own dedicated registration flow
+                // (mirrors the web role switch to /register/business).
+                onTap: () => Get.off(() => const ServiceProviderRegisterScreen()),
               ),
             ),
           ],

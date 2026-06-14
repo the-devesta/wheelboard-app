@@ -80,6 +80,97 @@ class DashboardModel {
           [],
     );
   }
+
+  /// Maps the web `GET /dashboard/stats` (fleet-owner, JWT-scoped) response —
+  /// i.e. `wheelboard-fe/src/lib/dashboardApi.ts` `DashboardData` — into this
+  /// model so the existing dashboard UI renders correct, user-scoped data.
+  ///
+  /// The web stats payload is:
+  ///   { stats: { activeTrips, monthlyExpenses, totalTrips, totalVehicles },
+  ///     vehicleAvailability, expenseOverview, recentTransactions,
+  ///     tripCompletionTrend, upcomingTrips }
+  ///
+  /// Sections the web dashboard does not provide (jobsSummary, jobList,
+  /// topProfessionals, assignedServices, vehiclesOnLease, tripEfficiency)
+  /// default to empty/null — the existing widgets already guard for that.
+  factory DashboardModel.fromStats(Map<String, dynamic> json) {
+    final stats = (json['stats'] as Map<String, dynamic>?) ?? const {};
+    final activeTrips = (stats['activeTrips'] as Map<String, dynamic>?) ?? const {};
+    final monthlyExp = (stats['monthlyExpenses'] as Map<String, dynamic>?) ?? const {};
+    final totalTrips = (stats['totalTrips'] as Map<String, dynamic>?) ?? const {};
+    final availability =
+        (json['vehicleAvailability'] as Map<String, dynamic>?) ?? const {};
+    final expenseOverview =
+        (json['expenseOverview'] as Map<String, dynamic>?) ?? const {};
+
+    // Web sends only the highest-spending category *name* in
+    // monthlyExpenses.highestSpending; derive the amount from the categories.
+    double highestCategoryAmount = 0;
+    for (final c in (expenseOverview['categories'] as List<dynamic>?) ?? const []) {
+      final amt = ((c as Map<String, dynamic>)['amount'] as num?)?.toDouble() ?? 0;
+      if (amt > highestCategoryAmount) highestCategoryAmount = amt;
+    }
+
+    final onTrip = (availability['onTrip'] as num?)?.toInt() ?? 0;
+
+    return DashboardModel(
+      tripSummary: TripSummary(
+        totalTrips: (totalTrips['value'] as num?)?.toInt() ?? 0,
+        scheduledToday: (activeTrips['scheduledToday'] as num?)?.toInt() ?? 0,
+      ),
+      activeVehicles: ActiveVehicles(
+        activeVehicles: onTrip,
+        inMaintenance: 0,
+      ),
+      monthlyExpenses: MonthlyExpenses(
+        totalExpenses: (expenseOverview['total'] as num?)?.toDouble() ??
+            (monthlyExp['value'] as num?)?.toDouble() ??
+            0.0,
+        highestFuelAmount: highestCategoryAmount,
+      ),
+      jobsSummary: JobsSummary(activeJobs: 0, unfilledJobs: 0),
+      tripEfficiency: null,
+      vehiclesOnLease: null,
+      tripCompletionTrend:
+          ((json['tripCompletionTrend'] as List<dynamic>?) ?? const []).map((e) {
+        final m = e as Map<String, dynamic>;
+        return TripCompletionTrend(
+          dayName: m['day'] as String?,
+          completedTrips: (m['trips'] as num?)?.toInt() ?? 0,
+        );
+      }).toList(),
+      vehicleAvailability: VehicleAvailability(
+        available: (availability['available'] as num?)?.toInt() ?? 0,
+        onTrip: onTrip,
+        onRent: 0,
+      ),
+      topProfessionals: const [],
+      jobList: const [],
+      recentTransactions:
+          ((json['recentTransactions'] as List<dynamic>?) ?? const []).map((e) {
+        final m = e as Map<String, dynamic>;
+        return RecentTransaction(
+          expenseType: (m['type'] ?? m['description']) as String?,
+          dateEntered: m['date'] as String?,
+          amount: (m['amount'] as num?)?.toDouble(),
+        );
+      }).toList(),
+      assignedServices: const [],
+      upcomingTrips:
+          ((json['upcomingTrips'] as List<dynamic>?) ?? const []).map((e) {
+        final m = e as Map<String, dynamic>;
+        return UpcomingTrip(
+          tripId: m['id']?.toString(),
+          tripCode: m['title'] as String?,
+          pickupLocation: m['route'] as String?,
+          deliveryLocation: null,
+          pickupDate: null,
+          pickupTime: m['time'] as String?,
+          driverName: m['driver'] as String?,
+        );
+      }).toList(),
+    );
+  }
 }
 
 class TripSummary {

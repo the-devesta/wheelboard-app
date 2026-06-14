@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../controllers/service_provider/sp_register_controller.dart';
 import '../../controllers/Transport/user_profile_controller.dart';
 import '../../core/auth/auth_service.dart';
 import '../../models/user_profile_model.dart';
@@ -11,7 +16,7 @@ import '../../widgets/common_delete_button.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/change_password_sheet.dart';
 import '../auth/onboarding_screen.dart';
-import '../auth/service_provider_login.dart';
+import 'complete_profile_screen.dart';
 import '../shared/subscription_screen.dart';
 import '../shared/issues/issues_screen.dart';
 import '../shared/legal_screen.dart';
@@ -159,18 +164,21 @@ class ServiceProviderProfileScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: _primary, width: 1.5),
-                      ),
-                      child: const Icon(
-                        Iconsax.camera,
-                        size: 13,
-                        color: _primary,
+                    GestureDetector(
+                      onTap: () => _pickAndUploadPhoto(context),
+                      child: Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: _primary, width: 1.5),
+                        ),
+                        child: const Icon(
+                          Iconsax.camera,
+                          size: 13,
+                          color: _primary,
+                        ),
                       ),
                     ),
                   ],
@@ -1114,6 +1122,71 @@ class ServiceProviderProfileScreen extends StatelessWidget {
     );
   }
 
+  // ── Profile photo upload ──────────────────────────────────────────────────
+
+  /// Pick a photo (camera/gallery) and upload it as the business logo via the
+  /// web-parity base64 `PUT /users/profile` flow, then refresh the profile.
+  Future<void> _pickAndUploadPhoto(BuildContext context) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Wrap(children: [
+          ListTile(
+            leading: const Icon(Iconsax.camera, color: _primary),
+            title: const Text('Take Photo',
+                style: TextStyle(fontFamily: 'Poppins')),
+            onTap: () => Navigator.pop(context, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Iconsax.gallery, color: _primary),
+            title: const Text('Choose from Gallery',
+                style: TextStyle(fontFamily: 'Poppins')),
+            onTap: () => Navigator.pop(context, ImageSource.gallery),
+          ),
+          ListTile(
+            leading: const Icon(Iconsax.close_circle, color: _textGrey),
+            title: const Text('Cancel', style: TextStyle(fontFamily: 'Poppins')),
+            onTap: () => Navigator.pop(context),
+          ),
+        ]),
+      ),
+    );
+    if (source == null) return;
+
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+      if (picked == null) return;
+      final file = File(picked.path);
+      if (await file.length() > 5 * 1024 * 1024) {
+        SnackBarHelper.error('Image size should be less than 5MB');
+        return;
+      }
+      final ext = picked.path.split('.').last.toLowerCase();
+      final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
+      final base64DataUrl =
+          'data:$mime;base64,${base64Encode(await file.readAsBytes())}';
+
+      final ctrl = Get.isRegistered<SpRegisterController>()
+          ? Get.find<SpRegisterController>()
+          : Get.put(SpRegisterController());
+      final ok = await ctrl.updateProfilePhoto(base64DataUrl);
+      if (ok) {
+        await Get.find<UserProfileController>().fetchCurrentUserProfile();
+        SnackBarHelper.success('Profile photo updated');
+      }
+    } catch (e) {
+      AppLogger.e('Failed to update profile photo', error: e);
+      SnackBarHelper.error('Failed to update photo: $e');
+    }
+  }
+
   // ── Navigation helpers ────────────────────────────────────────────────────
 
   void _navigateToEdit(BuildContext context, UserProfileModel? profile) {
@@ -1121,20 +1194,10 @@ class ServiceProviderProfileScreen extends StatelessWidget {
       SnackBarHelper.error('Unable to edit profile. User ID not found.');
       return;
     }
-    Get.to(
-      () => const AlliedBusinessRegistrationScreen(),
-      arguments: {
-        'userId': profile.userId,
-        'isUpdate': true,
-        'businessName': profile.businessName,
-        'gstNumber': profile.gstNumber,
-        'businessType': profile.businessType,
-        'city': profile.city,
-        'phoneNumber': profile.mobileNo,
-        'email': profile.email,
-        'businessLogoPath': profile.businessLogoPath,
-      },
-    )?.then((result) {
+    // Edit reuses the business profile form (pre-filled from the cached user
+    // profile) and posts the same PUT /users/profile as the web edit flow.
+    Get.to(() => const ServiceProviderCompleteProfileScreen(isEdit: true))
+        ?.then((result) {
       if (result == true) {
         Get.find<UserProfileController>().fetchCurrentUserProfile();
       }
@@ -1148,20 +1211,8 @@ class ServiceProviderProfileScreen extends StatelessWidget {
       SnackBarHelper.error('Unable to edit profile.');
       return;
     }
-    Get.to(
-      () => const AlliedBusinessRegistrationScreen(),
-      arguments: {
-        'userId': profile.userId,
-        'isUpdate': true,
-        'businessName': profile.businessName,
-        'gstNumber': profile.gstNumber,
-        'businessType': profile.businessType,
-        'city': profile.city,
-        'phoneNumber': profile.mobileNo,
-        'email': profile.email,
-        'businessLogoPath': profile.businessLogoPath,
-      },
-    )?.then((result) {
+    Get.to(() => const ServiceProviderCompleteProfileScreen(isEdit: true))
+        ?.then((result) {
       if (result == true) ctrl.fetchCurrentUserProfile();
     });
   }

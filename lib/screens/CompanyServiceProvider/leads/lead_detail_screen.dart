@@ -151,6 +151,14 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
         ),
         centerTitle: false,
         title: Text('Lead Details', style: AppText.h2),
+        actions: [
+          if (_lead != null)
+            IconButton(
+              tooltip: 'Delete lead',
+              icon: const Icon(Iconsax.trash, color: AppPalette.danger),
+              onPressed: _busy ? null : _confirmDelete,
+            ),
+        ],
       ),
       body: _loading
           ? const AppLoading()
@@ -173,6 +181,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             ]),
             const SizedBox(height: 4),
             Text('Source: ${lead.source}', style: AppText.caption),
+            if (lead.nextFollowUpAt != null) ...[
+              const SizedBox(height: 4),
+              Text('Next follow-up: ${_fmtDate(lead.nextFollowUpAt!)}',
+                  style: AppText.caption.on(AppPalette.blue)),
+            ],
             if (lead.estimatedValue != null && lead.estimatedValue! > 0) ...[
               AppSpacing.vGapMd,
               Row(children: [
@@ -322,8 +335,76 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
           ),
         ),
       ]),
+      AppSpacing.vGapMd,
+      SizedBox(
+        width: double.infinity,
+        child: AppSecondaryButton(
+          label: lead.nextFollowUpAt != null
+              ? 'Reschedule Follow-up'
+              : 'Schedule Follow-up',
+          icon: Iconsax.calendar_1,
+          onPressed: _busy ? null : () => _scheduleFollowUp(lead),
+        ),
+      ),
     ]);
   }
+
+  Future<void> _scheduleFollowUp(Lead lead) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: lead.nextFollowUpAt ?? now.add(const Duration(days: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked == null) return;
+    _run(() => _service.scheduleFollowUp(lead.id, picked), 'Follow-up scheduled');
+  }
+
+  Future<void> _confirmDelete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.rXl),
+        title: Text('Delete lead?', style: AppText.title),
+        content: Text('This permanently removes the lead from your CRM.',
+            style: AppText.bodySm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child:
+                Text('Cancel', style: AppText.subtitle.on(AppPalette.textGrey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppPalette.danger,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.rMd)),
+            child: Text('Delete', style: AppText.subtitle.on(Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _busy = true);
+    try {
+      await _service.deleteLead(widget.leadId);
+      if (mounted) {
+        _toast('Lead deleted', AppPalette.green);
+        Get.back(result: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _busy = false);
+        _toast(e.toString().replaceFirst('Exception: ', ''), AppPalette.danger);
+      }
+    }
+  }
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   Widget _contactRow(IconData icon, String value, VoidCallback onTap) {
     return Padding(

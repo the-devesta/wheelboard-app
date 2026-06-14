@@ -281,7 +281,8 @@ class _ContentState extends State<_Content> {
                                 isCurrent: ctrl.isCurrentPlan(plan.id),
                                 isProcessing:
                                     ctrl.processingPlanId.value == plan.id,
-                                onSubscribe: () => ctrl.subscribe(plan),
+                                ctaLabel: ctrl.ctaLabel(plan),
+                                onSubscribe: () => ctrl.onPlanTap(plan),
                               ),
                             ))
                         .toList(),
@@ -462,6 +463,7 @@ class _PlanCard extends StatelessWidget {
   final _RoleTheme theme;
   final bool isCurrent;
   final bool isProcessing;
+  final String ctaLabel;
   final VoidCallback onSubscribe;
 
   const _PlanCard({
@@ -469,6 +471,7 @@ class _PlanCard extends StatelessWidget {
     required this.theme,
     required this.isCurrent,
     required this.isProcessing,
+    required this.ctaLabel,
     required this.onSubscribe,
   });
 
@@ -720,10 +723,8 @@ class _PlanCard extends StatelessWidget {
                                 onTap: null,
                               )
                             : _ctaButton(
-                                key: ValueKey(plan.id),
-                                label: isFree
-                                    ? 'Get Started Free'
-                                    : 'Subscribe Now',
+                                key: ValueKey('${plan.id}-$ctaLabel'),
+                                label: ctaLabel,
                                 icon: Icons.arrow_forward_rounded,
                                 bg: plan.isRecommended
                                     ? t.primary

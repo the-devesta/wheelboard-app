@@ -15,6 +15,12 @@ class ServiceEarningsController extends GetxController {
   var isRecordingPayment = false.obs;
   var dashboardData = Rxn<ServiceEarningsModel>();
 
+  // Analytics window: 'monthly' | 'quarterly' | 'yearly' (matches web).
+  var selectedPeriod = 'monthly'.obs;
+
+  // Recorded payments (manual + online) for the Payment History list.
+  var myPayments = <PaymentHistory>[].obs;
+
   // Separate service list for payment dropdown
   var userServices = <Map<String, String>>[].obs;
 
@@ -23,6 +29,7 @@ class ServiceEarningsController extends GetxController {
     super.onInit();
     fetchEarningsDashboard();
     fetchUserServices(); // Also fetch services
+    fetchMyPayments(); // Payment history
   }
 
   Future<void> fetchEarningsDashboard() async {
@@ -39,7 +46,7 @@ class ServiceEarningsController extends GetxController {
 
       final data = await ApiClient.instance.get<Map<String, dynamic>>(
         ApiEndpoints.services.earningsAnalytics,
-        queryParameters: {'userId': userId},
+        queryParameters: {'userId': userId, 'period': selectedPeriod.value},
       );
 
       dashboardData.value = ServiceEarningsModel.fromJson(data);
@@ -54,6 +61,32 @@ class ServiceEarningsController extends GetxController {
     }
   }
 
+  /// Switch the analytics window (monthly | quarterly | yearly) and refetch.
+  void setPeriod(String period) {
+    if (selectedPeriod.value == period) return;
+    selectedPeriod.value = period;
+    fetchEarningsDashboard();
+  }
+
+  /// Payment history from `/services/payments/my` (the analytics endpoint does
+  /// not return per-payment rows, so the Payment History list comes from here).
+  Future<void> fetchMyPayments() async {
+    try {
+      final userId = _authService.currentUserId;
+      if (userId.isEmpty) return;
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.services.myPayments,
+        queryParameters: {'userId': userId},
+      );
+      myPayments.value = data
+          .whereType<Map<String, dynamic>>()
+          .map(PaymentHistory.fromJson)
+          .toList();
+    } catch (e) {
+      AppLogger.d('❌ Error fetching my payments: $e');
+    }
+  }
+
   /// Fetch user's services for payment dropdown
   Future<void> fetchUserServices() async {
     try {
@@ -62,9 +95,10 @@ class ServiceEarningsController extends GetxController {
 
       AppLogger.d("📋 Fetching user services for userId: $userId");
 
+      // Backend filters the service list on `businessId` (mapped to the owner).
       final decoded = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.services.list,
-        queryParameters: {'userId': userId},
+        queryParameters: {'businessId': userId},
       );
 
       List services = [];
@@ -85,8 +119,9 @@ class ServiceEarningsController extends GetxController {
       if (services.isNotEmpty) {
         userServices.value = services.map<Map<String, String>>((s) {
           return {
-            'serviceId': (s['serviceId'] ?? '').toString(),
-            'serviceTitle': (s['serviceTitle'] ?? s['title'] ?? 'Service').toString(),
+            // Backend returns `id` / `title`; keep legacy keys as fallbacks.
+            'serviceId': (s['id'] ?? s['serviceId'] ?? '').toString(),
+            'serviceTitle': (s['title'] ?? s['serviceTitle'] ?? 'Service').toString(),
           };
         }).toList();
         AppLogger.d("✅ Loaded ${userServices.length} services for dropdown");
@@ -106,6 +141,7 @@ class ServiceEarningsController extends GetxController {
     required double amount,
     required String purpose,
     required String notes,
+    DateTime? date,
   }) async {
     try {
       isRecordingPayment(true);
@@ -115,7 +151,7 @@ class ServiceEarningsController extends GetxController {
         "purposeOfPayment": purpose,
         "paymentAmount": amount,
         "serviceId": serviceId,
-        "paymentDate": DateTime.now().toIso8601String(),
+        "paymentDate": (date ?? DateTime.now()).toIso8601String(),
         "paymentNotes": notes,
         "userId": userId,
       };
@@ -132,6 +168,7 @@ class ServiceEarningsController extends GetxController {
 
       // Refresh data in background
       fetchEarningsDashboard();
+      fetchMyPayments();
 
       return true;
     } on DioException catch (e) {

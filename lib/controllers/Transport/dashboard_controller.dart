@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/network/api_exception.dart';
-import '../../core/auth/auth_service.dart';
 import '../../models/dashboard_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
@@ -31,22 +30,19 @@ class DashboardController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final userId = AuthService.to.userId;
-
-      if (userId.isEmpty) {
-        errorMessage.value = 'User not logged in';
-        SnackBarHelper.error('User not logged in');
-        isLoading.value = false;
-        return;
-      }
-
-      final data = await ApiClient.instance.get<Map<String, dynamic>>(
-        ApiEndpoints.dashboard.get,
-        queryParameters: {'userId': userId},
+      // Fleet-owner stats are JWT-scoped on the backend (req.user.id). Mirrors
+      // wheelboard-fe getDashboardStats() → GET /dashboard/stats. The previous
+      // GET /dashboard?userId=... hit the *admin* dashboard and ignored userId.
+      final raw = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.dashboard.stats,
       );
 
-      dashboardData.value = DashboardModel.fromJson(data);
-      AppLogger.d('✅ Dashboard data loaded');
+      // /dashboard/stats wraps the payload as { success, data: {...} }.
+      final body = raw is Map<String, dynamic> ? (raw['data'] ?? raw) : raw;
+
+      dashboardData.value =
+          DashboardModel.fromStats(body as Map<String, dynamic>);
+      AppLogger.d('✅ Dashboard stats loaded');
     } on DioException catch (e) {
       final apiError = e.error;
       final msg = apiError is ApiException

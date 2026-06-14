@@ -137,10 +137,9 @@ class ProfileCompleteGuard extends GetMiddleware {
         AppLogger.w('🛡️ ProfileGuard: incomplete → /company/complete-profile');
         return const RouteSettings(name: '/company/complete-profile');
       }
-      if (user.role == UserRole.business) {
-        AppLogger.w('🛡️ ProfileGuard: incomplete → /signup/service-provider');
-        return const RouteSettings(name: '/signup/service-provider');
-      }
+      // Service providers use a soft gate (mirrors the web: the business home
+      // shows a "Complete your profile" nudge instead of forcing a redirect).
+      // The register/login flows push the complete-profile step directly.
     }
     return null;
   }

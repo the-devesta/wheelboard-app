@@ -5,11 +5,12 @@ import '../../screens/auth/onboarding_screen.dart';
 import '../../screens/auth/login.dart';
 import '../../screens/auth/company_signup.dart';
 import '../../screens/auth/professional_signup.dart';
-import '../../screens/auth/service_provider_login.dart';
+import '../../screens/auth/service_provider_register_screen.dart';
 import '../../screens/auth/forgot_password.dart';
 import '../../screens/Professional/main_wrapper.dart';
 import '../../screens/CompanyTransport/main_wrapper.dart';
 import '../../screens/CompanyServiceProvider/main_wrapper.dart';
+import '../../screens/CompanyServiceProvider/complete_profile_screen.dart';
 import '../../screens/CompanyTransport/complete_company_profile.dart';
 import '../auth/user_role.dart';
 import 'app_routes.dart';
@@ -55,7 +56,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.serviceProviderSignup,
-      page: () => const AlliedBusinessRegistrationScreen(),
+      page: () => const ServiceProviderRegisterScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -100,6 +101,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.companyCompleteProfile,
       page: () => CompanyCompleteProfile(),
+      middlewares: [AuthGuard()],
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.serviceProviderCompleteProfile,
+      page: () => const ServiceProviderCompleteProfileScreen(),
       middlewares: [AuthGuard()],
       transition: Transition.rightToLeft,
     ),

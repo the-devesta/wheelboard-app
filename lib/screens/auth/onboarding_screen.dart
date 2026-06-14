@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'login.dart';
 import 'company_signup.dart';
 import 'professional_signup.dart';
+import 'service_provider_register_screen.dart';
 
 // ─── Onboarding data ───────────────────────────────────────────────────────
 
@@ -385,7 +386,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   title: 'Service Provider',
                   subtitle: 'Garage, workshop or parts dealer offering services',
                   onTap: () => Get.to(
-                    () => Signup(initialCategory: 'Service Provider'),
+                    () => const ServiceProviderRegisterScreen(),
                     transition: Transition.rightToLeft,
                   ),
                 ),

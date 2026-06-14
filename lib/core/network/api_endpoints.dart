@@ -109,14 +109,12 @@ class _UsersEndpoints {
   // PUT  /users/profile/professional
   String get updateProfessionalProfile => '/users/profile/professional';
 
-  // PUT  /users/profile/service-provider
-  String get updateServiceProvider => '/users/profile/service-provider';
-
   // POST /users/complete-transport  — finish transport company setup
   String get completeTransport => '/users/complete-transport';
 
-  // POST /users/complete-service-provider
-  String get completeServiceProvider => '/users/complete-service-provider';
+  // Service Provider account + business profile are created via the shared
+  // POST /auth/register and PUT /users/profile (see [updateProfile] above),
+  // matching wheelboard-fe — no dedicated complete/update SP endpoints.
 
   // POST /users/professional-signup
   String get professionalSignUp => '/users/professional-signup';
@@ -417,6 +415,11 @@ class _ServiceEndpoints {
   String bookingsByService(String serviceId) =>
       '/services/bookings/service/$serviceId';
 
+  // GET    /services/bookings/provider/:providerId  — all bookings for a
+  // provider in one call (backend resolves the provider from the JWT).
+  String providerBookings(String providerId) =>
+      '/services/bookings/provider/$providerId';
+
   // GET    /services/bookings/:id
   String bookingDetails(String id) => '/services/bookings/$id';
 
@@ -429,6 +432,13 @@ class _ServiceEndpoints {
   // PATCH  /services/bookings/:id/complete
   String completeBooking(String id) => '/services/bookings/$id/complete';
 
+  // POST   /services/bookings/:id/confirm-cash-payment
+  String confirmCashPayment(String id) =>
+      '/services/bookings/$id/confirm-cash-payment';
+
+  // PATCH  /services/bookings/:id/payment-status
+  String paymentStatus(String id) => '/services/bookings/$id/payment-status';
+
   // POST   /services/bookings/:id/payment/initiate
   String initiateBookingPayment(String id) =>
       '/services/bookings/$id/payment/initiate';
@@ -440,8 +450,12 @@ class _ServiceEndpoints {
   // GET    /services/earnings/analytics
   String get earningsAnalytics => '/services/earnings/analytics';
 
-  // POST   /services/earnings/payments  — record manual payment
-  String get recordPayment => '/services/earnings/payments';
+  // POST   /services/payments/manual  — record manual (offline) payment
+  // (backend route is /services/payments/manual, NOT /services/earnings/*)
+  String get recordPayment => '/services/payments/manual';
+
+  // GET    /services/payments/my  — payments recorded for the current user
+  String get myPayments => '/services/payments/my';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

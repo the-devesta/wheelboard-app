@@ -11,7 +11,6 @@ import 'package:wheelboard/utils/app_logger.dart';
 import 'package:wheelboard/widgets/custom_snackbar.dart';
 import 'package:wheelboard/services/razorpay_service.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 class ServiceDashboardController extends GetxController {
   RxBool isLoading = false.obs;
@@ -55,7 +54,10 @@ class ServiceDashboardController extends GetxController {
 
       final data = await ApiClient.instance.get<List<dynamic>>(
         ApiEndpoints.services.myBookings,
-        queryParameters: {'userId': userId},
+        // role selects the consumer branch on the backend; without it the
+        // endpoint defaulted to the PROVIDER branch and returned the wrong
+        // side's bookings. (userId kept for back-compat; backend now uses JWT.)
+        queryParameters: {'userId': userId, 'role': 'company'},
       );
 
       allServices.assignAll(
@@ -120,7 +122,33 @@ class ServiceDashboardController extends GetxController {
         SnackBarHelper.error("Invalid amount for payment");
         return;
       }
+      if (service.assignmentId.isEmpty) {
+        SnackBarHelper.error("Missing booking reference for payment");
+        return;
+      }
       _currentProcessingService = service;
+      isLoading.value = true;
+
+      // Create a REAL Razorpay order on the backend first. Paying against a
+      // server order is what lets verify() validate the HMAC signature — the
+      // previous empty orderId + client-generated paymentId could never verify.
+      final order = await ApiClient.instance.post<Map<String, dynamic>>(
+        ApiEndpoints.services.initiateBookingPayment(service.assignmentId),
+      );
+
+      final orderId = (order['id'] ?? order['orderId'] ?? '').toString();
+      // Backend spreads the Razorpay order, whose `amount` is already in paise.
+      final amountPaise = order['amount'] is num
+          ? (order['amount'] as num).toInt()
+          : (service.paymentAmount * 100).toInt();
+      final key = (order['key'] ?? order['razorpayKey'] ?? '').toString();
+      final currency = (order['currency'] ?? 'INR').toString();
+
+      if (orderId.isEmpty) {
+        isLoading.value = false;
+        SnackBarHelper.error("Could not start payment. Please try again.");
+        return;
+      }
 
       String prefillEmail = "hello@wheelboard.in";
       String prefillContact = "7420861942";
@@ -137,14 +165,25 @@ class ServiceDashboardController extends GetxController {
         AppLogger.d("Could not fetch user profile for payment prefill: $e");
       }
 
+      isLoading.value = false;
       await _razorpayService.openCheckout(
-        amountInPaise: (service.paymentAmount * 100).toInt(),
-        orderId: "",
+        amountInPaise: amountPaise,
+        orderId: orderId,
+        keyOverride: key,
+        currency: currency,
         description: "Payment for ${service.serviceTitle}",
         prefillEmail: prefillEmail,
         prefillContact: prefillContact,
       );
+    } on DioException catch (e) {
+      isLoading.value = false;
+      final msg = e.error is ApiException
+          ? (e.error as ApiException).message
+          : 'Failed to start payment';
+      AppLogger.d("Error initiating payment: $e");
+      SnackBarHelper.error(msg);
     } catch (e) {
+      isLoading.value = false;
       AppLogger.d("Error initiating payment: $e");
       SnackBarHelper.error("Failed to start payment: $e");
     }
@@ -171,40 +210,29 @@ class ServiceDashboardController extends GetxController {
   ) async {
     try {
       isLoading.value = true;
-      final userId = AuthService.to.currentUserId;
 
-      final paymentId = const Uuid().v4();
-      final now = DateTime.now().toIso8601String();
-
-      final payload = {
-        "paymentId": paymentId,
-        "purposeOfPayment": "Service Completion: ${service.category}",
-        "paymentAmount": service.paymentAmount,
-        "serviceId": service.serviceId,
-        "paymentDate": now,
-        "paymentNotes": service.description,
-        "userId": userId.isNotEmpty ? userId : service.assignedToUserId,
-        "paymentStatus": "Success",
-        "paymentMode": "Razorpay",
-        "orderId": paymentResponse.orderId ?? "",
-        "razorPaymentId": paymentResponse.paymentId ?? "",
-        "signature": paymentResponse.signature ?? "",
-        "createdDate": now,
-        "assignmentId": service.assignmentId,
-      };
-
+      // Verify on the backend, which re-computes the HMAC over
+      // `order_id|payment_id` and rejects mismatches. Field names must match
+      // the backend verifyPayment contract exactly (razorpay_* keys).
       await ApiClient.instance.post(
         ApiEndpoints.services.verifyBookingPayment(service.assignmentId),
-        data: payload,
+        data: {
+          'razorpay_order_id': paymentResponse.orderId ?? '',
+          'razorpay_payment_id': paymentResponse.paymentId ?? '',
+          'razorpay_signature': paymentResponse.signature ?? '',
+        },
       );
 
       SnackBarHelper.success("Payment Completed Successfully!");
       getServices();
     } on DioException catch (e) {
-      AppLogger.d("Error completing payment on backend: $e");
-      SnackBarHelper.error("Payment recorded failed at backend.");
+      final msg = e.error is ApiException
+          ? (e.error as ApiException).message
+          : 'Payment verification failed';
+      AppLogger.d("Error verifying payment on backend: $e");
+      SnackBarHelper.error(msg);
     } catch (e) {
-      AppLogger.d("Error completing payment on backend: $e");
+      AppLogger.d("Error verifying payment on backend: $e");
       SnackBarHelper.error("Error completing payment.");
     } finally {
       isLoading.value = false;

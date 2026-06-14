@@ -9,7 +9,7 @@ import '../../utils/navigation_helper.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../CompanyTransport/complete_company_profile.dart';
-import '../auth/service_provider_login.dart';
+import '../CompanyServiceProvider/complete_profile_screen.dart';
 import 'onboarding_screen.dart';
 import 'forgot_password.dart';
 
@@ -111,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
     if (role == UserRole.business && !profileComplete) {
-      Get.to(() => const AlliedBusinessRegistrationScreen());
+      Get.to(() => const ServiceProviderCompleteProfileScreen());
       return;
     }
     NavigationHelper.navigateToMainWrapper();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 
+import '../../core/auth/auth_service.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../core/network/api_exception.dart';
@@ -52,19 +53,38 @@ class BookingDetailsController extends GetxController {
       AppLogger.d("==========================================");
       AppLogger.d("🔍 Service ID: $serviceId");
 
-      final data = await ApiClient.instance.get<List<dynamic>>(
-        ApiEndpoints.services.bookingsByService(serviceId),
-      );
+      final existingId = bookingData.value?.assignmentId ?? '';
 
-      AppLogger.d("🔍 Parsed Data Count: ${data.length}");
-
-      if (data.isNotEmpty) {
-        bookingData.value = ServiceBookingModel.fromJson(
-          data[0] as Map<String, dynamic>,
+      if (existingId.isNotEmpty) {
+        // Fetch the exact booking by id — correct single record (the previous
+        // bookingsByService[0] could return the wrong booking and was only
+        // safe because a service allows one active booking at a time).
+        final raw = await ApiClient.instance.get<dynamic>(
+          ApiEndpoints.services.bookingDetails(existingId),
         );
-        AppLogger.d("✅ Successfully fetched booking details");
+        final map = (raw is Map && raw['data'] is Map<String, dynamic>)
+            ? raw['data'] as Map<String, dynamic>
+            : raw;
+        if (map is Map<String, dynamic>) {
+          bookingData.value = ServiceBookingModel.fromJson(map);
+          AppLogger.d("✅ Successfully fetched booking $existingId");
+        } else {
+          SnackBarHelper.error("No booking details found");
+        }
       } else {
-        SnackBarHelper.error("No booking details found");
+        // Opened with only a serviceId (no booking yet) — fall back to the
+        // service's latest booking.
+        final data = await ApiClient.instance.get<List<dynamic>>(
+          ApiEndpoints.services.bookingsByService(serviceId),
+        );
+        if (data.isNotEmpty) {
+          bookingData.value = ServiceBookingModel.fromJson(
+            data[0] as Map<String, dynamic>,
+          );
+          AppLogger.d("✅ Successfully fetched booking details");
+        } else {
+          SnackBarHelper.error("No booking details found");
+        }
       }
     } on DioException catch (e) {
       AppLogger.e("Error fetching booking details: $e");
@@ -90,6 +110,10 @@ class BookingDetailsController extends GetxController {
     try {
       await ApiClient.instance.patch(
         ApiEndpoints.services.startBooking(assignmentId),
+        // Backend requires the provider's id and rejects any caller whose id
+        // doesn't match the booking's providerId ("Only the assigned provider
+        // can start this service"). Derive it from the authed session.
+        data: {'providerId': AuthService.to.userId},
       );
 
       SnackBarHelper.success('Service started successfully');
@@ -125,7 +149,9 @@ class BookingDetailsController extends GetxController {
     try {
       await ApiClient.instance.patch(
         ApiEndpoints.services.completeBooking(assignmentId),
-        data: {'amount': amount},
+        // providerId is required by the backend (same guard as start). `amount`
+        // is the final price (required for "On Request" services).
+        data: {'providerId': AuthService.to.userId, 'amount': amount},
       );
 
       SnackBarHelper.success('Service completed successfully');
@@ -188,6 +214,60 @@ class BookingDetailsController extends GetxController {
     }
   }
 
+  /// Provider confirms a cash payment was received (Cash bookings move from
+  /// 'ConfirmationPending' to paid). Backend derives the providerId from JWT.
+  Future<void> confirmCashPayment({double? amountPaid}) async {
+    final id = assignmentId;
+    if (id.isEmpty) {
+      SnackBarHelper.error("Assignment ID not found");
+      return;
+    }
+
+    isUpdating.value = true;
+    try {
+      await ApiClient.instance.post(
+        ApiEndpoints.services.confirmCashPayment(id),
+        data: {if (amountPaid != null) 'amountPaid': amountPaid},
+      );
+      SnackBarHelper.success('Cash payment confirmed');
+      await fetchBookingDetails();
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to confirm cash payment';
+      SnackBarHelper.error(msg);
+    } catch (e) {
+      SnackBarHelper.error("Something went wrong: ${e.toString()}");
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
+  /// Update the booking's payment status (Completed | Cancelled | Refunded).
+  /// Backend derives the acting userId from JWT; we send the provider role.
+  Future<void> updatePaymentStatus(String newStatus) async {
+    final id = assignmentId;
+    if (id.isEmpty) {
+      SnackBarHelper.error("Assignment ID not found");
+      return;
+    }
+
+    isUpdating.value = true;
+    try {
+      await ApiClient.instance.patch(
+        ApiEndpoints.services.paymentStatus(id),
+        data: {'role': 'business', 'paymentStatus': newStatus},
+      );
+      SnackBarHelper.success('Payment marked $newStatus');
+      await fetchBookingDetails();
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to update payment status';
+      SnackBarHelper.error(msg);
+    } catch (e) {
+      SnackBarHelper.error("Something went wrong: ${e.toString()}");
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
   /// Get current status
   String get currentStatus => bookingData.value?.status.toLowerCase() ?? '';
 
@@ -211,4 +291,22 @@ class BookingDetailsController extends GetxController {
   num get existingAmount {
     return bookingData.value?.amount ?? 0;
   }
+
+  // ── Payment / completion workflow state (mirrors web booking detail) ───────
+  String get paymentMethod => bookingData.value?.paymentMethod ?? 'Online';
+  String get paymentStatus => bookingData.value?.paymentStatus ?? 'Pending';
+  bool get isCash => paymentMethod.toLowerCase() == 'cash';
+  bool get isPaid => bookingData.value?.isPaid ?? false;
+  bool get needsCashConfirmation =>
+      bookingData.value?.needsCashConfirmation ?? false;
+  bool get businessConfirmed =>
+      bookingData.value?.businessCompletionConfirmed ?? false;
+  bool get companyConfirmed =>
+      bookingData.value?.companyCompletionConfirmed ?? false;
+  bool get fullyCompleted => bookingData.value?.fullyCompleted ?? false;
+
+  /// On-Request bookings (price set at completion).
+  bool get isOnRequest =>
+      (bookingData.value?.pricingType ?? '').toLowerCase() == 'on request' ||
+      existingAmount == 0;
 }

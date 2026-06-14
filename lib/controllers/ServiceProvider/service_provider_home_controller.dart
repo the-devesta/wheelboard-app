@@ -9,6 +9,8 @@ import '../../models/service_model.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../models/service_booking_model.dart';
+import '../../models/lead_model.dart';
+import '../../services/lead_service.dart';
 
 /// Controller for ServiceProvider Home, BookingList, MyListings screens
 class ServiceProviderHomeController extends GetxController {
@@ -24,6 +26,9 @@ class ServiceProviderHomeController extends GetxController {
   final filteredBookings = <ServiceBookingModel>[].obs;
   final selectedStatus = 'All'.obs;
   final totalLeads = 0.obs;
+  // Real lead-CRM stats (total/converted/conversion rate) for the dashboard.
+  final leadStats = Rxn<LeadStats>();
+  final LeadService _leadService = LeadService();
 
   final serviceDetails = Rxn<Map<String, dynamic>>();
 
@@ -40,38 +45,26 @@ class ServiceProviderHomeController extends GetxController {
       final userId = AuthService.to.currentUserId;
       if (userId.isEmpty) return;
 
+      // The backend `GET /services` filters on `businessId` (mapped to the
+      // owning user) — the SAME param the web sends. Sending `userId` was
+      // ignored, so the listing showed the wrong/all services.
       final data = await ApiClient.instance.get<List<dynamic>>(
         ApiEndpoints.services.list,
-        queryParameters: {'userId': userId},
+        queryParameters: {'businessId': userId},
       );
 
-      services.value = data.map((e) {
-        final json = e as Map<String, dynamic>;
-        return ServiceModel(
-          serviceId: json['serviceId'] ?? '',
-          serviceTitle: json['title'] ?? json['serviceTitle'] ?? '',
-          city: json['city'] ?? '',
-          fullAddress: json['fullAddress'] ?? '',
-          isAvailable: json['isVisible'] ?? false,
-          businessName: json['businessName'] ?? '',
-          businessType: json['businessType'] ?? '',
-          serviceCategory: json['serviceCategory'],
-          contactNumber: json['contactNumber'],
-          whatsappNumber: json['whatsappNumber'],
-          description: json['description'],
-          pricingOption: json['isFlatPrice'] == true ? 'Flat Price' : 'Per Hour',
-          amount: json['price'],
-          businessHoursFrom: json['businessFrom'],
-          businessHoursTo: json['businessTo'],
-          daysOpen: json['daysOpen'],
-        );
-      }).toList();
+      // Parse with the canonical `ServiceModel.fromJson` (reads the real backend
+      // keys: id/title/pricing/availability/contactInfo/images/status) instead
+      // of the previous hand-rolled map that read legacy keys.
+      services.value = data
+          .whereType<Map<String, dynamic>>()
+          .map(ServiceModel.fromJson)
+          .toList();
 
-      for (int i = 0; i < data.length && i < services.length; i++) {
-        final json = data[i] as Map<String, dynamic>;
-        final images = json['images'] as List<dynamic>? ?? [];
-        if (images.isNotEmpty) {
-          serviceImages[services[i].serviceId] = images[0].toString();
+      serviceImages.clear();
+      for (final service in services) {
+        if (service.images.isNotEmpty) {
+          serviceImages[service.serviceId] = service.images.first;
         }
       }
 
@@ -90,44 +83,44 @@ class ServiceProviderHomeController extends GetxController {
     }
   }
 
+  /// Real lead-CRM stats from `/leads/provider/:id/stats` (mirrors web), instead
+  /// of the old proxy that counted bookings per service via N+1 requests.
   Future<void> fetchTotalLeads() async {
     try {
-      int total = 0;
-      for (var service in services) {
-        try {
-          final data = await ApiClient.instance.get<List<dynamic>>(
-            ApiEndpoints.services.bookingsByService(service.serviceId),
-          );
-          total += data.length;
-        } catch (e) {
-          // continue to next service
-        }
-      }
-      totalLeads.value = total;
+      final providerId = AuthService.to.currentUserId;
+      if (providerId.isEmpty) return;
+      final stats = await _leadService.getStats(providerId);
+      leadStats.value = stats;
+      totalLeads.value = stats.total;
     } catch (e) {
-      AppLogger.d('Error fetching total leads: $e');
+      AppLogger.d('Error fetching lead stats: $e');
     }
   }
 
-  Future<void> fetchBookings(List<String> serviceIds) async {
+  /// All bookings for the provider in a single request via
+  /// `/services/bookings/provider/:id` (the backend resolves the provider from
+  /// the JWT). Replaces the previous N+1 per-service fetch, which also missed
+  /// bookings whose providerId had been backfilled. The optional [serviceIds]
+  /// arg is kept for call-site compatibility but no longer used.
+  Future<void> fetchBookings([List<String>? serviceIds]) async {
     isLoadingBookings.value = true;
 
     try {
-      List<ServiceBookingModel> collectedBookings = [];
-
-      for (String serviceId in serviceIds) {
-        if (serviceId.isEmpty) continue;
-        try {
-          final data = await ApiClient.instance.get<List<dynamic>>(
-            ApiEndpoints.services.bookingsByService(serviceId),
-          );
-          collectedBookings.addAll(
-            data.map((e) => ServiceBookingModel.fromJson(e as Map<String, dynamic>)).toList(),
-          );
-        } catch (e) {
-          // continue fetching others
-        }
+      final providerId = AuthService.to.currentUserId;
+      if (providerId.isEmpty) {
+        allBookings.clear();
+        applyBookingFilter();
+        return;
       }
+
+      final data = await ApiClient.instance.get<List<dynamic>>(
+        ApiEndpoints.services.providerBookings(providerId),
+      );
+
+      final collectedBookings = data
+          .whereType<Map<String, dynamic>>()
+          .map(ServiceBookingModel.fromJson)
+          .toList();
 
       collectedBookings.sort((a, b) {
         final dateA = DateTime.tryParse(a.scheduledDate) ?? DateTime(0);
@@ -137,6 +130,9 @@ class ServiceProviderHomeController extends GetxController {
 
       allBookings.value = collectedBookings;
       applyBookingFilter();
+    } on DioException catch (e) {
+      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to load bookings';
+      AppLogger.d("Error fetching bookings: $msg");
     } catch (e) {
       AppLogger.d("Error fetching bookings: $e");
     } finally {

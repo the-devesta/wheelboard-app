@@ -113,18 +113,38 @@ class SubscriptionService {
     return UserSubscription.fromJson(inner as Map<String, dynamic>);
   }
 
+  // POST /subscription/abandon-payment  { orderId }
+  // Clears a dismissed/failed checkout intent so an abandoned Razorpay modal is
+  // not later counted as a paid subscription. Fire-and-forget; never throws.
+  Future<void> abandonPayment(String orderId) async {
+    if (orderId.isEmpty) return;
+    try {
+      await ApiClient.instance.post<dynamic>(
+        '/subscription/abandon-payment',
+        data: {'orderId': orderId},
+      );
+    } catch (e) {
+      AppLogger.d('ℹ️ abandon-payment failed (non-critical): $e');
+    }
+  }
+
   // POST /subscription/cancel
   Future<void> cancelSubscription() async {
     await ApiClient.instance.post<dynamic>('/subscription/cancel');
   }
 
-  // POST /subscription/change-plan  { newPlanId }
-  // Upgrades or downgrades the current subscription.
+  // POST /subscription/change-plan  { planId, autoRenew }
+  // Switches the current subscription to another FREE plan (paid upgrades go
+  // through initiate-payment → verify-payment). Body matches the NestJS
+  // backend (`body.planId`) and wheelboard-fe subscriptionApi.changePlan.
   // Returns: { success, message, data: {UserSubscription} }
-  Future<UserSubscription> changePlan(String newPlanId) async {
+  Future<UserSubscription> changePlan(
+    String planId, {
+    bool autoRenew = false,
+  }) async {
     final raw = await ApiClient.instance.post<dynamic>(
       '/subscription/change-plan',
-      data: {'newPlanId': newPlanId},
+      data: {'planId': planId, 'autoRenew': autoRenew},
     );
     final inner = _unwrap(raw);
     return UserSubscription.fromJson(inner as Map<String, dynamic>);

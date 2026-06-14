@@ -47,6 +47,8 @@ class AppRoutes {
   static const professionalNotifications = '/professional/notifications';
 
   // ── Service Provider Screens ──────────────────────────────────────────
+  static const serviceProviderCompleteProfile =
+      '/service-provider/complete-profile';
   static const addService = '/service-provider/add-service';
   static const serviceDetail = '/service-provider/service/:id';
   static const serviceProviderProfile = '/service-provider/profile';

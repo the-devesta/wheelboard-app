@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../utils/constants.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
+import '../../controllers/Transport/service_provider_controller.dart';
 import '../../models/service_model.dart';
+import '../../theme/design_system.dart';
+import '../../utils/constants.dart';
+import '../../utils/share_service.dart';
+import '../../widgets/custom_snackbar.dart';
 import 'add_service_screen.dart';
 import 'booking_details_screen.dart';
-import '../../widgets/custom_loader.dart';
-import '../../utils/app_logger.dart';
-import '../../utils/share_service.dart';
-import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 
+/// Service detail — mirrors the wheelboard-fe `business/listings/[id]` page:
+/// hero gallery, pricing, about + tags, contact (tap-to-call/email),
+/// availability, stats, and View Assigns. Reads the real backend keys
+/// (nested `pricing` / `availability` / `contactInfo`) — the previous version
+/// read legacy flat keys, so pricing/hours/contact came back empty.
 class ServiceDetailsScreen extends StatefulWidget {
   final String serviceId;
 
@@ -19,184 +28,149 @@ class ServiceDetailsScreen extends StatefulWidget {
 }
 
 class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
-  late final ServiceProviderHomeController _homeController;
+  late final ServiceProviderHomeController _home;
+  final ServiceProviderController _serviceCtrl =
+      Get.put(ServiceProviderController(), permanent: false);
+
+  int _activeImage = 0;
+  bool _saved = false;
 
   @override
   void initState() {
     super.initState();
-    _homeController = Get.find<ServiceProviderHomeController>();
-    _homeController.fetchServiceDetails(widget.serviceId);
+    _home = Get.isRegistered<ServiceProviderHomeController>()
+        ? Get.find<ServiceProviderHomeController>()
+        : Get.put(ServiceProviderHomeController());
+    _home.fetchServiceDetails(widget.serviceId);
   }
 
-  // Getters for controller data
-  bool get _isLoading => _homeController.isLoadingServiceDetails.value;
-  Map<String, dynamic>? get _serviceData =>
-      _homeController.serviceDetails.value;
+  Map<String, dynamic> get _s => _home.serviceDetails.value ?? const {};
+
+  // ── typed accessors over the raw service map ───────────────────────────────
+  String get _title =>
+      (_s['title'] ?? _s['serviceTitle'] ?? 'Service').toString();
+  String get _category =>
+      (_s['category'] ?? _s['businessType'] ?? _s['serviceCategory'] ?? '')
+          .toString();
+  String get _status {
+    final raw = _s['status']?.toString();
+    if (raw != null && raw.isNotEmpty) return raw;
+    return _s['isAvailable'] == true ? 'Published' : 'Draft';
+  }
+
+  List<String> get _images =>
+      (_s['images'] as List?)?.map((e) => e.toString()).toList() ?? const [];
+
+  Map<String, dynamic> get _pricing =>
+      _s['pricing'] is Map ? Map<String, dynamic>.from(_s['pricing']) : const {};
+  Map<String, dynamic> get _availability => _s['availability'] is Map
+      ? Map<String, dynamic>.from(_s['availability'])
+      : const {};
+  Map<String, dynamic> get _contact => _s['contactInfo'] is Map
+      ? Map<String, dynamic>.from(_s['contactInfo'])
+      : const {};
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (_isLoading) {
-        return Scaffold(
-          backgroundColor: const Color(0xFFFFF4F4),
-          body: const CustomLoader(message: "Loading service details..."),
-        );
+      if (_home.isLoadingServiceDetails.value) {
+        return const Scaffold(
+            backgroundColor: AppPalette.bg,
+            body: AppLoading(message: 'Loading service details…'));
       }
-
-      if (_serviceData == null) {
+      if (_home.serviceDetails.value == null) {
         return Scaffold(
-          backgroundColor: const Color(0xFFFFF4F4),
+          backgroundColor: AppPalette.bg,
           appBar: AppBar(
-            backgroundColor: const Color(0xFFF36969),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Get.back(),
-            ),
+            backgroundColor: AppPalette.primary,
+            leading: const BackButton(color: Colors.white),
           ),
-          body: const Center(child: Text('Service details not found')),
+          body: const AppErrorState(message: 'Service details not found'),
         );
       }
 
-      final service = _serviceData!;
       return Scaffold(
-        backgroundColor: const Color(0xFFFFF4F4),
+        backgroundColor: AppPalette.bg,
         body: CustomScrollView(
           slivers: [
-            _buildSliverAppBar(context, service),
-            SliverList(
-              delegate: SliverChildListDelegate([
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildServiceInfoCard(service),
-                      const SizedBox(height: 24),
-                      _buildPricingAndHoursCard(service),
-                      const SizedBox(height: 24),
-                      _buildAboutServiceCard(service),
-                      const SizedBox(height: 24),
-                      _buildGalleryCard(service),
-                      const SizedBox(height: 24),
-                      _buildActionButtons(service),
-                    ],
-                  ),
-                ),
-              ]),
+            _heroAppBar(),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  if (_images.length > 1) _thumbnails(),
+                  if (_images.length > 1) AppSpacing.vGapLg,
+                  _statsCard(),
+                  AppSpacing.vGapLg,
+                  _pricingCard(),
+                  AppSpacing.vGapLg,
+                  _aboutCard(),
+                  AppSpacing.vGapLg,
+                  _contactCard(),
+                  AppSpacing.vGapLg,
+                  _availabilityCard(),
+                  AppSpacing.vGapLg,
+                  _actionRow(),
+                ]),
+              ),
             ),
           ],
         ),
-        bottomNavigationBar: _buildBottomButton(context),
+        bottomNavigationBar: _viewAssignsBar(),
       );
     });
   }
 
-  SliverAppBar _buildSliverAppBar(
-    BuildContext context,
-    Map<String, dynamic> service,
-  ) {
-    final serviceTitle =
-        service['serviceTitle'] ?? service['title'] ?? 'Service';
-    final businessName = service['businessName'] ?? '';
-    final images = service['images'] as List<dynamic>? ?? [];
-    final firstImage = images.isNotEmpty ? images[0] as String : null;
-
+  // ── Hero ────────────────────────────────────────────────────────────────
+  Widget _heroAppBar() {
+    final img = _images.isNotEmpty ? _images[_activeImage] : null;
     return SliverAppBar(
-      expandedHeight: 200.0,
-      floating: false,
+      expandedHeight: 240,
       pinned: true,
-      backgroundColor: const Color(0xFFF36969),
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Get.back(),
-      ),
+      backgroundColor: AppPalette.primary,
+      leading: const BackButton(color: Colors.white),
       actions: [
         IconButton(
-          icon: const Icon(Icons.share, color: Colors.white),
-          onPressed: () {
-            ShareService.shareService(
-              serviceId: widget.serviceId,
-              title: service['serviceTitle'] ?? service['title'] ?? 'Service',
-              businessName: service['businessName'] ?? '',
-              category: service['businessType'] ?? 'Service',
-              description: service['description'] ?? '',
-              location:
-                  '${service['fullAddress'] ?? ''}, ${service['city'] ?? ''}',
-              price: '₹${service['amount'] ?? service['price'] ?? 0}',
-            );
-          },
+          icon: const Icon(Iconsax.share, color: Colors.white),
+          onPressed: _share,
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        centerTitle: true,
-        title: const Text(
-          'Service Detail',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16.0,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         background: Stack(
           fit: StackFit.expand,
           children: [
-            firstImage != null
-                ? Image.network(
-                    firstImage,
+            img != null
+                ? Image.network(img,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Image.asset(AppImages.service, fit: BoxFit.cover),
-                  )
+                    errorBuilder: (_, __, ___) =>
+                        Image.asset(AppImages.service, fit: BoxFit.cover))
                 : Image.asset(AppImages.service, fit: BoxFit.cover),
-            Container(
+            const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
+                  colors: [Colors.transparent, Colors.black87],
                 ),
               ),
             ),
             Positioned(
-              bottom: 16,
               left: 16,
+              right: 16,
+              bottom: 16,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    serviceTitle,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (businessName.isNotEmpty) ...[
+                  _statusPill(),
+                  AppSpacing.vGapSm,
+                  Text(_title,
+                      style: AppText.h1.on(Colors.white),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                  if (_category.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      businessName,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
+                    Text(_category, style: AppText.bodySm.on(Colors.white70)),
                   ],
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF36969),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      service['isAvailable'] == true ? 'Published' : 'Draft',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -206,342 +180,460 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     );
   }
 
-  Widget _buildServiceInfoCard(Map<String, dynamic> service) {
-    final serviceTitle =
-        service['serviceTitle'] ?? service['title'] ?? 'Service';
-    final businessType = service['businessType'] ?? '';
-    final fullAddress = service['fullAddress'] ?? '';
-    final city = service['city'] ?? '';
-    final address = fullAddress.isNotEmpty ? '$fullAddress, $city' : city;
-
-    return _buildCard(
-      children: [
-        Text(
-          serviceTitle,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        if (businessType.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Chip(
-            label: Text(businessType),
-            backgroundColor: const Color(0xFFF36969).withValues(alpha: 0.1),
-            labelStyle: const TextStyle(color: Color(0xFFF36969)),
-          ),
-        ],
-        if (address.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          _buildInfoRow(Icons.location_on, address),
-        ],
-      ],
+  Widget _statusPill() {
+    final flagged = _status.toLowerCase() == 'flagged';
+    final published = _status.toLowerCase() == 'published';
+    final color = flagged
+        ? AppPalette.danger
+        : published
+            ? AppPalette.green
+            : AppPalette.amber;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: color, borderRadius: AppRadius.rPill),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(
+            flagged
+                ? Iconsax.warning_2
+                : published
+                    ? Iconsax.tick_circle
+                    : Iconsax.clock,
+            color: Colors.white,
+            size: 13),
+        const SizedBox(width: 5),
+        Text(_status, style: AppText.micro.on(Colors.white)),
+      ]),
     );
   }
 
-  Widget _buildPricingAndHoursCard(Map<String, dynamic> service) {
-    // Handle price - ensure it's a number, not boolean
-    dynamic priceValue = service['amount'] ?? service['price'] ?? 0;
-    if (priceValue is bool) {
-      priceValue = 0;
-    }
-    final price = (priceValue is num)
-        ? priceValue
-        : (double.tryParse(priceValue.toString()) ?? 0);
-
-    // Handle pricing option - convert boolean/string to readable text
-    String pricingOption = 'Per Hour'; // Default
-    if (service['pricingOption'] != null) {
-      final option = service['pricingOption'];
-      if (option is bool) {
-        pricingOption = option ? 'Flat Price' : 'Per Hour';
-      } else if (option is String) {
-        // Handle string values like "True", "true", "Flat Price", etc.
-        final optionLower = option.toLowerCase();
-        if (optionLower == 'true' ||
-            optionLower == 'flat price' ||
-            optionLower == 'flat') {
-          pricingOption = 'Flat Price';
-        } else if (optionLower == 'false' ||
-            optionLower == 'per hour' ||
-            optionLower == 'hourly') {
-          pricingOption = 'Per Hour';
-        } else {
-          pricingOption = option; // Use as is if it's already readable
-        }
-      }
-    } else if (service['isFlatPrice'] != null) {
-      // Fallback to isFlatPrice boolean
-      final isFlat = service['isFlatPrice'];
-      if (isFlat is bool) {
-        pricingOption = isFlat ? 'Flat Price' : 'Per Hour';
-      } else if (isFlat is String) {
-        pricingOption = (isFlat.toLowerCase() == 'true')
-            ? 'Flat Price'
-            : 'Per Hour';
-      }
-    }
-
-    final daysOpen = service['daysOpen'] ?? '';
-    final businessFrom =
-        service['businessHoursFrom'] ?? service['businessFrom'] ?? '';
-    final businessTo =
-        service['businessHoursTo'] ?? service['businessTo'] ?? '';
-
-    String formatTime(String? time) {
-      if (time == null || time.isEmpty) return '';
-      try {
-        final parts = time.split(':');
-        if (parts.length >= 2) {
-          final hour = int.parse(parts[0]);
-          final minute = parts[1];
-          final period = hour >= 12 ? 'PM' : 'AM';
-          final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-          return '$displayHour:$minute $period';
-        }
-        return time;
-      } catch (e) {
-        return time;
-      }
-    }
-
-    return _buildCard(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: _buildDetailItem(
-                Icons.currency_rupee,
-                price > 0 ? '₹${price.toStringAsFixed(0)}' : 'N/A',
-                pricingOption,
+  Widget _thumbnails() {
+    return SizedBox(
+      height: 70,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _images.length,
+        separatorBuilder: (_, __) => AppSpacing.hGapSm,
+        itemBuilder: (_, i) {
+          final selected = i == _activeImage;
+          return GestureDetector(
+            onTap: () => setState(() => _activeImage = i),
+            child: Container(
+              width: 70,
+              decoration: BoxDecoration(
+                borderRadius: AppRadius.rMd,
+                border: Border.all(
+                    color: selected ? AppPalette.primary : AppPalette.border,
+                    width: selected ? 2 : 1),
+              ),
+              child: ClipRRect(
+                borderRadius: AppRadius.rMd,
+                child: Image.network(_images[i],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: AppPalette.border)),
               ),
             ),
-            const SizedBox(width: 8),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  Widget _statsCard() {
+    final rating = (_s['rating'] as num?)?.toDouble() ?? 0;
+    final reviews = (_s['reviewCount'] as num?)?.toInt() ?? 0;
+    final jobs = (_s['completedJobs'] as num?)?.toInt() ?? 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+      decoration: BoxDecoration(
+        gradient: AppPalette.brandGradient,
+        borderRadius: AppRadius.rXl,
+      ),
+      child: Row(
+        children: [
+          _stat(Iconsax.briefcase, '$jobs', 'Jobs Done'),
+          _statDivider(),
+          _stat(Iconsax.star1, rating > 0 ? rating.toStringAsFixed(1) : '—',
+              'Rating'),
+          _statDivider(),
+          _stat(Iconsax.profile_2user, '$reviews', 'Reviews'),
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(IconData icon, String value, String label) {
+    return Expanded(
+      child: Column(children: [
+        Icon(icon, color: Colors.white, size: 20),
+        const SizedBox(height: 6),
+        Text(value, style: AppText.h2.on(Colors.white)),
+        Text(label, style: AppText.caption.on(Colors.white70)),
+      ]),
+    );
+  }
+
+  Widget _statDivider() =>
+      Container(width: 1, height: 40, color: Colors.white24);
+
+  // ── Pricing ─────────────────────────────────────────────────────────────
+  Widget _pricingCard() {
+    final amount = _pricing['amount'] ?? _s['amount'] ?? _s['price'];
+    final type = (_pricing['type'] ?? _s['pricingOption'])?.toString();
+    final currency = (_pricing['currency'] ?? '₹').toString();
+    final details = _pricing['details']?.toString();
+    final amountNum =
+        amount is num ? amount : double.tryParse(amount?.toString() ?? '');
+    final onRequest = (type?.toLowerCase().contains('request') ?? false) ||
+        amountNum == null ||
+        amountNum == 0;
+
+    return AppCard(
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+                color: AppPalette.primaryLight, borderRadius: AppRadius.rLg),
+            child: const Icon(Iconsax.money_4, color: AppPalette.primary),
+          ),
+          AppSpacing.hGapMd,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Pricing', style: AppText.label),
+                const SizedBox(height: 2),
+                Text(
+                  onRequest
+                      ? 'On Request'
+                      : '$currency${amountNum % 1 == 0 ? amountNum.toInt() : amountNum}',
+                  style: AppText.h2.on(AppPalette.primary),
+                ),
+                Text(
+                  onRequest
+                      ? 'Pay after completion'
+                      : (type?.toLowerCase() == 'hourly'
+                          ? 'Per hour'
+                          : 'Fixed rate'),
+                  style: AppText.caption,
+                ),
+                if (details != null && details.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(details, style: AppText.caption),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── About ─────────────────────────────────────────────────────────────────
+  Widget _aboutCard() {
+    final desc = (_s['detailedDescription']?.toString().isNotEmpty == true)
+        ? _s['detailedDescription'].toString()
+        : (_s['description']?.toString() ?? 'No description available');
+    final tags =
+        (_s['tags'] as List?)?.map((e) => e.toString()).toList() ?? const [];
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('About this Service', style: AppText.h3),
+          AppSpacing.vGapMd,
+          Text(desc, style: AppText.body),
+          if (tags.isNotEmpty) ...[
+            AppSpacing.vGapMd,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: tags
+                  .map((t) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                            color: AppPalette.bg,
+                            borderRadius: AppRadius.rPill),
+                        child: Text('#$t', style: AppText.caption),
+                      ))
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Contact ─────────────────────────────────────────────────────────────
+  Widget _contactCard() {
+    final phone = (_contact['phone'] ?? _s['contactNumber'])?.toString();
+    final email = _contact['email']?.toString();
+    final location = (_s['location'] ??
+            [_s['fullAddress'], _s['city']]
+                .where((e) => (e?.toString().isNotEmpty ?? false))
+                .join(', '))
+        .toString();
+
+    final rows = <Widget>[];
+    if (phone != null && phone.isNotEmpty) {
+      rows.add(_contactRow(Iconsax.call, AppPalette.green, 'Phone', phone,
+          () => _launch('tel:$phone')));
+    }
+    if (email != null && email.isNotEmpty) {
+      rows.add(_contactRow(Iconsax.sms, AppPalette.blue, 'Email', email,
+          () => _launch('mailto:$email')));
+    }
+    if (location.isNotEmpty) {
+      rows.add(_contactRow(
+          Iconsax.location, AppPalette.danger, 'Location', location, null));
+    }
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Contact Information', style: AppText.h3),
+          AppSpacing.vGapMd,
+          ...rows,
+        ],
+      ),
+    );
+  }
+
+  Widget _contactRow(IconData icon, Color color, String label, String value,
+      VoidCallback? onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.rMd,
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: AppRadius.rPill),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          AppSpacing.hGapMd,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: AppText.caption),
+                Text(value, style: AppText.subtitle, maxLines: 2),
+              ],
+            ),
+          ),
+          if (onTap != null)
+            const Icon(Iconsax.arrow_right_3,
+                size: 16, color: AppPalette.textFaint),
+        ]),
+      ),
+    );
+  }
+
+  // ── Availability ──────────────────────────────────────────────────────────
+  Widget _availabilityCard() {
+    final hours = (_availability['hours'] ??
+            '${_s['businessHoursFrom'] ?? _s['businessFrom'] ?? ''} - ${_s['businessHoursTo'] ?? _s['businessTo'] ?? ''}')
+        .toString()
+        .trim();
+    final days = (_availability['days'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        (_s['daysOpen']?.toString().split(',').map((e) => e.trim()).toList() ??
+            const []);
+    final hasHours = hours.isNotEmpty && hours != '-';
+    if (!hasHours && days.isEmpty) return const SizedBox.shrink();
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Availability', style: AppText.h3),
+          if (hasHours) ...[
+            AppSpacing.vGapMd,
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                    color: AppPalette.purple.withValues(alpha: 0.12),
+                    borderRadius: AppRadius.rPill),
+                child: const Icon(Iconsax.clock,
+                    color: AppPalette.purple, size: 18),
+              ),
+              AppSpacing.hGapMd,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Working Hours', style: AppText.caption),
+                  Text(hours, style: AppText.subtitle),
+                ],
+              ),
+            ]),
+          ],
+          if (days.isNotEmpty) ...[
+            AppSpacing.vGapMd,
+            Text('Available Days', style: AppText.caption),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: days
+                  .where((d) => d.isNotEmpty)
+                  .map((d) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                            color: AppPalette.greenBg,
+                            borderRadius: AppRadius.rPill),
+                        child: Text(
+                            d.length >= 3 ? d.substring(0, 3) : d,
+                            style: AppText.micro.on(AppPalette.green)),
+                      ))
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Actions ─────────────────────────────────────────────────────────────
+  Widget _actionRow() {
+    return Column(
+      children: [
+        Row(
+          children: [
             Expanded(
-              child: _buildDetailItem(
-                Icons.build,
-                'On-premise',
-                'Service Location',
+              child: AppPrimaryButton(
+                label: 'Edit',
+                icon: Iconsax.edit,
+                color: AppPalette.blue,
+                onPressed: () => Get.to(
+                    () => AddServiceScreen(service: ServiceModel.fromJson(_s))),
+              ),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: AppPrimaryButton(
+                label: 'Delete',
+                icon: Iconsax.trash,
+                color: AppPalette.danger,
+                onPressed: _confirmDelete,
               ),
             ),
           ],
         ),
-        if (daysOpen.isNotEmpty || businessFrom.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (daysOpen.isNotEmpty)
-                Expanded(
-                  child: _buildDetailItem(
-                    Icons.date_range,
-                    daysOpen,
-                    'Available Days',
-                  ),
-                ),
-              if (daysOpen.isNotEmpty && businessFrom.isNotEmpty)
-                const SizedBox(width: 8),
-              if (businessFrom.isNotEmpty && businessTo.isNotEmpty)
-                Expanded(
-                  child: _buildDetailItem(
-                    Icons.access_time,
-                    '${formatTime(businessFrom)} – ${formatTime(businessTo)}',
-                    'Working Hours',
-                  ),
-                ),
-            ],
+        AppSpacing.vGapMd,
+        Row(
+          children: [
+            Expanded(
+              child: AppSecondaryButton(
+                label: 'Share',
+                icon: Iconsax.share,
+                color: AppPalette.textGrey,
+                onPressed: _share,
+              ),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: AppSecondaryButton(
+                label: _saved ? 'Saved' : 'Save',
+                icon: _saved ? Iconsax.heart5 : Iconsax.heart,
+                color: _saved ? AppPalette.primary : AppPalette.textGrey,
+                onPressed: () {
+                  setState(() => _saved = !_saved);
+                  SnackBarHelper.success(_saved
+                      ? 'Service saved to favorites'
+                      : 'Removed from favorites');
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _viewAssignsBar() {
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 12, 16,
+          12 + MediaQuery.of(context).padding.bottom),
+      decoration: const BoxDecoration(
+        color: AppPalette.card,
+        border: Border(top: BorderSide(color: AppPalette.border)),
+      ),
+      child: AppPrimaryButton(
+        label: 'View Assignments',
+        icon: Iconsax.task_square,
+        onPressed: () =>
+            Get.to(() => BookingDetailsScreen(serviceId: widget.serviceId)),
+      ),
+    );
+  }
+
+  // ── Behaviour ─────────────────────────────────────────────────────────────
+  Future<void> _launch(String uri) async {
+    final u = Uri.parse(uri);
+    if (await canLaunchUrl(u)) {
+      await launchUrl(u, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _share() {
+    ShareService.shareService(
+      serviceId: widget.serviceId,
+      title: _title,
+      businessName: (_s['businessName'] ?? '').toString(),
+      category: _category.isEmpty ? 'Service' : _category,
+      description: (_s['description'] ?? '').toString(),
+      location: (_s['location'] ??
+              '${_s['fullAddress'] ?? ''}, ${_s['city'] ?? ''}')
+          .toString(),
+      price: '₹${_pricing['amount'] ?? _s['amount'] ?? _s['price'] ?? 0}',
+    );
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.rXl),
+        title: Text('Delete service?', style: AppText.title),
+        content: Text(
+            'Are you sure you want to delete "$_title"? This cannot be undone.',
+            style: AppText.bodySm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                Text('Cancel', style: AppText.subtitle.on(AppPalette.textGrey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final ok = await _serviceCtrl.deleteService(widget.serviceId);
+              if (ok) {
+                await _home.fetchMyServices();
+                if (mounted) Get.back();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppPalette.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.rMd),
+            ),
+            child: Text('Delete', style: AppText.subtitle.on(Colors.white)),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _buildAboutServiceCard(Map<String, dynamic> service) {
-    final description = service['description'] ?? 'No description available';
-
-    return _buildCard(
-      children: [
-        const Text(
-          'About this Service',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF36969).withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            description,
-            style: const TextStyle(color: Colors.black54, height: 1.5),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGalleryCard(Map<String, dynamic> service) {
-    final images = service['images'] as List<dynamic>? ?? [];
-    final imageUrls = images.map((e) => e.toString()).toList();
-
-    if (imageUrls.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return _buildCard(
-      children: [
-        const Text(
-          'Gallery',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: imageUrls.length,
-          itemBuilder: (context, index) {
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                imageUrls[index],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.image, size: 48, color: Colors.grey),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons(Map<String, dynamic> service) {
-    // Create ServiceModel for edit
-    final serviceModel = ServiceModel(
-      serviceId: service['serviceId'] ?? '',
-      serviceTitle: service['serviceTitle'] ?? service['title'] ?? '',
-      city: service['city'] ?? '',
-      fullAddress: service['fullAddress'] ?? '',
-      isAvailable: service['isAvailable'] ?? false,
-      businessName: service['businessName'] ?? '',
-      businessType: service['businessType'] ?? '',
-      contactNumber: service['contactNumber'],
-      whatsappNumber: service['whatsappNumber'],
-      description: service['description'],
-      pricingOption: service['pricingOption'],
-      amount: service['amount'],
-      businessHoursFrom:
-          service['businessHoursFrom'] ?? service['businessFrom'],
-      businessHoursTo: service['businessHoursTo'] ?? service['businessTo'],
-      daysOpen: service['daysOpen'],
-    );
-
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () {
-          Get.to(() => AddServiceScreen(service: serviceModel));
-        },
-        icon: const Icon(Icons.edit, size: 18, color: Color(0xFFF36969)),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: const BorderSide(color: Color(0xFFF36969)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        label: const Text(
-          'Edit Service Details',
-          style: TextStyle(
-            color: Color(0xFFF36969),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
       ),
-    );
-  }
-
-  Widget _buildBottomButton(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: ElevatedButton(
-        onPressed: () {
-          AppLogger.d("🔍 Navigating to BookingDetailsScreen...");
-          AppLogger.d("🔍 Service ID being passed: ${widget.serviceId}");
-          Get.to(() => BookingDetailsScreen(serviceId: widget.serviceId));
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFF36969),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: const Text(
-          'View Assigns',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCard({required List<Widget> children}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.grey, size: 16),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(text, style: const TextStyle(color: Colors.black54)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetailItem(IconData icon, String title, String subtitle) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Colors.grey, size: 18),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(
-                subtitle,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
