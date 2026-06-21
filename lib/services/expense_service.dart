@@ -4,9 +4,10 @@ import '../core/network/api_client.dart';
 import '../core/network/api_endpoints.dart';
 import '../core/network/api_exception.dart';
 import '../models/expense_model.dart';
+import '../widgets/custom_snackbar.dart';
 
-/// Read client for the user's expenses (mirrors wheelboard-fe
-/// `expensesApi.getExpenses()` → `GET /expenses`, wrapped as `{ success, data }`).
+/// Read/delete client for the user's expenses (mirrors wheelboard-fe
+/// `expensesApi.getExpenses()` / `deleteExpense()` → `GET`/`DELETE /expenses`).
 class ExpenseService {
   Future<List<Expense>> getExpenses() async {
     try {
@@ -23,6 +24,21 @@ class ExpenseService {
       return [];
     } on DioException catch (e) {
       throw Exception(_msg(e, 'Failed to load expenses'));
+    }
+  }
+
+  /// DELETE /expenses/:id  (mirrors web `expensesApi.deleteExpense`).
+  Future<bool> deleteExpense(String id) async {
+    if (id.isEmpty) return false;
+    try {
+      await ApiClient.instance.delete<dynamic>(
+        ApiEndpoints.expenses.details(id),
+      );
+      SnackBarHelper.success('Expense deleted');
+      return true;
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, 'Failed to delete expense'));
+      return false;
     }
   }
 

@@ -3,8 +3,11 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../controllers/Professional/assigned_trip_controller.dart';
+import '../../../controllers/Professional/feeds_controller.dart';
 import '../../../controllers/Professional/open_jobs_controller.dart';
+import '../../../controllers/Professional/professional_tab_controller.dart';
 import '../../../controllers/Transport/notification_controller.dart';
+import '../../../models/feed_model.dart';
 import '../../../theme/design_system.dart';
 import '../../../utils/trip_status.dart';
 import '../../../widgets/custom_snackbar.dart';
@@ -14,6 +17,7 @@ import '../Expenses/professional_expenses_screen.dart';
 import '../MyLearning/my_learning_screen.dart';
 import '../SOS/SOSScreen.dart';
 import '../TrackTrip/TrackTripScreen.dart';
+import '../../shared/subscription_screen.dart';
 import '../widgets/banner_header_widget.dart';
 import '../widgets/job_card_widget.dart';
 import '../widgets/professional_header_widget.dart';
@@ -100,6 +104,8 @@ class ProfessionalHomePageScreen extends StatelessWidget {
                   _nextTripSection(assignedTripController),
                   AppSpacing.vGapLg,
                   _jobsSection(),
+                  AppSpacing.vGapLg,
+                  _popularFeedsSection(),
                   SizedBox(height: bottomInset + 90),
                 ],
               ),
@@ -138,6 +144,10 @@ class ProfessionalHomePageScreen extends StatelessWidget {
           AppSpacing.hGapSm,
           action(Iconsax.teacher, 'My\nLearning',
               () => Get.to(const MyLearningScreen())),
+          AppSpacing.hGapSm,
+          action(Iconsax.card, 'My\nPlans',
+              () => Get.to(() =>
+                  const SubscriptionScreen(category: 'professional'))),
         ],
       ),
     );
@@ -275,6 +285,150 @@ class ProfessionalHomePageScreen extends StatelessWidget {
             );
           }),
         ],
+      ),
+    );
+  }
+
+  // ── Popular Feeds preview ───────────────────────────────────────────────
+  // Mirrors the web professional home `<PopularFeeds />` section: a 4-item
+  // preview of community feeds with a "View All" → Feeds tab.
+
+  void _openFeedsTab() {
+    if (Get.isRegistered<ProfessionalTabController>()) {
+      Get.find<ProfessionalTabController>()
+          .goTo(ProfessionalTabController.feeds);
+    }
+  }
+
+  Widget _popularFeedsSection() {
+    final feedsCtrl = Get.put(FeedsController());
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Popular Feeds', style: AppText.h3),
+              GestureDetector(
+                onTap: _openFeedsTab,
+                child: Row(children: [
+                  Text('View All',
+                      style: AppText.subtitle.on(AppPalette.primary)),
+                  const Icon(Iconsax.arrow_right_3,
+                      size: 16, color: AppPalette.primary),
+                ]),
+              ),
+            ],
+          ),
+          AppSpacing.vGapMd,
+          Obx(() {
+            if (feedsCtrl.isLoading.value && feedsCtrl.feeds.isEmpty) {
+              return _shimmerCard();
+            }
+            final items = feedsCtrl.feeds.take(4).toList();
+            if (items.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 28),
+                decoration: BoxDecoration(
+                  color: AppPalette.card,
+                  borderRadius: AppRadius.rLg,
+                  border: Border.all(color: AppPalette.border),
+                ),
+                child: Center(
+                  child: Text('No feeds available yet.',
+                      style: AppText.bodySm.on(AppPalette.textGrey)),
+                ),
+              );
+            }
+            return Column(
+              children: [
+                for (int i = 0; i < items.length; i++) ...[
+                  _feedPreviewCard(items[i]),
+                  if (i < items.length - 1) AppSpacing.vGapMd,
+                ],
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _feedPreviewCard(Post post) {
+    return GestureDetector(
+      onTap: _openFeedsTab,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppPalette.card,
+          borderRadius: AppRadius.rLg,
+          border: Border.all(color: AppPalette.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: AppPalette.brandGradient,
+                borderRadius: AppRadius.rMd,
+              ),
+              child: Text(
+                post.author.initials.isNotEmpty ? post.author.initials : 'U',
+                style: AppText.subtitle.on(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          post.author.name.isNotEmpty
+                              ? post.author.name
+                              : 'Wheelboard',
+                          style: AppText.subtitle.on(AppPalette.textDark),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (post.serverTimeAgo.isNotEmpty)
+                        Text(post.serverTimeAgo,
+                            style: AppText.caption.on(AppPalette.textGrey)),
+                    ],
+                  ),
+                  if (post.category.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(post.category,
+                        style: AppText.caption.on(AppPalette.primary)),
+                  ],
+                  const SizedBox(height: 4),
+                  Text(
+                    post.content,
+                    style: AppText.bodySm.on(AppPalette.textMid),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

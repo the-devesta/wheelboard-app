@@ -134,6 +134,7 @@ class LeaseBooking {
   final double? basePrice;
   final double? deliveryFee;
   final double? securityDeposit;
+  final double? taxes;
   final String? requestMessage;
   final String? ownerNote;
   final String? rejectionReason;
@@ -162,6 +163,7 @@ class LeaseBooking {
     this.basePrice,
     this.deliveryFee,
     this.securityDeposit,
+    this.taxes,
     this.requestMessage,
     this.ownerNote,
     this.rejectionReason,
@@ -205,6 +207,16 @@ class LeaseBooking {
       lesseeId = rawLessee?.toString();
     }
 
+    // Pricing can arrive nested under `priceBreakdown` (the wheelboard-fe shape,
+    // see types/Lease.ts → PriceBreakdown) or flat at the top level (legacy).
+    // Prefer the nested values, fall back to flat keys.
+    final rawBreakdown = j['priceBreakdown'];
+    final pb = rawBreakdown is Map<String, dynamic>
+        ? rawBreakdown
+        : const <String, dynamic>{};
+    double? pick(String nestedKey, String flatKey) =>
+        (pb[nestedKey] as num?)?.toDouble() ?? (j[flatKey] as num?)?.toDouble();
+
     return LeaseBooking(
       id: j['_id']?.toString() ?? j['id']?.toString() ?? '',
       listingId: listingId,
@@ -214,12 +226,13 @@ class LeaseBooking {
       startDate: j['startDate']?.toString(),
       endDate: j['endDate']?.toString(),
       durationDays: (j['durationDays'] as num?)?.toInt(),
-      totalPrice: (j['totalPrice'] as num?)?.toDouble(),
-      basePrice: (j['basePrice'] as num?)?.toDouble(),
-      deliveryFee: (j['deliveryFee'] as num?)?.toDouble(),
-      securityDeposit: (j['securityDeposit'] as num?)?.toDouble(),
+      totalPrice: pick('total', 'totalPrice'),
+      basePrice: pick('basePrice', 'basePrice'),
+      deliveryFee: pick('deliveryFee', 'deliveryFee'),
+      securityDeposit: pick('securityDeposit', 'securityDeposit'),
+      taxes: pick('taxes', 'taxes'),
       requestMessage: j['requestMessage']?.toString(),
-      ownerNote: j['ownerNote']?.toString(),
+      ownerNote: j['ownerNote']?.toString() ?? j['ownerNotes']?.toString(),
       rejectionReason: j['rejectionReason']?.toString(),
       cancellationReason: j['cancellationReason']?.toString(),
       pickupLocation: j['pickupLocation']?.toString(),

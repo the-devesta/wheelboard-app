@@ -10,7 +10,6 @@ import '../../widgets/custom_snackbar.dart';
 class ServiceController extends GetxController {
   final isLoading = false.obs;
   final isDetailLoading = false.obs;
-  final isAssigning = false.obs;
   final services = <ServiceModel>[].obs;
   final selectedService = Rxn<ServiceModel>();
   final errorMessage = ''.obs;
@@ -92,62 +91,6 @@ class ServiceController extends GetxController {
     } finally {
       isDetailLoading.value = false;
     }
-  }
-
-  Future<bool> assignService({
-    required String serviceId,
-    required String assignedToUserId,
-    required String vehicleNumber,
-    required DateTime scheduledDate,
-    required String scheduledTime,
-    required String description,
-    String? serviceTitle,
-  }) async {
-    try {
-      isAssigning.value = true;
-      errorMessage.value = '';
-
-      final payload = <String, dynamic>{
-        'serviceId': serviceId,
-        'assignedToUserId': assignedToUserId,
-        'vehicleNumber': vehicleNumber,
-        'scheduledDate': scheduledDate.toIso8601String(),
-        'scheduledTime': scheduledTime,
-        'description': description,
-      };
-
-      if (serviceTitle != null && serviceTitle.isNotEmpty) {
-        payload['serviceTitle'] = serviceTitle;
-      }
-
-      final response = await ApiClient.instance.post<Map<String, dynamic>>(
-        ApiEndpoints.services.createBooking,
-        data: payload,
-      );
-
-      final successValue = response['success'];
-      final responseSuccess = successValue is bool ? successValue : true;
-
-      if (responseSuccess) {
-        final message = response['message'] as String? ?? 'Service assigned successfully.';
-        SnackBarHelper.success(message);
-        return true;
-      } else {
-        final message = response['message'] as String? ?? 'Failed to assign service.';
-        errorMessage.value = message;
-        SnackBarHelper.error(message);
-      }
-    } on DioException catch (e) {
-      final msg = e.error is ApiException ? (e.error as ApiException).message : 'Failed to assign service';
-      errorMessage.value = msg;
-      SnackBarHelper.error(msg);
-    } catch (e) {
-      errorMessage.value = 'Failed to assign service: ${e.toString()}';
-      SnackBarHelper.error(errorMessage.value);
-    } finally {
-      isAssigning.value = false;
-    }
-    return false;
   }
 
   ServiceModel? getServiceById(String serviceId) {

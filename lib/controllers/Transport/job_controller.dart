@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart' as dio;
 import 'package:get/get.dart';
@@ -10,6 +9,7 @@ import '../../models/job_application_model.dart';
 import '../../models/job_stats_model.dart';
 import '../../models/hired_professional_model.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../services/media_service.dart';
 import '../../utils/app_logger.dart';
 
 /// Employer (Company/Business) jobs controller. A 1:1 mirror of the FE
@@ -490,16 +490,11 @@ class JobController extends GetxController {
 
   Future<void> refreshJobs() => fetchJobs();
 
-  /// Upload a picked image and return its hosted URL (reuses the shared
-  /// `/feeds/upload-image` host; jobs store the resulting URL in `image`).
+  /// Upload a picked image via the unified /media endpoint and return its
+  /// hosted URL (jobs store the resulting URL in `image`).
   Future<String?> _uploadImage(File file) async {
-    final bytes = await file.readAsBytes();
-    final dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-    final data = await ApiClient.instance.post<Map<String, dynamic>>(
-      ApiEndpoints.feeds.uploadImage,
-      data: {'image': dataUrl},
-    );
-    return data['url']?.toString();
+    final media = await MediaService.upload(file, folder: 'job-images');
+    return media?.url;
   }
 
   String _msg(dio.DioException e, {String fallback = 'Something went wrong'}) {

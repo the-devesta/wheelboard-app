@@ -1,19 +1,24 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
-import 'dart:io';
+
 import '../../controllers/Professional/expense_controller.dart';
 import '../../controllers/Transport/add_trip_controller.dart';
 import '../../controllers/Professional/assigned_trip_controller.dart';
-import '../../models/expense_purpose_model.dart';
 import '../../models/add_new_trip_model.dart';
 import '../../models/assigned_trip_model.dart';
-import '../../utils/session_manager.dart';
-import '../../widgets/custom_loader.dart';
+import '../../widgets/custom_snackbar.dart';
 import 'package:wheelboard/core/auth/auth_service.dart';
+import '../../services/media_service.dart';
 import '../../utils/app_logger.dart';
 
+/// Add Expense — rewritten to mirror wheelboard-fe `/professional/expenses/add`.
+///
+/// Same flow & payload as the web: pick a category (fixed enum), amount, date,
+/// optional description, a trip, optional receipt → `POST /expenses` (JSON, via
+/// [ExpenseController.saveExpense]). The web has no "hired" restriction, so the
+/// old gate is removed — every user can add expenses.
 class AddExpenseScreen extends StatefulWidget {
   final bool isProfessional;
 
@@ -24,1288 +29,588 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  final ExpenseController expenseController = Get.put(ExpenseController());
-  late dynamic tripController;
+  static const _primary = Color(0xFFF36969);
+  static const _primaryLt = Color(0xFFFFF1F1);
+  static const _bg = Color(0xFFF9FAFB);
+  static const _textDark = Color(0xFF111827);
+  static const _textGrey = Color(0xFF6B7280);
+  static const _border = Color(0xFFE5E7EB);
 
-  // 🔍 TRUBLESHOOT: Force professional check here as well if needed
-  bool get isProfessional => _localIsProfessional;
+  /// Category set mirrors the web add-expense page (ids = backend enum values).
+  static const _categories = <_Cat>[
+    _Cat('fuel', 'Fuel', '⛽'),
+    _Cat('food', 'Food', '🍔'),
+    _Cat('maintenance', 'Vehicle Repair', '🔧'),
+    _Cat('toll', 'Toll', '🛣️'),
+    _Cat('challan', 'Challan', '🚨'),
+    _Cat('parking', 'Parking', '🅿️'),
+    _Cat('advance', 'Advance', '💰'),
+    _Cat('other', 'Others', '📦'),
+  ];
 
-  ExpensePurpose? _selectedExpensePurpose;
-  dynamic _selectedTrip; // Can be Trip or AssignedTrip
+  final ExpenseController _expenseController = Get.put(ExpenseController());
+  late dynamic _tripController;
+  bool _localIsProfessional = false;
+
+  String? _selectedCategory;
+  dynamic _selectedTrip; // AssignedTrip | Trip
+  DateTime _selectedDate = DateTime.now();
+  File? _receiptFile;
+
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  DateTime? _selectedDate;
-  File? _uploadedFile;
-  bool _isSaving = false; // Local flag to prevent duplicate calls
-  bool _localIsProfessional =
-      false; // State-based source of truth ensuring API consistency
-
-  // Color mapping for expense types
-  final Map<String, Color> _expenseColors = {
-    'Advance': const Color(0xFFE74C3C), // Red
-    'Fuel': const Color(0xFF3498DB), // Light Blue
-    'Challan': const Color(0xFF9B59B6), // Purple
-    'Food': const Color(0xFFE67E22), // Orange
-    'Salary': const Color(0xFFF1C40F), // Yellow
-    'Enroute': const Color(0xFF95A5A6), // Light Grey
-    'Other': const Color(0xFF34495E), // Dark Grey
-  };
-
-  // Icon mapping for expense types
-  final Map<String, IconData> _expenseIcons = {
-    'Advance': Icons.account_balance_wallet,
-    'Fuel': Icons.local_gas_station,
-    'Challan': Icons.receipt_long,
-    'Food': Icons.restaurant,
-    'Salary': Icons.payments,
-    'Enroute': Icons.directions_car,
-    'Other': Icons.category,
-  };
 
   @override
   void initState() {
     super.initState();
-
-    // 🔍 DEBUG: Check user type and controller selection
-    AppLogger.d("🔍 ========================================");
-    AppLogger.d("🔍 ADD EXPENSE SCREEN INITIALIZATION");
-    AppLogger.d("🔍 ========================================");
-    AppLogger.d("🔍 isProfessional flag: $isProfessional");
-    AppLogger.d(
-      "🔍 User Type: ${isProfessional ? 'Professional/Driver' : 'Transport Company'}",
-    );
-
-    AppLogger.d("🔍 ========================================");
-
-    // 📋 DEBUG: Dump all session data to see what is actually stored
-    SessionManager.logAllSessionData();
-
-    // Verify user type directly from AuthService using enum-based check
-    // Default to widget passed value
     _localIsProfessional = widget.isProfessional;
-
-    bool effectiveIsProfessional = _localIsProfessional;
-
-    // Double check: if AuthService says Professional, we MUST treat as Professional
-    if (Get.find<AuthService>().isProfessional) {
-      effectiveIsProfessional = true;
-    }
-
-    // Store for build usage
-    _localIsProfessional = effectiveIsProfessional;
+    if (Get.find<AuthService>().isProfessional) _localIsProfessional = true;
 
     if (_localIsProfessional) {
-      AppLogger.d("🔍 Using: AssignedTripController (Access: Professional)");
-      AppLogger.d("🔍 API: api/Trip/assign-trip-list/{userId}");
-      tripController = Get.put(AssignedTripController());
-
-      // Ensure we fetch data specifically for this controller
+      _tripController = Get.put(AssignedTripController());
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        (tripController as AssignedTripController).fetchAssignedTrips();
+        (_tripController as AssignedTripController).fetchAssignedTrips();
       });
     } else {
-      AppLogger.d("🔍 Using: TripController (Access: Transport/Company)");
-      AppLogger.d("🔍 API: api/Trip/trip-list/{userId}");
-      tripController = Get.put(TripController());
-    }
-    AppLogger.d("🔍 ========================================");
-
-    _selectedDate = DateTime.now();
-    _dateController.text = _formatDate(_selectedDate!);
-    _amountController.text = '0.00';
-    _fetchTrips();
-  }
-
-  Future<void> _fetchTrips() async {
-    if (_localIsProfessional) {
-      if (tripController is AssignedTripController) {
-        (tripController as AssignedTripController).fetchAssignedTrips();
-      } else {
-        // Should not happen, but safe fallback
-        tripController = Get.put(AssignedTripController());
-        (tripController as AssignedTripController).fetchAssignedTrips();
-      }
-    } else {
-      final sessionManager = SessionManager();
-      final userId = await sessionManager.getString("userId");
-
-      if (userId != null && userId.isNotEmpty) {
-        // Try Transport flow first
-        if (tripController is! TripController) {
-          tripController = Get.put(TripController());
-        }
-        await (tripController as TripController).fetchTrips(userId);
-
-        // SELF-HEALING LOGIC:
-        // If Transport returns 0 trips, check if they are actually a Professional
-        if ((tripController as TripController).trips.isEmpty) {
-          AppLogger.d(
-            "⚠️ No transport trips found. Checking if user is secretly a Professional...",
-          );
-
-          // Create a temporary controller to check
-          final tempAssignedController = Get.put(
-            AssignedTripController(),
-            tag: 'temp_check',
-          );
-          await tempAssignedController.fetchAssignedTrips();
-
-          if (tempAssignedController.assignedTrips.isNotEmpty) {
-            AppLogger.d(
-              "🚨 SELF-HEAL TRIGGERED: Found assigned trips! Switching mode to Professional.",
-            );
-
-            setState(() {
-              _localIsProfessional = true;
-
-              // Promote temp controller to main controller
-              tripController = Get.put(AssignedTripController());
-              // Copy data over if needed or just refetch (refetch is cleaner)
-              (tripController as AssignedTripController).assignedTrips
-                  .assignAll(tempAssignedController.assignedTrips);
-            });
-          }
-          // Cleanup temp
-          Get.delete<AssignedTripController>(tag: 'temp_check');
-        }
-      }
+      _tripController = Get.put(TripController());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fetchCompanyTrips());
     }
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${date.day.toString().padLeft(2, '0')}-${months[date.month - 1]}-${date.year}';
+  Future<void> _fetchCompanyTrips() async {
+    final userId = AuthService.to.currentUserId;
+    if (userId.isNotEmpty && _tripController is TripController) {
+      await (_tripController as TripController).fetchTrips(userId);
+    }
   }
 
   @override
   void dispose() {
     _amountController.dispose();
-    _dateController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final pickedDate = await showDatePicker(
+  // ── helpers ────────────────────────────────────────────────────────────────
+  String _fmtDate(DateTime d) {
+    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${d.day.toString().padLeft(2, '0')} ${m[d.month - 1]} ${d.year}';
+  }
+
+  String? _tripLabel() {
+    final t = _selectedTrip;
+    if (t == null) return null;
+    if (t is AssignedTrip) return '${t.pickupLocation} → ${t.deliveryLocation}';
+    if (t is Trip) return '${t.pickupLocation} → ${t.deliveryLocation}';
+    return null;
+  }
+
+  String? _tripIdOf(dynamic t) {
+    if (t is AssignedTrip) return t.tripId;
+    if (t is Trip) return t.id.isNotEmpty ? t.id : t.tripId;
+    return null;
+  }
+
+  bool get _isValid =>
+      _selectedCategory != null &&
+      (double.tryParse(_amountController.text) ?? 0) > 0 &&
+      _selectedTrip != null;
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
+      initialDate: _selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx)
+            .copyWith(colorScheme: const ColorScheme.light(primary: _primary)),
+        child: child!,
+      ),
     );
-
-    if (pickedDate != null) {
-      setState(() {
-        _selectedDate = pickedDate;
-        _dateController.text = _formatDate(pickedDate);
-      });
-    }
+    if (picked != null) setState(() => _selectedDate = picked);
   }
 
-  Future<void> _pickFile() async {
+  Future<void> _pickReceipt() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'png', 'pdf'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
       );
-
       if (result != null && result.files.single.path != null) {
-        setState(() {
-          _uploadedFile = File(result.files.single.path!);
-        });
+        setState(() => _receiptFile = File(result.files.single.path!));
       }
     } catch (e) {
-      // Handle error
+      AppLogger.d('Receipt pick failed: $e');
     }
   }
 
-  void _showExpensePurposeModal() {
+  Future<void> _save() async {
+    if (_expenseController.isSaving.value) return;
+    if (_selectedCategory == null) {
+      SnackBarHelper.warning('Please select a category');
+      return;
+    }
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      SnackBarHelper.warning('Please enter a valid amount');
+      return;
+    }
+    if (_selectedTrip == null) {
+      SnackBarHelper.warning('Please choose a trip');
+      return;
+    }
+
+    // Upload the receipt (if any) to Firebase via the unified /media endpoint
+    // and persist the hosted URL. Previously only the file NAME was sent, so the
+    // receipt was never actually stored (the Receipt column is 500 chars — a
+    // base64 payload would not fit either).
+    String? receiptUrl;
+    if (_receiptFile != null) {
+      try {
+        final media = await MediaService.upload(
+          _receiptFile!,
+          folder: 'expense-receipts',
+        );
+        receiptUrl = media?.url;
+      } catch (e) {
+        AppLogger.e('Receipt upload failed: $e');
+        SnackBarHelper.error('Failed to upload receipt. Please try again.');
+        return;
+      }
+    }
+
+    final ok = await _expenseController.saveExpense(
+      category: _selectedCategory!,
+      expenseDate: _selectedDate,
+      amount: amount,
+      description: _descriptionController.text.trim().isEmpty
+          ? _categories.firstWhere((c) => c.id == _selectedCategory).name
+          : _descriptionController.text.trim(),
+      tripId: _tripIdOf(_selectedTrip),
+      receipt: receiptUrl,
+      paymentMethod: 'cash',
+    );
+
+    if (ok && mounted) Navigator.pop(context, true);
+  }
+
+  // ── trip selector (scrollable bottom sheet — no overflow) ───────────────────
+  void _showTripSelector() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Obx(() {
-        if (expenseController.isLoadingPurposes.value) {
-          return const CustomLoader.small(message: "Loading...");
-        }
-
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Color(0xFF2196F3),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Select expense type',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFFE74C3C),
-                    ),
-                  ),
-                ],
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (ctx, scrollCtrl) => Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _border,
+                borderRadius: BorderRadius.circular(2),
               ),
-              const SizedBox(height: 20),
-              // Expense Purpose List
-              ...expenseController.expensePurposes.map((purpose) {
-                final color =
-                    _expenseColors[purpose.purposeName] ?? Colors.grey;
-                final icon =
-                    _expenseIcons[purpose.purposeName] ?? Icons.category;
-                final isSelected =
-                    _selectedExpensePurpose?.expensePurposeId ==
-                    purpose.expensePurposeId;
+            ),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Select Trip',
+                    style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _textDark)),
+              ),
+            ),
+            Expanded(
+              child: Obx(() {
+                final loading = _localIsProfessional
+                    ? (_tripController as AssignedTripController).isLoading.value
+                    : (_tripController as TripController).isTripsLoading.value;
+                final List trips = _localIsProfessional
+                    ? (_tripController as AssignedTripController).assignedTrips
+                    : (_tripController as TripController).trips;
 
-                return InkWell(
-                  onTap: () {
-                    setState(() {
-                      _selectedExpensePurpose = purpose;
-                    });
-                    Navigator.pop(context);
+                if (loading) {
+                  return const Center(
+                      child: CircularProgressIndicator(color: _primary));
+                }
+                if (trips.isEmpty) {
+                  return const Center(
+                    child: Text('No trips available',
+                        style: TextStyle(
+                            fontFamily: 'Poppins', color: _textGrey)),
+                  );
+                }
+                return ListView.separated(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  itemCount: trips.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) {
+                    final t = trips[i];
+                    final from = t is AssignedTrip
+                        ? t.pickupLocation
+                        : (t as Trip).pickupLocation;
+                    final to = t is AssignedTrip
+                        ? t.deliveryLocation
+                        : (t as Trip).deliveryLocation;
+                    return InkWell(
+                      onTap: () {
+                        setState(() => _selectedTrip = t);
+                        Navigator.pop(ctx);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: _bg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _border),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.local_shipping_outlined,
+                              size: 20, color: _primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text('$from → $to',
+                                style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: _textDark)),
+                          ),
+                        ]),
+                      ),
+                    );
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Icon(icon, size: 20, color: color),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            purpose.purposeName,
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        if (isSelected)
-                          const Icon(Icons.check, color: Color(0xFF2196F3)),
-                      ],
-                    ),
-                  ),
                 );
               }),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  void _showTripSelectionModal() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: Colors.white,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          width: MediaQuery.of(context).size.width * 0.95,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-            minHeight: MediaQuery.of(context).size.height * 0.5,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.directions_car,
-                      color: Color(0xFF2196F3),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Select Trip',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-
-              // Content
-              Expanded(
-                child: Obx(() {
-                  if (isProfessional) {
-                    final assignedTripController =
-                        tripController as AssignedTripController;
-
-                    if (assignedTripController.isLoading.value) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    final allTrips = assignedTripController.assignedTrips;
-
-                    if (allTrips.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.no_transfer,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'No trips found',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: allTrips.length,
-                      separatorBuilder: (context, index) => Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        height: 1,
-                        color: Colors.grey.shade200,
-                      ),
-                      itemBuilder: (context, index) {
-                        final trip = allTrips[index];
-                        final isSelected =
-                            _selectedTrip != null &&
-                            (_selectedTrip as AssignedTrip).bidId == trip.bidId;
-
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedTrip = trip;
-                            });
-                            Navigator.pop(context);
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(
-                                      0xFF2196F3,
-                                    ).withValues(alpha: 0.1)
-                                  : Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color(0xFF2196F3)
-                                    : Colors.grey.shade200,
-                                width: isSelected ? 1.5 : 1,
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Trip Index Badge
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF2196F3)
-                                        : const Color(0xFFF36969),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                // Trip Details - Full text visible
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Pickup Location
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Icon(
-                                            Icons.radio_button_checked,
-                                            size: 14,
-                                            color: Colors.green.shade600,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              trip.pickupLocation,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      // Delivery Location
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Icon(
-                                            Icons.location_on,
-                                            size: 14,
-                                            color: Colors.red.shade600,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              trip.deliveryLocation,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      // Date
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_today,
-                                            size: 12,
-                                            color: Colors.grey[500],
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${trip.pickupDate.day}/${trip.pickupDate.month}/${trip.pickupDate.year}',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Check Icon
-                                if (isSelected)
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 8),
-                                    child: Icon(
-                                      Icons.check_circle,
-                                      color: Color(0xFF2196F3),
-                                      size: 22,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  } else {
-                    final tripControllerTyped =
-                        tripController as TripController;
-                    final allTrips = tripControllerTyped.trips;
-
-                    if (tripControllerTyped.isTripsLoading.value) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (allTrips.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.no_transfer,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'No trips available',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: allTrips.length,
-                      separatorBuilder: (context, index) => Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        height: 1,
-                        color: Colors.grey.shade200,
-                      ),
-                      itemBuilder: (context, index) {
-                        final trip = allTrips[index];
-                        final isSelected =
-                            _selectedTrip != null &&
-                            (_selectedTrip as Trip).tripId == trip.tripId;
-
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedTrip = trip;
-                            });
-                            Navigator.pop(context);
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(
-                                      0xFF2196F3,
-                                    ).withValues(alpha: 0.1)
-                                  : Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color(0xFF2196F3)
-                                    : Colors.grey.shade200,
-                                width: isSelected ? 1.5 : 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Trip Index Badge
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF2196F3)
-                                        : const Color(0xFFF36969),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                // Trip Details
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${trip.pickupLocation} → ${trip.deliveryLocation}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 12,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        'Trip #${trip.tripId.substring(0, 8)}...',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Check Icon
-                                if (isSelected)
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Color(0xFF2196F3),
-                                    size: 20,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }
-                }),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Future<void> _saveExpense() async {
-    // Prevent multiple simultaneous calls
-    if (_isSaving || expenseController.isSaving.value) {
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-    });
-
-    if (_selectedExpensePurpose == null) {
-      setState(() {
-        _isSaving = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an expense purpose'),
-          backgroundColor: Color(0xFFE74C3C),
-        ),
-      );
-      return;
-    }
-
-    if (_selectedTrip == null) {
-      setState(() {
-        _isSaving = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a trip'),
-          backgroundColor: Color(0xFFE74C3C),
-        ),
-      );
-      return;
-    }
-
-    if (_amountController.text.isEmpty ||
-        double.tryParse(_amountController.text) == null) {
-      setState(() {
-        _isSaving = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid amount'),
-          backgroundColor: Color(0xFFE74C3C),
-        ),
-      );
-      return;
-    }
-
-    if (_selectedDate == null) {
-      setState(() {
-        _isSaving = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a date'),
-          backgroundColor: Color(0xFFE74C3C),
-        ),
-      );
-      return;
-    }
-
-    final amount = double.parse(_amountController.text);
-    final description = _descriptionController.text.isEmpty
-        ? 'No description'
-        : _descriptionController.text;
-
-    // Get tripId based on trip type
-    String tripId;
-    if (isProfessional && _selectedTrip is AssignedTrip) {
-      tripId =
-          (_selectedTrip as AssignedTrip).bidId ??
-          (_selectedTrip as AssignedTrip).tripId;
-    } else if (_selectedTrip is Trip) {
-      tripId = (_selectedTrip as Trip).tripId;
-    } else {
-      setState(() {
-        _isSaving = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid trip selected'),
-          backgroundColor: Color(0xFFE74C3C),
-        ),
-      );
-      return;
-    }
-
-    final success = await expenseController.saveExpense(
-      tripId: tripId,
-      expensePurposeId: _selectedExpensePurpose!.expensePurposeId,
-      expenseDate: _selectedDate!,
-      amount: amount,
-      description: description,
-      receiptFile: _uploadedFile,
-    );
-
-    setState(() {
-      _isSaving = false;
-    });
-
-    if (success && mounted) {
-      Navigator.pop(context);
-    }
-  }
-
+  // ── build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E3E3),
+      backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: const BackButton(color: Colors.black),
-        title: Text(
-          "ADD New Expense",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-            color: const Color(0xFF1E1E1E),
-            letterSpacing: -0.16,
-          ),
-        ),
+        leading: const BackButton(color: _textDark),
+        title: const Text('Add Expense',
+            style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: _textDark)),
         centerTitle: true,
-        shape: const Border(
-          bottom: BorderSide(color: Color(0xFFFCD2D2), width: 1),
-        ),
+        shape: const Border(bottom: BorderSide(color: _border)),
       ),
       body: SingleChildScrollView(
-        child: Center(
-          child: Container(
-            margin: const EdgeInsets.only(top: 24),
-            width: 384,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Expense Purpose
-                _buildLabel("Expense Purpose", required: true),
-                const SizedBox(height: 8),
-                _buildExpensePurposeField(),
-                const SizedBox(height: 24),
-
-                // Amount
-                _buildLabel("Amount", required: true),
-                const SizedBox(height: 8),
-                _buildAmountField(),
-                const SizedBox(height: 24),
-
-                // Date
-                _buildLabel("Date", required: true),
-                const SizedBox(height: 8),
-                _buildDateField(),
-                const SizedBox(height: 24),
-
-                // Expense Description
-                _buildLabel("Expense Description"),
-                const SizedBox(height: 8),
-                _buildDescriptionField(),
-                const SizedBox(height: 24),
-
-                // Choose Trip
-                _buildLabel("Choose Trip"),
-                const SizedBox(height: 8),
-                _buildTripField(),
-                const SizedBox(height: 24),
-
-                // Upload Receipt
-                _buildLabel("Upload Receipt"),
-                const SizedBox(height: 12),
-                _buildUploadReceipt(),
-
-                const SizedBox(height: 40),
-
-                // Hired Warning (for professionals only)
-                if (isProfessional && AuthService.to.isUserHired)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.orange.shade700,
-                          size: 20,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionCard(
+              label: 'Category',
+              required: true,
+              child: GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 3,
+                children: _categories.map((c) {
+                  final sel = _selectedCategory == c.id;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = c.id),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: sel ? _primaryLt : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: sel ? _primary : _border,
+                          width: sel ? 1.6 : 1,
                         ),
+                      ),
+                      child: Row(children: [
+                        Text(c.emoji, style: const TextStyle(fontSize: 18)),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            "You are currently hired. Adding expenses is not available.",
-                            style: TextStyle(
-                              color: Colors.orange.shade900,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          child: Text(c.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: sel ? _primary : _textDark)),
                         ),
-                      ],
+                      ]),
                     ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              label: 'Amount',
+              required: true,
+              child: TextField(
+                controller: _amountController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => setState(() {}),
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    color: _textDark),
+                decoration: _inputDecoration('0.00', prefix: '₹  '),
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              label: 'Date',
+              required: true,
+              child: GestureDetector(
+                onTap: _pickDate,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _border),
                   ),
-
-                // Save Button
-                Center(
-                  child: Obx(() {
-                    final isSaving =
-                        _isSaving || expenseController.isSaving.value;
-                    final isHired =
-                        isProfessional && AuthService.to.isUserHired;
-                    final isDisabled = isSaving || isHired;
-
-                    return Container(
-                      width: 312,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        gradient: isDisabled
-                            ? null
-                            : const LinearGradient(
-                                colors: [Color(0xFFFF5E5E), Color(0xFFF36969)],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                        color: isDisabled ? Colors.grey : null,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: isDisabled ? null : _saveExpense,
-                          borderRadius: BorderRadius.circular(14),
-                          child: Center(
-                            child: isSaving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CustomLoader.small(
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    isHired ? "DISABLED (HIRED)" : "SAVE NOW",
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Poppins',
-                                      color: Colors.white,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
+                  child: Row(children: [
+                    const Icon(Icons.calendar_today_outlined,
+                        size: 18, color: _textGrey),
+                    const SizedBox(width: 10),
+                    Text(_fmtDate(_selectedDate),
+                        style: const TextStyle(
+                            fontFamily: 'Poppins', color: _textDark)),
+                  ]),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text, {bool required = false}) {
-    return Row(
-      children: [
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-            color: const Color(0xFF1E1E1E),
-          ),
-        ),
-        if (required) ...[
-          const SizedBox(width: 4),
-          Text(
-            "*",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: Colors.red[500],
+            const SizedBox(height: 14),
+            _sectionCard(
+              label: 'Description',
+              optional: true,
+              child: TextField(
+                controller: _descriptionController,
+                minLines: 3,
+                maxLines: 5,
+                style: const TextStyle(fontFamily: 'Poppins', color: _textDark),
+                decoration:
+                    _inputDecoration('Describe this expense... (optional)'),
+              ),
             ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildExpensePurposeField() {
-    final color = _selectedExpensePurpose != null
-        ? _expenseColors[_selectedExpensePurpose!.purposeName] ?? Colors.grey
-        : Colors.grey;
-    final icon = _selectedExpensePurpose != null
-        ? _expenseIcons[_selectedExpensePurpose!.purposeName] ?? Icons.category
-        : null;
-
-    return GestureDetector(
-      onTap: _showExpensePurposeModal,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 16),
-            if (_selectedExpensePurpose != null) ...[
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            const SizedBox(height: 14),
+            _sectionCard(
+              label: 'Choose Trip',
+              required: true,
+              child: GestureDetector(
+                onTap: _showTripSelector,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _border),
+                  ),
+                  child: Row(children: [
+                    Expanded(
+                      child: Text(_tripLabel() ?? 'Select a trip...',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontFamily: 'Poppins',
+                              color: _selectedTrip != null
+                                  ? _textDark
+                                  : _textGrey)),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down, color: _textGrey),
+                  ]),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              label: 'Upload Receipt',
+              optional: true,
+              child: GestureDetector(
+                onTap: _pickReceipt,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _border),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.attach_file, size: 18, color: _primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                          _receiptFile != null
+                              ? _receiptFile!.path
+                                  .split(Platform.pathSeparator)
+                                  .last
+                              : 'Upload receipt (.jpg, .png, .pdf)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontFamily: 'Poppins',
+                              color: _receiptFile != null
+                                  ? _textDark
+                                  : _textGrey)),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    side: const BorderSide(color: _border),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Cancel',
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          color: _textGrey)),
+                ),
               ),
               const SizedBox(width: 12),
-              if (icon != null) ...[
-                Icon(icon, size: 20, color: color),
-                const SizedBox(width: 12),
-              ],
-            ],
-            Expanded(
-              child: Text(
-                _selectedExpensePurpose?.purposeName ??
-                    'Select expense purpose...',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w500,
-                  color: _selectedExpensePurpose != null
-                      ? const Color(0xFF424242)
-                      : const Color(0xFFADAEBC),
-                ),
+              Expanded(
+                child: Obx(() {
+                  final saving = _expenseController.isSaving.value;
+                  final enabled = _isValid && !saving;
+                  return ElevatedButton(
+                    onPressed: enabled ? _save : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primary,
+                      disabledBackgroundColor: _primary.withValues(alpha: 0.4),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: saving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Text('Save Expense',
+                            style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w700)),
+                  );
+                }),
               ),
-            ),
-            const Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Icon(Icons.arrow_drop_down, size: 16),
-            ),
+            ]),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTripField() {
-    return GestureDetector(
-      onTap: _showTripSelectionModal,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                _selectedTrip != null
-                    ? (isProfessional && _selectedTrip is AssignedTrip
-                          ? '${(_selectedTrip as AssignedTrip).pickupLocation} → ${(_selectedTrip as AssignedTrip).deliveryLocation}'
-                          : (_selectedTrip is Trip
-                                ? '${(_selectedTrip as Trip).pickupLocation} → ${(_selectedTrip as Trip).deliveryLocation}'
-                                : 'Select a trip...'))
-                    : 'Select a trip...',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w500,
-                  color: _selectedTrip != null
-                      ? const Color(0xFF424242)
-                      : const Color(0xFFADAEBC),
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Icon(Icons.arrow_drop_down, size: 16),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAmountField() {
+  Widget _sectionCard({
+    required String label,
+    required Widget child,
+    bool required = false,
+    bool optional = false,
+  }) {
     return Container(
-      height: 50,
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 16),
-            child: Text(
-              '₹',
-              style: TextStyle(
-                fontSize: 18,
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFFADAEBC),
-              ),
-            ),
-          ),
-          Expanded(
-            child: TextField(
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              onTap: () {
-                // Clear "0.00" when user taps to enter amount
-                if (_amountController.text == '0.00' ||
-                    _amountController.text == '0') {
-                  _amountController.clear();
-                }
-              },
-              onChanged: (value) {
-                // Clear "0.00" when user starts typing
-                if (value == '0.00' || value == '0') {
-                  _amountController.clear();
-                }
-              },
-              decoration: InputDecoration(
-                hintText: '0.00',
-                hintStyle: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFADAEBC),
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 15,
-                ),
-              ),
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF424242),
-              ),
-            ),
-          ),
+          Row(children: [
+            Text(label,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _textDark)),
+            if (required)
+              const Text(' *', style: TextStyle(color: _primary)),
+            if (optional)
+              const Text('  (optional)',
+                  style: TextStyle(
+                      fontFamily: 'Poppins', fontSize: 11, color: _textGrey)),
+          ]),
+          const SizedBox(height: 10),
+          child,
         ],
       ),
     );
   }
 
-  Widget _buildDateField() {
-    return GestureDetector(
-      onTap: _selectDate,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Text(
-                  _dateController.text.isEmpty
-                      ? 'Select date'
-                      : _dateController.text,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w500,
-                    color: _dateController.text.isEmpty
-                        ? const Color(0xFFADAEBC)
-                        : const Color(0xFF424242),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: GestureDetector(
-                onTap: _selectDate,
-                child: const Icon(
-                  Icons.calendar_today_outlined,
-                  size: 20,
-                  color: Color(0xFF424242),
-                ),
-              ),
-            ),
-          ],
-        ),
+  InputDecoration _inputDecoration(String hint, {String? prefix}) {
+    return InputDecoration(
+      hintText: hint,
+      prefixText: prefix,
+      prefixStyle: const TextStyle(
+          fontFamily: 'Poppins', color: _textGrey, fontWeight: FontWeight.w600),
+      hintStyle: const TextStyle(fontFamily: 'Poppins', color: _textGrey),
+      filled: true,
+      fillColor: _bg,
+      isDense: true,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _primary, width: 1.4),
       ),
     );
   }
+}
 
-  Widget _buildDescriptionField() {
-    return Container(
-      height: 98,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextField(
-        controller: _descriptionController,
-        maxLines: null,
-        minLines: 3,
-        decoration: InputDecoration(
-          hintText: 'Enter additional details (optional)',
-          hintStyle: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFFADAEBC),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
-        ),
-        style: TextStyle(
-          fontSize: 16,
-          fontFamily: 'Poppins',
-          fontWeight: FontWeight.w400,
-          color: const Color(0xFF424242),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUploadReceipt() {
-    return GestureDetector(
-      onTap: _pickFile,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.attach_file, size: 16, color: Color(0xFF424242)),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                _uploadedFile != null
-                    ? _uploadedFile!.path.split('/').last
-                    : 'Upload receipt',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w500,
-                  color: _uploadedFile != null
-                      ? const Color(0xFF424242)
-                      : const Color(0xFFADAEBC),
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+class _Cat {
+  final String id;
+  final String name;
+  final String emoji;
+  const _Cat(this.id, this.name, this.emoji);
 }

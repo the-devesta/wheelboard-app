@@ -10,9 +10,9 @@ import '../../models/job_model.dart';
 import '../../controllers/Transport/notification_controller.dart';
 import '../../controllers/Transport/user_profile_controller.dart';
 import '../../core/auth/auth_service.dart';
-import '../../utils/constants.dart';
+import '../../utils/media_url.dart';
 import '../../utils/share_service.dart';
-import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
+import '../Professional/Expenses/professional_expenses_screen.dart';
 import '../shared/subscription_screen.dart';
 import 'banner_carousel.dart';
 import 'companyuser_profile_screen.dart';
@@ -24,7 +24,6 @@ import 'job_form_screen.dart';
 import 'job_screen.dart';
 import 'notification_screen.dart';
 import 'professional_list.dart';
-import 'service_dashboard.dart';
 import 'services_screen.dart';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────
@@ -118,14 +117,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   // ── Image helpers (secure) ───────────────────────────────────────────────
 
-  String _imageUrl(String path) {
-    if (path.isEmpty) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Uri.encodeFull(path);
-    }
-    // Use origin (without /api) for asset paths
-    return Uri.encodeFull('${ApiConstants.origin}/$path'.replaceAll('//', '/').replaceAll(':/', '://'));
-  }
+  String _imageUrl(String path) => MediaUrl.resolve(path);
 
   Map<String, String> get _authHeaders {
     final token = AuthService.to.currentToken;
@@ -522,9 +514,9 @@ class _HomeScreenState extends State<HomeScreen>
     switch (i) {
       case 0: Get.to(() => FleetVehiclesScreen());
       case 1: Get.to(() => const ProfessionalListScreen());
-      case 2: Get.to(() => TransactionSummaryScreen());
+      case 2: Get.to(() => const ProfessionalExpensesScreen(isProfessional: false));
       case 3: Get.to(() => PostJobScreen());
-      case 4: Get.to(() => ServiceDashboardScreen());
+      case 4: Get.to(() => const ServicesScreen());
       case 5: Get.to(() => DashboardScreen());
       case 6: Get.to(() => const SubscriptionScreen(category: 'fleet_owner'));
     }

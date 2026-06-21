@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "902366116168",
+    "project_id": "wheelboard-api",
+    "storage_bucket": "wheelboard-api.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:902366116168:android:7beede0022c321c3995b7d",
+        "android_client_info": {
+          "package_name": "com.wheelboard.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkLeEQNAU5dJQz75zEDAO33sM7dFJQsrU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

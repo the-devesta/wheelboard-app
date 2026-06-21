@@ -25,6 +25,7 @@ import '../../controllers/Transport/post_controller.dart';
 import '../../models/service_model.dart';
 import '../../utils/share_service.dart';
 import '../../utils/constants.dart';
+import '../../utils/media_url.dart';
 import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 
 /// Service-provider Home dashboard — rebuilt on the Wheelboard design system
@@ -447,9 +448,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     final title = service.serviceTitle.isNotEmpty
         ? service.serviceTitle
         : 'Untitled Service';
-    final tag = (service.serviceCategory != null &&
-            service.serviceCategory!.isNotEmpty)
-        ? service.serviceCategory!
+    final tag = service.categoryList.isNotEmpty
+        ? service.categoryList.first
         : (service.businessType.isNotEmpty
             ? service.businessType
             : (service.city.isNotEmpty ? service.city : 'Service'));
@@ -760,11 +760,5 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
     );
   }
 
-  String _formatImageUrl(String url) {
-    if (url.isEmpty) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    String cleanPath = url.replaceAll('\\', '/');
-    if (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
-    return '${ApiConstants.baseUrl}/$cleanPath';
-  }
+  String _formatImageUrl(String url) => MediaUrl.resolve(url);
 }

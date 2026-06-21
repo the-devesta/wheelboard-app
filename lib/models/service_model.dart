@@ -158,4 +158,18 @@ class ServiceModel {
       isFlagged: other.isFlagged,
     );
   }
+
+  /// Categories as a list. The backend `category` is a single string but the
+  /// app lets providers pick several (joined with ", "), so split it back into
+  /// individual badges for display. Falls back to [businessType].
+  List<String> get categoryList {
+    final raw = (serviceCategory != null && serviceCategory!.trim().isNotEmpty)
+        ? serviceCategory!
+        : businessType;
+    return raw
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
 }

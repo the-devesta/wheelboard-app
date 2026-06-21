@@ -67,6 +67,37 @@ class ApiEndpoints {
 
   // ── Leads (service-provider CRM) ─────────────────────────────────────────
   static const leads = _LeadsEndpoints();
+
+  // ── Enquiries (contact / service enquiry) ────────────────────────────────
+  static const enquiries = _EnquiriesEndpoints();
+
+  // ── Media (unified upload) ───────────────────────────────────────────────
+  static const media = _MediaEndpoints();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Media — unified upload endpoint
+// ─────────────────────────────────────────────────────────────────────────────
+class _MediaEndpoints {
+  const _MediaEndpoints();
+
+  // POST /media  (multipart `files`, or base64 `image`/`images`, optional `folder`)
+  //   → { files: [{ url, key, contentType, folder, size }] }
+  String get upload => '/media';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enquiries
+// ─────────────────────────────────────────────────────────────────────────────
+class _EnquiriesEndpoints {
+  const _EnquiriesEndpoints();
+
+  // POST /enquiries/contact  { name, email, company?, phone?, subject?, message }
+  String get contact => '/enquiries/contact';
+
+  // POST /enquiries/service
+  // { companyId?, serviceType, serviceLocation, currentChallenges, specialRequirements? }
+  String get service => '/enquiries/service';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -232,8 +263,8 @@ class _TripEndpoints {
   // POST   /trips/:tripId/confirm-otp
   String confirmOtp(String tripId) => '/trips/$tripId/confirm-otp';
 
-  // GET    /trips/:tripId/bids  — bids placed on a trip (embedded in trip details)
-  String bids(String tripId) => '/trips/$tripId/bids';
+  // NOTE: there is no GET /trips/:tripId/bids route — bids are embedded in the
+  // trip document (read `trip.bids` from GET /trips/:tripId). See trip_bids_controller.
 
   // GET    /trips  (unassigned — use list with queryParameters: {assigned: false})
   String get unassignedList => '/trips';
@@ -245,8 +276,8 @@ class _TripEndpoints {
   String get professionalStats => '/trips/professional/stats';
 
   // ── Dashboard / Earnings ──────────────────────────────────────────────
-  // GET    /trips/earnings-dashboard
-  String get earningsDashboard => '/trips/earnings-dashboard';
+  // Professional earnings come from `professionalStats` (GET /trips/professional/stats).
+  // There is no /trips/earnings-dashboard route — do not re-add it.
 
   // GET    /trips/dashboard
   String get tripDashboard => '/trips/dashboard';
@@ -432,6 +463,16 @@ class _ServiceEndpoints {
   // PATCH  /services/bookings/:id/complete
   String completeBooking(String id) => '/services/bookings/$id/complete';
 
+  // PATCH  /services/bookings/:id/confirm-completion  — company confirms the
+  // provider-completed service (consumer side; web servicesAPI.confirmCompanyCompletion)
+  String confirmCompletion(String id) =>
+      '/services/bookings/$id/confirm-completion';
+
+  // GET    /services/bookings/company/:companyId  — bookings where the caller is
+  // the consuming company
+  String companyBookings(String companyId) =>
+      '/services/bookings/company/$companyId';
+
   // POST   /services/bookings/:id/confirm-cash-payment
   String confirmCashPayment(String id) =>
       '/services/bookings/$id/confirm-cash-payment';
@@ -523,11 +564,17 @@ class _LeaseEndpoints {
   // PATCH  /lease/listings/:id/status
   String updateListingStatus(String id) => '/lease/listings/$id/status';
 
+  // GET    /lease/listings/:id/bookings  — bookings placed on one listing
+  String listingBookings(String id) => '/lease/listings/$id/bookings';
+
   // GET    /lease/marketplace
   String get marketplace => '/lease/marketplace';
 
   // GET    /lease/marketplace/:id
   String marketplaceDetails(String id) => '/lease/marketplace/$id';
+
+  // POST   /lease/marketplace/:id/availability  { startDate, endDate }
+  String checkAvailability(String id) => '/lease/marketplace/$id/availability';
 
   // POST   /lease/bookings
   String get createBooking => '/lease/bookings';
@@ -574,6 +621,12 @@ class _NotificationEndpoints {
 
   // DELETE /notifications/:id
   String delete(String id) => '/notifications/$id';
+
+  // POST   /notifications/register-device  { deviceId }  — store FCM token
+  String get registerDevice => '/notifications/register-device';
+
+  // DELETE /notifications/device/unregister  — clear FCM token on logout
+  String get unregisterDevice => '/notifications/device/unregister';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

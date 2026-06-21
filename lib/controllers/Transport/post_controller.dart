@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart' as dio;
 import 'package:get/get.dart';
@@ -7,6 +6,7 @@ import '../../core/network/api_endpoints.dart';
 import '../../core/network/api_exception.dart';
 import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../models/feed_model.dart';
+import '../../services/media_service.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 
@@ -96,15 +96,10 @@ class PostController extends GetxController {
     await fetchFeeds(category: category, page: 1);
   }
 
-  /// POST /feeds/upload-image — base64 → hosted URL.
+  /// Upload a post image via the unified /media endpoint → hosted URL.
   Future<String?> uploadImage(File file) async {
-    final bytes = await file.readAsBytes();
-    final dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-    final data = await ApiClient.instance.post<Map<String, dynamic>>(
-      ApiEndpoints.feeds.uploadImage,
-      data: {'image': dataUrl},
-    );
-    return data['url']?.toString();
+    final media = await MediaService.upload(file, folder: 'feed-images');
+    return media?.url;
   }
 
   /// Create a feed post. Mirrors the FE flow: upload the image first (if any)

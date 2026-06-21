@@ -7,6 +7,7 @@ import '../CompanyTransport/new_post_screen.dart';
 import '../../controllers/Transport/post_controller.dart';
 import '../../widgets/custom_loader.dart';
 import '../../widgets/ui/app_ui.dart';
+import '../../utils/media_url.dart';
 import '../../utils/share_service.dart';
 
 /// Common Feed Screen — shared across Transport, Service Provider, and
@@ -641,10 +642,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   }
 }
 
-String _formatImageUrl(String url) {
-  if (url.isEmpty) return url;
-  return Uri.encodeFull(url);
-}
+String _formatImageUrl(String url) => MediaUrl.resolve(url);
 
 Map<String, String>? _imageHeaders() {
   final token = AuthService.to.currentToken;

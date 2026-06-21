@@ -7,11 +7,14 @@ import '../../../services/expense_service.dart';
 import '../../../theme/design_system.dart';
 import '../../CompanyTransport/add_expense_screen.dart';
 
-/// Professional expense tracking page — mirrors web `/professional/expenses`:
-/// stat overview, category breakdown, search + filter and the expense list.
-/// Built on the design system.
+/// Expense tracking page — mirrors web `/professional/expenses` AND
+/// `/company/expenses` (the two are identical: stat overview, category
+/// breakdown, search + filter, add + delete). Shared by both the Professional
+/// and the Company (transport) personas; [isProfessional] only routes the
+/// Add-Expense screen to the correct trip controller.
 class ProfessionalExpensesScreen extends StatefulWidget {
-  const ProfessionalExpensesScreen({super.key});
+  final bool isProfessional;
+  const ProfessionalExpensesScreen({super.key, this.isProfessional = true});
 
   @override
   State<ProfessionalExpensesScreen> createState() =>
@@ -79,8 +82,36 @@ class _ProfessionalExpensesScreenState
       xs.fold(0.0, (s, e) => s + e.amount);
 
   Future<void> _add() async {
-    await Get.to(() => const AddExpenseScreen(isProfessional: true));
+    await Get.to(() => AddExpenseScreen(isProfessional: widget.isProfessional));
     _fetch();
+  }
+
+  Future<bool> _confirmDelete(Expense e) async {
+    final ok = await Get.dialog<bool>(AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('Delete expense?', style: AppText.title),
+      content: Text(
+        'This will permanently remove "${e.description.isNotEmpty ? e.description : ExpenseCategoryConfig.of(e.category).label}".',
+        style: AppText.body.on(AppPalette.textGrey),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Get.back(result: false),
+            child:
+                Text('Cancel', style: AppText.label.on(AppPalette.textGrey))),
+        ElevatedButton(
+          onPressed: () => Get.back(result: true),
+          style: ElevatedButton.styleFrom(backgroundColor: AppPalette.danger),
+          child: const Text('Delete', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ));
+    if (ok != true) return false;
+    final success = await _service.deleteExpense(e.id);
+    if (success) {
+      setState(() => _expenses.removeWhere((x) => x.id == e.id));
+    }
+    return success;
   }
 
   @override
@@ -321,7 +352,18 @@ class _ProfessionalExpensesScreenState
     final cfg = ExpenseCategoryConfig.of(e.category);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: AppCard(
+      child: Dismissible(
+        key: ValueKey('exp-${e.id}'),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (_) => _confirmDelete(e),
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+              color: AppPalette.danger, borderRadius: AppRadius.rLg),
+          child: const Icon(Iconsax.trash, color: Colors.white),
+        ),
+        child: AppCard(
         padding: const EdgeInsets.all(12),
         child: Row(children: [
           Container(
@@ -369,6 +411,7 @@ class _ProfessionalExpensesScreenState
           Text('₹${_fmt(e.amount)}',
               style: AppText.subtitle.on(AppPalette.primary)),
         ]),
+        ),
       ),
     );
   }

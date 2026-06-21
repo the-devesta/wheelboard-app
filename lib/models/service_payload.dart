@@ -1,13 +1,14 @@
-import 'dart:convert';
 import 'dart:io';
+
+import '../services/media_service.dart';
 
 /// Request payload for creating / updating a service.
 ///
 /// Mirrors the backend `CreateServiceDto` (JSON) consumed by `POST /services`
 /// and `PATCH /services/:id` — the SAME contract the wheelboard-fe web app uses
-/// (`servicesAPI.createService`). Images are sent as base64 data-URLs inside the
-/// `images: string[]` field (the backend `processImages` accepts both data-URLs
-/// and already-stored URLs), so no multipart upload is involved.
+/// (`servicesAPI.createService`). New images are uploaded to Firebase via the
+/// unified `/media` endpoint first; only the resulting hosted URLs are sent in
+/// the `images: string[]` field (alongside any already-stored URLs).
 class ServicePayload {
   final String title;
   final String category;
@@ -69,15 +70,23 @@ class ServicePayload {
     this.listingPaymentSignature,
   });
 
-  /// Maps the four UI category names to the soft badge colours the web uses.
+  /// Maps a UI category name to a soft badge colour.
   static String colorForCategory(String category) {
     switch (category) {
-      case 'Tyre Retreader':
-        return '#E3F2FD';
-      case 'Tyre Services':
-        return '#F3E5F5';
+      case 'Brake Service':
+        return '#FEE2E2';
+      case 'Oil Change':
+        return '#FEF3C7';
+      case 'AC Repair':
+        return '#E0F2FE';
+      case 'Vehicle Service':
       case 'Vehicle Services':
         return '#FFF3E0';
+      case 'Tyre Service':
+      case 'Tyre Services':
+        return '#F3E5F5';
+      case 'Tyre Retreader':
+        return '#E3F2FD';
       default:
         return '#FFEBEE';
     }
@@ -119,10 +128,8 @@ class ServicePayload {
   Future<Map<String, dynamic>> toJson() async {
     final images = <String>[...existingImages];
     for (final file in newImages) {
-      final bytes = await file.readAsBytes();
-      final ext = file.path.split('.').last.toLowerCase();
-      final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
-      images.add('data:$mime;base64,${base64Encode(bytes)}');
+      final media = await MediaService.upload(file, folder: 'service-images');
+      if (media != null && media.url.isNotEmpty) images.add(media.url);
     }
 
     final Map<String, dynamic> pricing = pricingType == 'On Request'

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/Transport/service_controller.dart';
+import '../../controllers/Transport/company_booking_controller.dart';
 import '../../controllers/Transport/fleet_controller.dart';
-import '../../models/service_assignment_summary.dart';
 import '../../models/service_model.dart';
 import '../../models/get_vehicle_model.dart';
 import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../widgets/custom_snackbar.dart';
-import 'service_confirmation.dart';
+import 'company_booking_detail_screen.dart';
 
 class ServiceDetailsPopup extends StatefulWidget {
   const ServiceDetailsPopup({super.key, required this.service});
@@ -26,6 +25,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
   late final TextEditingController _dateController;
   late final TextEditingController _timeController;
   late final TextEditingController _vehicleController;
+  late final TextEditingController _locationController;
   late final TextEditingController _descriptionController;
 
   DateTime? _selectedDate;
@@ -47,6 +47,10 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
     _dateController = TextEditingController();
     _timeController = TextEditingController();
     _vehicleController = TextEditingController();
+    _locationController = TextEditingController(
+      text: widget.service.location ??
+          (widget.service.city.isNotEmpty ? widget.service.city : ''),
+    );
     _descriptionController = TextEditingController();
 
     // Initialize fleet controller and fetch vehicles
@@ -70,6 +74,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
     _dateController.dispose();
     _timeController.dispose();
     _vehicleController.dispose();
+    _locationController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -154,7 +159,6 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
       return;
     }
 
-    final controller = Get.find<ServiceController>();
     final scheduledDateTime = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
@@ -163,38 +167,35 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
       _selectedTime!.minute,
     );
 
-    final success = await controller.assignService(
-      serviceId: widget.service.serviceId,
-      serviceTitle: widget.service.serviceTitle,
-      assignedToUserId: assignedToUserId,
-      vehicleNumber: _vehicleController.text.trim(),
+    // Create the booking via the web-parity contract (POST /services/bookings),
+    // then open the booking detail so the company can pay / track it.
+    final bookingCtrl = Get.isRegistered<CompanyBookingController>()
+        ? Get.find<CompanyBookingController>()
+        : Get.put(CompanyBookingController());
+
+    final location = _locationController.text.trim();
+
+    final bookingId = await bookingCtrl.createBooking(
+      service: widget.service,
       scheduledDate: scheduledDateTime,
       scheduledTime: _formatTimeForRequest(_selectedTime!),
+      location: location,
+      paymentMethod: 'Online',
+      vehicleNumber: _vehicleController.text.trim(),
       description: _descriptionController.text.trim(),
     );
 
     if (!mounted) return;
 
-    if (success) {
+    if (bookingId != null) {
       Get.back(); // close popup
-      Get.to(
-        () => ServiceConfirmationPage(
-          summary: ServiceAssignmentSummary(
-            serviceId: widget.service.serviceId,
-            serviceTitle: widget.service.serviceTitle,
-            vehicleNumber: _vehicleController.text.trim(),
-            scheduledDateTime: scheduledDateTime,
-            scheduledTime: _selectedTime!,
-            description: _descriptionController.text.trim(),
-          ),
-        ),
-      );
+      Get.to(() => CompanyBookingDetailScreen(bookingId: bookingId));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<ServiceController>();
+    final bookingCtrl = Get.put(CompanyBookingController());
 
     return Dialog(
       backgroundColor: Colors.white,
@@ -462,6 +463,24 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                 }),
                 const SizedBox(height: 16),
                 const Text(
+                  "Service Location",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _locationController,
+                  decoration: InputDecoration(
+                    hintText: "e.g. Workshop, Highway milestone, etc.",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Please enter the location for the service'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                const Text(
                   "Service Description",
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
@@ -470,15 +489,62 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                   controller: _descriptionController,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: "Add instructions or notes",
+                    hintText: "Details about the service request...",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Please enter description'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                // Payment Information (matches web ServiceAssignmentModal — the
+                // payment-method toggle was replaced by this notice; payment is
+                // collected after the provider completes the service).
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Icon(Icons.info_outline,
+                          size: 18, color: Color(0xFFB45309)),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Payment Information',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF92400E),
+                                fontSize: 13,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Payment will be collected after service completion. The provider will confirm the final amount.',
+                              style: TextStyle(
+                                color: Color(0xFFB45309),
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Obx(() {
-                  final isAssigning = controller.isAssigning.value;
+                  final isAssigning = bookingCtrl.isProcessing.value;
                   return SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -502,7 +568,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
                               ),
                             )
                           : const Text(
-                              "Assign Service",
+                              "Save Details",
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.white,

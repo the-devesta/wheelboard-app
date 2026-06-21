@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/service_provider/sp_register_controller.dart';
+import '../../services/media_service.dart';
 import '../../controllers/Transport/user_profile_controller.dart';
 import '../../core/auth/auth_service.dart';
 import '../../models/user_profile_model.dart';
@@ -1168,15 +1168,18 @@ class ServiceProviderProfileScreen extends StatelessWidget {
         SnackBarHelper.error('Image size should be less than 5MB');
         return;
       }
-      final ext = picked.path.split('.').last.toLowerCase();
-      final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
-      final base64DataUrl =
-          'data:$mime;base64,${base64Encode(await file.readAsBytes())}';
+      // Upload via the unified /media endpoint; send the hosted URL.
+      final media = await MediaService.upload(file, folder: 'profile-images');
+      final photoUrl = media?.url ?? '';
+      if (photoUrl.isEmpty) {
+        SnackBarHelper.error('Failed to upload photo. Please try again.');
+        return;
+      }
 
       final ctrl = Get.isRegistered<SpRegisterController>()
           ? Get.find<SpRegisterController>()
           : Get.put(SpRegisterController());
-      final ok = await ctrl.updateProfilePhoto(base64DataUrl);
+      final ok = await ctrl.updateProfilePhoto(photoUrl);
       if (ok) {
         await Get.find<UserProfileController>().fetchCurrentUserProfile();
         SnackBarHelper.success('Profile photo updated');

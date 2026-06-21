@@ -426,6 +426,10 @@ class _CreateLeaseWizardState extends State<CreateLeaseWizard> {
       if (_availableUntil != null) 'availableUntil': _dateOnly(_availableUntil!),
       'minDurationDays': int.tryParse(_minDaysCtrl.text.trim()) ?? 7,
       'maxDurationDays': int.tryParse(_maxDaysCtrl.text.trim()) ?? 90,
+      // Seed listing images from the vehicle's photo, mirroring wheelboard-fe
+      // (listings/new → images: [selectedVehicle.image]).
+      if (_selectedVehicle!.imageUrls.isNotEmpty)
+        'images': [_selectedVehicle!.imageUrls.first],
       // Do NOT send 'status' — backend sets 'draft' by default
     };
 

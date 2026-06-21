@@ -12,6 +12,7 @@ import '../../screens/CompanyTransport/main_wrapper.dart';
 import '../../screens/CompanyServiceProvider/main_wrapper.dart';
 import '../../screens/CompanyServiceProvider/complete_profile_screen.dart';
 import '../../screens/CompanyTransport/complete_company_profile.dart';
+import '../../screens/Professional/CompleteProfile/professional_complete_profile_screen.dart';
 import '../auth/user_role.dart';
 import 'app_routes.dart';
 import 'route_guards.dart';
@@ -107,6 +108,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.serviceProviderCompleteProfile,
       page: () => const ServiceProviderCompleteProfileScreen(),
+      middlewares: [AuthGuard()],
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.professionalCompleteProfile,
+      page: () => const ProfessionalCompleteProfileScreen(),
       middlewares: [AuthGuard()],
       transition: Transition.rightToLeft,
     ),

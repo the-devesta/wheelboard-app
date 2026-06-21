@@ -243,10 +243,14 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             ],
           ),
           AppSpacing.vGapSm,
-          Row(
-            children: [
-              _categoryChip(category),
-            ],
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: (service.categoryList.isNotEmpty
+                    ? service.categoryList
+                    : [category])
+                .map(_categoryChip)
+                .toList(),
           ),
           if (status.toLowerCase() == 'flagged' &&
               (service.flagReason?.isNotEmpty ?? false)) ...[

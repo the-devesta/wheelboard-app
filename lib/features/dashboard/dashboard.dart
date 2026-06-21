@@ -7,7 +7,6 @@ library;
 
 // Controllers
 export '../../controllers/Transport/dashboard_controller.dart';
-export '../../controllers/Transport/transaction_summary_controller.dart';
 export '../../controllers/Professional/earning_summary_controller.dart';
 
 // Models

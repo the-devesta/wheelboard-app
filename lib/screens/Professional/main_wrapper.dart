@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/Professional/assigned_trip_controller.dart';
+import '../../controllers/Professional/professional_tab_controller.dart';
 import '../../core/auth/auth_service.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/app_bottom_nav.dart';
 import 'FeedsProfessional/FeedsProfessionalScreen.dart';
 import 'FindJobs/FindJobsScreen.dart';
-import 'JobProgress/JobProgressScreen.dart';
+import 'Search/professional_search_screen.dart';
 import 'ProfessionalHomePage/ProfessionalHomePageScreen.dart';
 import 'Trips/ProfessionalTripsScreen.dart';
 
@@ -21,21 +22,25 @@ class ProfessionalMainWrapper extends StatefulWidget {
 
 class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper>
     with WidgetsBindingObserver {
-  late int _currentIndex;
+  late final ProfessionalTabController _tab;
 
-  // IndexedStack keeps every screen alive — no rebuild on tab switch
-  final List<Widget> _screens = [
-    const ProfessionalHomePageScreen(),
-    const FindJobsScreen(),
-    const ProfessionalTripsScreen(),
-    const FeedsProfessionalScreen(),
-    const JobProgressScreen(),
+  // IndexedStack keeps every screen alive — no rebuild on tab switch.
+  // Order/labels mirror the web BottomNav: Home · Find(search) · Trips · Feeds · Jobs(board).
+  final List<Widget> _screens = const [
+    ProfessionalHomePageScreen(),
+    ProfessionalSearchScreen(embedded: true),
+    ProfessionalTripsScreen(),
+    FeedsProfessionalScreen(),
+    FindJobsScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _tab = Get.isRegistered<ProfessionalTabController>()
+        ? Get.find<ProfessionalTabController>()
+        : Get.put(ProfessionalTabController(), permanent: true);
+    _tab.currentIndex.value = widget.initialIndex;
     WidgetsBinding.instance.addObserver(this);
 
     if (!Get.isRegistered<AssignedTripController>()) {
@@ -73,10 +78,11 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper>
   }
 
   void _onTabTapped(int index) {
-    setState(() => _currentIndex = index);
+    _tab.currentIndex.value = index;
 
     // Refresh trips when switching to Home or Trips tab
-    if (index == 0 || index == 2) {
+    if (index == ProfessionalTabController.home ||
+        index == ProfessionalTabController.trips) {
       try {
         Get.find<AssignedTripController>().fetchAssignedTrips();
       } catch (_) {}
@@ -86,15 +92,15 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: AppBottomNav(
-        items: professionalNavItems,
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-      ),
+      body: Obx(() => IndexedStack(
+            index: _tab.currentIndex.value,
+            children: _screens,
+          )),
+      bottomNavigationBar: Obx(() => AppBottomNav(
+            items: professionalNavItems,
+            currentIndex: _tab.currentIndex.value,
+            onTap: _onTabTapped,
+          )),
     );
   }
 }

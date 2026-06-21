@@ -33,9 +33,9 @@ class _FindJobsScreenState extends State<FindJobsScreen>
   final _searchController = TextEditingController();
 
   late final TabController _tabController;
-  String _jobFilter = 'All'; // All | Saved | Applied
+  String _jobFilter = 'All'; // All | Urgent | Saved | Applied
 
-  static const _jobFilters = ['All', 'Saved', 'Applied'];
+  static const _jobFilters = ['All', 'Urgent', 'Saved', 'Applied'];
 
   @override
   void initState() {
@@ -190,17 +190,22 @@ class _FindJobsScreenState extends State<FindJobsScreen>
 
   List<JobModel> _visibleJobs() {
     var list = jobsController.openJobs.toList();
+    if (_jobFilter == 'Urgent') list = list.where((j) => j.urgent).toList();
     if (_jobFilter == 'Saved') list = list.where((j) => j.isSaved).toList();
     if (_jobFilter == 'Applied') list = list.where((j) => j.isApplied).toList();
     final q = _searchController.text.toLowerCase().trim();
-    if (q.isEmpty) return list;
-    return list.where((job) {
-      return job.role.toLowerCase().contains(q) ||
-          job.city.toLowerCase().contains(q) ||
-          job.jobType.toLowerCase().contains(q) ||
-          job.description.toLowerCase().contains(q) ||
-          (job.companyName ?? '').toLowerCase().contains(q);
-    }).toList();
+    if (q.isNotEmpty) {
+      list = list.where((job) {
+        return job.role.toLowerCase().contains(q) ||
+            job.city.toLowerCase().contains(q) ||
+            job.jobType.toLowerCase().contains(q) ||
+            job.description.toLowerCase().contains(q) ||
+            (job.companyName ?? '').toLowerCase().contains(q);
+      }).toList();
+    }
+    // Urgent jobs first (mirrors web /professional/jobs sort).
+    list.sort((a, b) => (b.urgent ? 1 : 0).compareTo(a.urgent ? 1 : 0));
+    return list;
   }
 
   Widget _jobCard(JobModel job) {
@@ -250,6 +255,24 @@ class _FindJobsScreenState extends State<FindJobsScreen>
           ),
           AppSpacing.vGapMd,
           Wrap(spacing: 8, runSpacing: 8, children: [
+            if (job.urgent)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppPalette.dangerBg,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Iconsax.flash_1,
+                      size: 12, color: AppPalette.danger),
+                  const SizedBox(width: 4),
+                  Text('Urgent',
+                      style: AppText.caption
+                          .on(AppPalette.danger)
+                          .weight(FontWeight.w700)),
+                ]),
+              ),
             if (job.city.isNotEmpty) _metaChip(Iconsax.location, job.city),
             _metaChip(Iconsax.money_recive,
                 job.salary.isNotEmpty ? job.salary : 'Not specified'),

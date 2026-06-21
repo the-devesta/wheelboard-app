@@ -8,6 +8,7 @@ import 'core/network/api_client.dart';
 import 'core/auth/auth_service.dart';
 import 'core/navigation/app_routes.dart';
 import 'core/navigation/app_pages.dart';
+import 'services/push_notification_service.dart';
 import 'utils/navigation_helper.dart';
 import 'utils/app_logger.dart';
 import 'utils/constants.dart';
@@ -17,6 +18,9 @@ void main() async {
 
   await dotenv.load(fileName: ".env");
   AppLogger.d("🔐 Environment variables loaded successfully");
+
+  // Push notifications (FCM). No-ops gracefully until native config is added.
+  await PushNotificationService.instance.init();
 
   // ── Initialize Core Services ─────────────────────────────────────────
   // API_URL is read from .env — no code change needed to switch environments.
@@ -146,6 +150,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     final loggedIn = auth.isLoggedIn;
     AppLogger.d("🔐 Is Logged In: $loggedIn | Role: ${auth.userRole.value}");
+
+    if (loggedIn) {
+      // Register this device's FCM token for the already-logged-in user.
+      PushNotificationService.instance.registerForCurrentUser();
+    }
 
     if (!mounted) return;
     if (!loggedIn) {

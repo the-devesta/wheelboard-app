@@ -3,16 +3,25 @@ import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../controllers/Transport/user_profile_controller.dart';
-import '../../../models/user_profile_model.dart';
+import '../../../core/auth/auth_service.dart';
 import '../../../services/profile_service.dart';
+import '../../../services/media_service.dart';
+import '../../../theme/design_system.dart';
 import '../../../widgets/custom_snackbar.dart';
-import '../../../widgets/custom_loader.dart';
 
+/// Professional "Edit Profile" — a 1:1 port of the web `/professional/profile`
+/// inline edit (`userAPI.updateProfile` → `PUT /users/profile`).
+///
+/// Editable fields mirror the web exactly: profile image, First/Last name,
+/// Location (address), Vehicle Type, Experience, License Number, Date of Birth,
+/// Mobile, Email, WhatsApp. City / State / Zip / Description / Skills are not
+/// edited here (web doesn't expose them) but are preserved on save so we never
+/// blank them out. The old Father's-name + required State/City dropdown form has
+/// been removed.
 class EditYourProfile01Screen extends StatefulWidget {
   const EditYourProfile01Screen({super.key});
 
@@ -22,280 +31,182 @@ class EditYourProfile01Screen extends StatefulWidget {
 }
 
 class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
-  final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _fatherNameController = TextEditingController();
-  final TextEditingController _yearsOfExperienceController =
-      TextEditingController();
-  final TextEditingController _birthDateController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _whatsappController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController(); // address
+  final _vehicleTypeCtrl = TextEditingController();
+  final _experienceCtrl = TextEditingController();
+  final _licenseCtrl = TextEditingController();
+  final _dobCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _whatsappCtrl = TextEditingController();
 
   final ImagePicker _picker = ImagePicker();
   final ProfileService _profileService = ProfileService();
+  late final UserProfileController _profileController;
 
-  late UserProfileController _profileController;
-  Worker? _profileWorker;
-
-  String? _selectedState;
-  String? _selectedCity;
   DateTime? _selectedDob;
-  XFile? _pickedDriverImage;
-  String? _existingDriverImageUrl;
+  XFile? _pickedImage;
+  String? _existingImageUrl;
   bool _isSaving = false;
-  bool _hasPrefilled = false;
 
-  final List<String> _states = [
-    'Andhra Pradesh',
-    'Arunachal Pradesh',
-    'Assam',
-    'Bihar',
-    'Chhattisgarh',
-    'Goa',
-    'Gujarat',
-    'Haryana',
-    'Himachal Pradesh',
-    'Jharkhand',
-    'Karnataka',
-    'Kerala',
-    'Madhya Pradesh',
-    'Maharashtra',
-    'Manipur',
-    'Meghalaya',
-    'Mizoram',
-    'Nagaland',
-    'Odisha',
-    'Punjab',
-    'Rajasthan',
-    'Sikkim',
-    'Tamil Nadu',
-    'Telangana',
-    'Tripura',
-    'Uttar Pradesh',
-    'Uttarakhand',
-    'West Bengal',
-    'Delhi',
-    'Jammu and Kashmir',
-    'Ladakh',
-  ];
-
-  final Map<String, List<String>> _citiesByState = {
-    'Andhra Pradesh': [
-      'Visakhapatnam',
-      'Vijayawada',
-      'Guntur',
-      'Nellore',
-      'Kurnool',
-    ],
-    'Arunachal Pradesh': ['Itanagar', 'Naharlagun', 'Tawang'],
-    'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat', 'Nagaon'],
-    'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia'],
-    'Chhattisgarh': ['Raipur', 'Bhilai', 'Bilaspur', 'Durg', 'Korba'],
-    'Goa': ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa'],
-    'Gujarat': [
-      'Ahmedabad',
-      'Surat',
-      'Vadodara',
-      'Rajkot',
-      'Bhavnagar',
-      'Jamnagar',
-    ],
-    'Haryana': ['Gurgaon', 'Faridabad', 'Panipat', 'Ambala', 'Karnal'],
-    'Himachal Pradesh': ['Shimla', 'Mandi', 'Dharamshala', 'Solan'],
-    'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Hazaribagh'],
-    'Karnataka': [
-      'Bangalore',
-      'Bengaluru',
-      'Mysore',
-      'Mysuru',
-      'Hubli',
-      'Mangalore',
-      'Belgaum',
-    ],
-    'Kerala': [
-      'Kochi',
-      'Thiruvananthapuram',
-      'Kozhikode',
-      'Thrissur',
-      'Kollam',
-    ],
-    'Madhya Pradesh': ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain'],
-    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad'],
-    'Manipur': ['Imphal', 'Thoubal', 'Bishnupur'],
-    'Meghalaya': ['Shillong', 'Tura', 'Jowai'],
-    'Mizoram': ['Aizawl', 'Lunglei', 'Saiha'],
-    'Nagaland': ['Kohima', 'Dimapur', 'Mokokchung'],
-    'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur'],
-    'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda'],
-    'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur'],
-    'Sikkim': ['Gangtok', 'Namchi', 'Mangan'],
-    'Tamil Nadu': [
-      'Chennai',
-      'Coimbatore',
-      'Madurai',
-      'Tiruchirappalli',
-      'Salem',
-    ],
-    'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar'],
-    'Tripura': ['Agartala', 'Udaipur', 'Dharmanagar'],
-    'Uttar Pradesh': [
-      'Lucknow',
-      'Kanpur',
-      'Agra',
-      'Varanasi',
-      'Allahabad',
-      'Noida',
-      'Ghaziabad',
-    ],
-    'Uttarakhand': ['Dehradun', 'Haridwar', 'Roorkee', 'Haldwani'],
-    'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri'],
-    'Delhi': ['New Delhi', 'Delhi', 'Dwarka', 'Saket', 'Rohini'],
-    'Jammu and Kashmir': ['Srinagar', 'Jammu', 'Anantnag'],
-    'Ladakh': ['Leh', 'Kargil'],
-  };
-
-  List<String> get _cityOptions {
-    if (_selectedState == null) return [];
-    final cities = List<String>.from(_citiesByState[_selectedState] ?? []);
-    // If city from profile is not in the list, add it
-    if (_selectedCity != null && !cities.contains(_selectedCity)) {
-      cities.add(_selectedCity!);
-    }
-    return cities;
-  }
-
-  File? get _driverImageFile => _pickedDriverImage != null && !kIsWeb
-      ? File(_pickedDriverImage!.path)
-      : null;
+  // Preserved (not edited here, sent unchanged — web parity).
+  String? _city;
+  String? _state;
+  String? _zipCode;
+  String? _description;
+  List<dynamic>? _skills;
 
   @override
   void initState() {
     super.initState();
     _profileController = Get.put(UserProfileController());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final profile = _profileController.userProfile.value;
-      if (profile != null) {
-        _applyProfile(profile);
-      } else {
-        _profileController.fetchCurrentUserProfile();
-      }
-
-      _profileWorker = ever<UserProfileModel?>(_profileController.userProfile, (
-        profile,
-      ) {
-        if (!_hasPrefilled && profile != null) {
-          _applyProfile(profile);
-        }
-      });
-    });
+    _prefillFromUser();
   }
 
-  void _applyProfile(UserProfileModel profile) {
-    setState(() {
-      _fullNameController.text = profile.name ?? '';
-      _fatherNameController.text = profile.fatherName ?? '';
-      _phoneController.text = profile.mobileNo ?? '';
-      _whatsappController.text = profile.mobileNo ?? '';
-      // description not yet in UserProfileModel — leave blank for first-time edit
+  /// Mirrors the web `fetchProfile`: read `userData.profile` (the raw map) for
+  /// every field. Falls back to splitting `fullName`/`name` when first/last are
+  /// not stored separately.
+  void _prefillFromUser() {
+    final user = AuthService.to.user;
+    final p = user?.profile ?? const <String, dynamic>{};
+    String s(dynamic v) => v?.toString() ?? '';
 
-      // Set state from profile - if not in list, add it temporarily
-      _selectedState = profile.state;
-      if (_selectedState != null && !_states.contains(_selectedState)) {
-        // Add state to list if it's not there
-        _states.add(_selectedState!);
+    var first = s(p['firstName']);
+    var last = s(p['lastName']);
+    if (first.isEmpty && last.isEmpty) {
+      final full = s(p['fullName']).isNotEmpty ? s(p['fullName']) : s(p['name']);
+      final parts = full.trim().split(RegExp(r'\s+'));
+      if (parts.isNotEmpty && parts.first.isNotEmpty) {
+        first = parts.first;
+        last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
       }
+    }
 
-      // Set city from profile - will be handled in getter
-      _selectedCity = profile.city;
+    _firstNameCtrl.text = first;
+    _lastNameCtrl.text = last;
+    _locationCtrl.text = s(p['address']);
+    _vehicleTypeCtrl.text =
+        s(p['vehicleType']).isNotEmpty ? s(p['vehicleType']) : 'Driver';
+    final exp = p['experience'];
+    _experienceCtrl.text =
+        (exp == null || s(exp) == '0') ? '' : s(exp);
+    _licenseCtrl.text = s(p['licenseNumber']);
+    _phoneCtrl.text =
+        s(p['phoneNumber']).isNotEmpty ? s(p['phoneNumber']) : s(user?.phoneNumber);
+    _emailCtrl.text = s(user?.email).isNotEmpty ? s(user?.email) : s(p['email']);
+    _whatsappCtrl.text = s(p['whatsappNumber']);
 
-      _existingDriverImageUrl = profile.profileImagePath;
-
-      if (profile.dateOfBirth != null) {
-        final parsed = DateTime.tryParse(profile.dateOfBirth!);
-        if (parsed != null) {
-          _selectedDob = parsed;
-          _birthDateController.text = _formatDate(parsed);
-        }
+    final dobRaw = s(p['dateOfBirth']);
+    if (dobRaw.isNotEmpty) {
+      final parsed = DateTime.tryParse(dobRaw);
+      if (parsed != null) {
+        _selectedDob = parsed;
+        _dobCtrl.text = _formatDate(parsed);
       }
+    }
 
-      _hasPrefilled = true;
-    });
+    _existingImageUrl = s(p['avatar']).isNotEmpty
+        ? s(p['avatar'])
+        : (s(p['profileImage']).isNotEmpty ? s(p['profileImage']) : null);
+
+    // Preserved fields.
+    _city = s(p['city']).isNotEmpty ? s(p['city']) : null;
+    _state = s(p['state']).isNotEmpty ? s(p['state']) : null;
+    _zipCode = s(p['zipCode']).isNotEmpty ? s(p['zipCode']) : null;
+    _description = s(p['description']).isNotEmpty ? s(p['description']) : null;
+    _skills = p['skills'] is List ? p['skills'] as List : null;
   }
 
   @override
   void dispose() {
-    _fullNameController.dispose();
-    _fatherNameController.dispose();
-    _yearsOfExperienceController.dispose();
-    _birthDateController.dispose();
-    _phoneController.dispose();
-    _whatsappController.dispose();
-    _descriptionController.dispose();
-    _profileWorker?.dispose();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
+    _locationCtrl.dispose();
+    _vehicleTypeCtrl.dispose();
+    _experienceCtrl.dispose();
+    _licenseCtrl.dispose();
+    _dobCtrl.dispose();
+    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
+    _whatsappCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickDriverImage() async {
-    final XFile? image = await _picker.pickImage(
+  File? get _imageFile =>
+      _pickedImage != null && !kIsWeb ? File(_pickedImage!.path) : null;
+
+  Future<void> _pickImage() async {
+    final image = await _picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 75,
+      imageQuality: 80,
+      maxWidth: 800,
     );
     if (image != null) {
       setState(() {
-        _pickedDriverImage = image;
-        _existingDriverImageUrl = null;
+        _pickedImage = image;
       });
     }
   }
 
-  Future<void> _submitProfile() async {
+  Future<void> _save() async {
     if (_isSaving) return;
 
-    final userId = _profileController.userProfile.value?.userId ?? '';
-    if (userId.isEmpty) {
-      SnackBarHelper.error("User ID not found. Please login again.");
-      return;
-    }
-
-    if (_fullNameController.text.trim().isEmpty ||
-        _fatherNameController.text.trim().isEmpty ||
-        _selectedDob == null ||
-        _selectedState == null ||
-        _selectedCity == null) {
-      SnackBarHelper.warning("Please complete all required fields.");
+    if (_firstNameCtrl.text.trim().isEmpty) {
+      SnackBarHelper.warning('Please enter your first name.');
       return;
     }
 
     setState(() => _isSaving = true);
     try {
-      await _profileService.updateProfessionalProfile(
-        userId: userId,
-        fullName: _fullNameController.text.trim(),
-        fathersName: _fatherNameController.text.trim(),
-        yearsOfExperience: _yearsOfExperienceController.text.trim().isEmpty
-            ? '0'
-            : _yearsOfExperienceController.text.trim(),
-        birthDateIso: _selectedDob!.toIso8601String(),
-        state: _selectedState ?? '',
-        city: _selectedCity ?? '',
-        phoneNumber: _phoneController.text.trim(),
-        whatsappNumber: _whatsappController.text.trim(),
-        description: _descriptionController.text.trim(),
-        driverImage: _driverImageFile,
+      // Upload a newly-picked image via /media; send the hosted URL (web parity).
+      String? imageUrl;
+      final file = _imageFile;
+      if (file != null) {
+        final media = await MediaService.upload(file, folder: 'profile-images');
+        imageUrl = media?.url;
+      }
+
+      final experience = int.tryParse(_experienceCtrl.text.trim());
+
+      // Build the same `profile` payload the web sends in handleSave().
+      final profile = <String, dynamic>{
+        'firstName': _firstNameCtrl.text.trim(),
+        'lastName': _lastNameCtrl.text.trim(),
+        'fullName':
+            '${_firstNameCtrl.text.trim()} ${_lastNameCtrl.text.trim()}'.trim(),
+        'phoneNumber': _phoneCtrl.text.trim(),
+        'whatsappNumber': _whatsappCtrl.text.trim(),
+        if (_selectedDob != null)
+          'dateOfBirth': _selectedDob!.toIso8601String(),
+        'address': _locationCtrl.text.trim(),
+        if (_city != null) 'city': _city,
+        if (_state != null) 'state': _state,
+        if (_zipCode != null) 'zipCode': _zipCode,
+        'licenseNumber': _licenseCtrl.text.trim(),
+        'vehicleType': _vehicleTypeCtrl.text.trim(),
+        if (experience != null) 'experience': experience,
+        if (_description != null) 'description': _description,
+        if (_skills != null) 'skills': _skills,
+      };
+
+      await _profileService.updateProfile(
+        profile: profile,
+        profileImageBase64: imageUrl,
+        email: _emailCtrl.text.trim().isNotEmpty ? _emailCtrl.text.trim() : null,
       );
 
-      SnackBarHelper.success("Profile updated successfully.");
+      SnackBarHelper.success('Professional profile updated successfully.');
+
+      // Refresh both the auth user (raw map) and the profile controller so the
+      // YourProfile screen reflects the changes immediately.
+      await AuthService.to.refreshLoginStatus();
       await _profileController.fetchCurrentUserProfile();
-      // Navigate back to profile screen after successful update
-      // Add small delay to ensure snackbar is shown and profile is refreshed
-      await Future.delayed(const Duration(milliseconds: 800));
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context, true);
-      } else if (mounted) {
-        Get.back(result: true);
-      }
+
+      if (mounted) Get.back(result: true);
     } catch (e) {
-      SnackBarHelper.error("Failed to update profile: $e");
+      SnackBarHelper.error('Failed to update profile: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -304,620 +215,232 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppPalette.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppPalette.card,
         elevation: 0,
         scrolledUnderElevation: 1,
-        shadowColor: const Color(0xFFE5E7EB),
+        shadowColor: AppPalette.border,
         centerTitle: true,
-        title: Text(
-          'Edit Profile',
-          style: GoogleFonts.poppins(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF111827),
-          ),
-        ),
+        title: Text('Edit Profile', style: AppText.h2),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              size: 20, color: Color(0xFF111827)),
-          onPressed: () => Navigator.pop(context),
+              size: 20, color: AppPalette.textDark),
+          onPressed: () => Get.back(),
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 16),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      GestureDetector(
-                        onTap: _pickDriverImage,
-                        child: Container(
-                          width: 96,
-                          height: 96,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFF36969),
-                              width: 4,
-                            ),
-                            image:
-                                _existingDriverImageUrl != null &&
-                                    _existingDriverImageUrl!.isNotEmpty
-                                ? DecorationImage(
-                                    image: NetworkImage(
-                                      _existingDriverImageUrl!,
-                                    ),
-                                    fit: BoxFit.cover,
-                                    onError: (exception, stackTrace) {
-                                      // Handle image load error
-                                    },
-                                  )
-                                : _pickedDriverImage != null
-                                ? DecorationImage(
-                                    image: FileImage(
-                                      File(_pickedDriverImage!.path),
-                                    ),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                            color:
-                                _existingDriverImageUrl == null ||
-                                    _existingDriverImageUrl!.isEmpty
-                                ? (_pickedDriverImage == null
-                                      ? Colors.grey[200]
-                                      : null)
-                                : null,
-                          ),
-                          child:
-                              (_existingDriverImageUrl == null ||
-                                      _existingDriverImageUrl!.isEmpty) &&
-                                  _pickedDriverImage == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 48,
-                                  color: Colors.grey,
-                                )
-                              : null,
-                        ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: GestureDetector(
-                          onTap: _pickDriverImage,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF36969),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                _buildTextField(
-                  controller: _fullNameController,
-                  label: 'Full Name',
-                  hint: 'Enter your full name',
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _fatherNameController,
-                  label: 'Father\'s name',
-                  hint: 'Enter father\'s name',
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _yearsOfExperienceController,
-                  label: 'Years Of Experience',
-                  hint: 'Eg. 6',
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          children: [
+            _avatar(),
+            AppSpacing.vGapLg,
+            _sectionCard('Personal Details', [
+              Row(children: [
+                Expanded(
+                    child: _field('First Name', _firstNameCtrl,
+                        hint: 'First name')),
+                AppSpacing.hGapMd,
+                Expanded(
+                    child:
+                        _field('Last Name', _lastNameCtrl, hint: 'Last name')),
+              ]),
+              _field('Location', _locationCtrl,
+                  hint: 'Address', icon: Iconsax.location),
+              _field('Vehicle Type', _vehicleTypeCtrl,
+                  hint: 'e.g. Driver, Technician', icon: Iconsax.car),
+              _field('Experience (years)', _experienceCtrl,
+                  hint: 'e.g. 6',
                   keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 16),
-                _buildDateField(),
-                const SizedBox(height: 24),
-                _buildDropdownField(
-                  label: 'Select State',
-                  value: _selectedState,
-                  hint: 'Select state',
-                  icon: Icons.location_on,
-                  options: _states,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedState = value;
-                      // Only clear city if it's not in the new state's city list
-                      // But keep it if it was from profile (will be added to list by getter)
-                      final cityOptions = _citiesByState[_selectedState] ?? [];
-                      if (_selectedCity != null &&
-                          !cityOptions.contains(_selectedCity) &&
-                          _hasPrefilled) {
-                        // Keep the city - it will be added to options by getter
-                      } else if (_selectedCity != null &&
-                          !cityOptions.contains(_selectedCity)) {
-                        _selectedCity = null;
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: 24),
-                _buildDropdownField(
-                  label: 'Select City',
-                  value: _selectedCity,
-                  hint: 'Select city',
-                  icon: Icons.location_city,
-                  options: _cityOptions,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCity = value;
-                    });
-                  },
-                  enabled: _selectedState != null,
-                ),
-                const SizedBox(height: 24),
-                _buildTextField(
-                  controller: _phoneController,
-                  label: 'Mobile Number',
+                  icon: Iconsax.chart),
+              _field('License Number', _licenseCtrl,
+                  hint: 'Driving license number', icon: Iconsax.card),
+              _dateField(),
+            ]),
+            AppSpacing.vGapLg,
+            _sectionCard('Contact Information', [
+              _field('Mobile Number', _phoneCtrl,
                   hint: '+91 XXXXX XXXXX',
                   keyboardType: TextInputType.phone,
-                  prefixIcon: Iconsax.call,
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _whatsappController,
-                  label: 'WhatsApp Number',
+                  icon: Iconsax.call),
+              _field('Email Address', _emailCtrl,
+                  hint: 'you@example.com',
+                  keyboardType: TextInputType.emailAddress,
+                  icon: Iconsax.sms),
+              _field('WhatsApp Number', _whatsappCtrl,
                   hint: '+91 XXXXX XXXXX',
                   keyboardType: TextInputType.phone,
-                  prefixIcon: Icons.chat_rounded,
+                  icon: Icons.chat_rounded),
+            ]),
+            AppSpacing.vGapXl,
+            Row(children: [
+              Expanded(
+                child: AppSecondaryButton(
+                  label: 'Cancel',
+                  onPressed: _isSaving ? null : () => Get.back(),
                 ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _descriptionController,
-                  label: 'About You (Optional)',
-                  hint: 'Briefly describe your skills and experience…',
-                  maxLines: 3,
-                  prefixIcon: Iconsax.document_text,
+              ),
+              AppSpacing.hGapMd,
+              Expanded(
+                flex: 2,
+                child: AppPrimaryButton(
+                  label: 'Save Changes',
+                  icon: Iconsax.tick_circle,
+                  loading: _isSaving,
+                  onPressed: _save,
                 ),
-                const SizedBox(height: 24),
-                _buildImageUploadField(),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _submitProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF36969),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CustomLoader.small(color: Colors.white),
-                          )
-                        : Text(
-                            'Save Now',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              letterSpacing: -0.14,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
+              ),
+            ]),
+            AppSpacing.vGapLg,
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    TextInputType? keyboardType,
-    IconData? prefixIcon,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFF36969),
-          ),
-        ),
-        const SizedBox(height: 2),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, size: 18, color: const Color(0xFF6C7278))
-                : null,
-            hintText: hint,
-            hintStyle: GoogleFonts.inter(
-              fontSize: 14,
-              color: const Color(0xFF6C7278),
+  // ── Avatar ──────────────────────────────────────────────────────────────────
+  Widget _avatar() {
+    final hasPicked = _pickedImage != null;
+    final hasExisting =
+        _existingImageUrl != null && _existingImageUrl!.isNotEmpty;
+    return Center(
+      child: GestureDetector(
+        onTap: _pickImage,
+        child: Stack(alignment: Alignment.bottomRight, children: [
+          Container(
+            width: 104,
+            height: 104,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppPalette.primary, width: 3),
+              color: AppPalette.primaryLight,
             ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFF36969)),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 13,
+            child: ClipOval(
+              child: hasPicked
+                  ? Image.file(File(_pickedImage!.path), fit: BoxFit.cover)
+                  : hasExisting
+                      ? Image.network(_existingImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _avatarFallback())
+                      : _avatarFallback(),
             ),
           ),
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: const Color(0xFF1F2937),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppPalette.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: const Icon(Iconsax.camera, size: 15, color: Colors.white),
           ),
-        ),
-      ],
+        ]),
+      ),
     );
   }
 
-  Widget _buildDateField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Birth of date',
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFF36969),
-          ),
-        ),
-        const SizedBox(height: 2),
+  Widget _avatarFallback() => const Center(
+        child: Icon(Iconsax.user, size: 44, color: AppPalette.primary),
+      );
+
+  // ── Section card ────────────────────────────────────────────────────────────
+  Widget _sectionCard(String title, List<Widget> children) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppPalette.card,
+        borderRadius: AppRadius.rLg,
+        border: Border.all(color: AppPalette.border),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: AppText.title.on(AppPalette.textDark)),
+        AppSpacing.vGapMd,
+        ...children,
+      ]),
+    );
+  }
+
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    String hint = '',
+    TextInputType? keyboardType,
+    IconData? icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label,
+            style: AppText.label.on(AppPalette.primary).weight(FontWeight.w600)),
+        const SizedBox(height: 6),
         TextField(
-          controller: _birthDateController,
+          controller: controller,
+          keyboardType: keyboardType,
+          style: AppText.body.on(AppPalette.textDark),
+          decoration: _decoration(hint, icon),
+        ),
+      ]),
+    );
+  }
+
+  Widget _dateField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Date of Birth',
+            style: AppText.label.on(AppPalette.primary).weight(FontWeight.w600)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _dobCtrl,
           readOnly: true,
+          style: AppText.body.on(AppPalette.textDark),
           onTap: () async {
             final date = await showDatePicker(
               context: context,
-              initialDate: _selectedDob ?? DateTime.now(),
+              initialDate: _selectedDob ?? DateTime(2000),
               firstDate: DateTime(1950),
               lastDate: DateTime.now(),
             );
             if (date != null) {
               setState(() {
                 _selectedDob = date;
-                _birthDateController.text = _formatDate(date);
+                _dobCtrl.text = _formatDate(date);
               });
             }
           },
-          decoration: InputDecoration(
-            hintText: 'DD/MM/YYYY',
-            hintStyle: GoogleFonts.inter(
-              fontSize: 14,
-              color: const Color(0xFF6C7278),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFEDF1F3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFF36969)),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 13,
-            ),
-            suffixIcon: const Icon(
-              Icons.calendar_today,
-              size: 16,
-              color: Color(0xFFACB5BB),
-            ),
-          ),
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: const Color(0xFF1F2937),
-          ),
+          decoration: _decoration('DD/MM/YYYY', Iconsax.calendar),
         ),
-      ],
+      ]),
     );
   }
 
-  Widget _buildDropdownField({
-    required String label,
-    required String? value,
-    required String hint,
-    required IconData icon,
-    required List<String> options,
-    required Function(String?) onChanged,
-    bool enabled = true,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFFF36969),
-              ),
-            ),
-            Text(
-              '*',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: const Color(0xFFFF5E5E),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 51,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFEDF1F3)),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: const Color(0xFF6C7278)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButton<String>(
-                    value: enabled && value != null && options.contains(value)
-                        ? value
-                        : null,
-                    isExpanded: true,
-                    underline: const SizedBox(),
-                    hint: Text(
-                      hint,
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        color: const Color(0xFF6C7278),
-                      ),
-                    ),
-                    items: options
-                        .map(
-                          (item) => DropdownMenuItem(
-                            value: item,
-                            child: Text(
-                              item,
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                color: const Color(0xFF1F2937),
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: enabled ? onChanged : null,
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_drop_down,
-                  size: 15,
-                  color: Color(0xFF6C7278),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImageUploadField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 4,
-          runSpacing: 2,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              'Upload Driver Image',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFFF36969),
-              ),
-            ),
-            Text(
-              '*',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: const Color(0xFFFF5E5E),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'JPG/PNG, max 2MB',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: const Color(0xFF888888),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Image Preview
-        if (_pickedDriverImage != null ||
-            (_existingDriverImageUrl != null &&
-                _existingDriverImageUrl!.isNotEmpty))
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFEDF1F3)),
-                    image: _pickedDriverImage != null
-                        ? DecorationImage(
-                            image: FileImage(File(_pickedDriverImage!.path)),
-                            fit: BoxFit.cover,
-                          )
-                        : _existingDriverImageUrl != null &&
-                              _existingDriverImageUrl!.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(_existingDriverImageUrl!),
-                            fit: BoxFit.cover,
-                            onError: (exception, stackTrace) {
-                              // Handle error
-                            },
-                          )
-                        : null,
-                    color: Colors.grey[200],
-                  ),
-                  child:
-                      (_pickedDriverImage == null &&
-                          (_existingDriverImageUrl == null ||
-                              _existingDriverImageUrl!.isEmpty))
-                      ? const Icon(Icons.image, size: 40, color: Colors.grey)
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _pickedDriverImage != null
-                            ? _pickedDriverImage!.name
-                            : 'Current profile image',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF424242),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _pickedDriverImage != null
-                            ? 'Tap to change image'
-                            : 'Tap to upload new image',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: const Color(0xFF888888),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        GestureDetector(
-          onTap: _pickDriverImage,
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  border: Border.all(color: const Color(0xFFEDF1F3)),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.upload_file,
-                  size: 24,
-                  color: Color(0xFF888888),
-                ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Container(
-                  height: 37,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    border: Border.all(color: const Color(0xFFEDF1F3)),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      _pickedDriverImage != null
-                          ? 'Change image'
-                          : (_existingDriverImageUrl != null &&
-                                    _existingDriverImageUrl!.isNotEmpty
-                                ? 'Change current image'
-                                : 'Tap to upload image'),
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: const Color(0xFF888888),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+  InputDecoration _decoration(String hint, IconData? icon) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: AppText.bodySm.on(AppPalette.textFaint),
+      prefixIcon:
+          icon != null ? Icon(icon, size: 18, color: AppPalette.textGrey) : null,
+      filled: true,
+      fillColor: AppPalette.bg,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      border: OutlineInputBorder(
+          borderRadius: AppRadius.rLg,
+          borderSide: const BorderSide(color: AppPalette.border)),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadius.rLg,
+          borderSide: const BorderSide(color: AppPalette.border)),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadius.rLg,
+          borderSide: const BorderSide(color: AppPalette.primary)),
     );
   }
 
   String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    return '$day/$month/$year';
+    final d = date.day.toString().padLeft(2, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    return '$d/$m/${date.year}';
   }
 }

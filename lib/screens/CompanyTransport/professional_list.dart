@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/Transport/professional_list_controller.dart';
 import '../../models/professional_profile_model.dart';
-import '../../utils/constants.dart';
+import '../../utils/media_url.dart';
 import '../../widgets/custom_loader.dart';
 
 class ProfessionalListScreen extends StatefulWidget {
@@ -574,11 +574,7 @@ class _ProfessionalDetailsSheet extends StatelessWidget {
   }
 }
 
-String? _resolveImageUrl(String? imagePath) {
-  if (imagePath == null || imagePath.isEmpty) return null;
-  if (imagePath.startsWith('http')) return imagePath;
-  return ApiConstants.baseUrl + imagePath;
-}
+String? _resolveImageUrl(String? imagePath) => MediaUrl.resolveOrNull(imagePath);
 
 String _getInitials(String name) {
   final parts = name

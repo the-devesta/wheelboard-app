@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart' as dio;
-import '../../core/network/api_client.dart';
-import '../../core/network/api_endpoints.dart';
 import '../../core/network/api_exception.dart';
+import '../../services/profile_service.dart';
+import '../../services/media_service.dart';
 import '../../models/user_profile_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'user_profile_controller.dart';
@@ -132,30 +132,31 @@ class CompanyProfileController extends GetxController {
       final description = descriptionController.text.trim();
       final website = websiteController.text.trim();
 
-      final formData = dio.FormData.fromMap({
-        'UserId': userId,
-        'CompanyName': companyName,
-        'FullName': fullName,
-        'Email': email,
-        'Location': location,
-        'FleetSize': fleetSize.isEmpty ? '0' : fleetSize,
-        'GSTNumber': gstNumber,
-        if (phone.isNotEmpty) 'PhoneNumber': phone,
-        if (whatsapp.isNotEmpty) 'WhatsappNumber': whatsapp,
-        if (description.isNotEmpty) 'Description': description,
-        if (website.isNotEmpty) 'Website': website,
-      });
-
-      if (logoFile != null) {
-        formData.files.add(MapEntry(
-          'CompanyLogo',
-          await dio.MultipartFile.fromFile(logoFile!.path),
-        ));
+      String? logoUrl;
+      final lf = logoFile;
+      if (lf != null) {
+        // Upload via the unified /media endpoint; send the hosted URL.
+        final media = await MediaService.upload(lf, folder: 'profile-images');
+        logoUrl = media?.url;
       }
 
-      await ApiClient.instance.upload<dynamic>(
-        ApiEndpoints.users.updateTransportProfile,
-        formData: formData,
+      // PUT /users/profile (same endpoint the web uses for every role).
+      await ProfileService().updateProfile(
+        profile: {
+          'companyName': companyName,
+          'fullName': fullName,
+          'address': location,
+          'location': location,
+          'fleetSize': fleetSize.isEmpty ? '0' : fleetSize,
+          'gstNumber': gstNumber,
+          'businessCategory': businessCategoryController.text.trim(),
+          'phoneNumber': phone,
+          'whatsappNumber': whatsapp,
+          'description': description,
+          'website': website,
+        },
+        profileImageBase64: logoUrl,
+        email: email,
       );
 
       AppLogger.d("✅ Profile updated successfully.");

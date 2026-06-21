@@ -182,6 +182,60 @@ class _AppliedJobCard extends StatelessWidget {
     }
   }
 
+  /// Application progress stepper (mirrors web `/professional/jobs/applied`):
+  /// Applied → Reviewed → Shortlisted → Hired. (Rejected applications show the
+  /// status badge only, no stepper.)
+  Widget _stepper(String status) {
+    const steps = ['Applied', 'Reviewed', 'Shortlisted', 'Hired'];
+    var idx = 0;
+    switch (status) {
+      case 'reviewed':
+        idx = 1;
+        break;
+      case 'shortlisted':
+        idx = 2;
+        break;
+      case 'hired':
+        idx = 3;
+        break;
+    }
+    const inactive = Color(0xFFE5E7EB);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          for (var i = 0; i < steps.length; i++) ...[
+            Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: i <= idx ? AppPalette.green : inactive,
+                  shape: BoxShape.circle,
+                ),
+                child: i <= idx
+                    ? const Icon(Icons.check, size: 10, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(height: 4),
+              Text(steps[i],
+                  style: AppText.micro
+                      .on(i <= idx ? AppPalette.textMid : AppPalette.textFaint)),
+            ]),
+            if (i < steps.length - 1)
+              Expanded(
+                child: Container(
+                  height: 2,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  color: i < idx ? AppPalette.green : inactive,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = job.myApplication;
@@ -220,6 +274,10 @@ class _AppliedJobCard extends StatelessWidget {
                     Text('Applied on ${app!.appliedDateFormatted}',
                         style: AppText.caption),
                   ],
+                  if (onUnsave == null &&
+                      app != null &&
+                      app.status != 'rejected')
+                    _stepper(app.status),
                 ],
               ),
             ),

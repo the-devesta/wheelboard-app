@@ -96,6 +96,8 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       final profile = AppliedUserProfile.fromJson(data);
       showModalBottomSheet(
         context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(24),
@@ -107,94 +109,303 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
     }
   }
 
+  /// Complete applicant profile — mirrors the web `CandidateProfileModal`:
+  /// header, Contact Information, Professional Information, Skills, About and
+  /// Documents.
   Widget _buildProfileBottomSheet(AppliedUserProfile profile) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    final statusText =
+        profile.status.isNotEmpty ? profile.status : 'Applicant';
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Header
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundImage: profile.profileImage.isNotEmpty
+                        ? NetworkImage(profile.profileImage)
+                        : null,
+                    backgroundColor: const Color(0xFFE5E7EB),
+                    child: profile.profileImage.isEmpty
+                        ? Text(
+                            profile.profileName.isNotEmpty
+                                ? profile.profileName[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          profile.profileName.isNotEmpty
+                              ? profile.profileName
+                              : 'Applicant',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Professional • $statusText',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Contact Information
+              _profileSection('Contact Information', Icons.mail_outline, [
+                if (profile.email.isNotEmpty)
+                  _buildProfileDetailRow(Icons.email, 'Email', profile.email),
+                if (profile.phone.isNotEmpty)
+                  _buildProfileDetailRow(Icons.phone, 'Phone', profile.phone),
+                if (profile.address.isNotEmpty)
+                  _buildProfileDetailRow(
+                      Icons.location_on, 'Address', profile.address),
+                if (profile.dateOfBirth.isNotEmpty)
+                  _buildProfileDetailRow(Icons.cake_outlined, 'Date of Birth',
+                      _formatDate(profile.dateOfBirth)),
+              ]),
+              if (profile.hasProfessionalInfo) ...[
+                const SizedBox(height: 16),
+                _profileSection(
+                    'Professional Information', Icons.work_outline, [
+                  _professionalInfoGrid(profile),
+                ]),
+              ],
+              if (profile.skills.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _profileSection('Skills', Icons.workspace_premium_outlined, [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: profile.skills.map(_skillPill).toList(),
+                  ),
+                ]),
+              ],
+              if (profile.description.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _profileSection('About', Icons.description_outlined, [
+                  Text(
+                    profile.description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                ]),
+              ],
+              if (profile.hasDocuments) ...[
+                const SizedBox(height: 16),
+                _profileSection('Documents', Icons.folder_outlined, [
+                  if (profile.licenseDoc.isNotEmpty)
+                    _docRow('License', profile.licenseDoc),
+                  if (profile.insuranceDoc.isNotEmpty)
+                    _docRow('Insurance', profile.insuranceDoc),
+                  if (profile.backgroundCheckDoc.isNotEmpty)
+                    _docRow('Background Check', profile.backgroundCheckDoc),
+                ]),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF36969),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _profileSection(String title, IconData icon, List<Widget> children) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEFF1F4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: const Color(0xFFF36969)),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  /// Two-column grid of professional info, matching the web layout.
+  Widget _professionalInfoGrid(AppliedUserProfile p) {
+    final items = <Widget>[];
+    void add(String label, String value) {
+      if (value.trim().isNotEmpty) items.add(_infoItem(label, value));
+    }
+
+    add('Experience', p.experience.isNotEmpty ? '${p.experience} years' : '');
+    add('Vehicle Type', p.vehicleType);
+    add('License Number', p.licenseNumber);
+    add('License Expiry',
+        p.licenseExpiry.isNotEmpty ? _formatDate(p.licenseExpiry) : '');
+    add('Rating', p.rating.isNotEmpty ? '${p.rating} / 5.0' : '');
+    add('Total Trips', p.totalTrips);
+
+    final rows = <Widget>[];
+    for (var i = 0; i < items.length; i += 2) {
+      rows.add(Padding(
+        padding: EdgeInsets.only(bottom: i + 2 < items.length ? 16 : 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+            Expanded(child: items[i]),
+            const SizedBox(width: 16),
+            Expanded(
+              child:
+                  i + 1 < items.length ? items[i + 1] : const SizedBox.shrink(),
             ),
-            const SizedBox(height: 24),
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: profile.profileImage.isNotEmpty
-                  ? NetworkImage(profile.profileImage)
-                  : null,
-              backgroundColor: const Color(0xFFE5E7EB),
-              child: profile.profileImage.isEmpty
-                  ? Text(
-                      profile.profileName.isNotEmpty
-                          ? profile.profileName[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 16),
+          ],
+        ),
+      ));
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
+  }
+
+  Widget _infoItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF111827),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _skillPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4F4),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFFF36969),
+        ),
+      ),
+    );
+  }
+
+  Widget _docRow(String label, String url) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFEFF1F4)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
             Text(
-              profile.profileName,
+              label,
               style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E1E1E),
+                fontSize: 14,
+                color: Color(0xFF374151),
               ),
             ),
-            const SizedBox(height: 8),
-            if (profile.profileType.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4F4),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  profile.profileType,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFFF36969),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 24),
-            _buildProfileDetailRow(Icons.phone, 'Phone', profile.phone),
-            _buildProfileDetailRow(Icons.email, 'Email', profile.email),
-            if (profile.address.isNotEmpty)
-              _buildProfileDetailRow(
-                Icons.location_on,
-                'Address',
-                profile.address,
-              ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF36969),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            InkWell(
+              onTap: () => _openDoc(url),
+              child: const Text(
+                'View',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFF36969),
                 ),
               ),
             ),
@@ -202,6 +413,19 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openDoc(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      Get.snackbar(
+        'Document',
+        'Cannot open this document',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   Widget _buildProfileDetailRow(IconData icon, String label, String value) {

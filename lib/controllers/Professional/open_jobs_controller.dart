@@ -20,6 +20,13 @@ class OpenJobsController extends GetxController {
   var applyingJobId = ''.obs;
   var savingJobId = ''.obs;
 
+  /// Map of `jobId → application status`
+  /// (`pending | reviewed | shortlisted | hired | rejected`). Mirrors the web
+  /// search page's `applicationStatus`, built from GET /jobs/my-applications, so
+  /// job cards can show a granular badge (Applied / Viewed / Shortlisted / …)
+  /// instead of a plain "Applied".
+  var applicationStatus = <String, String>{}.obs;
+
   var page = 1.obs;
   var totalPages = 1.obs;
   var total = 0.obs;
@@ -64,6 +71,34 @@ class OpenJobsController extends GetxController {
       openJobs.clear();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// GET /jobs/my-applications — build a `jobId → status` map for status badges.
+  /// 1:1 with the web search page's `fetchMyApplications` (`getMyApplications`).
+  Future<void> fetchMyApplicationStatuses() async {
+    try {
+      if (AuthService.to.currentUserId.isEmpty) return;
+      final data = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.jobs.myApplications,
+      );
+      final list = data is Map
+          ? (data['jobs'] ?? data['applications'] ?? data['data'] ?? const [])
+          : data;
+      final map = <String, String>{};
+      if (list is List) {
+        for (final item in list.whereType<Map<String, dynamic>>()) {
+          final job = JobModel.fromJson(item);
+          final status = job.myApplication?.status;
+          if (job.id.isNotEmpty && status != null && status.isNotEmpty) {
+            map[job.id] = status;
+          }
+        }
+      }
+      applicationStatus.value = map;
+      AppLogger.d("✅ Loaded ${map.length} application statuses");
+    } catch (e) {
+      AppLogger.d("⚠️ Could not load application statuses: $e");
     }
   }
 
@@ -122,6 +157,10 @@ class OpenJobsController extends GetxController {
       );
 
       SnackBarHelper.success("Job application submitted successfully!");
+      // Optimistically mark applied (web sets status → 'pending') so the search
+      // page badge flips immediately, then refresh the authoritative state.
+      applicationStatus[jobId] = 'pending';
+      applicationStatus.refresh();
       // Refresh so the job reflects the applied state.
       await fetchOpenJobs();
       return true;

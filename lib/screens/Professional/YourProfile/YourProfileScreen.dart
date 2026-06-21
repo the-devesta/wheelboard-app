@@ -12,8 +12,10 @@ import '../../../widgets/custom_snackbar.dart';
 import '../../../widgets/change_password_sheet.dart';
 import '../../auth/onboarding_screen.dart';
 import '../EditYourProfile01/EditYourProfile01Screen.dart';
+import '../CompleteProfile/professional_complete_profile_screen.dart';
 import '../KYC/kyc_screen.dart';
 import '../AddReferral/AddReferralScreen.dart';
+import '../MyRewards/MyRewardsScreen.dart';
 import '../../shared/subscription_screen.dart';
 import '../../shared/issues/issues_screen.dart';
 import '../../shared/legal_screen.dart';
@@ -70,6 +72,7 @@ class YourProfileScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 16),
                   _buildKycBanner(context, profile, driverCtrl),
+                  _buildCompleteProfileBanner(context),
                   _buildPersonalDetails(context, profile),
                   const SizedBox(height: 12),
                   _buildContactInfo(profile),
@@ -804,6 +807,73 @@ class YourProfileScreen extends StatelessWidget {
     );
   }
 
+  // ── Complete-profile nudge ─────────────────────────────────────────────────
+  // Mirrors the web `/professional/complete-profile` step (address + vehicle +
+  // license). Shown only while those details are missing.
+
+  Widget _buildCompleteProfileBanner(BuildContext context) {
+    final p = AuthService.to.user?.profile ?? const {};
+    bool has(String k) => (p[k]?.toString().trim().isNotEmpty ?? false);
+    final isComplete = has('address') &&
+        has('city') &&
+        has('state') &&
+        has('vehicleType') &&
+        has('licenseNumber');
+    if (isComplete) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: GestureDetector(
+        onTap: () =>
+            Get.to(() => const ProfessionalCompleteProfileScreen()),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Iconsax.user_edit,
+                    color: Color(0xFF3B82F6), size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Complete your profile',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111827),
+                            fontFamily: 'Poppins')),
+                    SizedBox(height: 2),
+                    Text('Add your address, vehicle & license details',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                            fontFamily: 'Poppins')),
+                  ],
+                ),
+              ),
+              const Icon(Iconsax.arrow_right_3,
+                  color: Color(0xFF3B82F6), size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Quick actions ─────────────────────────────────────────────────────────
 
   Widget _buildQuickActions(BuildContext context) {
@@ -820,6 +890,14 @@ class YourProfileScreen extends StatelessWidget {
               () {
                 Get.to(() => AddReferralScreen());
               },
+            ),
+            const SizedBox(width: 10),
+            _actionTile(
+              Iconsax.gift,
+              'Rewards',
+              const Color(0xFF8B5CF6),
+              const Color(0xFFF5F3FF),
+              () => Get.to(() => const MyRewardsScreen()),
             ),
             const SizedBox(width: 10),
             _actionTile(

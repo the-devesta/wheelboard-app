@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_endpoints.dart';
 import '../../models/fleet_models.dart';
-import '../../models/transport/lease_models.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 
@@ -176,10 +175,9 @@ class LeaseController extends GetxController {
   Future<void> fetchListingBookings(String listingId) async {
     try {
       isDetailLoading.value = true;
-      // Try the listing-specific bookings endpoint
+      // Listing-specific bookings endpoint (mirrors leaseAPI.getListingBookings)
       final raw = await ApiClient.instance.get<dynamic>(
-        '/lease/bookings/incoming',
-        queryParameters: {'listingId': listingId},
+        ApiEndpoints.lease.listingBookings(listingId),
       );
       final list = _unwrapList(raw);
       listingBookings.value =
@@ -488,95 +486,6 @@ class LeaseController extends GetxController {
     return {};
   }
 
-  // ── Legacy compatibility shims ─────────────────────────────────────────────
-  // Old screens (leased_vehicles_screen, applications_screen, lease_details_screen)
-  // use these names/types unchanged. New screens use the modern API above.
-
+  /// Convenience alias used by some list screens.
   RxBool get isLoading => isListingsLoading;
-
-  RxList<LeaseListItem> get leaseList {
-    final result = <LeaseListItem>[].obs;
-    result.value = myListings
-        .map((l) => LeaseListItem(
-              leaseId: l.id,
-              vehicleTitle: l.title,
-              vehicleNumber: l.vehicleRegistration,
-              flatPrice: l.priceAmount,
-              startDate: l.availableFrom,
-              endDate: l.availableUntil,
-              status: l.status,
-              imageUrl: l.vehicleImage,
-            ))
-        .toList();
-    return result;
-  }
-
-  RxList<LeaseListItem> get myBookedLeases {
-    final result = <LeaseListItem>[].obs;
-    result.value = myBookings
-        .map((b) => LeaseListItem(
-              leaseId: b.listingId,
-              vehicleTitle: b.listingTitle,
-              flatPrice: b.totalPrice,
-              startDate: b.startDate,
-              endDate: b.endDate,
-              status: b.status,
-              imageUrl: b.vehicleImage,
-            ))
-        .toList();
-    return result;
-  }
-
-  final applications = <LeaseApplication>[].obs;
-
-  Future<void> fetchLeaseApplications(String leaseId,
-      {String status = 'Approved'}) async {
-    await fetchListingBookings(leaseId);
-    applications.value = listingBookings
-        .map((b) => LeaseApplication(
-              applicationId: b.id,
-              vehicleTitle: b.listingTitle,
-              fullName: b.lesseeName,
-              appliedDate: b.createdAt,
-              status: b.status,
-            ))
-        .toList();
-  }
-
-  final _compatLeaseDetails = Rxn<LeaseDetails>();
-  Rxn<LeaseDetails> get leaseDetails => _compatLeaseDetails;
-
-  Future<void> fetchLeaseDetails(String leaseId) async {
-    final listing = await fetchListingDetail(leaseId);
-    if (listing != null) {
-      _compatLeaseDetails.value = LeaseDetails(
-        leaseId: listing.id,
-        vehicleTitle: listing.title,
-        vehicleNumber: listing.vehicleRegistration,
-        pricingType: listing.pricingType,
-        flatPrice: listing.priceAmount,
-        vehicleImage: listing.vehicleImage,
-        status: listing.status,
-      );
-    }
-  }
-
-  Future<bool> togglePauseResume(String leaseId) =>
-      updateListingStatus(leaseId, 'paused');
-
-  Future<bool> offLease(String leaseId) =>
-      updateListingStatus(leaseId, 'removed');
-
-  Future<bool> updateLeaseApplicationStatus(
-      String applicationId, String status) async {
-    if (status.toLowerCase() == 'approved' ||
-        status.toLowerCase() == 'accepted') {
-      return confirmBooking(applicationId);
-    }
-    return rejectBooking(applicationId, reason: 'Rejected by owner');
-  }
-
-  Future<void> fetchLeaseList() => fetchMyListings();
-  Future<void> fetchMyLeases() => fetchMyListings();
-  Future<void> fetchMyBookedLeases() => fetchMyBookings();
 }

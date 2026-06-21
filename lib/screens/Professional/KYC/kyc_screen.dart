@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 
+import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../../models/kyc_model.dart';
 import '../../../services/kyc_service.dart';
+import '../../../services/media_service.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const _primary = Color(0xFFF36969);
@@ -43,6 +48,7 @@ class _KycScreenState extends State<KycScreen> {
   bool _loading = true;
   String? _error;
   bool _verifying = false;
+  String? _uploadingType; // document type currently being uploaded
 
   @override
   void initState() {
@@ -139,6 +145,86 @@ class _KycScreenState extends State<KycScreen> {
       _toast(e.toString().replaceFirst('Exception: ', ''), _danger);
     } finally {
       if (mounted) setState(() => _verifying = false);
+    }
+  }
+
+  // ── Document image upload (PAN card / DL / profile photo / others) ──────────
+  // Mirrors web `/professional/kyc/upload`: pick an image → base64 data URL →
+  // POST /kyc/upload/document. `documentNumber` is required by the backend, so
+  // we generate the same `<PREFIX>-<userId8>-<ts>` reference the web uses.
+  Future<void> _uploadDoc(String type) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: _card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 8),
+          ListTile(
+            leading: const Icon(Iconsax.camera, color: _primary),
+            title: Text('Take photo', style: GoogleFonts.poppins(fontSize: 14)),
+            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Iconsax.gallery, color: _primary),
+            title: Text('Choose from gallery',
+                style: GoogleFonts.poppins(fontSize: 14)),
+            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+    if (source == null) return;
+
+    final XFile? file = await ImagePicker()
+        .pickImage(source: source, imageQuality: 70, maxWidth: 1600);
+    if (file == null) return;
+
+    setState(() => _uploadingType = type);
+    try {
+      // Upload via the unified /media endpoint and send the hosted URL (the
+      // backend stores the URL as-is — no base64 round-trip).
+      final media =
+          await MediaService.upload(File(file.path), folder: 'kyc-documents');
+      final fileUrl = media?.url ?? '';
+      if (fileUrl.isEmpty) {
+        throw Exception('Upload failed. Please try again.');
+      }
+      final uid = AuthService.to.currentUserId;
+      final shortId = uid.length > 8 ? uid.substring(0, 8) : uid;
+      final ref =
+          '${_docPrefix(type)}-$shortId-${DateTime.now().millisecondsSinceEpoch}';
+      await _service.uploadDocument(
+        documentType: type,
+        documentNumber: ref,
+        documentName: KycDocType.label(type),
+        fileUrl: fileUrl,
+        autoVerify: false,
+      );
+      _toast('${KycDocType.label(type)} uploaded', _green);
+      await _fetch();
+    } catch (e) {
+      _toast(e.toString().replaceFirst('Exception: ', ''), _danger);
+    } finally {
+      if (mounted) setState(() => _uploadingType = null);
+    }
+  }
+
+  String _docPrefix(String type) {
+    switch (type) {
+      case KycDocType.pan:
+        return 'PAN';
+      case KycDocType.drivingLicense:
+        return 'DL';
+      case KycDocType.profilePhoto:
+        return 'PHOTO';
+      case KycDocType.aadhar:
+        return 'AADHAR';
+      default:
+        return 'DOC';
     }
   }
 
@@ -498,7 +584,7 @@ class _KycScreenState extends State<KycScreen> {
             style: GoogleFonts.poppins(
                 fontSize: 14, fontWeight: FontWeight.w700, color: _textDark)),
         const SizedBox(height: 4),
-        Text('Based on your account type',
+        Text('Based on your account type · tap upload to attach a photo',
             style: GoogleFonts.poppins(fontSize: 11, color: _textGrey)),
         const SizedBox(height: 12),
         ...rows,
@@ -507,6 +593,8 @@ class _KycScreenState extends State<KycScreen> {
   }
 
   Widget _docRow(String type, String? status, {required bool mandatory}) {
+    final verified = status == KycStatus.verified;
+    final uploading = _uploadingType == type;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(children: [
@@ -529,12 +617,31 @@ class _KycScreenState extends State<KycScreen> {
         ),
         if (mandatory && status != KycStatus.verified)
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: 6),
             child: Text('Required',
                 style: GoogleFonts.poppins(
                     fontSize: 10, fontWeight: FontWeight.w600, color: _primary)),
           ),
         _statusBadge(status ?? 'not_submitted'),
+        const SizedBox(width: 4),
+        uploading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child:
+                    CircularProgressIndicator(strokeWidth: 2, color: _primary))
+            : IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                tooltip: verified ? 'Replace document' : 'Upload document',
+                icon: Icon(
+                  verified ? Iconsax.gallery_tick : Iconsax.gallery_add,
+                  size: 20,
+                  color: verified ? _green : _primary,
+                ),
+                onPressed: () => _uploadDoc(type),
+              ),
       ]),
     );
   }

@@ -6,6 +6,7 @@ import '../auth/user_role.dart';
 import '../network/api_client.dart';
 import '../network/api_exception.dart';
 import '../storage/secure_session_manager.dart';
+import '../../services/push_notification_service.dart';
 import '../../utils/app_logger.dart';
 
 /// Centralized authentication service.
@@ -241,6 +242,8 @@ class AuthService extends GetxService {
 
   Future<void> logout() async {
     try {
+      // Clear this device's push token while still authenticated.
+      await PushNotificationService.instance.unregister();
       // Call server-side logout to invalidate session
       await _api.post<dynamic>('/auth/logout');
     } catch (e) {
@@ -406,6 +409,8 @@ class AuthService extends GetxService {
     await _storage.setUser(response.user);
     _accessToken = response.tokens.accessToken;
     currentUser.value = response.user;
+    // Register this device for push now that we have a session (fire-and-forget).
+    PushNotificationService.instance.registerForCurrentUser();
   }
 
   /// Clear all session data and reset reactive state.

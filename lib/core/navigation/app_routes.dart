@@ -45,6 +45,7 @@ class AppRoutes {
   static const professionalTripDashboard = '/professional/trip-dashboard';
   static const professionalLiveMap = '/professional/live-map/:id';
   static const professionalNotifications = '/professional/notifications';
+  static const professionalCompleteProfile = '/professional/complete-profile';
 
   // ── Service Provider Screens ──────────────────────────────────────────
   static const serviceProviderCompleteProfile =

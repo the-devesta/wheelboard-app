@@ -48,7 +48,11 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
   // 'Fixed' | 'Hourly' | 'On Request' — same set as the web pricing options.
   String _pricingType = 'Fixed';
-  String _selectedCategory = 'Tyre Services';
+
+  // Multiple category selection. (The web is single-select; the app allows
+  // multi-select per spec — selections are joined into the backend `category`
+  // string and mirrored into `tags[]` so the single-string contract is kept.)
+  final Set<String> _selectedCategories = <String>{};
 
   // Full day names (Monday…Sunday) — what the backend `availability.days` holds.
   static const _dayOptions = <(String, String)>[
@@ -82,11 +86,14 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       PlacesService(apiKey: MapsConstants.googleMapsApiKey);
   List<Suggestion> _suggestions = [];
 
+  // Canonical category options (per the design spec).
   List<String> _categoryOptions = const [
-    'Tyre Services',
-    'Vehicle Services',
-    'Tyre Retreader',
-    'Other',
+    'Brake Service',
+    'Oil Change',
+    'AC Repair',
+    'Vehicle Service',
+    'Tyre Service',
+    'Others',
   ];
 
   bool get _isEdit => widget.service != null;
@@ -99,18 +106,20 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
     // Categories come from the provider's profile `servicesOffered` when set,
     // otherwise fall back to the canonical four.
+    // Merge any provider-offered categories into the canonical list (dedup) so
+    // existing providers still see their custom categories as options.
     final profile = Get.put(UserProfileController()).userProfile.value;
     final offered = profile?.servicesOffered;
     if (offered != null && offered.trim().isNotEmpty) {
       final parsed = offered
           .split(',')
           .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-      if (parsed.isNotEmpty) {
-        _categoryOptions = parsed;
-        _selectedCategory = parsed.first;
+          .where((e) => e.isNotEmpty);
+      final merged = <String>[..._categoryOptions];
+      for (final c in parsed) {
+        if (!merged.contains(c)) merged.add(c);
       }
+      _categoryOptions = merged;
     }
 
     _descriptionCtrl.addListener(
@@ -140,14 +149,16 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       _pricingType = 'Fixed';
     }
 
-    // Category — accept the stored category if it's a known option.
-    var cat = s.serviceCategory?.trim();
-    if (cat == 'Tyre Repair') cat = 'Tyre Services';
-    if (cat != null && cat.isNotEmpty) {
-      if (!_categoryOptions.contains(cat)) {
-        _categoryOptions = [..._categoryOptions, cat];
+    // Category — the stored value may be a comma-joined list (multi-select).
+    final storedCats = (s.serviceCategory ?? '')
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty);
+    for (final c in storedCats) {
+      if (!_categoryOptions.contains(c)) {
+        _categoryOptions = [..._categoryOptions, c];
       }
-      _selectedCategory = cat;
+      _selectedCategories.add(c);
     }
 
     _isVisible = s.isAvailable;
@@ -268,7 +279,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
               (v == null || v.trim().isEmpty) ? 'Service title is required' : null,
         ),
         AppSpacing.vGapLg,
-        _dropdown(),
+        _categoryMultiSelect(),
         AppSpacing.vGapLg,
         _field(
           label: 'Contact Number *',
@@ -626,25 +637,60 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     );
   }
 
-  Widget _dropdown() {
+  Widget _categoryMultiSelect() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Category *', style: AppText.label),
-        const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          initialValue:
-              _categoryOptions.contains(_selectedCategory) ? _selectedCategory : null,
-          isExpanded: true,
-          icon: const Icon(Iconsax.arrow_down_1, size: 18),
-          style: AppText.body.on(AppPalette.textDark),
-          decoration: _inputDecoration(),
-          items: _categoryOptions
-              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-              .toList(),
-          onChanged: (v) => setState(() => _selectedCategory = v ?? _selectedCategory),
-          validator: (v) =>
-              (v == null || v.isEmpty) ? 'Category is required' : null,
+        Row(
+          children: [
+            Text('Category *', style: AppText.label),
+            const Spacer(),
+            Text(
+              _selectedCategories.isEmpty
+                  ? 'Select one or more'
+                  : '${_selectedCategories.length} selected',
+              style: AppText.caption.on(AppPalette.textFaint),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: _categoryOptions.map((c) {
+            final selected = _selectedCategories.contains(c);
+            return GestureDetector(
+              onTap: () => setState(() {
+                if (selected) {
+                  _selectedCategories.remove(c);
+                } else {
+                  _selectedCategories.add(c);
+                }
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: selected ? AppPalette.primary : AppPalette.bg,
+                  borderRadius: AppRadius.rPill,
+                  border: Border.all(
+                      color:
+                          selected ? AppPalette.primary : AppPalette.border),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (selected) ...[
+                    const Icon(Iconsax.tick_circle,
+                        size: 15, color: Colors.white),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(c,
+                      style: AppText.bodySm.weight(FontWeight.w600).on(
+                          selected ? Colors.white : AppPalette.textGrey)),
+                ]),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -844,6 +890,11 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   Future<void> _save({required bool publish}) async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedCategories.isEmpty) {
+      SnackBarHelper.error('Please select at least one category');
+      return;
+    }
+
     if (_selectedDays.isEmpty) {
       SnackBarHelper.error('Please select at least one working day');
       return;
@@ -870,10 +921,12 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     final city = _cityCtrl.text.trim();
     final location = address.isNotEmpty ? address : city;
 
+    // Multi-select → backend single `category` string (comma-joined) + `tags[]`.
+    final categories = _selectedCategories.toList();
     final payload = ServicePayload(
       title: _titleCtrl.text.trim(),
-      category: _selectedCategory,
-      categoryColor: ServicePayload.colorForCategory(_selectedCategory),
+      category: categories.join(', '),
+      categoryColor: ServicePayload.colorForCategory(categories.first),
       description: _descriptionCtrl.text.trim(),
       status: publish ? 'Published' : 'Draft',
       businessId: userId,
@@ -890,7 +943,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       email: null,
       existingImages: _existingImages,
       newImages: _newImages,
-      tags: const [],
+      tags: categories,
     );
 
     HapticFeedback.lightImpact();

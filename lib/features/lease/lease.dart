@@ -10,4 +10,3 @@ export '../../controllers/Transport/lease_controller.dart';
 
 // Models
 export '../../models/fleet_models.dart';
-export '../../models/transport/lease_models.dart';

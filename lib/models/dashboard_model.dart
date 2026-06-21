@@ -98,6 +98,8 @@ class DashboardModel {
     final activeTrips = (stats['activeTrips'] as Map<String, dynamic>?) ?? const {};
     final monthlyExp = (stats['monthlyExpenses'] as Map<String, dynamic>?) ?? const {};
     final totalTrips = (stats['totalTrips'] as Map<String, dynamic>?) ?? const {};
+    final totalVehicles =
+        (stats['totalVehicles'] as Map<String, dynamic>?) ?? const {};
     final availability =
         (json['vehicleAvailability'] as Map<String, dynamic>?) ?? const {};
     final expenseOverview =
@@ -113,13 +115,28 @@ class DashboardModel {
 
     final onTrip = (availability['onTrip'] as num?)?.toInt() ?? 0;
 
+    // Total fleet vehicles the owner has added (backend: stats.totalVehicles.value
+    // === vehicleAvailability.total). The "Active Vehicles" card previously showed
+    // `onTrip`, which is 0 whenever no vehicle is mid-trip — hence "0 active
+    // vehicles" even after adding vehicles. It must reflect the real count.
+    final totalVehiclesValue = (totalVehicles['value'] as num?)?.toInt() ??
+        (availability['total'] as num?)?.toInt() ??
+        0;
+    final availableVehicles = (availability['available'] as num?)?.toInt() ??
+        (totalVehicles['available'] as num?)?.toInt() ??
+        (totalVehiclesValue - onTrip).clamp(0, totalVehiclesValue);
+
     return DashboardModel(
       tripSummary: TripSummary(
-        totalTrips: (totalTrips['value'] as num?)?.toInt() ?? 0,
+        // "Active Trips" card → the active count (was wrongly the total-trips
+        // count). Falls back to the total when the backend omits activeTrips.
+        totalTrips: (activeTrips['value'] as num?)?.toInt() ??
+            (totalTrips['value'] as num?)?.toInt() ??
+            0,
         scheduledToday: (activeTrips['scheduledToday'] as num?)?.toInt() ?? 0,
       ),
       activeVehicles: ActiveVehicles(
-        activeVehicles: onTrip,
+        activeVehicles: totalVehiclesValue,
         inMaintenance: 0,
       ),
       monthlyExpenses: MonthlyExpenses(
@@ -140,7 +157,7 @@ class DashboardModel {
         );
       }).toList(),
       vehicleAvailability: VehicleAvailability(
-        available: (availability['available'] as num?)?.toInt() ?? 0,
+        available: availableVehicles,
         onTrip: onTrip,
         onRent: 0,
       ),

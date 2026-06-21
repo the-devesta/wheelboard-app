@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../controllers/Professional/assigned_trip_controller.dart';
+import '../../../models/assigned_trip_model.dart';
 import '../../../theme/design_system.dart';
+import '../../../utils/trip_status.dart';
 
 /// Emergency SOS — quick access to emergency services.
 ///
@@ -77,6 +81,10 @@ class _SOSScreenState extends State<SOSScreen>
           children: [
             Text('Quick access to emergency services', style: AppText.caption),
             AppSpacing.vGapLg,
+            if (_activeTrip() != null) ...[
+              _activeTripCard(_activeTrip()!),
+              AppSpacing.vGapLg,
+            ],
             _alertCard(),
             AppSpacing.vGapXl,
             Text('Emergency Contacts', style: AppText.h3),
@@ -119,6 +127,80 @@ class _SOSScreenState extends State<SOSScreen>
         ),
       ),
     );
+  }
+
+  /// The current in-progress trip, if any — mirrors the web SOS page which
+  /// fetches `GET /trips?status=in_progress&limit=1` and shows it as context.
+  /// We read it from the already-loaded [AssignedTripController] (no new fetch).
+  AssignedTrip? _activeTrip() {
+    if (!Get.isRegistered<AssignedTripController>()) return null;
+    final c = Get.find<AssignedTripController>();
+    for (final t in c.assignedTrips) {
+      if (c.bucketOf(t) == TripBucket.inProcess) return t;
+    }
+    return null;
+  }
+
+  Widget _activeTripCard(AssignedTrip trip) {
+    final vehicle = [trip.vehicleModel, trip.vehicleNumber]
+        .where((s) => s.trim().isNotEmpty)
+        .join(' • ');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppPalette.amberBg,
+        borderRadius: AppRadius.rXl,
+        border: Border.all(color: const Color(0x33F59E0B)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Iconsax.routing, color: Color(0xFFB45309), size: 18),
+            AppSpacing.hGapSm,
+            Text('Active Trip',
+                style: AppText.subtitle.on(const Color(0xFFB45309))),
+            const Spacer(),
+            if (trip.tripCode.isNotEmpty)
+              Text(trip.tripCode, style: AppText.caption),
+          ]),
+          AppSpacing.vGapMd,
+          _tripLine(Iconsax.location, trip.pickupLocation),
+          const SizedBox(height: 4),
+          _tripLine(Iconsax.flag, trip.deliveryLocation),
+          if (vehicle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            _tripLine(Iconsax.truck, vehicle),
+          ],
+          AppSpacing.vGapMd,
+          Row(children: [
+            const Icon(Iconsax.location_tick,
+                size: 14, color: Color(0xFFB45309)),
+            AppSpacing.hGapSm,
+            Expanded(
+              child: Text(
+                'Your live location is shared with your company during this trip.',
+                style: AppText.caption.on(const Color(0xFF92400E)),
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _tripLine(IconData icon, String text) {
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(icon, size: 14, color: AppPalette.textGrey),
+      AppSpacing.hGapSm,
+      Expanded(
+        child: Text(text,
+            style: AppText.bodySm.on(AppPalette.textDark),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis),
+      ),
+    ]);
   }
 
   Widget _alertCard() {

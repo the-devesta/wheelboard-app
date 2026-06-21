@@ -576,7 +576,7 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                                           isActive: _isActive,
                                                         );
 
-                                                if (success) {
+                                                if (success && context.mounted) {
                                                   Navigator.pop(context);
                                                 }
                                               },

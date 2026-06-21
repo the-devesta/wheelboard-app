@@ -10,7 +10,7 @@ import 'job_form_screen.dart';
 import 'job_application_screen.dart';
 import 'trips_screen.dart';
 import 'fleet_screen.dart';
-import '../Professional/TransactionSummary/TransactionSummaryScreen.dart';
+import '../Professional/Expenses/professional_expenses_screen.dart';
 import '../../utils/app_logger.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -114,8 +114,8 @@ class DashboardScreen extends StatelessWidget {
                           child: _statCard(
                             Icons.local_shipping,
                             "Active Vehicles",
-                            "${data.activeVehicles.activeVehicles} Active",
-                            "${data.activeVehicles.inMaintenance} in Maintenance",
+                            "${data.activeVehicles.activeVehicles} Vehicles",
+                            "${data.vehicleAvailability.available} Available",
                             Colors.blue,
                           ),
                         ),
@@ -446,7 +446,7 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     _sectionTitle("Recent Transactions"),
                     TextButton(
-                      onPressed: () => Get.to(() => TransactionSummaryScreen()),
+                      onPressed: () => Get.to(() => const ProfessionalExpensesScreen(isProfessional: false)),
                       child: const Text("View All"),
                     ),
                   ],
@@ -516,7 +516,7 @@ class DashboardScreen extends StatelessWidget {
                 _addButtonWithAction(
                   "+ Add Expense",
                   const Color(0xFF1A73E8),
-                  () => Get.to(() => TransactionSummaryScreen()),
+                  () => Get.to(() => const ProfessionalExpensesScreen(isProfessional: false)),
                 ),
 
                 const SizedBox(height: 24),
