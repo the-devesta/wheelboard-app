@@ -22,3 +22,7 @@ ios/Pods/
 # Environment variables (contains sensitive keys)
 .env
 *.env.local
+
+# FCM firebase messaging service
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
