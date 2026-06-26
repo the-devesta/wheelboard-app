@@ -32,10 +32,18 @@ class ServiceProviderHomeController extends GetxController {
 
   final serviceDetails = Rxn<Map<String, dynamic>>();
 
+  /// Total bookings received by this provider — drives the Home "Bookings" stat.
+  int get totalBookings => allBookings.length;
+
   @override
   void onInit() {
     super.onInit();
-    Future.microtask(() => fetchMyServices());
+    Future.microtask(() {
+      fetchMyServices();
+      // Bookings are resolved from the JWT (provider id), so they can load in
+      // parallel with services — needed for the Home "Bookings" count card.
+      fetchBookings();
+    });
   }
 
   Future<void> fetchMyServices() async {

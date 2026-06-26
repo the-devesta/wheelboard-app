@@ -1,3 +1,7 @@
+// ignore_for_file: avoid_print
+//
+// Standalone dev demo that prints colored banners to show the logger output;
+// raw `print` is intentional here and this file is never shipped in the app.
 import 'package:wheelboard/utils/app_logger.dart';
 
 /// 🎨 Test file to demonstrate colored logging

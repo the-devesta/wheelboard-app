@@ -259,8 +259,6 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
 
             // Submit Bid button
             Obx(() {
-              // final isHired = AuthService.to.isUserHired;
-              final isHired = false; // Check removed to allow hired drivers to bid
               final isSubmitting = controller.isSubmittingBid.value;
 
               final userProfileController = Get.find<UserProfileController>();
@@ -273,40 +271,10 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
 
               return Column(
                 children: [
-                  if (isHired)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.orange.shade700,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "You are currently hired by a company. Bidding is not available.",
-                              style: TextStyle(
-                                color: Colors.orange.shade900,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: isHired || isSubmitting || isRestricted
+                      onPressed: isSubmitting || isRestricted
                           ? () {
                               if (isRestricted) {
                                 SnackBarHelper.error(
@@ -334,7 +302,7 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
 
                               if (success) {
                                 SnackBarHelper.success("Bid placed successfully!");
-                                Navigator.pop(context);
+                                if (context.mounted) Navigator.pop(context);
                                 controller.refreshTrips();
                               }
                             },
@@ -348,18 +316,14 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                       label: Text(
                         isRestricted
                             ? "Bidding Restricted"
-                            : (isHired
-                                  ? "Bidding Disabled (Hired)"
-                                  : (isSubmitting
-                                        ? "Submitting..."
-                                        : "Submit Bid")),
+                            : (isSubmitting ? "Submitting..." : "Submit Bid"),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: (isHired || isRestricted)
+                        backgroundColor: isRestricted
                             ? Colors.grey.shade400
                             : Colors.tealAccent.shade700,
                         foregroundColor: Colors.white,

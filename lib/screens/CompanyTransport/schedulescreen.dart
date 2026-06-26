@@ -39,7 +39,6 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
   final pickupController = TextEditingController();
   final deliveryController = TextEditingController();
   final specialInstructionsController = TextEditingController();
-  final payRangeController = TextEditingController();
 
   final PlacesService placesService =
       PlacesService(apiKey: MapsConstants.googleMapsApiKey);
@@ -64,7 +63,6 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     pickupController.dispose();
     deliveryController.dispose();
     specialInstructionsController.dispose();
-    payRangeController.dispose();
     super.dispose();
   }
 
@@ -132,10 +130,6 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
             _fieldLabel('Special Instructions'),
             const SizedBox(height: 6),
             _input(specialInstructionsController, 'Enter special instructions', maxLines: 3),
-            const SizedBox(height: 16),
-            _fieldLabel('Pay Range (₹)'),
-            const SizedBox(height: 6),
-            _input(payRangeController, 'e.g. 5000 - 7000'),
           ])),
           const SizedBox(height: 24),
 
@@ -204,7 +198,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
       pickupDate: selectedDate,
       pickupTime: selectedTime != null ? _formatTimeOfDay(selectedTime!) : '00:00:00',
       specialInstructions: specialInstructionsController.text.trim(),
-      payRange: payRangeController.text.trim(),
+      payRange: '',
       tripCode: 'TRIP-${DateTime.now().millisecondsSinceEpoch}',
       tripStatus: 'Pending',
       isScheduledTrip: true,

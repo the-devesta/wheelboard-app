@@ -11,6 +11,7 @@ import '../../utils/app_logger.dart';
 import '../../widgets/common_delete_button.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/change_password_sheet.dart';
+import '../../widgets/legal_widgets.dart';
 import '../auth/onboarding_screen.dart';
 import '../shared/subscription_screen.dart';
 import '../shared/issues/issues_screen.dart';
@@ -83,6 +84,8 @@ class CompanyProfileScreen extends StatelessWidget {
                   _buildDangerZone(context, ctrl),
                   const SizedBox(height: 12),
                   _buildSupportCard(),
+                  const SizedBox(height: 12),
+                  const LegalSettingsSection(),
                   const SizedBox(height: 12),
                   _buildFooter(),
                   const SizedBox(height: 32),

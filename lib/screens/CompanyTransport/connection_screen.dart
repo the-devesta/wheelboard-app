@@ -82,14 +82,14 @@ class ConnectionScreen extends StatelessWidget {
                       _buildOutlinedButton(
                         "Create Another Post",
                         onTap: () {
-                          // TODO: action
+                          
                         },
                       ),
                       const SizedBox(height: 16),
                       _buildGradientButton(
                         "View Profile",
                         onTap: () {
-                          // TODO: action
+                          
                         },
                       ),
 

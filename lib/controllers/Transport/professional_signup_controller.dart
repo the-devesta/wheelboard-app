@@ -34,6 +34,10 @@ class ProfessionalController extends GetxController {
         if (professionalType != null && professionalType.isNotEmpty)
           'professionalType': professionalType,
         if (city != null && city.isNotEmpty) 'city': city,
+        // Record legal-document acceptance captured at registration.
+        'acceptedTerms': true,
+        'acceptedPrivacyPolicy': true,
+        'acceptedAt': DateTime.now().toUtc().toIso8601String(),
       };
 
       AppLogger.d('📤 Professional register: email=$email, phone=$phone, type=$professionalType');

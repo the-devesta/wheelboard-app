@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../services/policy_service.dart';
+import '../../data/legal_content.dart';
 
 // Design tokens
 const _primary = Color(0xFFF36969);
@@ -13,78 +13,19 @@ const _textDark = Color(0xFF111827);
 const _textGrey = Color(0xFF6B7280);
 const _border = Color(0xFFE5E7EB);
 
-/// Legal content screen — mirrors `/privacy-policy` and `/terms-of-service` on web.
-///
-/// Fetches policy text from the backend (`GET /settings/policies/public`).
-/// Falls back to opening the web URL in the browser if fetch fails.
-///
-/// Usage:
-/// ```dart
-/// Get.to(() => const LegalScreen(type: LegalType.privacyPolicy));
-/// Get.to(() => const LegalScreen(type: LegalType.termsOfService));
-/// ```
+/// Legal content screen — renders the canonical Privacy Policy / Terms &
+/// Conditions bundled in [legal_content.dart]. The exact same content (verbatim
+/// from the official PDFs) is shown on the web app, so the documents are
+/// identical across mobile and web. Renders fully offline — no network needed.
 enum LegalType { privacyPolicy, termsOfService }
 
-class LegalScreen extends StatefulWidget {
+class LegalScreen extends StatelessWidget {
   final LegalType type;
 
   const LegalScreen({super.key, required this.type});
 
-  @override
-  State<LegalScreen> createState() => _LegalScreenState();
-}
-
-class _LegalScreenState extends State<LegalScreen> {
-  final _service = PolicyService();
-  String? _content;
-  bool _loading = true;
-  String? _error;
-
-  String get _title => widget.type == LegalType.privacyPolicy
-      ? 'Privacy Policy'
-      : 'Terms of Service';
-
-  // Fallback web URLs — adjust domain as needed
-  static const _webBase = 'https://wheelboard.in';
-  String get _webUrl => widget.type == LegalType.privacyPolicy
-      ? '$_webBase/privacy-policy'
-      : '$_webBase/terms-of-service';
-
-  @override
-  void initState() {
-    super.initState();
-    _fetch();
-  }
-
-  Future<void> _fetch() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final policies = await _service.getPolicies();
-      if (!mounted) return;
-      setState(() {
-        _content = widget.type == LegalType.privacyPolicy
-            ? policies.privacyPolicy
-            : policies.termsOfService;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-    }
-  }
-
-  Future<void> _openInBrowser() async {
-    final uri = Uri.parse(_webUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
+  LegalDoc get _doc =>
+      type == LegalType.privacyPolicy ? privacyPolicy : termsAndConditions;
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +42,7 @@ class _LegalScreenState extends State<LegalScreen> {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          _title,
+          _doc.title,
           style: GoogleFonts.poppins(
             fontSize: 17,
             fontWeight: FontWeight.w700,
@@ -109,24 +50,27 @@ class _LegalScreenState extends State<LegalScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.open_in_browser_rounded,
-                color: _textGrey, size: 22),
-            tooltip: 'Open in browser',
-            onPressed: _openInBrowser,
-          ),
-        ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _primary))
-          : _error != null
-              ? _fallbackView()
-              : _contentView(),
+      body: LegalDocumentBody(
+        doc: _doc,
+        icon: type == LegalType.privacyPolicy
+            ? Icons.shield_outlined
+            : Icons.gavel_rounded,
+      ),
     );
   }
+}
 
-  Widget _contentView() {
+/// Renders a [LegalDoc] (header card + sections/blocks). Shared so the same
+/// rendering is used wherever legal content is shown in the app.
+class LegalDocumentBody extends StatelessWidget {
+  final LegalDoc doc;
+  final IconData icon;
+
+  const LegalDocumentBody({super.key, required this.doc, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -144,16 +88,10 @@ class _LegalScreenState extends State<LegalScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(
-              widget.type == LegalType.privacyPolicy
-                  ? Icons.shield_outlined
-                  : Icons.gavel_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
+            Icon(icon, color: Colors.white, size: 28),
             const SizedBox(height: 8),
             Text(
-              _title,
+              doc.title,
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -162,15 +100,15 @@ class _LegalScreenState extends State<LegalScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Please read this document carefully.',
+              'Last updated: ${doc.lastUpdated}',
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.85),
+                color: Colors.white.withValues(alpha: 0.9),
               ),
             ),
           ]),
         ),
-        // Policy text
+        // Document body
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -179,106 +117,282 @@ class _LegalScreenState extends State<LegalScreen> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: _border),
           ),
-          child: SelectableText(
-            _content ?? '',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: _textDark,
-              height: 1.7,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Browser fallback button
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _openInBrowser,
-            icon: const Icon(Icons.open_in_browser_rounded,
-                size: 18, color: _primary),
-            label: Text(
-              'Open in browser',
-              style: GoogleFonts.poppins(
-                color: _primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: _primary),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final section in doc.sections) ..._buildSection(section),
+            ],
           ),
         ),
       ]),
     );
   }
 
-  Widget _fallbackView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+  List<Widget> _buildSection(LegalSection section) {
+    return [
+      if (section.heading != null) ...[
+        const SizedBox(height: 6),
+        Text(
+          section.heading!,
+          style: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: _textDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+      for (final block in section.blocks) _buildBlock(block),
+      const SizedBox(height: 6),
+    ];
+  }
+
+  Widget _buildBlock(LegalBlock block) {
+    switch (block.kind) {
+      case 'sub':
+        return Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: Text(
+            block.text,
+            style: GoogleFonts.poppins(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: _textDark,
+              height: 1.5,
+            ),
+          ),
+        );
+      case 'li':
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 6, left: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 7, right: 8),
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  color: _primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  block.text,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: _textDark,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      default: // 'p'
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            block.text,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: _textDark,
+              height: 1.7,
+            ),
+          ),
+        );
+    }
+  }
+}
+
+/// About Wheelboard — company info screen for the Legal/Settings section.
+class AboutWheelboardScreen extends StatelessWidget {
+  const AboutWheelboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _card,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        shadowColor: _border,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: _textDark, size: 20),
+          onPressed: () => Get.back(),
+        ),
+        title: Text('About Wheelboard',
+            style: GoogleFonts.poppins(
+                fontSize: 17, fontWeight: FontWeight.w700, color: _textDark)),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+        child: Column(children: [
           Container(
-            width: 72,
-            height: 72,
+            width: 84,
+            height: 84,
             decoration: BoxDecoration(
               color: const Color(0xFFFFF1F1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
             ),
-            child: Icon(
-              widget.type == LegalType.privacyPolicy
-                  ? Icons.shield_outlined
-                  : Icons.gavel_rounded,
-              color: _primary,
-              size: 32,
-            ),
+            child: const Icon(Icons.local_shipping_rounded,
+                color: _primary, size: 40),
           ),
-          const SizedBox(height: 20),
-          Text(
-            _title,
-            style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: _textDark),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Could not load content. Tap below to read in your browser.',
-            style: GoogleFonts.poppins(fontSize: 13, color: _textGrey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _openInBrowser,
-            icon: const Icon(Icons.open_in_browser_rounded,
-                color: Colors.white, size: 18),
-            label: Text(
-              'Open in Browser',
+          const SizedBox(height: 16),
+          Text('Wheelboard',
               style: GoogleFonts.poppins(
-                  color: Colors.white, fontWeight: FontWeight.w600),
+                  fontSize: 20, fontWeight: FontWeight.w700, color: _textDark)),
+          const SizedBox(height: 4),
+          Text(LegalContact.company,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 13, color: _textGrey)),
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _border),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primary,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: _fetch,
-            child: Text(
-              'Try again',
-              style:
-                  GoogleFonts.poppins(color: _textGrey, fontSize: 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Wheelboard provides an integrated digital logistics ecosystem designed to connect fleet owners, drivers, mechanics, and service providers — with tools for tracking transport profitability, operational intelligence, maintenance, and other logistics-related services.',
+                  style: GoogleFonts.poppins(
+                      fontSize: 13, color: _textDark, height: 1.7),
+                ),
+                const SizedBox(height: 16),
+                _infoRow(Icons.email_outlined, LegalContact.email),
+                const SizedBox(height: 10),
+                _infoRow(Icons.phone_outlined, LegalContact.phone),
+                const SizedBox(height: 10),
+                _infoRow(Icons.location_on_outlined, LegalContact.address),
+              ],
             ),
           ),
         ]),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String text) {
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(icon, size: 18, color: _primary),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Text(text,
+            style: GoogleFonts.poppins(fontSize: 13, color: _textDark)),
+      ),
+    ]);
+  }
+}
+
+/// Contact Support — quick actions to reach the Wheelboard team.
+class ContactSupportScreen extends StatelessWidget {
+  const ContactSupportScreen({super.key});
+
+  Future<void> _launch(String uri) async {
+    final u = Uri.parse(uri);
+    if (await canLaunchUrl(u)) {
+      await launchUrl(u, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _card,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        shadowColor: _border,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: _textDark, size: 20),
+          onPressed: () => Get.back(),
+        ),
+        title: Text('Contact Support',
+            style: GoogleFonts.poppins(
+                fontSize: 17, fontWeight: FontWeight.w700, color: _textDark)),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+        children: [
+          Text(
+            'We are here to help. Reach the Wheelboard team using any of the options below.',
+            style: GoogleFonts.poppins(fontSize: 13, color: _textGrey),
+          ),
+          const SizedBox(height: 16),
+          _supportTile(
+            icon: Icons.email_outlined,
+            title: 'Email',
+            subtitle: LegalContact.email,
+            onTap: () => _launch('mailto:${LegalContact.email}'),
+          ),
+          _supportTile(
+            icon: Icons.phone_outlined,
+            title: 'Call',
+            subtitle: '020-6732049',
+            onTap: () => _launch('tel:0206732049'),
+          ),
+          _supportTile(
+            icon: Icons.chat_outlined,
+            title: 'WhatsApp',
+            subtitle: '+91 7420861942',
+            onTap: () => _launch('https://wa.me/917420861942'),
+          ),
+          _supportTile(
+            icon: Icons.location_on_outlined,
+            title: 'Address',
+            subtitle: LegalContact.address,
+            onTap: null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _supportTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    VoidCallback? onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _border),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF1F1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: _primary, size: 20),
+        ),
+        title: Text(title,
+            style: GoogleFonts.poppins(
+                fontSize: 14, fontWeight: FontWeight.w600, color: _textDark)),
+        subtitle: Text(subtitle,
+            style: GoogleFonts.poppins(fontSize: 12, color: _textGrey)),
+        trailing: onTap != null
+            ? const Icon(Icons.arrow_forward_ios_rounded,
+                size: 14, color: _textGrey)
+            : null,
       ),
     );
   }

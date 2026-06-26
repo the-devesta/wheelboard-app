@@ -8,6 +8,7 @@ import '../../core/auth/user_role.dart';
 import '../../utils/navigation_helper.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../widgets/legal_widgets.dart';
 import '../CompanyTransport/complete_company_profile.dart';
 import '../CompanyServiceProvider/complete_profile_screen.dart';
 import 'onboarding_screen.dart';
@@ -366,7 +367,9 @@ class _LoginScreenState extends State<LoginScreen>
             loading: _ctrl.isLoading.value,
             onTap: _loginWithPassword,
           )),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          legalLoginNotice(),
+          const SizedBox(height: 16),
           _signUpRow(),
           if (kDebugMode) _buildDebugLogins(),
           const SizedBox(height: 8),

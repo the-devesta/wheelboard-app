@@ -132,7 +132,7 @@ class DashboardScreen extends StatelessWidget {
                           Icons.work,
                           "Jobs Posted",
                           "${data.jobsSummary.activeJobs} Active",
-                          "${data.jobsSummary.unfilledJobs} Unfilled",
+                          "${data.jobsSummary.unfilledJobs} Total",
                           Colors.purple,
                         ),
                         _statCard(

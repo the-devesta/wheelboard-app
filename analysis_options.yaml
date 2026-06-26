@@ -21,6 +21,10 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    # PascalCase screen file names are an established convention in this app, and
+    # renaming 30+ widely-imported files (case-only on Windows) is high-risk and
+    # purely cosmetic — so the `file_names` lint is disabled project-wide.
+    file_names: false
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

@@ -86,15 +86,15 @@ class SessionManager {
     final keys = prefs.getKeys();
 
     // Using print directly here to ensure it bypasses any potential logger filtering/issues during critical debug
-    print("📋 ---------------- SESSION DUMP ----------------");
+    print("📋 ---------------- SESSION DUMP ----------------"); // ignore: avoid_print
     if (keys.isEmpty) {
-      print("📋 No data found in session.");
+      print("📋 No data found in session."); // ignore: avoid_print
     } else {
       for (String key in keys) {
         final value = prefs.get(key);
-        print("📋 Key: '$key' | Value: '$value' (${value.runtimeType})");
+        print("📋 Key: '$key' | Value: '$value' (${value.runtimeType})"); // ignore: avoid_print
       }
     }
-    print("📋 ------------------------------------------------");
+    print("📋 ------------------------------------------------"); // ignore: avoid_print
   }
 }

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../controllers/ServiceProvider/service_provider_home_controller.dart';
 import '../../models/service_booking_model.dart';
 import '../../theme/design_system.dart';
+import '../../utils/service_category_icon.dart';
 import 'booking_details_screen.dart';
 
 /// My Bookings — modern list of all service assignments for the provider
@@ -217,6 +218,12 @@ class _BookingCard extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  ServiceIconTile(
+                    category: booking.category ?? booking.serviceTitle,
+                    size: 40,
+                    radius: 10,
+                  ),
+                  AppSpacing.hGapSm,
                   Expanded(
                     child: Text(booking.serviceTitle,
                         style: AppText.subtitle,

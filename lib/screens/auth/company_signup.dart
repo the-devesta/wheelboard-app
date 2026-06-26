@@ -6,9 +6,9 @@ import '../../controllers/Transport/signup_controller.dart';
 import '../../models/company_signupmodel.dart';
 import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../widgets/legal_widgets.dart';
 import '../CompanyTransport/complete_company_profile.dart';
 import 'login.dart';
-import 'service_provider_register_screen.dart';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -37,6 +37,7 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  bool _acceptedLegal = false;
 
   late String _selectedCategory;
   Country _selectedCountry = Country.parse('IN');
@@ -86,6 +87,7 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
     if (phone.isEmpty) { SnackBarHelper.error('Please enter phone number'); return; }
     if (pass.isEmpty) { SnackBarHelper.error('Please enter a password'); return; }
     if (pass.length < 6) { SnackBarHelper.error('Password must be at least 6 characters'); return; }
+    if (!_acceptedLegal) { SnackBarHelper.error('Please accept the Terms & Conditions and Privacy Policy to continue.'); return; }
 
     final model = CompanySignUpModel(
       companyName: company,
@@ -155,12 +157,13 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
               colors: [Color(0xFFF36969), Color(0xFFFF8A8A)],
             ),
           ),
-          child: SafeArea(
+          child: Align(
+            alignment: Alignment.bottomLeft,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 52, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     _isServiceProvider ? 'Register as\nService Provider' : 'Register as\nTransport Company',
@@ -199,10 +202,6 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category toggle
-          _buildCategoryToggle(),
-          const SizedBox(height: 28),
-
           // Form fields
           _field(
             label: _isServiceProvider ? 'Business Name' : 'Company Name',
@@ -246,7 +245,14 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
               splashRadius: 18,
             ),
           )),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+
+          // Mandatory legal acceptance
+          LegalAcceptanceCheckbox(
+            value: _acceptedLegal,
+            onChanged: (v) => setState(() => _acceptedLegal = v),
+          ),
+          const SizedBox(height: 24),
 
           // Register button
           Obx(() => _submitButton()),
@@ -281,98 +287,6 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryToggle() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Account Type',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: _textDark,
-            fontFamily: 'Poppins',
-            letterSpacing: 0.1,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _categoryChip(
-                label: 'Transport',
-                icon: Icons.local_shipping_rounded,
-                selected: _selectedCategory == 'Transport',
-                onTap: () => setState(() => _selectedCategory = 'Transport'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _categoryChip(
-                label: 'Service Provider',
-                icon: Icons.store_mall_directory_rounded,
-                selected: _isServiceProvider,
-                // Service Provider now has its own dedicated registration flow
-                // (mirrors the web role switch to /register/business).
-                onTap: () => Get.off(() => const ServiceProviderRegisterScreen()),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _categoryChip({
-    required String label,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFFFF1F1) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? _primary : _border,
-            width: selected ? 2 : 1.5,
-          ),
-          boxShadow: selected
-              ? [BoxShadow(color: _primary.withValues(alpha: 0.12), blurRadius: 10, offset: const Offset(0, 4))]
-              : [],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: selected ? _primary : const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(icon, size: 20, color: selected ? Colors.white : _textGrey),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? _primary : _textGrey,
-                fontFamily: 'Poppins',
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

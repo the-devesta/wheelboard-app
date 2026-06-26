@@ -160,7 +160,14 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
               margin: EdgeInsets.zero,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
+                child: RadioGroup<String>(
+                  groupValue: _selectedCategory,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedCategory = newValue;
+                    });
+                  },
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     const Text(
@@ -188,6 +195,7 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
                       value: 'Promotions',
                     ),
                   ],
+                  ),
                 ),
               ),
             ),
@@ -277,7 +285,7 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
 
                               if (success) {
                                 _resetFormState();
-                                if (mounted) {
+                                if (context.mounted) {
                                   Navigator.of(context).pop(true);
                                 }
                               }
@@ -345,12 +353,6 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
         ],
       ),
       value: value,
-      groupValue: _selectedCategory,
-      onChanged: (String? newValue) {
-        setState(() {
-          _selectedCategory = newValue;
-        });
-      },
       activeColor: Colors.blueGrey,
       controlAffinity: ListTileControlAffinity.trailing,
       contentPadding: EdgeInsets.zero,

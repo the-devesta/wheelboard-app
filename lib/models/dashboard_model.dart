@@ -29,6 +29,41 @@ class DashboardModel {
     required this.upcomingTrips,
   });
 
+  /// Returns a copy with the given fields replaced. Used to merge authoritative
+  /// fleet data (from GET /fleet/summary) over the /dashboard/stats payload so
+  /// the vehicle cards always match the Fleet page.
+  DashboardModel copyWith({
+    TripSummary? tripSummary,
+    ActiveVehicles? activeVehicles,
+    MonthlyExpenses? monthlyExpenses,
+    JobsSummary? jobsSummary,
+    TripEfficiency? tripEfficiency,
+    VehiclesOnLease? vehiclesOnLease,
+    List<TripCompletionTrend>? tripCompletionTrend,
+    VehicleAvailability? vehicleAvailability,
+    List<TopProfessional>? topProfessionals,
+    List<JobItem>? jobList,
+    List<RecentTransaction>? recentTransactions,
+    List<AssignedService>? assignedServices,
+    List<UpcomingTrip>? upcomingTrips,
+  }) {
+    return DashboardModel(
+      tripSummary: tripSummary ?? this.tripSummary,
+      activeVehicles: activeVehicles ?? this.activeVehicles,
+      monthlyExpenses: monthlyExpenses ?? this.monthlyExpenses,
+      jobsSummary: jobsSummary ?? this.jobsSummary,
+      tripEfficiency: tripEfficiency ?? this.tripEfficiency,
+      vehiclesOnLease: vehiclesOnLease ?? this.vehiclesOnLease,
+      tripCompletionTrend: tripCompletionTrend ?? this.tripCompletionTrend,
+      vehicleAvailability: vehicleAvailability ?? this.vehicleAvailability,
+      topProfessionals: topProfessionals ?? this.topProfessionals,
+      jobList: jobList ?? this.jobList,
+      recentTransactions: recentTransactions ?? this.recentTransactions,
+      assignedServices: assignedServices ?? this.assignedServices,
+      upcomingTrips: upcomingTrips ?? this.upcomingTrips,
+    );
+  }
+
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
     return DashboardModel(
       tripSummary: TripSummary.fromJson(json['tripSummary'] ?? {}),
@@ -145,8 +180,23 @@ class DashboardModel {
             0.0,
         highestFuelAmount: highestCategoryAmount,
       ),
-      jobsSummary: JobsSummary(activeJobs: 0, unfilledJobs: 0),
-      tripEfficiency: null,
+      // Fleet-owner jobs now come from /dashboard/stats (`jobs:{total,active}`).
+      jobsSummary: JobsSummary(
+        activeJobs:
+            ((json['jobs'] as Map<String, dynamic>?)?['active'] as num?)
+                    ?.toInt() ??
+                0,
+        unfilledJobs:
+            ((json['jobs'] as Map<String, dynamic>?)?['total'] as num?)
+                    ?.toInt() ??
+                0,
+      ),
+      // Trip efficiency (₹/km + km this month) now provided by /dashboard/stats.
+      tripEfficiency: json['tripEfficiency'] != null
+          ? TripEfficiency.fromJson(
+              json['tripEfficiency'] as Map<String, dynamic>,
+            )
+          : null,
       vehiclesOnLease: null,
       tripCompletionTrend:
           ((json['tripCompletionTrend'] as List<dynamic>?) ?? const []).map((e) {

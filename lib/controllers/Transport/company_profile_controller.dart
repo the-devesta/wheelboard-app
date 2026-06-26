@@ -136,8 +136,23 @@ class CompanyProfileController extends GetxController {
       final lf = logoFile;
       if (lf != null) {
         // Upload via the unified /media endpoint; send the hosted URL.
-        final media = await MediaService.upload(lf, folder: 'profile-images');
-        logoUrl = media?.url;
+        // Isolate this step so a photo/storage failure gives a clear, specific
+        // message (instead of a generic "Failed to update profile") and never
+        // silently saves the profile without the photo the user just picked.
+        try {
+          final media = await MediaService.upload(lf, folder: 'profile-images');
+          logoUrl = media?.url;
+        } catch (e) {
+          AppLogger.e('❌ Profile photo upload failed: $e');
+          logoUrl = null;
+        }
+        if (logoUrl == null || logoUrl.isEmpty) {
+          SnackBarHelper.error(
+            'Could not upload the photo. Please check your connection and try again.',
+          );
+          isSaving.value = false;
+          return;
+        }
       }
 
       // PUT /users/profile (same endpoint the web uses for every role).

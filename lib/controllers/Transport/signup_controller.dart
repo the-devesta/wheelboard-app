@@ -67,6 +67,13 @@ class SignupController extends GetxController {
         };
       }
 
+      // Record legal-document acceptance captured at registration (the UI blocks
+      // registration until the user accepts the Terms & Conditions and Privacy
+      // Policy).
+      profile['acceptedTerms'] = true;
+      profile['acceptedPrivacyPolicy'] = true;
+      profile['acceptedAt'] = DateTime.now().toUtc().toIso8601String();
+
       final response = await _auth.register(
         email: model.email.isNotEmpty
             ? model.email

@@ -144,6 +144,7 @@ class CompanyBookingController extends GetxController {
         },
         'bookedBy': 'Company',
         'bookedByName': companyName,
+        if ((vehicleNumber ?? '').isNotEmpty) 'vehicleNumber': vehicleNumber,
         if (notes.isNotEmpty) 'notes': notes,
       };
 

@@ -128,10 +128,8 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                           _buildDriverCard(),
                           const SizedBox(height: 16),
                         ],
-                        if (_metrics != null) ...[
-                          _buildMetricsCard(),
-                          const SizedBox(height: 16),
-                        ],
+                        _buildMetricsCard(),
+                        const SizedBox(height: 16),
                         if (_recentTrips.isNotEmpty) ...[
                           _buildRecentTrips(),
                           const SizedBox(height: 16),
@@ -386,14 +384,24 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   }
 
   Widget _buildMetricsCard() {
-    final m = _metrics!;
-    final avgRun = (m['avgRun'] as num?)?.toDouble() ?? 0;
+    final m = _metrics ?? const <String, dynamic>{};
     final tripEff = (m['tripEfficiency'] as num?)?.toDouble() ?? 0;
     final monthlyUsage = (m['monthlyUsage'] as num?)?.toDouble() ?? 0;
 
-    return _sectionCard('Performance Metrics', [
-      _metricRow('Avg Run', '${avgRun.toStringAsFixed(1)} km', Iconsax.speedometer, const Color(0xFF22C55E)),
-      _metricRow('Trip Efficiency', '${tripEff.toStringAsFixed(1)}%', Iconsax.trend_up, _primary),
+    // Odometer reading mirrors how wheelboard-fe shows it for the company user
+    // (the "Mileage" field on the vehicle info card). Numeric values get a "km"
+    // suffix; free-form strings are shown as-is; empty falls back to "N/A".
+    final odoStr = _detail?['mileage']?.toString().trim() ?? '';
+    final isNumericOdo = RegExp(r'^[0-9]+(\.[0-9]+)?$').hasMatch(odoStr);
+    final odometerText = odoStr.isEmpty
+        ? 'N/A'
+        : (isNumericOdo ? '$odoStr km' : odoStr);
+
+    return _sectionCard('Vehicle Metrics', [
+      _metricRow('Odometer', odometerText, Iconsax.speedometer, const Color(0xFF22C55E)),
+      // Trip Efficiency is a cost-per-distance figure (Rs/km), same as web fe —
+      // it was previously mislabelled as a percentage.
+      _metricRow('Trip Efficiency', tripEff > 0 ? '₹${tripEff.toStringAsFixed(1)}/km' : 'N/A', Iconsax.trend_up, _primary),
       _metricRow('Monthly Usage', '${monthlyUsage.toStringAsFixed(1)} km', Iconsax.chart_square, const Color(0xFF3B82F6)),
     ]);
   }

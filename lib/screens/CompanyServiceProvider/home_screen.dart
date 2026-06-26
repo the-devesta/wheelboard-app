@@ -58,7 +58,10 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
   }
 
   Future<void> _refresh() async {
-    await _homeController.fetchMyServices();
+    await Future.wait([
+      _homeController.fetchMyServices(),
+      _homeController.fetchBookings(),
+    ]);
     notificationController.fetchNotifications();
     userProfileController.fetchCurrentUserProfile();
   }
@@ -297,11 +300,12 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
           AppSpacing.hGapMd,
           Expanded(
             child: _statCard(
-              Iconsax.chart_2,
+              Iconsax.calendar_1,
               AppPalette.green,
-              'Leads',
-              '${_homeController.totalLeads.value}',
-              () => Get.to(() => const LeadsScreen()),
+              'Bookings',
+              '${_homeController.totalBookings}',
+              () => Get.to(() =>
+                  BookingListScreen(serviceIds: _homeController.allServiceIds)),
             ),
           ),
           AppSpacing.hGapMd,
@@ -354,10 +358,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen> {
         _qa(Iconsax.people, 'Hire', () => Get.to(() => const JobsScreen())),
         AppSpacing.hGapSm,
         _qa(
-          Iconsax.calendar_1,
-          'Bookings',
-          () => Get.to(
-              () => BookingListScreen(serviceIds: _homeController.allServiceIds)),
+          Iconsax.chart_2,
+          'Leads',
+          () => Get.to(() => const LeadsScreen()),
         ),
         AppSpacing.hGapSm,
         _qa(Icons.school_outlined, 'Learning',

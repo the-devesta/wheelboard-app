@@ -210,6 +210,7 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
         AppLogger.d("⚠️ Could not refresh fleet data: $e");
       }
 
+      if (!mounted) return;
       Navigator.of(context).pop();
     }
   }

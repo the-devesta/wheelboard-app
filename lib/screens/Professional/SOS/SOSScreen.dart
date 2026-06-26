@@ -8,6 +8,10 @@ import '../../../models/assigned_trip_model.dart';
 import '../../../theme/design_system.dart';
 import '../../../utils/trip_status.dart';
 
+/// Wheelboard customer-support line shown on the SOS page. Kept here as a single
+/// editable constant so the number can be changed in one place.
+const String _wheelboardSupportNumber = '7420861942';
+
 /// Emergency SOS — quick access to emergency services.
 ///
 /// Data-flow fix: the big SOS button previously showed a fake "Alerts sent to
@@ -50,7 +54,7 @@ class _SOSScreenState extends State<SOSScreen>
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final uri = Uri(scheme: 'tel', path: phoneNumber);
+    final uri = Uri(scheme: 'tel', path: phoneNumber.replaceAll(RegExp(r'\s'), ''));
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else if (mounted) {
@@ -62,6 +66,7 @@ class _SOSScreenState extends State<SOSScreen>
 
   @override
   Widget build(BuildContext context) {
+    final activeTrip = _activeTrip();
     return Scaffold(
       backgroundColor: AppPalette.bg,
       appBar: AppBar(
@@ -81,14 +86,38 @@ class _SOSScreenState extends State<SOSScreen>
           children: [
             Text('Quick access to emergency services', style: AppText.caption),
             AppSpacing.vGapLg,
-            if (_activeTrip() != null) ...[
-              _activeTripCard(_activeTrip()!),
+            if (activeTrip != null) ...[
+              _activeTripCard(activeTrip),
               AppSpacing.vGapLg,
             ],
             _alertCard(),
             AppSpacing.vGapXl,
             Text('Emergency Contacts', style: AppText.h3),
             AppSpacing.vGapMd,
+            // Wheelboard support line — always available.
+            _contactCard(
+              title: 'Wheelboard Support',
+              number: _wheelboardSupportNumber,
+              icon: Iconsax.call_calling,
+              tint: const Color(0xFFFFF1F1),
+              iconColor: AppPalette.primary,
+            ),
+            AppSpacing.vGapMd,
+            // Assigning transport company — shown only while a trip is in
+            // progress, and only that company's number (from the active trip).
+            if (activeTrip != null &&
+                (activeTrip.companyMobileNo ?? '').trim().isNotEmpty) ...[
+              _contactCard(
+                title: (activeTrip.companyName ?? '').trim().isNotEmpty
+                    ? activeTrip.companyName!.trim()
+                    : 'Transport Company',
+                number: activeTrip.companyMobileNo!.trim(),
+                icon: Iconsax.building_4,
+                tint: const Color(0xFFEFF6FF),
+                iconColor: const Color(0xFF1565C0),
+              ),
+              AppSpacing.vGapMd,
+            ],
             _contactCard(
               title: 'Police',
               number: '100',

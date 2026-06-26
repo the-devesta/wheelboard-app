@@ -23,7 +23,7 @@ class JobProgressScreen extends StatelessWidget {
 
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           Navigator.of(context).pushReplacementNamed('/professional-home');
         }

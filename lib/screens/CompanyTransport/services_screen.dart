@@ -5,6 +5,7 @@ import '../../controllers/Transport/service_controller.dart';
 import '../../controllers/Transport/company_booking_controller.dart';
 import '../../models/service_model.dart';
 import '../../models/service_booking_model.dart';
+import '../../utils/service_category_icon.dart';
 import 'service_details.dart';
 import 'company_booking_detail_screen.dart';
 import 'enquiry_form_page.dart';
@@ -256,6 +257,14 @@ class _ServiceCard extends StatelessWidget {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
+            ServiceIconTile(
+              category: service.categoryList.isNotEmpty
+                  ? service.categoryList.first
+                  : (service.serviceCategory ?? service.businessType),
+              size: 44,
+              radius: 10,
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 service.serviceTitle.isNotEmpty ? service.serviceTitle : 'Service',
@@ -357,6 +366,12 @@ class _BookingCard extends StatelessWidget {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
+            ServiceIconTile(
+              category: booking.category ?? booking.serviceTitle,
+              size: 40,
+              radius: 10,
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(booking.serviceTitle,
                   maxLines: 1,
@@ -367,6 +382,7 @@ class _BookingCard extends StatelessWidget {
                       color: Color(0xFF111827),
                       fontFamily: 'Poppins')),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(

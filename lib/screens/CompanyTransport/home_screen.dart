@@ -23,7 +23,7 @@ import 'fleet_userprofile.dart';
 import 'job_form_screen.dart';
 import 'job_screen.dart';
 import 'notification_screen.dart';
-import 'professional_list.dart';
+import 'hired_professionals_screen.dart';
 import 'services_screen.dart';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────
@@ -513,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _handleMenuTap(int i) {
     switch (i) {
       case 0: Get.to(() => FleetVehiclesScreen());
-      case 1: Get.to(() => const ProfessionalListScreen());
+      case 1: Get.to(() => const HiredProfessionalsScreen());
       case 2: Get.to(() => const ProfessionalExpensesScreen(isProfessional: false));
       case 3: Get.to(() => PostJobScreen());
       case 4: Get.to(() => const ServicesScreen());
@@ -1095,8 +1095,12 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   String _formatSalary(num salary) {
+    // Keep 1-decimal precision so this matches the Dashboard's "This Month"
+    // figure exactly (both read monthlyExpenses.totalExpenses). Rounding to a
+    // whole 'K' previously showed 5K here while the Dashboard showed 4.7k.
+    if (salary >= 10000000) return '${(salary / 10000000).toStringAsFixed(2)}Cr';
     if (salary >= 100000) return '${(salary / 100000).toStringAsFixed(1)}L';
-    if (salary >= 1000) return '${(salary / 1000).toStringAsFixed(0)}K';
+    if (salary >= 1000) return '${(salary / 1000).toStringAsFixed(1)}K';
     return salary.toStringAsFixed(0);
   }
 }

@@ -79,10 +79,10 @@ class UserProfileModel {
       gstNumber: p['gstNumber']?.toString(),
       businessCategory: p['businessCategory']?.toString(),
       companyLogoPath: p['logo']?.toString() ?? p['companyLogoPath']?.toString(),
-      fullName: p['fullName']?.toString(),
+      fullName: _deriveName(p),
       address: p['address']?.toString(),
       fleetSize: p['fleetSize']?.toString(),
-      name: p['fullName']?.toString(),
+      name: _deriveName(p),
       fatherName: p['fatherName']?.toString(),
       email: user.email,
       dateOfBirth: p['dateOfBirth']?.toString(),
@@ -104,6 +104,18 @@ class UserProfileModel {
     return value.toString();
   }
 
+  /// Resolve a display name from a raw profile map. Prefers `fullName`, then
+  /// falls back to `firstName` + `lastName` (professionals are often stored with
+  /// first/last only), so the profile view never shows a blank/placeholder name.
+  static String? _deriveName(Map<String, dynamic> p) {
+    final full = p['fullName']?.toString().trim() ?? '';
+    if (full.isNotEmpty) return full;
+    final first = p['firstName']?.toString().trim() ?? '';
+    final last = p['lastName']?.toString().trim() ?? '';
+    final combined = [first, last].where((s) => s.isNotEmpty).join(' ').trim();
+    return combined.isNotEmpty ? combined : null;
+  }
+
   /// Build from GET /users/:id/public-profile response.
   /// Response shape: { id, email, role, profile: { ... } }
   factory UserProfileModel.fromPublicProfile(Map<String, dynamic> json) {
@@ -117,10 +129,10 @@ class UserProfileModel {
       gstNumber: p['gstNumber']?.toString(),
       businessCategory: p['businessCategory']?.toString(),
       companyLogoPath: p['logo']?.toString() ?? p['companyLogoPath']?.toString(),
-      fullName: p['fullName']?.toString(),
+      fullName: _deriveName(p),
       address: p['address']?.toString(),
       fleetSize: p['fleetSize']?.toString(),
-      name: p['fullName']?.toString(),
+      name: _deriveName(p),
       fatherName: p['fatherName']?.toString(),
       dateOfBirth: p['dateOfBirth']?.toString(),
       state: p['state']?.toString(),

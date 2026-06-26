@@ -60,7 +60,7 @@ class BottomNavScreen extends StatefulWidget {
   const BottomNavScreen({super.key, this.initialIndex = 0}); // default = 0
 
   @override
-  _BottomNavScreenState createState() => _BottomNavScreenState();
+  State<BottomNavScreen> createState() => _BottomNavScreenState();
 }
 
 class _BottomNavScreenState extends State<BottomNavScreen> {

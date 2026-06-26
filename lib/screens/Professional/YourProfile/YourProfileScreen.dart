@@ -10,6 +10,7 @@ import '../../../models/user_profile_model.dart';
 import '../../../widgets/common_delete_button.dart';
 import '../../../widgets/custom_snackbar.dart';
 import '../../../widgets/change_password_sheet.dart';
+import '../../../widgets/legal_widgets.dart';
 import '../../auth/onboarding_screen.dart';
 import '../EditYourProfile01/EditYourProfile01Screen.dart';
 import '../CompleteProfile/professional_complete_profile_screen.dart';
@@ -17,6 +18,7 @@ import '../KYC/kyc_screen.dart';
 import '../AddReferral/AddReferralScreen.dart';
 import '../MyRewards/MyRewardsScreen.dart';
 import '../../shared/subscription_screen.dart';
+import '../../shared/wallet_screen.dart';
 import '../../shared/issues/issues_screen.dart';
 import '../../shared/legal_screen.dart';
 
@@ -79,6 +81,8 @@ class YourProfileScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildPlatformPreferences(ctrl),
                   const SizedBox(height: 12),
+                  _buildWalletCard(),
+                  const SizedBox(height: 12),
                   _buildSubscriptionCard(),
                   const SizedBox(height: 12),
                   _buildQuickActions(context),
@@ -86,6 +90,8 @@ class YourProfileScreen extends StatelessWidget {
                   _buildDangerZone(ctrl),
                   const SizedBox(height: 12),
                   _buildSupportCard(),
+                  const SizedBox(height: 12),
+                  const LegalSettingsSection(),
                   const SizedBox(height: 12),
                   _buildFooter(),
                   const SizedBox(height: 32),
@@ -737,6 +743,73 @@ class YourProfileScreen extends StatelessWidget {
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       ],
+    );
+  }
+
+  // ── Wallet / Earnings ──────────────────────────────────────────────────────
+
+  Widget _buildWalletCard() {
+    return GestureDetector(
+      onTap: () => Get.to(() => const WalletScreen()),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF16A34A), Color(0xFF15803D)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child:
+                    const Icon(Iconsax.wallet_3, size: 24, color: Colors.white),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'My Earnings',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'View wallet balance & claim earnings',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white70,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Colors.white70,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

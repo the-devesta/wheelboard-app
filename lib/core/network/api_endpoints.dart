@@ -73,6 +73,26 @@ class ApiEndpoints {
 
   // ── Media (unified upload) ───────────────────────────────────────────────
   static const media = _MediaEndpoints();
+
+  // ── Wallet & Earnings Withdrawals ────────────────────────────────────────
+  static const wallet = _WalletEndpoints();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wallet — earnings wallet & withdrawal requests (Professional + Service Provider)
+// ─────────────────────────────────────────────────────────────────────────────
+class _WalletEndpoints {
+  const _WalletEndpoints();
+
+  // GET  /wallet  → { availableBalance, pendingWithdrawals, totalEarned, totalWithdrawn }
+  String get summary => '/wallet';
+
+  // GET  /wallet/transactions?limit=  → ledger, latest first
+  String get transactions => '/wallet/transactions';
+
+  // GET  /wallet/withdrawals  → caller's withdrawal requests
+  // POST /wallet/withdrawals  → create a withdrawal (claim earnings)
+  String get withdrawals => '/wallet/withdrawals';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

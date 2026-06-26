@@ -4,10 +4,9 @@ import 'package:get/get.dart';
 import '../../controllers/service_provider/sp_register_controller.dart';
 import '../../theme/design_system.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../widgets/legal_widgets.dart';
 import '../CompanyServiceProvider/complete_profile_screen.dart';
-import 'company_signup.dart';
 import 'login.dart';
-import 'professional_signup.dart';
 
 /// Service Provider (Business) account registration.
 ///
@@ -33,6 +32,7 @@ class _ServiceProviderRegisterScreenState
   final _phoneCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
+  bool _acceptedLegal = false;
 
   @override
   void dispose() {
@@ -62,6 +62,9 @@ class _ServiceProviderRegisterScreenState
     }
     if (_phoneCtrl.text.trim().length < 10) {
       return 'Please enter a valid phone number.';
+    }
+    if (!_acceptedLegal) {
+      return 'Please accept the Terms & Conditions and Privacy Policy to continue.';
     }
     return null;
   }
@@ -125,12 +128,13 @@ class _ServiceProviderRegisterScreenState
                 right: 64,
                 child: _circle(64, 0.06),
               ),
-              SafeArea(
+              Align(
+                alignment: Alignment.bottomLeft,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 48, 24, 22),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 22),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         width: 48,
@@ -142,11 +146,11 @@ class _ServiceProviderRegisterScreenState
                         child: const Icon(Icons.store_mall_directory_rounded,
                             color: Colors.white, size: 26),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 11),
                       Text('Create Service\nProvider Account',
                           style: AppText.h1
                               .on(Colors.white)
-                              .size(24)
+                              .size(22)
                               .copyWith(height: 1.25)),
                       const SizedBox(height: 4),
                       Text('Register your business to offer services',
@@ -178,9 +182,6 @@ class _ServiceProviderRegisterScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _roleSelector(),
-          const SizedBox(height: 24),
-
           _sectionTitle('Account Information'),
           AppSpacing.vGapMd,
           _field(
@@ -235,6 +236,11 @@ class _ServiceProviderRegisterScreenState
               )),
           const SizedBox(height: 28),
 
+          LegalAcceptanceCheckbox(
+            value: _acceptedLegal,
+            onChanged: (v) => setState(() => _acceptedLegal = v),
+          ),
+          AppSpacing.vGapLg,
           Obx(() => AppPrimaryButton(
                 label: 'Create Account',
                 icon: Icons.arrow_forward_rounded,
@@ -259,63 +265,6 @@ class _ServiceProviderRegisterScreenState
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Role chips — mirrors the web register page's Professional / Service
-  /// Provider / Transport switcher.
-  Widget _roleSelector() {
-    return Row(
-      children: [
-        Expanded(
-          child: _roleChip(
-            'Professional',
-            selected: false,
-            onTap: () => Get.off(() => const ProfessionalRegisterScreen()),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _roleChip('Service Provider', selected: true, onTap: () {}),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _roleChip(
-            'Transport',
-            selected: false,
-            onTap: () => Get.off(() => const Signup(initialCategory: 'Transport')),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _roleChip(String label,
-      {required bool selected, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? AppPalette.primary : AppPalette.card,
-          borderRadius: AppRadius.rPill,
-          border: Border.all(
-            color: selected ? AppPalette.primary : AppPalette.border,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            style: AppText.label.copyWith(
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : AppPalette.textGrey,
-            ),
-          ),
-        ),
       ),
     );
   }

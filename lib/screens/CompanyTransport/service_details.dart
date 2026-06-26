@@ -7,6 +7,7 @@ import '../../models/service_model.dart';
 import 'service_detail_popup.dart';
 import '../../widgets/custom_loader.dart';
 import '../../utils/share_service.dart';
+import '../../utils/service_category_icon.dart';
 import '../../widgets/custom_snackbar.dart';
 
 class ServiceDetailScreen extends StatefulWidget {
@@ -111,7 +112,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildHeaderImage(),
+                  _buildHeaderImage(service),
                   const SizedBox(height: 10),
                   _buildSummaryCard(service),
                   const SizedBox(height: 8),
@@ -166,14 +167,62 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     );
   }
 
-  Widget _buildHeaderImage() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Image.asset(
-        "assets/tripImage.png",
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
+  Widget _buildHeaderImage(ServiceModel service) {
+    final img = service.images.isNotEmpty ? service.images.first : '';
+    final category = service.categoryList.isNotEmpty
+        ? service.categoryList.first
+        : (service.serviceCategory ?? service.businessType);
+    final accent = ServiceCategoryIcon.of(category);
+
+    if (img.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.network(
+          img,
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _categoryBanner(accent),
+        ),
+      );
+    }
+    return _categoryBanner(accent);
+  }
+
+  /// Professional category banner shown when a service has no photo — replaces
+  /// the old generic `tripImage.png` placeholder.
+  Widget _categoryBanner(ServiceCategoryIcon accent) {
+    return Container(
+      height: 170,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accent.color.withValues(alpha: 0.20),
+            accent.color.withValues(alpha: 0.06),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 78,
+          height: 78,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: accent.color.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Icon(accent.icon, color: accent.color, size: 38),
+        ),
       ),
     );
   }
@@ -482,16 +531,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(child: Text("Map Placeholder")),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(

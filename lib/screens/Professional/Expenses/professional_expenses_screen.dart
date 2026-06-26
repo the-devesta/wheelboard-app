@@ -442,20 +442,16 @@ class _ProfessionalExpensesScreenState
   }
 
   String _fmt(double v) {
-    final s = v.toStringAsFixed(0);
-    // Indian-style grouping (e.g. 1,23,456).
+    // Indian-style grouping: rightmost group of 3, then groups of 2
+    // (e.g. 48,600 and 1,48,600).
+    final s = v.abs().toStringAsFixed(0);
     final buf = StringBuffer();
-    final digits = s.split('');
-    for (var i = 0; i < digits.length; i++) {
-      final posFromEnd = digits.length - i;
-      buf.write(digits[i]);
-      if (posFromEnd > 1) {
-        if (posFromEnd == 4 || (posFromEnd > 4 && (posFromEnd - 4) % 2 == 1)) {
-          buf.write(',');
-        }
-      }
+    for (var i = 0; i < s.length; i++) {
+      buf.write(s[i]);
+      final right = s.length - i - 1; // digits still to the right
+      if (right >= 3 && right.isOdd) buf.write(',');
     }
-    return buf.toString();
+    return '${v < 0 ? '-' : ''}$buf';
   }
 
   String _fmtDate(DateTime d) {

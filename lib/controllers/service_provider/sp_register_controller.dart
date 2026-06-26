@@ -50,6 +50,10 @@ class SpRegisterController extends GetxController {
           'ownerName': ownerName,
           'phoneNumber': phoneNumber,
           'businessCategory': 'Service Provider',
+          // Record legal-document acceptance captured at registration.
+          'acceptedTerms': true,
+          'acceptedPrivacyPolicy': true,
+          'acceptedAt': DateTime.now().toUtc().toIso8601String(),
         },
       );
       AppLogger.d('✅ Service Provider account created: ${_auth.userId}');

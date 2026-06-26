@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/Transport/professional_signup_controller.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../widgets/legal_widgets.dart';
 import 'login.dart';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ class _ProfessionalRegisterScreenState
 
   final _obscurePass = true.obs;
   String? _selectedType;
+  bool _acceptedLegal = false;
 
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
@@ -96,6 +98,11 @@ class _ProfessionalRegisterScreenState
     }
     if (pass.isEmpty || pass.length < 6) {
       SnackBarHelper.error('Password must be at least 6 characters');
+      return;
+    }
+    if (!_acceptedLegal) {
+      SnackBarHelper.error(
+          'Please accept the Terms & Conditions and Privacy Policy to continue.');
       return;
     }
 
@@ -179,12 +186,13 @@ class _ProfessionalRegisterScreenState
                   ),
                 ),
               ),
-              SafeArea(
+              Align(
+                alignment: Alignment.bottomLeft,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 52, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         width: 48,
@@ -306,7 +314,14 @@ class _ProfessionalRegisterScreenState
             controller: _cityCtrl,
             icon: Icons.location_on_outlined,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+
+          // Mandatory legal acceptance
+          LegalAcceptanceCheckbox(
+            value: _acceptedLegal,
+            onChanged: (v) => setState(() => _acceptedLegal = v),
+          ),
+          const SizedBox(height: 24),
 
           // Submit button
           Obx(() => _submitButton()),
