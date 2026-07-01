@@ -5,6 +5,7 @@ import '../../controllers/Professional/professional_tab_controller.dart';
 import '../../core/auth/auth_service.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/wheelbot_button.dart';
 import 'FeedsProfessional/FeedsProfessionalScreen.dart';
 import 'FindJobs/FindJobsScreen.dart';
 import 'Search/professional_search_screen.dart';
@@ -45,7 +46,9 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper>
 
     if (!Get.isRegistered<AssignedTripController>()) {
       Get.put(AssignedTripController(), permanent: true);
-      AppLogger.d('✅ AssignedTripController initialized in Professional wrapper');
+      AppLogger.d(
+        '✅ AssignedTripController initialized in Professional wrapper',
+      );
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -92,15 +95,24 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Obx(() => IndexedStack(
-            index: _tab.currentIndex.value,
-            children: _screens,
-          )),
-      bottomNavigationBar: Obx(() => AppBottomNav(
-            items: professionalNavItems,
-            currentIndex: _tab.currentIndex.value,
-            onTap: _onTabTapped,
-          )),
+      body: Obx(
+        () => Stack(
+          children: [
+            IndexedStack(index: _tab.currentIndex.value, children: _screens),
+            const WheelbotFloatingButton(
+              roleContext: 'professional',
+              bottom: 170,
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Obx(
+        () => AppBottomNav(
+          items: professionalNavItems,
+          currentIndex: _tab.currentIndex.value,
+          onTap: _onTabTapped,
+        ),
+      ),
     );
   }
 }

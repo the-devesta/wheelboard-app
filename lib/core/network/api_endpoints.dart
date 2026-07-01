@@ -76,6 +76,19 @@ class ApiEndpoints {
 
   // ── Wallet & Earnings Withdrawals ────────────────────────────────────────
   static const wallet = _WalletEndpoints();
+
+  // ── WheelBot AI Assistant ────────────────────────────────────────────────
+  static const chat = _ChatEndpoints();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WheelBot AI Assistant
+// ─────────────────────────────────────────────────────────────────────────────
+class _ChatEndpoints {
+  const _ChatEndpoints();
+
+  // POST /chat  { messages, userId?, provider? }
+  String get send => '/chat';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -793,7 +806,8 @@ class _LeadsEndpoints {
   String providerLeads(String providerId) => '/leads/provider/$providerId';
 
   // GET   /leads/provider/:providerId/stats
-  String providerStats(String providerId) => '/leads/provider/$providerId/stats';
+  String providerStats(String providerId) =>
+      '/leads/provider/$providerId/stats';
 
   // GET   /leads/:id
   String details(String id) => '/leads/$id';

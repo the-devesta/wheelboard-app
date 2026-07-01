@@ -12,6 +12,7 @@ import '../../controllers/Transport/user_profile_controller.dart';
 import '../../core/auth/auth_service.dart';
 import '../../utils/media_url.dart';
 import '../../utils/share_service.dart';
+import '../../widgets/wheelbot_button.dart';
 import '../Professional/Expenses/professional_expenses_screen.dart';
 import '../shared/subscription_screen.dart';
 import 'banner_carousel.dart';
@@ -50,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
+  bool _toolsOpen = false;
 
   late UserProfileController _profileCtrl;
   late JobController _jobCtrl;
@@ -58,13 +60,17 @@ class _HomeScreenState extends State<HomeScreen>
   late DashboardController _dashCtrl;
 
   static const _menuItems = [
-    _MenuItem('Vehicles',      Iconsax.truck,         Icons.directions_car_rounded),
-    _MenuItem('Professionals', Iconsax.people,        Icons.people_outline_rounded),
-    _MenuItem('Expenses',      Iconsax.wallet_3,      Icons.account_balance_wallet_outlined),
-    _MenuItem('Hire',          Iconsax.briefcase,     Icons.work_outline_rounded),
-    _MenuItem('Services',      Iconsax.setting_2,     Icons.build_circle_outlined),
-    _MenuItem('Dashboard',     Iconsax.chart_2,       Icons.bar_chart_rounded),
-    _MenuItem('Subscription',  Iconsax.crown,         Icons.workspace_premium_rounded),
+    _MenuItem('Vehicles', Iconsax.truck, Icons.directions_car_rounded),
+    _MenuItem('Professionals', Iconsax.people, Icons.people_outline_rounded),
+    _MenuItem(
+      'Expenses',
+      Iconsax.wallet_3,
+      Icons.account_balance_wallet_outlined,
+    ),
+    _MenuItem('Hire', Iconsax.briefcase, Icons.work_outline_rounded),
+    _MenuItem('Services', Iconsax.setting_2, Icons.build_circle_outlined),
+    _MenuItem('Dashboard', Iconsax.chart_2, Icons.bar_chart_rounded),
+    _MenuItem('Subscription', Iconsax.crown, Icons.workspace_premium_rounded),
   ];
 
   static const _menuColors = [
@@ -194,7 +200,10 @@ class _HomeScreenState extends State<HomeScreen>
                     decoration: BoxDecoration(
                       color: _primaryLight,
                       shape: BoxShape.circle,
-                      border: Border.all(color: _primary.withValues(alpha: 0.25), width: 2),
+                      border: Border.all(
+                        color: _primary.withValues(alpha: 0.25),
+                        width: 2,
+                      ),
                     ),
                     child: imgUrl.isNotEmpty
                         ? ClipOval(
@@ -275,7 +284,10 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: _primary,
                                 shape: BoxShape.circle,
                               ),
-                              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
                               child: Center(
                                 child: Text(
                                   count > 99 ? '99+' : '$count',
@@ -356,14 +368,14 @@ class _HomeScreenState extends State<HomeScreen>
 
         return Row(
           children: stats
-              .map((s) => Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: s == stats.last ? 0 : 8,
-                      ),
-                      child: _buildStatCard(s),
-                    ),
-                  ))
+              .map(
+                (s) => Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: s == stats.last ? 0 : 8),
+                    child: _buildStatCard(s),
+                  ),
+                ),
+              )
               .toList(),
         );
       }),
@@ -486,10 +498,11 @@ class _HomeScreenState extends State<HomeScreen>
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
-              child: Center(
-                child: Icon(item.icon, color: iconColor, size: 24),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(14),
               ),
+              child: Center(child: Icon(item.icon, color: iconColor, size: 24)),
             ),
             const SizedBox(height: 8),
             Text(
@@ -512,13 +525,20 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _handleMenuTap(int i) {
     switch (i) {
-      case 0: Get.to(() => FleetVehiclesScreen());
-      case 1: Get.to(() => const HiredProfessionalsScreen());
-      case 2: Get.to(() => const ProfessionalExpensesScreen(isProfessional: false));
-      case 3: Get.to(() => PostJobScreen());
-      case 4: Get.to(() => const ServicesScreen());
-      case 5: Get.to(() => DashboardScreen());
-      case 6: Get.to(() => const SubscriptionScreen(category: 'fleet_owner'));
+      case 0:
+        Get.to(() => FleetVehiclesScreen());
+      case 1:
+        Get.to(() => const HiredProfessionalsScreen());
+      case 2:
+        Get.to(() => const ProfessionalExpensesScreen(isProfessional: false));
+      case 3:
+        Get.to(() => PostJobScreen());
+      case 4:
+        Get.to(() => const ServicesScreen());
+      case 5:
+        Get.to(() => DashboardScreen());
+      case 6:
+        Get.to(() => const SubscriptionScreen(category: 'fleet_owner'));
     }
   }
 
@@ -530,11 +550,19 @@ class _HomeScreenState extends State<HomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader('Recent Jobs', onTap: () => Get.to(() => const JobsScreen())),
+          _sectionHeader(
+            'Recent Jobs',
+            onTap: () => Get.to(() => const JobsScreen()),
+          ),
           const SizedBox(height: 14),
           Obx(() {
             if (_jobCtrl.isLoading.isTrue) return _shimmerList(3);
-            if (_jobCtrl.jobs.isEmpty) return _emptyState('No jobs posted yet.', Icons.work_outline_rounded);
+            if (_jobCtrl.jobs.isEmpty) {
+              return _emptyState(
+                'No jobs posted yet.',
+                Icons.work_outline_rounded,
+              );
+            }
             return Column(
               children: _jobCtrl.jobs.take(5).map(_buildJobCard).toList(),
             );
@@ -576,7 +604,11 @@ class _HomeScreenState extends State<HomeScreen>
                     color: _primaryLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.work_outline_rounded, color: _primary, size: 22),
+                  child: const Icon(
+                    Icons.work_outline_rounded,
+                    color: _primary,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -597,17 +629,29 @@ class _HomeScreenState extends State<HomeScreen>
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          _chip(job.jobType, const Color(0xFFEFF6FF), const Color(0xFF3B82F6)),
+                          _chip(
+                            job.jobType,
+                            const Color(0xFFEFF6FF),
+                            const Color(0xFF3B82F6),
+                          ),
                           const SizedBox(width: 6),
                           if (job.city.isNotEmpty)
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.location_on_outlined, size: 12, color: _textGrey),
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 12,
+                                  color: _textGrey,
+                                ),
                                 const SizedBox(width: 2),
                                 Text(
                                   job.city,
-                                  style: const TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins'),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: _textGrey,
+                                    fontFamily: 'Poppins',
+                                  ),
                                 ),
                               ],
                             ),
@@ -640,7 +684,10 @@ class _HomeScreenState extends State<HomeScreen>
             // Stats + actions
             Row(
               children: [
-                _statBadge(Icons.people_outline_rounded, '${job.openings} positions'),
+                _statBadge(
+                  Icons.people_outline_rounded,
+                  '${job.openings} positions',
+                ),
                 const SizedBox(width: 12),
                 _statBadge(
                   Icons.description_outlined,
@@ -685,11 +732,16 @@ class _HomeScreenState extends State<HomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader('Popular Feeds', onTap: () => Get.to(() => const FeedScreen())),
+          _sectionHeader(
+            'Popular Feeds',
+            onTap: () => Get.to(() => const FeedScreen()),
+          ),
           const SizedBox(height: 14),
           Obx(() {
             if (_feedsCtrl.isLoading.isTrue) return _shimmerList(3);
-            if (_feedsCtrl.feeds.isEmpty) return _emptyState('No posts yet.', Icons.dynamic_feed_outlined);
+            if (_feedsCtrl.feeds.isEmpty) {
+              return _emptyState('No posts yet.', Icons.dynamic_feed_outlined);
+            }
             return Column(
               children: _feedsCtrl.feeds.take(5).map(_buildFeedCard).toList(),
             );
@@ -700,8 +752,12 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildFeedCard(Post post) {
-    final logo = post.companyLogo?.isNotEmpty == true ? _imageUrl(post.companyLogo!) : '';
-    final initial = post.userName.isNotEmpty ? post.userName[0].toUpperCase() : 'U';
+    final logo = post.companyLogo?.isNotEmpty == true
+        ? _imageUrl(post.companyLogo!)
+        : '';
+    final initial = post.userName.isNotEmpty
+        ? post.userName[0].toUpperCase()
+        : 'U';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -710,7 +766,11 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _border),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Padding(
@@ -720,7 +780,8 @@ class _HomeScreenState extends State<HomeScreen>
           children: [
             // Author row
             InkWell(
-              onTap: () => Get.to(() => FleetUserprofile(companyId: post.companyId)),
+              onTap: () =>
+                  Get.to(() => FleetUserprofile(companyId: post.companyId)),
               borderRadius: BorderRadius.circular(8),
               child: Row(
                 children: [
@@ -733,7 +794,8 @@ class _HomeScreenState extends State<HomeScreen>
                             height: 40,
                             fit: BoxFit.cover,
                             headers: _authHeaders,
-                            errorBuilder: (_, __, ___) => _initialsWidget(initial, 40, radius: 10),
+                            errorBuilder: (_, __, ___) =>
+                                _initialsWidget(initial, 40, radius: 10),
                           ),
                         )
                       : _initialsWidget(initial, 40, radius: 10),
@@ -754,7 +816,11 @@ class _HomeScreenState extends State<HomeScreen>
                         if (post.category.isNotEmpty)
                           Text(
                             post.category,
-                            style: const TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins'),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: _textGrey,
+                              fontFamily: 'Poppins',
+                            ),
                           ),
                       ],
                     ),
@@ -817,7 +883,8 @@ class _HomeScreenState extends State<HomeScreen>
                               height: 120,
                               fit: BoxFit.cover,
                               headers: _authHeaders,
-                              errorBuilder: (_, __, ___) => _imagePlaceholder(width: 120),
+                              errorBuilder: (_, __, ___) =>
+                                  _imagePlaceholder(width: 120),
                             ),
                           ),
                         ),
@@ -840,7 +907,9 @@ class _HomeScreenState extends State<HomeScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          liked
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
                           size: 20,
                           color: liked ? _primary : _textGrey,
                         ),
@@ -873,7 +942,11 @@ class _HomeScreenState extends State<HomeScreen>
                       SizedBox(width: 4),
                       Text(
                         'Share',
-                        style: TextStyle(fontSize: 12, color: _textGrey, fontFamily: 'Poppins'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _textGrey,
+                          fontFamily: 'Poppins',
+                        ),
                       ),
                     ],
                   ),
@@ -881,7 +954,11 @@ class _HomeScreenState extends State<HomeScreen>
                 const Spacer(),
                 Text(
                   post.timeAgo,
-                  style: const TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins'),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: _textGrey,
+                    fontFamily: 'Poppins',
+                  ),
                 ),
               ],
             ),
@@ -898,40 +975,100 @@ class _HomeScreenState extends State<HomeScreen>
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        FloatingActionButton.extended(
-          heroTag: 'services',
-          onPressed: () => Get.to(() => ServicesScreen()),
-          backgroundColor: _primary,
-          elevation: 3,
-          icon: const Icon(Icons.build_circle_outlined, color: Colors.white, size: 20),
-          label: const Text(
-            'Services',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
-              fontSize: 14,
-            ),
-          ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: animation,
+                alignment: Alignment.bottomRight,
+                child: child,
+              ),
+            );
+          },
+          child: _toolsOpen
+              ? Column(
+                  key: const ValueKey('company-tools-open'),
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _toolAction(
+                      heroTag: 'tool-services',
+                      icon: Icons.build_circle_outlined,
+                      label: 'Services',
+                      onPressed: () => Get.to(() => ServicesScreen()),
+                    ),
+                    const SizedBox(height: 10),
+                    _toolAction(
+                      heroTag: 'tool-wheelbot',
+                      icon: Icons.smart_toy_rounded,
+                      label: 'WheelBot',
+                      onPressed: () =>
+                          WheelbotSheet.show(context, roleContext: 'company'),
+                    ),
+                    const SizedBox(height: 10),
+                    _toolAction(
+                      heroTag: 'tool-postjob',
+                      icon: Icons.add_rounded,
+                      label: 'Post Job',
+                      onPressed: () => Get.to(() => PostJobScreen()),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                )
+              : const SizedBox.shrink(key: ValueKey('company-tools-closed')),
         ),
-        const SizedBox(height: 10),
         FloatingActionButton.extended(
-          heroTag: 'postjob',
-          onPressed: () => Get.to(() => PostJobScreen()),
+          heroTag: 'company-tools-toggle',
+          onPressed: () => setState(() => _toolsOpen = !_toolsOpen),
           backgroundColor: _primary,
-          elevation: 3,
-          icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-          label: const Text(
-            'Post Job',
-            style: TextStyle(
+          elevation: 4,
+          icon: Icon(
+            _toolsOpen ? Icons.close_rounded : Icons.widgets_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
+          label: Text(
+            _toolsOpen ? 'Close' : 'Tools',
+            style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               fontFamily: 'Poppins',
               fontSize: 14,
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _toolAction({
+    required String heroTag,
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return FloatingActionButton.extended(
+      heroTag: heroTag,
+      onPressed: () {
+        setState(() => _toolsOpen = false);
+        onPressed();
+      },
+      backgroundColor: _primary,
+      elevation: 3,
+      icon: Icon(icon, color: Colors.white, size: 20),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Poppins',
+          fontSize: 14,
+        ),
+      ),
     );
   }
 
@@ -971,10 +1108,18 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _chip(String label, Color bg, Color text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: text, fontFamily: 'Poppins'),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: text,
+          fontFamily: 'Poppins',
+        ),
       ),
     );
   }
@@ -985,12 +1130,24 @@ class _HomeScreenState extends State<HomeScreen>
       children: [
         Icon(icon, size: 14, color: color ?? _textGrey),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: color ?? _textGrey, fontFamily: 'Poppins')),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: color ?? _textGrey,
+            fontFamily: 'Poppins',
+          ),
+        ),
       ],
     );
   }
 
-  Widget _actionBtn(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _actionBtn(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1006,7 +1163,12 @@ class _HomeScreenState extends State<HomeScreen>
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color, fontFamily: 'Poppins'),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+                fontFamily: 'Poppins',
+              ),
             ),
           ],
         ),
@@ -1041,7 +1203,9 @@ class _HomeScreenState extends State<HomeScreen>
       width: width,
       height: 120,
       color: _cardBg,
-      child: const Center(child: Icon(Icons.image_outlined, color: _textGrey, size: 32)),
+      child: const Center(
+        child: Icon(Icons.image_outlined, color: _textGrey, size: 32),
+      ),
     );
   }
 
@@ -1058,7 +1222,14 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           Icon(icon, size: 36, color: _textGrey),
           const SizedBox(height: 10),
-          Text(msg, style: const TextStyle(color: _textGrey, fontSize: 13, fontFamily: 'Poppins')),
+          Text(
+            msg,
+            style: const TextStyle(
+              color: _textGrey,
+              fontSize: 13,
+              fontFamily: 'Poppins',
+            ),
+          ),
         ],
       ),
     );
@@ -1098,7 +1269,9 @@ class _HomeScreenState extends State<HomeScreen>
     // Keep 1-decimal precision so this matches the Dashboard's "This Month"
     // figure exactly (both read monthlyExpenses.totalExpenses). Rounding to a
     // whole 'K' previously showed 5K here while the Dashboard showed 4.7k.
-    if (salary >= 10000000) return '${(salary / 10000000).toStringAsFixed(2)}Cr';
+    if (salary >= 10000000) {
+      return '${(salary / 10000000).toStringAsFixed(2)}Cr';
+    }
     if (salary >= 100000) return '${(salary / 100000).toStringAsFixed(1)}L';
     if (salary >= 1000) return '${(salary / 1000).toStringAsFixed(1)}K';
     return salary.toStringAsFixed(0);

@@ -7,6 +7,7 @@ import '../../controllers/Transport/notification_controller.dart';
 import '../../controllers/Transport/user_profile_controller.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/wheelbot_button.dart';
 import 'feed_screen.dart';
 import 'fleet_screen.dart';
 import 'home_screen.dart';
@@ -24,8 +25,10 @@ class CompanyTransportMainWrapper extends StatefulWidget {
 
 class _CompanyTransportMainWrapperState
     extends State<CompanyTransportMainWrapper> {
-  final MainWrapperController _wrapperController =
-      Get.put(MainWrapperController(), permanent: true);
+  final MainWrapperController _wrapperController = Get.put(
+    MainWrapperController(),
+    permanent: true,
+  );
 
   // IndexedStack keeps every screen alive — no rebuild on tab switch
   final List<Widget> _screens = [
@@ -64,9 +67,15 @@ class _CompanyTransportMainWrapperState
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        body: IndexedStack(
-          index: _wrapperController.currentTabIndex.value,
-          children: _screens,
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: _wrapperController.currentTabIndex.value,
+              children: _screens,
+            ),
+            if (_wrapperController.currentTabIndex.value != 0)
+              const WheelbotFloatingButton(roleContext: 'company', bottom: 120),
+          ],
         ),
         bottomNavigationBar: AppBottomNav(
           items: companyNavItems,
