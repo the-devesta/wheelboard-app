@@ -10,8 +10,8 @@ import 'job_form_screen.dart';
 import 'job_application_screen.dart';
 import 'trips_screen.dart';
 import 'fleet_screen.dart';
+import 'company_booking_detail_screen.dart';
 import '../Professional/Expenses/professional_expenses_screen.dart';
-import '../../utils/app_logger.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -103,9 +103,9 @@ class DashboardScreen extends StatelessWidget {
                       children: [
                         _statCard(
                           Icons.directions_car,
-                          "Active Trips",
+                          "Total Trips",
                           "${data.tripSummary.totalTrips} Trips",
-                          "${data.tripSummary.scheduledToday} Scheduled Today",
+                          "${data.tripSummary.activeTrips} Active",
                           Colors.green,
                         ),
                         GestureDetector(
@@ -579,6 +579,7 @@ class DashboardScreen extends StatelessWidget {
                               }
                             }
 
+                            final bookingId = service.serviceId ?? '';
                             return _serviceTile(
                               title: service.serviceTitle ?? "Service",
                               desc: service.category?.isNotEmpty == true
@@ -588,9 +589,11 @@ class DashboardScreen extends StatelessWidget {
                                   ? service.category!
                                   : "General",
                               updatedAt: formattedDate,
-                              onDelete: () {
-                                AppLogger.d("Delete tapped");
-                              },
+                              // Open the booking instead of a dead delete icon.
+                              onTap: bookingId.isEmpty
+                                  ? null
+                                  : () => Get.to(() => CompanyBookingDetailScreen(
+                                      bookingId: bookingId)),
                             );
                           }).toList(),
                         )
@@ -1146,9 +1149,12 @@ class DashboardScreen extends StatelessWidget {
     required String desc,
     required String tag,
     required String updatedAt,
-    required VoidCallback onDelete,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1220,22 +1226,25 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                InkWell(
-                  onTap: onDelete,
-                  borderRadius: BorderRadius.circular(20),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4.0),
-                    child: Icon(
-                      Icons.delete_outline,
-                      color: Colors.red,
-                      size: 22,
+                Row(
+                  children: const [
+                    Text(
+                      'View',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFF36969),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
+                    Icon(Icons.chevron_right,
+                        color: Color(0xFFF36969), size: 18),
+                  ],
                 ),
               ],
             ),
           ],
         ),
+      ),
       ),
     );
   }

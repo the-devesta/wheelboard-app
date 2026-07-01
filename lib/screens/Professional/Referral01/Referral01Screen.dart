@@ -5,6 +5,37 @@ import '../NewReferral/newreferralscreen.dart';
 import '../../../controllers/Professional/add_referral_controller.dart';
 import '../../../utils/format_utils.dart';
 
+Widget _statChip(String label, int count, Color color) {
+  return Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '$count',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class Referral01Screen extends StatelessWidget {
   const Referral01Screen({super.key});
 
@@ -62,6 +93,17 @@ class Referral01Screen extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
 
+                final total = controller.referrals.length;
+                final pending = controller.referrals
+                    .where((r) => r.referralStatus.toLowerCase() == 'pending')
+                    .length;
+                final accepted = controller.referrals
+                    .where((r) => r.referralStatus.toLowerCase() == 'accepted')
+                    .length;
+                final rejected = controller.referrals
+                    .where((r) => r.referralStatus.toLowerCase() == 'rejected')
+                    .length;
+
                 return RefreshIndicator(
                   onRefresh: () => controller.getReferrals(),
                   child: SingleChildScrollView(
@@ -70,7 +112,20 @@ class Referral01Screen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
+                        // Stats row
+                        Row(
+                          children: [
+                            _statChip('Total', total, const Color(0xFF6366F1)),
+                            const SizedBox(width: 8),
+                            _statChip('Pending', pending, const Color(0xFFF2C94C)),
+                            const SizedBox(width: 8),
+                            _statChip('Accepted', accepted, const Color(0xFF27AE60)),
+                            const SizedBox(width: 8),
+                            _statChip('Rejected', rejected, const Color(0xFFF36969)),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
                         // Recent Referrals Header
                         Text(
                           'Recent Referrals',

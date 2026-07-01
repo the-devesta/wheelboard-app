@@ -15,8 +15,6 @@ import '../../auth/onboarding_screen.dart';
 import '../EditYourProfile01/EditYourProfile01Screen.dart';
 import '../CompleteProfile/professional_complete_profile_screen.dart';
 import '../KYC/kyc_screen.dart';
-import '../AddReferral/AddReferralScreen.dart';
-import '../MyRewards/MyRewardsScreen.dart';
 import '../../shared/subscription_screen.dart';
 import '../../shared/wallet_screen.dart';
 import '../../shared/issues/issues_screen.dart';
@@ -955,24 +953,6 @@ class YourProfileScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            _actionTile(
-              Iconsax.people,
-              'Invite & Earn',
-              const Color(0xFF22C55E),
-              const Color(0xFFF0FDF4),
-              () {
-                Get.to(() => AddReferralScreen());
-              },
-            ),
-            const SizedBox(width: 10),
-            _actionTile(
-              Iconsax.gift,
-              'Rewards',
-              const Color(0xFF8B5CF6),
-              const Color(0xFFF5F3FF),
-              () => Get.to(() => const MyRewardsScreen()),
-            ),
-            const SizedBox(width: 10),
             _actionTile(
               Iconsax.call,
               'Contact Us',

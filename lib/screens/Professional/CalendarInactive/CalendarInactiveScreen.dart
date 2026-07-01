@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../widgets/calendar_header_widget.dart';
 import '../widgets/calendar_widget.dart';
 import '../../../controllers/Professional/calendar_controller.dart';
+import '../../../widgets/custom_snackbar.dart';
 import '../../../widgets/custom_loader.dart';
 
 class CalendarInactiveScreen extends StatefulWidget {
@@ -516,27 +517,18 @@ class _CalendarInactiveScreenState extends State<CalendarInactiveScreen> {
                                                 if (_eventNameController.text
                                                     .trim()
                                                     .isEmpty) {
-                                                  Get.snackbar(
-                                                    "Error",
-                                                    "Please enter event name",
-                                                  );
+                                                  SnackBarHelper.error("Please enter event name");
                                                   return;
                                                 }
 
                                                 if (_selectedStartTime ==
                                                     null) {
-                                                  Get.snackbar(
-                                                    "Error",
-                                                    "Please select start time",
-                                                  );
+                                                  SnackBarHelper.error("Please select start time");
                                                   return;
                                                 }
 
                                                 if (_selectedEndTime == null) {
-                                                  Get.snackbar(
-                                                    "Error",
-                                                    "Please select end time",
-                                                  );
+                                                  SnackBarHelper.error("Please select end time");
                                                   return;
                                                 }
 

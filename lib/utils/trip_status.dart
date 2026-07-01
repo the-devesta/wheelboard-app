@@ -95,8 +95,9 @@ class TripStatusMapper {
       case 'in-progress':
       case 'arrived':
       case 'awaiting-pod':
-      case 'pod-collected':
         return TripBucket.inProcess;
+      case 'pod-collected':
+      case 'pod-verified':
       case 'completed':
       case 'cancelled':
         return TripBucket.completed;
@@ -111,7 +112,7 @@ class TripStatusMapper {
   /// improvement that does not affect any business rule or state transition.
   static int progressOf(String backendStatus) {
     final s = backendStatus.toLowerCase().trim();
-    if (s == 'completed') return 100;
+    if (s == 'completed' || s == 'pod-collected' || s == 'pod-verified') return 100;
     if (s == 'cancelled') return 0;
     const map = <String, int>{
       'draft': 0,
@@ -119,12 +120,11 @@ class TripStatusMapper {
       'awaiting-lr-confirmation': 20,
       'pending-lr-confirmation': 20,
       'lr-confirmed': 30,
-      'en-route-to-pickup': 40, // not in web map (web → 0); filled for UX
-      'arrived-at-pickup': 45, // not in web map (web → 0); filled for UX
+      'en-route-to-pickup': 40,
+      'arrived-at-pickup': 45,
       'in-progress': 50,
       'arrived': 80,
       'awaiting-pod': 85,
-      'pod-collected': 95,
     };
     return map[s] ?? 0;
   }

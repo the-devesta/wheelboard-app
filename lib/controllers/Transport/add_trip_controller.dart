@@ -9,6 +9,7 @@ import '../../utils/navigation_helper.dart';
 import '../../models/add_new_trip_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../utils/app_logger.dart';
+import 'dashboard_controller.dart';
 
 /// Canonical trip-status bucketing — an EXACT mirror of the web company Trips
 /// page `mapTripStatus` (wheelboard-fe/src/app/company/trips/page.tsx). Keeping
@@ -172,6 +173,9 @@ class TripController extends GetxController {
       AppLogger.d("✅ Trip created successfully");
       SnackBarHelper.success("Trip added successfully!");
 
+      // Keep the dashboard's Upcoming Trips / Active Trips in sync immediately.
+      DashboardController.refreshIfActive();
+
       Future.delayed(const Duration(milliseconds: 500), () {
         NavigationHelper.navigateToMainWrapper();
       });
@@ -261,6 +265,7 @@ class TripController extends GetxController {
       // Refresh the list so the trips screen reflects the changes
       // (fetchTrips authenticates via token; userId is only for logging).
       await fetchTrips(trip.userId);
+      DashboardController.refreshIfActive();
 
       Get.back(result: true);
     } on dio.DioException catch (e) {
@@ -371,6 +376,7 @@ class TripController extends GetxController {
       );
 
       await fetchTrips(userId);
+      DashboardController.refreshIfActive();
       return null;
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 404) {
@@ -398,6 +404,7 @@ class TripController extends GetxController {
 
       SnackBarHelper.success('Trip completed successfully!');
       await fetchTrips(userId);
+      DashboardController.refreshIfActive();
       return true;
     } on dio.DioException catch (e) {
       final msg = e.error is ApiException

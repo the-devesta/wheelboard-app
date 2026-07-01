@@ -6,6 +6,7 @@ import '../../models/job_application_model.dart';
 import '../../models/applied_user_profile_model.dart';
 import '../../widgets/custom_loader.dart';
 import '../../widgets/ui/app_ui.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class JobApplicationsScreen extends StatefulWidget {
   final String? jobId; // Optional jobId if navigating from a specific job
@@ -420,11 +421,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
     if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      Get.snackbar(
-        'Document',
-        'Cannot open this document',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackBarHelper.warning('Cannot open this document');
     }
   }
 
@@ -768,24 +765,14 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       }
     }
     if (phone.isEmpty) {
-      Get.snackbar(
-        'Contact',
-        'No contact number available',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackBarHelper.warning('No contact number available');
       return;
     }
     final uri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      Get.snackbar(
-        'Error',
-        'Cannot make phone call',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      SnackBarHelper.error('Cannot make phone call');
     }
   }
 }

@@ -141,9 +141,13 @@ class ApiClient {
     final response = await _dio.request<T>(
       path,
       data: formData,
+      // Use the FormData's own boundary. Setting a bare 'multipart/form-data'
+      // (no boundary) made the server unable to parse the parts, so uploads
+      // arrived empty and `/media` rejected them ("No media provided") — the
+      // root cause of "Could not upload the photo".
       options: Options(
         method: method,
-        headers: {'Content-Type': 'multipart/form-data'},
+        contentType: 'multipart/form-data; boundary=${formData.boundary}',
       ),
       onSendProgress: onSendProgress,
     );

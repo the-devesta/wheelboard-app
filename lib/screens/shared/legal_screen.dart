@@ -340,20 +340,14 @@ class ContactSupportScreen extends StatelessWidget {
           _supportTile(
             icon: Icons.phone_outlined,
             title: 'Call',
-            subtitle: '020-6732049',
-            onTap: () => _launch('tel:0206732049'),
+            subtitle: '+91 7420861942',
+            onTap: () => _launch('tel:917420861942'),
           ),
           _supportTile(
             icon: Icons.chat_outlined,
             title: 'WhatsApp',
             subtitle: '+91 7420861942',
             onTap: () => _launch('https://wa.me/917420861942'),
-          ),
-          _supportTile(
-            icon: Icons.location_on_outlined,
-            title: 'Address',
-            subtitle: LegalContact.address,
-            onTap: null,
           ),
         ],
       ),

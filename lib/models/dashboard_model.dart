@@ -163,11 +163,8 @@ class DashboardModel {
 
     return DashboardModel(
       tripSummary: TripSummary(
-        // "Active Trips" card → the active count (was wrongly the total-trips
-        // count). Falls back to the total when the backend omits activeTrips.
-        totalTrips: (activeTrips['value'] as num?)?.toInt() ??
-            (totalTrips['value'] as num?)?.toInt() ??
-            0,
+        totalTrips: (totalTrips['value'] as num?)?.toInt() ?? 0,
+        activeTrips: (activeTrips['value'] as num?)?.toInt() ?? 0,
         scheduledToday: (activeTrips['scheduledToday'] as num?)?.toInt() ?? 0,
       ),
       activeVehicles: ActiveVehicles(
@@ -222,7 +219,19 @@ class DashboardModel {
           amount: (m['amount'] as num?)?.toDouble(),
         );
       }).toList(),
-      assignedServices: const [],
+      // Service bookings this company placed that are still active. Now provided
+      // by /dashboard/stats (`assignedServices`); was previously hardcoded empty,
+      // so the dashboard's "Assigned Services" section never populated.
+      assignedServices:
+          ((json['assignedServices'] as List<dynamic>?) ?? const []).map((e) {
+        final m = e as Map<String, dynamic>;
+        return AssignedService(
+          serviceId: m['serviceId']?.toString(),
+          serviceTitle: m['serviceTitle'] as String?,
+          category: m['category'] as String?,
+          dateModified: m['dateModified'] as String?,
+        );
+      }).toList(),
       upcomingTrips:
           ((json['upcomingTrips'] as List<dynamic>?) ?? const []).map((e) {
         final m = e as Map<String, dynamic>;
@@ -242,13 +251,19 @@ class DashboardModel {
 
 class TripSummary {
   final int totalTrips;
+  final int activeTrips;
   final int scheduledToday;
 
-  TripSummary({required this.totalTrips, required this.scheduledToday});
+  TripSummary({
+    required this.totalTrips,
+    this.activeTrips = 0,
+    required this.scheduledToday,
+  });
 
   factory TripSummary.fromJson(Map<String, dynamic> json) {
     return TripSummary(
       totalTrips: json['totalTrips'] as int? ?? 0,
+      activeTrips: json['activeTrips'] as int? ?? 0,
       scheduledToday: json['scheduledToday'] as int? ?? 0,
     );
   }

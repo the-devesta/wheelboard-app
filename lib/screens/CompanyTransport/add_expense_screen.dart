@@ -190,6 +190,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       tripId: _tripIdOf(_selectedTrip),
       receipt: receiptUrl,
       paymentMethod: 'cash',
+      status: 'paid',
     );
 
     if (ok && mounted) Navigator.pop(context, true);

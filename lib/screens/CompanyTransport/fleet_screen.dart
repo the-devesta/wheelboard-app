@@ -701,11 +701,21 @@ class _VehicleModalState extends State<_VehicleModal> {
     }
     setState(() => _verifying = true);
     final data = await widget.ctrl.verifyVehicleRegistration(_regCtrl.text.trim());
+    if (!mounted) return;
     setState(() => _verifying = false);
+    // On failure the controller already surfaces the backend reason.
     if (data != null) {
-      _modelCtrl.text = data['model']?.toString() ?? _modelCtrl.text;
-      _yearCtrl.text = data['year']?.toString() ?? _yearCtrl.text;
-      SnackBarHelper.success('Vehicle details loaded');
+      final model = (data['model'] ?? data['manufacturer'])?.toString();
+      if (model != null && model.trim().isNotEmpty) _modelCtrl.text = model.trim();
+      final year = data['year']?.toString();
+      if (year != null && year.isNotEmpty && year != 'null') {
+        _yearCtrl.text = year;
+      }
+      // Reflect the official RC registration number (uppercased / spaces removed).
+      final reg = data['registrationNumber']?.toString();
+      if (reg != null && reg.trim().isNotEmpty) _regCtrl.text = reg.trim();
+      setState(() {});
+      SnackBarHelper.success('Vehicle verified ✓ details auto-filled');
     }
   }
 
@@ -845,6 +855,7 @@ class _DriverModalState extends State<_DriverModal> {
   String _status = 'Available';
   File? _image;
   bool _saving = false;
+  bool _verifying = false;
 
   static const _statusOptions = ['Available', 'On Trip', 'Off Duty'];
 
@@ -876,6 +887,32 @@ class _DriverModalState extends State<_DriverModal> {
     _locationCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
+  }
+
+  /// DL verification via Invincible Ocean (mirrors web DriverFormModal). Needs
+  /// the licence number AND the date of birth; the DOB is sent as DD/MM/YYYY,
+  /// which is what the external API expects. On success, auto-fills the name.
+  Future<void> _verify() async {
+    if (_licenseCtrl.text.trim().isEmpty || _dob == null) {
+      SnackBarHelper.warning('Enter licence number and date of birth first');
+      return;
+    }
+    final dob =
+        '${_dob!.day.toString().padLeft(2, '0')}/${_dob!.month.toString().padLeft(2, '0')}/${_dob!.year}';
+    setState(() => _verifying = true);
+    final data =
+        await widget.ctrl.verifyDriverLicense(_licenseCtrl.text.trim(), dob);
+    if (!mounted) return;
+    setState(() => _verifying = false);
+    // On failure the controller already surfaces the backend reason.
+    if (data != null) {
+      final name = data['name']?.toString();
+      if (name != null && name.trim().isNotEmpty) _nameCtrl.text = name.trim();
+      final lic = data['licenseNumber']?.toString();
+      if (lic != null && lic.trim().isNotEmpty) _licenseCtrl.text = lic.trim();
+      setState(() {});
+      SnackBarHelper.success('Licence verified ✓ details auto-filled');
+    }
   }
 
   Future<void> _pickImage() async {
@@ -949,7 +986,44 @@ class _DriverModalState extends State<_DriverModal> {
         children: [
           _ModalField('Full Name', _nameCtrl, hint: 'e.g. Rajesh Kumar', required: true),
           const SizedBox(height: 12),
-          _ModalField('License Number', _licenseCtrl, hint: 'DL1234567890', required: true),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: _ModalField('License Number', _licenseCtrl,
+                    hint: 'DL1234567890', required: true),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _verifying ? null : _verify,
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _verifying ? _border : _primaryLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                  ),
+                  child: _verifying
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: _primary))
+                      : const Text('Verify',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: _primary,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins')),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text('Set date of birth below, then tap Verify to fetch licence details.',
+              style: TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
           const SizedBox(height: 12),
           _ModalField('Phone Number', _phoneCtrl, hint: '+91 9876543210',
               keyboard: TextInputType.phone),

@@ -287,10 +287,7 @@ class _BidSubmissionScreenState extends State<BidSubmissionScreen> {
                                 amountController.text.trim(),
                               );
                               if (amount == null || amount <= 0) {
-                                Get.snackbar(
-                                  "Error",
-                                  "Please enter a valid bid amount",
-                                );
+                                SnackBarHelper.error("Please enter a valid bid amount");
                                 return;
                               }
 

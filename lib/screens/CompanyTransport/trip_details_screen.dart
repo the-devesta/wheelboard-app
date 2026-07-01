@@ -4,6 +4,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../models/add_new_trip_model.dart';
 import 'edit_trip_screen.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_endpoints.dart';
 import '../../controllers/Transport/add_trip_controller.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -241,6 +243,11 @@ class TripDetailsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // Trip Metrics (distance + efficiency) — mirrors wheelboard-fe
+              // TripDetailsModal.
+              _TripMetricsSection(trip: trip),
               const SizedBox(height: 32),
 
               // Action Buttons
@@ -446,5 +453,171 @@ class TripDetailsScreen extends StatelessWidget {
 ''';
 
     Share.share(shareText.trim());
+  }
+}
+
+/// Trip metrics — Estimated Distance + (for completed trips) Trip Efficiency
+/// (₹/km), fetched from GET /expenses/trip/:id/summary. 1:1 with the web
+/// `TripDetailsModal` which reads `getTripExpensesSummary().efficiency`.
+class _TripMetricsSection extends StatefulWidget {
+  final Trip trip;
+  const _TripMetricsSection({required this.trip});
+
+  @override
+  State<_TripMetricsSection> createState() => _TripMetricsSectionState();
+}
+
+class _TripMetricsSectionState extends State<_TripMetricsSection> {
+  bool _loading = true;
+  double? _efficiency;
+  double? _distanceKm;
+
+  bool get _completed => widget.trip.tripStatus.toLowerCase() == 'completed';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSummary();
+  }
+
+  Future<void> _fetchSummary() async {
+    final id =
+        widget.trip.id.isNotEmpty ? widget.trip.id : widget.trip.tripId;
+    if (id.isEmpty) {
+      setState(() => _loading = false);
+      return;
+    }
+    try {
+      final raw = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.expenses.tripSummary(id),
+      );
+      final body = raw is Map<String, dynamic> ? (raw['data'] ?? raw) : raw;
+      if (body is Map<String, dynamic>) {
+        _efficiency = (body['efficiency'] as num?)?.toDouble();
+        _distanceKm = (body['tripDistanceKm'] as num?)?.toDouble();
+      }
+    } catch (_) {
+      // Metrics are non-critical; leave them empty on failure.
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String get _distanceText {
+    final d = widget.trip.distance ?? '';
+    if (d.trim().isNotEmpty) return d;
+    if (_distanceKm != null && _distanceKm! > 0) {
+      return '${_distanceKm!.toStringAsFixed(2)} km';
+    }
+    return _loading ? 'Calculating…' : 'Not available';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _metricCard(
+            icon: Iconsax.routing,
+            iconColor: const Color(0xFF7C3AED),
+            title: 'Estimated Distance',
+            value: _distanceText,
+            bgColor: const Color(0xFFF5F3FF),
+          ),
+          if (_completed) ...[
+            const SizedBox(height: 12),
+            _efficiencyCard(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _efficiencyCard() {
+    final String value = _loading
+        ? 'Calculating…'
+        : (_efficiency != null ? '₹$_efficiency / km' : 'Not enough data yet');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Iconsax.trend_up, size: 16, color: Color(0xFF16A34A)),
+            const SizedBox(width: 6),
+            Text('Trip Efficiency',
+                style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF15803D))),
+          ]),
+          const SizedBox(height: 6),
+          Text(value,
+              style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF166534))),
+          const SizedBox(height: 2),
+          Text('Based on covered km and expenses on trip',
+              style: GoogleFonts.poppins(
+                  fontSize: 11, color: const Color(0xFF16A34A))),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+    required Color bgColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: 6),
+            Text(title,
+                style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor.withValues(alpha: 0.8))),
+          ]),
+          const SizedBox(height: 6),
+          Text(value,
+              style: GoogleFonts.poppins(
+                  fontSize: 14, color: const Color(0xFF374151))),
+        ],
+      ),
+    );
   }
 }

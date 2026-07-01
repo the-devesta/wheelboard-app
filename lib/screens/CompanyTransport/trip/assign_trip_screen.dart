@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../../controllers/Transport/assign_trip_controller.dart';
+import '../../../controllers/Transport/dashboard_controller.dart';
 import '../../../controllers/Transport/user_profile_controller.dart';
 import '../../../models/trip_bid_model.dart';
 import '../../../services/razorpay_service.dart';
@@ -401,6 +402,7 @@ class _AssignTripScreenState extends State<AssignTripScreen> {
       ).timeout(const Duration(seconds: 20));
 
       SnackBarHelper.success('Payment successful! Trip assigned.');
+      DashboardController.refreshIfActive();
 
       if (mounted) {
         Get.off(() => TripAssignmentSuccessScreen(

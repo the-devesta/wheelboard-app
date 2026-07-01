@@ -141,13 +141,24 @@ class _CompanyBookingDetailScreenState
               style: const TextStyle(color: Colors.white70, fontSize: 13)),
         const SizedBox(height: 14),
         Row(children: [
-          const Icon(Icons.currency_rupee, color: Colors.white, size: 18),
-          Text(b.amount.toStringAsFixed(0),
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'Poppins')),
+          // The amount is only meaningful once the provider sets it on
+          // completion. Until then show "Amount on completion" instead of a
+          // misleading ₹0.
+          if (b.amount > 0) ...[
+            const Icon(Icons.currency_rupee, color: Colors.white, size: 18),
+            Text(b.amount.toStringAsFixed(0),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Poppins')),
+          ] else
+            const Text('Amount on completion',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Poppins')),
           const SizedBox(width: 8),
           if (b.bookingNo != null && b.bookingNo!.isNotEmpty)
             Text('#${b.bookingNo}',
@@ -159,11 +170,21 @@ class _CompanyBookingDetailScreenState
 
   // ── status timeline ─────────────────────────────────────────────────────────
   Widget _timelineCard(ServiceBookingModel b) {
-    const steps = ['Pending', 'Assigned', 'Started', 'Completed'];
-    final cancelled = b.status.toLowerCase() == 'cancelled';
-    var idx = steps.indexWhere((s) => s.toLowerCase() == b.status.toLowerCase());
-    if (b.status.toLowerCase() == 'completed') idx = steps.length - 1;
+    final statusL = b.status.toLowerCase();
+    final cancelled = statusL == 'cancelled';
+
+    // Bookings are created as 'Assigned' and move Assigned → Started →
+    // Completed. ('Pending' was a phantom leading step that always showed as
+    // done, making an assigned booking look half-finished.)
+    const steps = ['Assigned', 'Started', 'Completed'];
+    var idx = steps.indexWhere((s) => s.toLowerCase() == statusL);
+    if (statusL == 'completed' || b.fullyCompleted) idx = steps.length - 1;
     if (idx < 0) idx = 0;
+
+    final paid = b.isPaid;
+    final paymentPending = !paid &&
+        ['pending', 'confirmationpending']
+            .contains(b.paymentStatus.toLowerCase());
 
     return _card(
       title: 'Progress',
@@ -177,41 +198,76 @@ class _CompanyBookingDetailScreenState
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Poppins')),
             ])
-          : Row(
-              children: [
-                for (var i = 0; i < steps.length; i++) ...[
-                  Column(mainAxisSize: MainAxisSize.min, children: [
-                    Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: i <= idx ? const Color(0xFF22C55E) : _border,
-                        shape: BoxShape.circle,
+          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(
+                children: [
+                  for (var i = 0; i < steps.length; i++) ...[
+                    Column(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: i <= idx ? const Color(0xFF22C55E) : _border,
+                          shape: BoxShape.circle,
+                        ),
+                        child: i <= idx
+                            ? const Icon(Icons.check,
+                                size: 11, color: Colors.white)
+                            : null,
                       ),
-                      child: i <= idx
-                          ? const Icon(Icons.check, size: 11, color: Colors.white)
-                          : null,
-                    ),
-                    const SizedBox(height: 5),
-                    Text(steps[i],
-                        style: TextStyle(
-                            fontSize: 10,
-                            color: i <= idx ? _textDark : _textGrey,
-                            fontWeight:
-                                i == idx ? FontWeight.w700 : FontWeight.w400,
-                            fontFamily: 'Poppins')),
-                  ]),
-                  if (i < steps.length - 1)
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        color: i < idx ? const Color(0xFF22C55E) : _border,
+                      const SizedBox(height: 5),
+                      Text(steps[i],
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: i <= idx ? _textDark : _textGrey,
+                              fontWeight:
+                                  i == idx ? FontWeight.w700 : FontWeight.w400,
+                              fontFamily: 'Poppins')),
+                    ]),
+                    if (i < steps.length - 1)
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          color: i < idx ? const Color(0xFF22C55E) : _border,
+                        ),
                       ),
-                    ),
+                  ],
                 ],
+              ),
+              // Payment / completion badges (mirrors the web booking detail), so
+              // the progress reflects the real state — e.g. a booking that is
+              // still 'Assigned' but has already been paid no longer looks like
+              // nothing has happened.
+              if (b.fullyCompleted || paid || paymentPending) ...[
+                const SizedBox(height: 14),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  if (b.fullyCompleted)
+                    _progressChip('Fully Completed', const Color(0xFF16A34A),
+                        const Color(0xFFDCFCE7)),
+                  if (paid)
+                    _progressChip('Payment Completed', const Color(0xFF16A34A),
+                        const Color(0xFFDCFCE7))
+                  else if (paymentPending)
+                    _progressChip('Payment Pending', const Color(0xFFB45309),
+                        const Color(0xFFFEF3C7)),
+                ]),
               ],
-            ),
+            ]),
+    );
+  }
+
+  Widget _progressChip(String label, Color fg, Color bg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Text(label,
+          style: TextStyle(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              fontFamily: 'Poppins')),
     );
   }
 
@@ -256,19 +312,43 @@ class _CompanyBookingDetailScreenState
 
   // ── action bar ──────────────────────────────────────────────────────────────
   Widget _actionBar(ServiceBookingModel b) {
-    final canPay = b.isOnline &&
+    final statusL = b.status.toLowerCase();
+    final payL = b.paymentStatus.toLowerCase();
+
+    // Payment is only DUE once the provider has completed the service and set a
+    // payable amount (the backend marks `businessCompletionConfirmed` and writes
+    // the final amount during completion). Before that the amount is ₹0 / not
+    // finalised, so the old "Pay Now ₹0" button was wrong. Show payment ONLY
+    // when it is genuinely due: online, unpaid, provider-completed, amount > 0.
+    final paymentDue = b.isOnline &&
         !b.isPaid &&
-        b.status.toLowerCase() != 'cancelled';
-    final canConfirm =
-        b.businessCompletionConfirmed && !b.companyCompletionConfirmed;
-    final canCancel = ['pending', 'assigned'].contains(b.status.toLowerCase());
+        statusL != 'cancelled' &&
+        b.businessCompletionConfirmed &&
+        b.amount > 0;
+
+    // Confirm only after payment is settled (online) or for cash — never show
+    // Confirm and Pay at the same time.
+    final canConfirm = b.businessCompletionConfirmed &&
+        !b.companyCompletionConfirmed &&
+        !paymentDue;
+
+    // A booking can be cancelled ONLY while it is still early-stage. Once it is
+    // paid, completed, or the provider has finished the work, cancellation is
+    // not allowed (this is why a paid/completed booking must not show Cancel).
+    final locked = b.isPaid ||
+        b.fullyCompleted ||
+        b.businessCompletionConfirmed ||
+        ['completed', 'cancelled', 'started', 'inprogress'].contains(statusL) ||
+        ['completed', 'paid', 'confirmationpending', 'refunded'].contains(payL);
+    final canCancel =
+        ['pending', 'assigned'].contains(statusL) && !locked;
 
     final buttons = <Widget>[];
     if (canConfirm) {
       buttons.add(_primaryBtn('Confirm Completion',
           () => _ctrl.confirmCompletion(b.assignmentId)));
     }
-    if (canPay) {
+    if (paymentDue) {
       buttons.add(_primaryBtn('Pay Now ₹${b.amount.toStringAsFixed(0)}',
           () => _ctrl.payBooking(b)));
     }

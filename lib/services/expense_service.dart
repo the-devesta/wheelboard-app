@@ -27,6 +27,26 @@ class ExpenseService {
     }
   }
 
+  /// PATCH /expenses/:id  — update an expense's status (mirrors web
+  /// `expensesApi.updateExpense`). Used to mark an expense as Paid.
+  Future<bool> updateStatus(String id, String status) async {
+    if (id.isEmpty) return false;
+    try {
+      await ApiClient.instance.patch<dynamic>(
+        ApiEndpoints.expenses.update(id),
+        data: {'status': status},
+      );
+      final label = status.isEmpty
+          ? status
+          : '${status[0].toUpperCase()}${status.substring(1)}';
+      SnackBarHelper.success('Status updated to $label');
+      return true;
+    } on DioException catch (e) {
+      SnackBarHelper.error(_msg(e, 'Failed to update status'));
+      return false;
+    }
+  }
+
   /// DELETE /expenses/:id  (mirrors web `expensesApi.deleteExpense`).
   Future<bool> deleteExpense(String id) async {
     if (id.isEmpty) return false;

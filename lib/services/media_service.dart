@@ -41,6 +41,28 @@ class MediaService {
     return results.isNotEmpty ? results.first : null;
   }
 
+  /// Maps a file name's extension to the right multipart content-type so the
+  /// backend stores the correct type (images as image/*, receipts as PDF).
+  static dio.DioMediaType _mediaTypeFor(String name) {
+    final ext = name.contains('.') ? name.split('.').last.toLowerCase() : 'jpg';
+    switch (ext) {
+      case 'png':
+        return dio.DioMediaType('image', 'png');
+      case 'webp':
+        return dio.DioMediaType('image', 'webp');
+      case 'gif':
+        return dio.DioMediaType('image', 'gif');
+      case 'heic':
+        return dio.DioMediaType('image', 'heic');
+      case 'pdf':
+        return dio.DioMediaType('application', 'pdf');
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return dio.DioMediaType('image', 'jpeg');
+    }
+  }
+
   /// Upload one or more files in a single request.
   static Future<List<MediaRef>> uploadMany(
     List<File> files, {
@@ -50,9 +72,19 @@ class MediaService {
     try {
       final formData = dio.FormData();
       for (final file in files) {
+        final name = file.uri.pathSegments.isNotEmpty
+            ? file.uri.pathSegments.last
+            : 'upload.jpg';
         formData.files.add(MapEntry(
           'files',
-          await dio.MultipartFile.fromFile(file.path),
+          // Send an explicit filename + content-type so the part matches what
+          // the web sends (a real File). Without these, the part defaults to
+          // application/octet-stream which the storage upload can reject.
+          await dio.MultipartFile.fromFile(
+            file.path,
+            filename: name,
+            contentType: _mediaTypeFor(name),
+          ),
         ));
       }
       if (folder != null && folder.isNotEmpty) {

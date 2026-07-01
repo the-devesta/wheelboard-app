@@ -11,6 +11,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../controllers/Professional/trip_navigation_controller.dart';
+import '../../../services/firebase_storage_service.dart';
 import '../../../theme/design_system.dart';
 import '../../../widgets/custom_snackbar.dart';
 import 'TripCompletedScreen.dart';
@@ -127,30 +128,22 @@ class _PodCollectionScreenState extends State<PodCollectionScreen> {
     _startProgressAnimation();
 
     try {
-      // Build multipart form data (Dio's FormData, not get's)
-      final formData = dio.FormData();
+      // Upload photos directly to Firebase Storage from the app.
+      // This bypasses backend Firebase credentials (FIREBASE_SERVICE_ACCOUNT_JSON)
+      // which may not be configured on the production server.
+      final photoUrls = await FirebaseStorageService.uploadPodPhotos(
+        _photos,
+        widget.tripId,
+      );
 
-      for (final photo in _photos) {
-        final filename = photo.path.split(Platform.pathSeparator).last;
-        formData.files.add(MapEntry(
-          'photos',
-          await dio.MultipartFile.fromFile(photo.path, filename: filename),
-        ));
-      }
-
-      formData.fields
-        ..add(MapEntry('recipientName', _recipientNameController.text.trim()))
-        ..add(MapEntry('recipientPhone', _recipientPhoneController.text.trim()));
-
-      if (_deliveryNotesController.text.trim().isNotEmpty) {
-        formData.fields.add(
-            MapEntry('deliveryNotes', _deliveryNotesController.text.trim()));
-      }
-
-      // POST /trips/:tripId/pod  (mirrors the web navigate page)
+      // POST JSON body with pre-uploaded photo URLs.
       await ApiClient.instance.post(
-        ApiEndpoints.trips.podUpload(widget.tripId),
-        data: formData,
+        ApiEndpoints.trips.podCollectUrls(widget.tripId),
+        data: {
+          'recipientName': _recipientNameController.text.trim(),
+          'recipientPhone': _recipientPhoneController.text.trim(),
+          'photoUrls': photoUrls,
+        },
       );
 
       // Mark step as completed in navigation controller

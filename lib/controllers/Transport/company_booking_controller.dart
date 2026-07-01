@@ -11,6 +11,7 @@ import '../../models/service_model.dart';
 import '../../services/razorpay_service.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
+import 'dashboard_controller.dart';
 import 'user_profile_controller.dart';
 
 /// Company (consumer) side of the service-booking flow — 1:1 with the web
@@ -156,6 +157,7 @@ class CompanyBookingController extends GetxController {
       final id = (map is Map ? (map['id'] ?? map['_id']) : null)?.toString();
       SnackBarHelper.success('Service booked successfully!');
       await fetchMyBookings();
+      DashboardController.refreshIfActive();
       return id;
     } on DioException catch (e) {
       SnackBarHelper.error(_msg(e, fallback: 'Failed to book service'));
@@ -251,6 +253,7 @@ class CompanyBookingController extends GetxController {
       );
       SnackBarHelper.success('Payment successful!');
       await fetchMyBookings();
+      DashboardController.refreshIfActive();
       if (selected.value?.assignmentId == id) await getBookingById(id);
     } on DioException catch (e) {
       SnackBarHelper.error(_msg(e, fallback: 'Payment verification failed'));
@@ -302,6 +305,7 @@ class CompanyBookingController extends GetxController {
       await ApiClient.instance.patch<dynamic>(path, data: body);
       SnackBarHelper.success(successMsg);
       await fetchMyBookings();
+      DashboardController.refreshIfActive();
       final id = selected.value?.assignmentId;
       if (id != null && id.isNotEmpty) await getBookingById(id);
       return true;

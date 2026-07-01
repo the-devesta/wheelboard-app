@@ -7,7 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/service_provider/sp_register_controller.dart';
-import '../../services/media_service.dart';
+//import '../../services/profile_service.dart';
+import '../../services/firebase_storage_service.dart';
 import '../../controllers/Transport/user_profile_controller.dart';
 import '../../core/auth/auth_service.dart';
 import '../../models/user_profile_model.dart';
@@ -1241,11 +1242,9 @@ class ServiceProviderProfileScreen extends StatelessWidget {
         SnackBarHelper.error('Image size should be less than 5MB');
         return;
       }
-      // Upload via the unified /media endpoint; send the hosted URL.
-      final media = await MediaService.upload(file, folder: 'profile-images');
-      final photoUrl = media?.url ?? '';
+      final photoUrl = await FirebaseStorageService.uploadProfileImage(file);
       if (photoUrl.isEmpty) {
-        SnackBarHelper.error('Failed to upload photo. Please try again.');
+        SnackBarHelper.error('Could not upload the selected photo. Please try again.');
         return;
       }
 

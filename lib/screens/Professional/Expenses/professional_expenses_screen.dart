@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../controllers/Transport/dashboard_controller.dart';
 import '../../../models/expense_model.dart';
 import '../../../services/expense_service.dart';
 import '../../../theme/design_system.dart';
@@ -86,6 +87,14 @@ class _ProfessionalExpensesScreenState
     _fetch();
   }
 
+  /// Confirms + performs the delete. Returns whether the backend delete
+  /// succeeded so the [Dismissible] only animates the row out on success
+  /// (the actual list/stat/dashboard refresh happens in `onDismissed`).
+  ///
+  /// IMPORTANT: this must NOT mutate `_expenses` itself — doing so while also
+  /// returning `true` to `confirmDismiss` removes the row twice and trips
+  /// Flutter's "A dismissed Dismissible widget is still part of the tree"
+  /// assertion, which is what made delete appear to "do nothing".
   Future<bool> _confirmDelete(Expense e) async {
     final ok = await Get.dialog<bool>(AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -107,11 +116,46 @@ class _ProfessionalExpensesScreenState
       ],
     ));
     if (ok != true) return false;
-    final success = await _service.deleteExpense(e.id);
+    return _service.deleteExpense(e.id);
+  }
+
+  /// Called once the row has actually been dismissed (delete confirmed by the
+  /// backend). Drops it from the in-memory list — which instantly updates the
+  /// totals, category breakdown and chart, all derived from `_expenses` — and
+  /// pushes the company dashboard totals back in sync.
+  void _onDeleted(Expense e) {
+    setState(() => _expenses.removeWhere((x) => x.id == e.id));
+    DashboardController.refreshIfActive();
+  }
+
+  /// Mark an expense as Paid (PATCH /expenses/:id). Refreshes the list so the
+  /// new status — and the Pending total — update immediately.
+  Future<void> _markPaid(Expense e) async {
+    final ok = await Get.dialog<bool>(AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('Mark as paid?', style: AppText.title),
+      content: Text(
+        'Update "${e.description.isNotEmpty ? e.description : ExpenseCategoryConfig.of(e.category).label}" to Paid.',
+        style: AppText.body.on(AppPalette.textGrey),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Get.back(result: false),
+            child:
+                Text('Cancel', style: AppText.label.on(AppPalette.textGrey))),
+        ElevatedButton(
+          onPressed: () => Get.back(result: true),
+          style: ElevatedButton.styleFrom(backgroundColor: AppPalette.green),
+          child: const Text('Mark Paid', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ));
+    if (ok != true) return;
+    final success = await _service.updateStatus(e.id, 'paid');
     if (success) {
-      setState(() => _expenses.removeWhere((x) => x.id == e.id));
+      _fetch();
+      DashboardController.refreshIfActive();
     }
-    return success;
   }
 
   @override
@@ -251,6 +295,8 @@ class _ProfessionalExpensesScreenState
       ..sort((a, b) => b.value.compareTo(a.value));
     if (entries.isEmpty) return const SizedBox.shrink();
     final maxVal = entries.first.value;
+    // Denominator for each category's contribution = total of all categories.
+    final grandTotal = entries.fold<double>(0, (sum, e) => sum + e.value);
 
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -271,6 +317,11 @@ class _ProfessionalExpensesScreenState
                 Expanded(child: Text(cfg.label, style: AppText.label)),
                 Text('₹${_fmt(e.value)}',
                     style: AppText.label.on(AppPalette.textDark).weight(FontWeight.w700)),
+                const SizedBox(width: 8),
+                Text(
+                  '${grandTotal == 0 ? '0' : (e.value / grandTotal * 100).toStringAsFixed(1)}%',
+                  style: AppText.micro.on(cfg.color).weight(FontWeight.w600),
+                ),
               ]),
               const SizedBox(height: 6),
               ClipRRect(
@@ -356,6 +407,7 @@ class _ProfessionalExpensesScreenState
         key: ValueKey('exp-${e.id}'),
         direction: DismissDirection.endToStart,
         confirmDismiss: (_) => _confirmDelete(e),
+        onDismissed: (_) => _onDeleted(e),
         background: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
@@ -365,7 +417,8 @@ class _ProfessionalExpensesScreenState
         ),
         child: AppCard(
         padding: const EdgeInsets.all(12),
-        child: Row(children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
           Container(
             width: 42,
             height: 42,
@@ -410,6 +463,27 @@ class _ProfessionalExpensesScreenState
           AppSpacing.hGapSm,
           Text('₹${_fmt(e.amount)}',
               style: AppText.subtitle.on(AppPalette.primary)),
+          ]),
+          // Explicit, always-visible action to settle a pending expense.
+          if (e.status != 'paid') ...[
+            AppSpacing.vGapSm,
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: () => _markPaid(e),
+                icon: const Icon(Iconsax.tick_circle, size: 15),
+                label: const Text('Mark Paid'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppPalette.green,
+                  side: BorderSide(
+                      color: AppPalette.green.withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.rMd),
+                ),
+              ),
+            ),
+          ],
         ]),
         ),
       ),

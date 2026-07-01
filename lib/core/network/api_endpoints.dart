@@ -202,7 +202,7 @@ class _FleetEndpoints {
   // DELETE /fleet/vehicles/:id
   String deleteVehicle(String id) => '/fleet/vehicles/$id';
 
-  // GET    /fleet/vehicles/verify/registration?number=...
+  // GET    /fleet/vehicles/verify/registration?registrationNumber=...
   String get verifyVehicleRegistration => '/fleet/vehicles/verify/registration';
 
   // ── Drivers ───────────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ class _FleetEndpoints {
   // DELETE /fleet/drivers/:id
   String deleteDriver(String id) => '/fleet/drivers/$id';
 
-  // GET    /fleet/drivers/verify/license?number=...&dob=...
+  // GET    /fleet/drivers/verify/license?licenseNumber=...&dateOfBirth=DD/MM/YYYY
   String get verifyDriverLicense => '/fleet/drivers/verify/license';
 
   // GET    /fleet/summary
@@ -305,6 +305,9 @@ class _TripEndpoints {
   // ── POD (Proof of Delivery) ───────────────────────────────────────────
   // POST   /trips/:tripId/pod/collect  — driver collects POD (multipart)
   String podCollect(String tripId) => '/trips/$tripId/pod/collect';
+
+  // POST   /trips/:tripId/pod/collect-urls  — collect POD with pre-uploaded photo URLs (JSON)
+  String podCollectUrls(String tripId) => '/trips/$tripId/pod/collect-urls';
 
   // POST   /trips/:tripId/pod  — professional uploads POD
   String podUpload(String tripId) => '/trips/$tripId/pod';

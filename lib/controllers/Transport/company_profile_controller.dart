@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart' as dio;
 import '../../core/network/api_exception.dart';
 import '../../services/profile_service.dart';
-import '../../services/media_service.dart';
+import '../../services/firebase_storage_service.dart';
 import '../../models/user_profile_model.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'user_profile_controller.dart';
@@ -86,11 +86,15 @@ class CompanyProfileController extends GetxController {
     }
   }
 
-  Future<void> pickLogo() async {
+  Future<void> pickLogo({ImageSource source = ImageSource.gallery}) async {
     final ImagePicker picker = ImagePicker();
+    // Compress on pick (quality + max dimension) so the base64 payload stays
+    // small — the same trade-off the web makes before uploading.
     final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
+      source: source,
+      imageQuality: 70,
+      maxWidth: 1024,
+      maxHeight: 1024,
     );
     if (image != null) {
       _pickedLogo.value = image;
@@ -132,23 +136,17 @@ class CompanyProfileController extends GetxController {
       final description = descriptionController.text.trim();
       final website = websiteController.text.trim();
 
-      String? logoUrl;
+      String? imageBase64;
       final lf = logoFile;
       if (lf != null) {
-        // Upload via the unified /media endpoint; send the hosted URL.
-        // Isolate this step so a photo/storage failure gives a clear, specific
-        // message (instead of a generic "Failed to update profile") and never
-        // silently saves the profile without the photo the user just picked.
         try {
-          final media = await MediaService.upload(lf, folder: 'profile-images');
-          logoUrl = media?.url;
+          imageBase64 = await FirebaseStorageService.uploadProfileImage(lf);
         } catch (e) {
           AppLogger.e('❌ Profile photo upload failed: $e');
-          logoUrl = null;
         }
-        if (logoUrl == null || logoUrl.isEmpty) {
+        if (imageBase64 == null || imageBase64.isEmpty) {
           SnackBarHelper.error(
-            'Could not upload the photo. Please check your connection and try again.',
+            'Could not upload the selected photo. Please try again.',
           );
           isSaving.value = false;
           return;
@@ -170,7 +168,7 @@ class CompanyProfileController extends GetxController {
           'description': description,
           'website': website,
         },
-        profileImageBase64: logoUrl,
+        profileImageBase64: imageBase64,
         email: email,
       );
 

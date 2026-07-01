@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../controllers/Transport/company_profile_controller.dart';
 import '../../utils/app_logger.dart';
@@ -154,6 +155,49 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
 
   // ── Logo picker ───────────────────────────────────────────────────────────
 
+  void _showLogoSourceSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: _border, borderRadius: BorderRadius.circular(2)),
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.camera, color: _primary),
+              title: const Text('Take a photo',
+                  style: TextStyle(fontFamily: 'Poppins')),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _ctrl.pickLogo(source: ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.gallery, color: _primary),
+              title: const Text('Choose from gallery',
+                  style: TextStyle(fontFamily: 'Poppins')),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _ctrl.pickLogo(source: ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLogoPicker() {
     return Obx(() {
       ImageProvider? img;
@@ -168,7 +212,7 @@ class _EditCompanyProfileScreenState extends State<EditCompanyProfileScreen> {
           alignment: Alignment.bottomRight,
           children: [
             GestureDetector(
-              onTap: _ctrl.pickLogo,
+              onTap: _showLogoSourceSheet,
               child: Container(
                 width: 100,
                 height: 100,

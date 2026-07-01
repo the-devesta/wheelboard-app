@@ -7,6 +7,7 @@ import '../../../utils/constants.dart';
 import '../../../utils/call_utils.dart';
 import '../../../widgets/custom_loader.dart';
 import '../trip/assign_trip_screen.dart';
+import '../../../widgets/custom_snackbar.dart';
 
 class ViewDriverScreen extends StatefulWidget {
   final String driverId;
@@ -58,13 +59,7 @@ class _ViewDriverScreenState extends State<ViewDriverScreen> {
         await launchUrl(emailUri);
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to open email client.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      SnackBarHelper.error('Failed to open email client.');
     }
   }
 

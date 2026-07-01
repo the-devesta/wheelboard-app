@@ -148,8 +148,6 @@ class _LeadsScreenState extends State<LeadsScreen> {
   }
 
   Widget _statsStrip() {
-    String money(double v) =>
-        v >= 1000 ? '₹${(v / 1000).toStringAsFixed(1)}k' : '₹${v.toStringAsFixed(0)}';
     return SizedBox(
       height: 104,
       child: ListView(
@@ -159,9 +157,6 @@ class _LeadsScreenState extends State<LeadsScreen> {
           AppSpacing.hGapMd,
           _stat('Conv. Rate', '${_stats.conversionRate.toStringAsFixed(0)}%',
               Iconsax.chart_2, AppPalette.green),
-          AppSpacing.hGapMd,
-          _stat('Total Value', money(_stats.totalValue), Iconsax.money_recive,
-              AppPalette.purple),
           AppSpacing.hGapMd,
           _stat('Converted', '${_stats.converted}', Iconsax.tick_circle,
               AppPalette.primary),

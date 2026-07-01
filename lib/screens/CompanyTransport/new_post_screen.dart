@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../controllers/Transport/post_controller.dart';
 import 'package:wheelboard/core/auth/auth_service.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class NetworkPostScreen extends StatefulWidget {
   const NetworkPostScreen({super.key});
@@ -259,19 +260,11 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
                           ? null
                           : () async {
                               if (_contentController.text.trim().isEmpty) {
-                                Get.snackbar(
-                                  "Error",
-                                  "Please enter post content",
-                                  snackPosition: SnackPosition.BOTTOM,
-                                );
+                                SnackBarHelper.error("Please enter post content");
                                 return;
                               }
                               if (_selectedCategory == null) {
-                                Get.snackbar(
-                                  "Error",
-                                  "Please select a category",
-                                  snackPosition: SnackPosition.BOTTOM,
-                                );
+                                SnackBarHelper.error("Please select a category");
                                 return;
                               }
 
@@ -371,7 +364,7 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
         });
       }
     } catch (e) {
-      Get.snackbar("Error", "Failed to pick images: $e");
+      SnackBarHelper.error("Failed to pick images: $e");
     }
   }
 
@@ -400,7 +393,7 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
                     });
                   }
                 } catch (e) {
-                  Get.snackbar("Error", "Failed to take photo: $e");
+                  SnackBarHelper.error("Failed to take photo: $e");
                 }
               },
             ),

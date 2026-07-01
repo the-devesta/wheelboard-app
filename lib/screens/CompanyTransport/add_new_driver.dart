@@ -9,6 +9,7 @@ import '../../controllers/Transport/fleet_controller.dart';
 import '../../models/add_drivermodel.dart';
 import '../../utils/session_manager.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/custom_snackbar.dart';
 
 class AddNewDriverScreen extends StatefulWidget {
   final DriverModel? driverData; // ✅ For edit mode
@@ -142,20 +143,20 @@ class _AddVehicleScreenState extends State<AddNewDriverScreen> {
     final userId = await sessionManager.getString("userId");
 
     if (token == null || token.isEmpty) {
-      Get.snackbar("Error", "Authentication token not found. Please log in.");
+      SnackBarHelper.error("Authentication token not found. Please log in.");
       return;
     }
 
     if (userId == null || userId.isEmpty) {
-      Get.snackbar("Error", "UserId not found. Please log in again.");
+      SnackBarHelper.error("UserId not found. Please log in again.");
       return;
     }
     if (dobController.text.isEmpty) {
-      Get.snackbar("Error", "Please select dob");
+      SnackBarHelper.error("Please select dob");
       return;
     }
     if (licenseNumberController.text.isEmpty) {
-      Get.snackbar("Error", "Please enter license no.");
+      SnackBarHelper.error("Please enter license no.");
       return;
     }
 

@@ -512,32 +512,76 @@ class DriverController extends GetxController {
     }
   }
 
+  /// RC verification via the Invincible Ocean integration (mirrors web
+  /// `fleetAPI.verifyVehicleRegistration`). GET /fleet/vehicles/verify/registration.
+  ///
+  /// The query param MUST be `registrationNumber` — the backend reads
+  /// `@Query('registrationNumber')`. The old code sent `number`, so the backend
+  /// received `undefined` and verification silently failed ("RC verification not
+  /// working"). Surfaces the real backend message on failure.
   Future<Map<String, dynamic>?> verifyVehicleRegistration(
       String regNumber) async {
     try {
-      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+      final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.verifyVehicleRegistration,
-        queryParameters: {'number': regNumber},
+        queryParameters: {'registrationNumber': regNumber},
       );
-      return data;
+      final body = data is Map<String, dynamic>
+          ? (data['data'] is Map<String, dynamic>
+              ? data['data'] as Map<String, dynamic>
+              : data)
+          : null;
+      return body;
+    } on dio.DioException catch (e) {
+      AppLogger.e('❌ verifyVehicleRegistration: $e');
+      SnackBarHelper.error(_verifyError(e, 'Could not verify this RC number'));
+      return null;
     } catch (e) {
       AppLogger.e('❌ verifyVehicleRegistration: $e');
+      SnackBarHelper.error('Could not verify this RC number');
       return null;
     }
   }
 
+  /// DL verification via the Invincible Ocean integration (mirrors web
+  /// `fleetAPI.verifyDriverLicense`). GET /fleet/drivers/verify/license.
+  ///
+  /// Backend reads `@Query('licenseNumber')` + `@Query('dateOfBirth')` (DOB in
+  /// DD/MM/YYYY). The old code sent `number`/`dob` → backend got undefined.
   Future<Map<String, dynamic>?> verifyDriverLicense(
       String licenseNumber, String dob) async {
     try {
-      final data = await ApiClient.instance.get<Map<String, dynamic>>(
+      final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.verifyDriverLicense,
-        queryParameters: {'number': licenseNumber, 'dob': dob},
+        queryParameters: {
+          'licenseNumber': licenseNumber,
+          'dateOfBirth': dob,
+        },
       );
-      return data;
+      final body = data is Map<String, dynamic>
+          ? (data['data'] is Map<String, dynamic>
+              ? data['data'] as Map<String, dynamic>
+              : data)
+          : null;
+      return body;
+    } on dio.DioException catch (e) {
+      AppLogger.e('❌ verifyDriverLicense: $e');
+      SnackBarHelper.error(_verifyError(e, 'Could not verify this licence'));
+      return null;
     } catch (e) {
       AppLogger.e('❌ verifyDriverLicense: $e');
+      SnackBarHelper.error('Could not verify this licence');
       return null;
     }
+  }
+
+  String _verifyError(dio.DioException e, String fallback) {
+    final data = e.response?.data;
+    if (data is Map && data['message'] != null) {
+      final m = data['message'];
+      return m is List ? m.join(', ') : m.toString();
+    }
+    return fallback;
   }
 
   // ── Filtered views ─────────────────────────────────────────────────────────

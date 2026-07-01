@@ -85,7 +85,7 @@ class NewReferralController extends GetxController {
         "email": emailController.text.trim().isEmpty
             ? ""
             : emailController.text.trim(),
-        "role": selectedRole.toString(),
+        "role": selectedRole.value ?? '',
         "location": locationController.text.trim().isEmpty
             ? ""
             : locationController.text.trim(),

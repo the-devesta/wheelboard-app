@@ -12,6 +12,7 @@ import '../TripProgress/TripProgressScreen.dart';
 import '../../../widgets/custom_loader.dart';
 import '../../../utils/format_utils.dart';
 import '../../../utils/call_utils.dart';
+import '../../../utils/trip_status.dart';
 
 // ── Design tokens (match Home & Fleet exactly) ────────────────────────────────
 const _primary   = Color(0xFFF36969);
@@ -327,14 +328,8 @@ class _TripDashboardScreenState extends State<TripDashboardScreen>
 
   // Web-parity completed check for the professional side (mapBackendStatus):
   // a trip counts as Completed when it is finished OR cancelled.
-  bool _isCompletedProfStatus(String raw) {
-    final s = raw.toLowerCase().trim();
-    return s == 'completed' ||
-        s == 'cancelled' ||
-        s == 'done' ||
-        s == 'finished' ||
-        s.contains('complete');
-  }
+  bool _isCompletedProfStatus(String raw) =>
+      TripStatusMapper.bucketOf(raw) == TripBucket.completed;
 
   // ── completed trips section ───────────────────────────────────────────────
   Widget _buildCompletedSection() {

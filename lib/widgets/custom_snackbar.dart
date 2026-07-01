@@ -18,39 +18,50 @@ class SnackBarHelper {
     Duration? duration,
   }) {
     void present() {
-      // Get.snackbar can throw asynchronously when GetX holds a stale overlay
-      // context during route transitions. ScaffoldMessenger is quieter here.
+      // IMPORTANT: use ScaffoldMessenger ONLY — never `Get.snackbar`.
+      //
+      // GetX's `Get.snackbar` registers a snackbar in GetX's own queue. Once one
+      // is open, the very next `Get.back()` (e.g. dismissing a confirm dialog)
+      // calls `closeCurrentSnackbar()`, which crashes with
+      // `LateInitializationError: Field '_controller' has not been initialized`
+      // when the snackbar is still mid-init. That made Mark-Paid / Delete / any
+      // confirm dialog throw. ScaffoldMessenger snackbars are independent of
+      // GetX navigation, so `Get.back()` can never trip over them.
       final context = Get.context ?? Get.key.currentContext;
       if (context == null) return;
 
-      final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-      scaffoldMessenger?.showSnackBar(
-        SnackBar(
-          content: Text('$title: $message'),
-          backgroundColor: backgroundColor,
-          duration: duration ?? const Duration(seconds: 3),
-        ),
-      );
-      // Overlay must exist before GetX can mount the snackbar.
-      if (Get.overlayContext == null) return;
-      // Guard against rare overlay races (e.g. a snackbar firing while a route
-      // is being replaced) — a transient UI failure must never crash the app.
-      try {
-        Get.snackbar(
-          title,
-          message,
-          backgroundColor: backgroundColor,
-          colorText: Colors.white,
-          icon: Icon(icon, color: Colors.white),
-          duration: duration ?? const Duration(seconds: 3),
-          snackPosition: SnackPosition.TOP,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-          isDismissible: true,
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger == null) return;
+
+      messenger
+        ..clearSnackBars() // don't stack toasts
+        ..showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(icon, color: Colors.white, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: backgroundColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: duration ?? const Duration(seconds: 3),
+          ),
         );
-      } catch (_) {
-        // Overlay not mountable right now — drop the toast rather than throw.
-      }
     }
 
     // If we're mid-build/transition, wait for the frame to settle.

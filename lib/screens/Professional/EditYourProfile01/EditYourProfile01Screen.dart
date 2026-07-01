@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../controllers/Transport/user_profile_controller.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../services/profile_service.dart';
-import '../../../services/media_service.dart';
+import '../../../services/firebase_storage_service.dart';
 import '../../../theme/design_system.dart';
 import '../../../widgets/custom_snackbar.dart';
 
@@ -137,9 +137,9 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
   File? get _imageFile =>
       _pickedImage != null && !kIsWeb ? File(_pickedImage!.path) : null;
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage([ImageSource source = ImageSource.gallery]) async {
     final image = await _picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 80,
       maxWidth: 800,
     );
@@ -148,6 +148,41 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
         _pickedImage = image;
       });
     }
+  }
+
+  void _showPhotoSourceSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppPalette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Iconsax.camera, color: AppPalette.primary),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.gallery, color: AppPalette.primary),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -160,12 +195,15 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
 
     setState(() => _isSaving = true);
     try {
-      // Upload a newly-picked image via /media; send the hosted URL (web parity).
-      String? imageUrl;
+      String? imageBase64;
       final file = _imageFile;
       if (file != null) {
-        final media = await MediaService.upload(file, folder: 'profile-images');
-        imageUrl = media?.url;
+        imageBase64 = await FirebaseStorageService.uploadProfileImage(file);
+        if (imageBase64.isEmpty) {
+          SnackBarHelper.error('Could not upload the selected photo. Please try again.');
+          setState(() => _isSaving = false);
+          return;
+        }
       }
 
       final experience = int.tryParse(_experienceCtrl.text.trim());
@@ -193,7 +231,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
 
       await _profileService.updateProfile(
         profile: profile,
-        profileImageBase64: imageUrl,
+        profileImageBase64: imageBase64,
         email: _emailCtrl.text.trim().isNotEmpty ? _emailCtrl.text.trim() : null,
       );
 
@@ -305,7 +343,7 @@ class _EditYourProfile01ScreenState extends State<EditYourProfile01Screen> {
         _existingImageUrl != null && _existingImageUrl!.isNotEmpty;
     return Center(
       child: GestureDetector(
-        onTap: _pickImage,
+        onTap: _showPhotoSourceSheet,
         child: Stack(alignment: Alignment.bottomRight, children: [
           Container(
             width: 104,
