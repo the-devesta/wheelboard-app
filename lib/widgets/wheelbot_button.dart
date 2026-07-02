@@ -71,45 +71,6 @@ const _generalActions = [
   WheelbotAction(label: 'Restart Menu', action: 'restart', icon: '🔄'),
 ];
 
-const _actionResponses = <String, String>{
-  'company':
-      'Welcome, transporter! Wheelboard helps fleet owners and transport companies structure operations, coordinate drivers, improve visibility, and move toward safer, data-driven fleet management. What would you like to explore first?',
-  'professional':
-      'Welcome, professional! Wheelboard helps drivers and mechanics complete verification, access trusted opportunities, improve earnings, and grow with modern transport technology. What do you want help with?',
-  'service_provider':
-      'Welcome to the Wheelboard network! Let us accelerate your market access and boost daily revenue by connecting your garage, workshop, tyre shop, or dealership with verified transport customers.',
-  'learn_contact':
-      'Wheelboard Solutions is revolutionizing transport with sustainable practices, safer operations, and a collaborative digital network for fleet owners, professionals, and service providers. You can reach us at hello@wheelboard.in or visit www.wheelboard.in.',
-  'fleet_operations':
-      'For transport companies, Wheelboard supports structured fleet operations: vehicle visibility, driver coordination, trip workflows, KYC trust, and smarter decisions from one digital platform.',
-  'driver_network':
-      'Wheelboard helps companies work with verified drivers and professionals so hiring, assignment, and operational coordination become more transparent and reliable.',
-  'digital_backbone':
-      'Our vision is to become the digital backbone of transport: safer operations, efficient workflows, transparent collaboration, and growth opportunities for every stakeholder.',
-  'verified_jobs':
-      'Verified professionals can use Wheelboard to access trusted work opportunities after completing profile and KYC steps. The goal is safer jobs, clearer information, and better earning potential.',
-  'better_earnings':
-      'Wheelboard focuses on helping professionals improve earnings through verified opportunities, organized trip flows, transparent operations, and stronger visibility with transport companies.',
-  'skill_growth':
-      'Wheelboard supports professional growth by helping drivers and mechanics adapt to latest transport technology, digital workflows, safety practices, and a more organized ecosystem.',
-  'verified_leads':
-      'Say goodbye to waiting for customers. Wheelboard sends high-value, verified job leads directly to your dashboard so your service business can respond faster and grow revenue.',
-  'service_radius':
-      'Service providers can define the area they serve so relevant transport customers can discover them for garage, workshop, tyre, dealer, and repair needs.',
-  'grow_revenue':
-      'Wheelboard helps service providers grow through better discovery, verified leads, market access, and repeat business from the transport ecosystem.',
-  'how_it_works':
-      'How Wheelboard works:\n\n1. Register as a transport company, professional, or service provider.\n2. Complete profile and KYC verification.\n3. Access your role-based dashboard.\n4. Get verified jobs, leads, or fleet tools for better growth.\n5. Enhance skills and operations with latest transport technology.',
-  'subscription_plans':
-      'Subscription and signup plans are role-based. Choose your profile type, complete onboarding/KYC, and Wheelboard will show the relevant plan or access path for your account.',
-  'visit_website':
-      'Use the official Wheelboard website: www.wheelboard.in. App and web access updates should always come from wheelboard.in.',
-  'contact_support':
-      'I can help route you to support. Email hello@wheelboard.in or visit www.wheelboard.in, and the Wheelboard team can follow up with the right next step.',
-  'restart':
-      'Let us start fresh. Are you a transport company, a service provider, or a professional driver/mechanic?',
-};
-
 class WheelbotFloatingButton extends StatelessWidget {
   final String roleContext;
   final double bottom;
@@ -259,9 +220,8 @@ class _WheelbotSheetState extends State<WheelbotSheet> {
     _scrollToEnd();
   }
 
-  void _handleAction(WheelbotAction action) {
-    final response = _actionResponses[action.action];
-    if (response == null || _loading) return;
+  Future<void> _handleAction(WheelbotAction action) async {
+    if (_loading) return;
 
     final nextContext = _contextForAction(action.action, _context);
     setState(() {
@@ -273,14 +233,26 @@ class _WheelbotSheetState extends State<WheelbotSheet> {
         ),
       );
       _context = nextContext;
+      _loading = true;
+    });
+    _scrollToEnd();
+
+    final reply = await _service.send(messages: _messages);
+    if (!mounted) return;
+
+    setState(() {
       _messages.add(
         WheelbotMessage(
           role: 'assistant',
-          content: response,
+          content: reply.success
+              ? (reply.message ??
+                    'I am here to help. What would you like to do next?')
+              : (reply.error ?? 'WheelBot could not respond right now.'),
           timestamp: DateTime.now(),
           buttons: _buttonsForAction(action.action),
         ),
       );
+      _loading = false;
     });
     _scrollToEnd();
   }
@@ -312,50 +284,48 @@ class _WheelbotSheetState extends State<WheelbotSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboard = MediaQuery.of(context).viewInsets.bottom;
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: keyboard),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.86,
-        minChildSize: 0.52,
-        maxChildSize: 0.94,
-        builder: (context, sheetController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: AppPalette.bg,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    // Get.bottomSheet() already wraps its content in
+    // Padding(bottom: viewInsets.bottom) at the route level (see
+    // GetModalBottomSheetRoute.buildPage in the `get` package), so the
+    // keyboard is already accounted for by the time this builds. Requesting
+    // a fixed height here and letting Flutter's constraint clamping shrink it
+    // when space is limited avoids double-compensating for the keyboard,
+    // which was the cause of the leftover gap.
+    final sheetHeight = MediaQuery.of(context).size.height * 0.86;
+    return SizedBox(
+      height: sheetHeight,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppPalette.bg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            _Header(onClear: _clear),
+            Expanded(
+              child: ListView.builder(
+                controller: _scroll,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                itemCount: _messages.length + (_loading ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (_loading && index == _messages.length) {
+                    return const _TypingBubble();
+                  }
+                  final message = _messages[index];
+                  return _MessageBubble(
+                    message: message,
+                    onAction: _handleAction,
+                  );
+                },
+              ),
             ),
-            child: Column(
-              children: [
-                _Header(onClear: _clear),
-                Expanded(
-                  child: ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                    itemCount: _messages.length + (_loading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (_loading && index == _messages.length) {
-                        return const _TypingBubble();
-                      }
-                      final message = _messages[index];
-                      return _MessageBubble(
-                        message: message,
-                        onAction: _handleAction,
-                      );
-                    },
-                  ),
-                ),
-                _Composer(
-                  controller: _input,
-                  loading: _loading,
-                  onSend: _sendText,
-                ),
-              ],
+            _Composer(
+              controller: _input,
+              loading: _loading,
+              onSend: _sendText,
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
