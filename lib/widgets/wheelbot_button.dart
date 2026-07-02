@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/wheelbot_message.dart';
 import '../services/wheelbot_service.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text.dart';
+
+const _playStoreUrl =
+    'https://play.google.com/store/apps/details?id=com.wheelboard.app&pcampaignid=web_share';
 
 const _welcome =
     'Welcome to Wheelboard Solutions! We are building a transport ecosystem grounded in empowerment, driven by efficiency, and united by shared success. How would you like to use Wheelboard today?';
@@ -63,6 +67,7 @@ const _generalActions = [
     icon: '💳',
   ),
   WheelbotAction(label: 'wheelboard.in', action: 'visit_website', icon: '🌐'),
+  WheelbotAction(label: 'Download App', action: 'download_app', icon: '📱'),
   WheelbotAction(
     label: 'Contact Support',
     action: 'contact_support',
@@ -81,7 +86,7 @@ const _actionResponses = <String, String>{
   'learn_contact':
       'Wheelboard Solutions is revolutionizing transport with sustainable practices, safer operations, and a collaborative digital network for fleet owners, professionals, and service providers. You can reach us at hello@wheelboard.in or visit www.wheelboard.in.',
   'fleet_operations':
-      'For transport companies, Wheelboard supports structured fleet operations: vehicle visibility, driver coordination, trip workflows, KYC trust, and smarter decisions from one digital platform.',
+      'For transport companies, Wheelboard is designed to support structured fleet operations: vehicle visibility, driver coordination, trip workflows, KYC trust, and smarter operational decisions from one digital platform.',
   'driver_network':
       'Wheelboard helps companies work with verified drivers and professionals so hiring, assignment, and operational coordination become more transparent and reliable.',
   'digital_backbone':
@@ -101,11 +106,13 @@ const _actionResponses = <String, String>{
   'how_it_works':
       'How Wheelboard works:\n\n1. Register as a transport company, professional, or service provider.\n2. Complete profile and KYC verification.\n3. Access your role-based dashboard.\n4. Get verified jobs, leads, or fleet tools for better growth.\n5. Enhance skills and operations with latest transport technology.',
   'subscription_plans':
-      'Subscription and signup plans are role-based. Choose your profile type, complete onboarding/KYC, and Wheelboard will show the relevant plan or access path for your account.',
+      'Subscription and signup plans are role-based. Start by choosing your profile type, complete onboarding/KYC, and Wheelboard will show the relevant plan or access path for your transport, professional, or service-provider account.',
   'visit_website':
-      'Use the official Wheelboard website: www.wheelboard.in. App and web access updates should always come from wheelboard.in.',
+      'Opening the official Wheelboard website: www.wheelboard.in. App and web access updates should always come from wheelboard.in, not wheelboard.com.',
+  'download_app':
+      'Opening the official Wheelboard app on Google Play. Use this link for the current Android app listing.',
   'contact_support':
-      'I can help route you to support. Email hello@wheelboard.in or visit www.wheelboard.in, and the Wheelboard team can follow up with the right next step.',
+      'Opening email support for hello@wheelboard.in. The Wheelboard team can follow up with the right next step.',
   'restart':
       'Let us start fresh. Are you a transport company, a service provider, or a professional driver/mechanic?',
 };
@@ -260,10 +267,11 @@ class _WheelbotSheetState extends State<WheelbotSheet> {
   }
 
   void _handleAction(WheelbotAction action) {
-    final response = _actionResponses[action.action];
+    final response = _responseForAction(action.action, _context);
     if (response == null || _loading) return;
 
-    final nextContext = _contextForAction(action.action, _context);
+    final currentContext = _context;
+    final nextContext = _contextForAction(action.action, currentContext);
     setState(() {
       _messages.add(
         WheelbotMessage(
@@ -283,6 +291,7 @@ class _WheelbotSheetState extends State<WheelbotSheet> {
       );
     });
     _scrollToEnd();
+    _runSideEffect(action.action);
   }
 
   void _clear() {
@@ -308,6 +317,79 @@ class _WheelbotSheetState extends State<WheelbotSheet> {
         curve: Curves.easeOut,
       );
     });
+  }
+
+  String? _responseForAction(String action, String context) {
+    if (action == 'how_it_works') return _howItWorksFor(context);
+    return _actionResponses[action];
+  }
+
+  String _howItWorksFor(String context) {
+    return switch (context) {
+      'company' =>
+        """How Wheelboard works for transport companies:
+
+1. Register your transport company on Wheelboard.
+2. Complete profile and KYC verification.
+3. Access your fleet dashboard.
+4. Manage vehicles, trips, drivers, jobs, and operations from one place.
+5. Improve visibility, coordination, and safer decision-making with modern transport technology.""",
+      'professional' =>
+        """How Wheelboard works for professionals:
+
+1. Register as a driver, mechanic, or transport professional.
+2. Complete your profile and KYC verification.
+3. Access your professional dashboard.
+4. Get verified jobs and better earning opportunities.
+5. Enhance your skills with latest transport technology.""",
+      'serviceProvider' =>
+        """How Wheelboard works for service providers:
+
+1. Register your garage, workshop, tyre shop, dealer, or service business.
+2. Complete profile and KYC verification.
+3. Set your service radius so nearby transport customers can discover you.
+4. Receive verified leads and respond to relevant job opportunities.
+5. Grow revenue through better visibility and trusted market access.""",
+      _ =>
+        """How Wheelboard works:
+
+1. Register as a transport company, professional, or service provider.
+2. Complete profile and KYC verification.
+3. Access your role-based dashboard.
+4. Get verified jobs, verified leads, or fleet tools for better growth.
+5. Enhance skills and operations with latest transport technology.""",
+    };
+  }
+
+  void _runSideEffect(String action) {
+    if (action == 'visit_website') {
+      _launchExternal(Uri.parse('https://www.wheelboard.in'));
+    }
+    if (action == 'download_app') {
+      _launchExternal(Uri.parse(_playStoreUrl));
+    }
+    if (action == 'contact_support') {
+      _launchExternal(
+        Uri(
+          scheme: 'mailto',
+          path: 'hello@wheelboard.in',
+          queryParameters: const {'subject': 'Wheelboard Support'},
+        ),
+      );
+    }
+  }
+
+  Future<void> _launchExternal(Uri uri) async {
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        Get.snackbar('WheelBot', 'Could not open ${uri.toString()}');
+      }
+    } catch (_) {
+      if (mounted) {
+        Get.snackbar('WheelBot', 'Could not open ${uri.toString()}');
+      }
+    }
   }
 
   @override
