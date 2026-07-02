@@ -13,7 +13,12 @@ android {
 
     defaultConfig {
         applicationId = "com.wheelboard.app"
-        minSdk = flutter.minSdkVersion            
+        // Pinned instead of `flutter.minSdkVersion`: that value floats with whichever
+        // Flutter SDK is installed locally (currently 24) and isn't tracked in git, so a
+        // future SDK upgrade could silently raise it and lock out users on devices below
+        // the new floor — triggering "doesn't allow existing users to upgrade" again.
+        // 24 matches the minSdk already used by the accepted production release.
+        minSdk = 24
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -21,6 +21,18 @@
     <!-- 🔔 OPTIONAL (Notifications – Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- The CAMERA/location permissions above make Android implicitly declare the
+         matching hardware as android:required="true", which narrows the Play Store
+         device catalog to only devices with that hardware. Declaring them here as
+         not required keeps the app installable/upgradable on devices without a
+         camera or GPS (e.g. some tablets), preventing silent loss of upgrade
+         eligibility for existing users. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.location" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.network" android:required="false"/>
+
     <application
         android:label="wheelboard"
         android:name="${applicationName}"
