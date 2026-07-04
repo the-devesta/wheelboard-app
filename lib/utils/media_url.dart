@@ -14,6 +14,12 @@ class MediaUrl {
   MediaUrl._();
 
   /// Returns a renderable URL, or '' when there is nothing to show.
+  ///
+  /// Absolute URLs and data URIs are returned AS-IS — exactly like the web
+  /// `resolveMediaUrl`. They must NOT be re-encoded: Firebase Storage download
+  /// URLs already percent-encode the object path (`/o/feed-images%2F<id>.jpg`),
+  /// and running `Uri.encodeFull` over them turned `%2F` into `%252F`, which
+  /// 404s. Only bare relative paths get the API origin prefixed.
   static String resolve(String? value) {
     if (value == null) return '';
     final trimmed = value.trim();
@@ -21,13 +27,19 @@ class MediaUrl {
     if (trimmed.startsWith('http://') ||
         trimmed.startsWith('https://') ||
         trimmed.startsWith('data:')) {
-      return Uri.encodeFull(trimmed);
+      // Self-heal a previously double-encoded Firebase Storage path. A correct
+      // download URL has `%2F`; a legacy over-encoded one has `%252F` (the `%`
+      // got re-encoded to `%25`). No valid URL contains `%252F`, so collapsing
+      // it back is always safe.
+      return trimmed.contains('%252F')
+          ? trimmed.replaceAll('%252F', '%2F')
+          : trimmed;
     }
     if (trimmed.startsWith('//')) return 'https:$trimmed';
     final path = trimmed
         .replaceAll('\\', '/')
         .replaceFirst(RegExp(r'^/+'), '');
-    return Uri.encodeFull('${ApiConstants.origin}/$path');
+    return '${ApiConstants.origin}/$path';
   }
 
   /// Nullable variant for call sites that branch on `null` (e.g. show initials

@@ -10,6 +10,7 @@ import '../../models/get_driver_model.dart';
 import '../../models/get_vehicle_model.dart';
 import '../../widgets/custom_loader.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../widgets/smart_image.dart';
 import 'Lease/lease_listings_screen.dart';
 import 'Lease/incoming_bookings_screen.dart';
 import 'Lease/my_booked_leases_screen.dart';
@@ -337,103 +338,121 @@ class _VehicleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _vehicleStatusColor(vehicle.status);
-    final imgUrl = vehicle.imageUrls.isNotEmpty ? vehicle.imageUrls.first : null;
+    // The stored value may be a hosted URL, a relative path, or a base64
+    // `data:` URI (this app persists vehicle images as base64). SmartImage
+    // renders all three — raw `Image.network` could not render data URIs,
+    // which is why the photo fell through to the placeholder icon.
+    final rawImage = vehicle.imageUrls.isNotEmpty ? vehicle.imageUrls.first : null;
 
-    return GestureDetector(
-      onTap: () => Get.to(() => VehicleDetailScreen(vehicle: vehicle)),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _border),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              // Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: imgUrl != null
-                    ? Image.network(imgUrl, width: 72, height: 72, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _VehiclePlaceholder())
-                    : _VehiclePlaceholder(),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(vehicle.vehicleModel,
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: _textDark,
-                                  fontFamily: 'Poppins'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(vehicle.status.isEmpty ? 'Unknown' : vehicle.status,
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: statusColor,
-                                  fontFamily: 'Poppins')),
-                        ),
-                      ],
+    return Material(
+      color: _card,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Get.to(() => VehicleDetailScreen(vehicle: vehicle)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _border),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 3))],
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Hero image — a real photo when one was uploaded while adding
+                // the vehicle, otherwise a branded placeholder (mirrors the
+                // web fleet list's prominent vehicle photo).
+                ClipRRect(
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+                  child: SizedBox(
+                    width: 104,
+                    child: SmartImage(
+                      source: rawImage,
+                      fit: BoxFit.cover,
+                      placeholder: _VehiclePlaceholder(),
                     ),
-                    const SizedBox(height: 4),
-                    Text(vehicle.vehicleNumber,
-                        style: const TextStyle(
-                            fontSize: 12, color: _textGrey, fontFamily: 'Poppins')),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _tag(vehicle.vehicleType, const Color(0xFF8B5CF6)),
-                        const SizedBox(width: 6),
-                        _tag(vehicle.ownershipType, const Color(0xFF3B82F6)),
-                        if (vehicle.manufacturingYear > 0) ...[
-                          const SizedBox(width: 6),
-                          _tag('${vehicle.manufacturingYear}', const Color(0xFF6B7280)),
-                        ],
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                children: [
-                  _IconBtn(
-                    Iconsax.edit,
-                    const Color(0xFF3B82F6),
-                    () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => _VehicleModal(ctrl: ctrl, vehicle: vehicle),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(vehicle.vehicleModel,
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: _textDark,
+                                      fontFamily: 'Poppins'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(vehicle.status.isEmpty ? 'Unknown' : vehicle.status,
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: statusColor,
+                                      fontFamily: 'Poppins')),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(vehicle.vehicleNumber,
+                            style: const TextStyle(
+                                fontSize: 12, color: _textGrey, fontFamily: 'Poppins')),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6, runSpacing: 6,
+                          children: [
+                            _tag(vehicle.vehicleType, const Color(0xFF8B5CF6)),
+                            _tag(vehicle.ownershipType, const Color(0xFF3B82F6)),
+                            if (vehicle.manufacturingYear > 0)
+                              _tag('${vehicle.manufacturingYear}', const Color(0xFF6B7280)),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  _IconBtn(
-                    Iconsax.trash,
-                    const Color(0xFFEF4444),
-                    () => _confirmDelete(context, 'vehicle', vehicle.vehicleModel,
-                        () => ctrl.deleteVehicle(vehicle.vehicleId)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 10, top: 10, bottom: 10),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _IconBtn(
+                        Iconsax.edit,
+                        const Color(0xFF3B82F6),
+                        () => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => _VehicleModal(ctrl: ctrl, vehicle: vehicle),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _IconBtn(
+                        Iconsax.trash,
+                        const Color(0xFFEF4444),
+                        () => _confirmDelete(context, 'vehicle', vehicle.vehicleModel,
+                            () => ctrl.deleteVehicle(vehicle.vehicleId)),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -522,38 +541,48 @@ class _DriverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imgUrl = driver.driverImagePath.isNotEmpty ? driver.driverImagePath : null;
+    final rawImage = driver.driverImagePath;
+    final statusColor = _statusColor(driver.status);
 
-    return GestureDetector(
-      onTap: () => Get.to(() => DriverProfileScreen(driverId: driver.driverId)),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _border),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              // Avatar
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _primaryLight, width: 2),
+    return Material(
+      color: _card,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Get.to(() => DriverProfileScreen(driverId: driver.driverId)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _border),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 3))],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                // Avatar — a real photo when one was uploaded while adding the
+                // driver, otherwise initials on a branded placeholder. The
+                // colored ring mirrors the web card's status badge color.
+                Container(
+                  width: 76,
+                  height: 76,
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: statusColor.withValues(alpha: 0.55), width: 2.5),
+                  ),
+                  child: ClipOval(
+                    child: SmartImage(
+                      source: rawImage,
+                      width: 70,
+                      height: 70,
+                      fit: BoxFit.cover,
+                      placeholder: _DriverPlaceholder(driver.fullName),
+                    ),
+                  ),
                 ),
-                child: ClipOval(
-                  child: imgUrl != null
-                      ? Image.network(imgUrl, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _DriverPlaceholder(driver.fullName))
-                      : _DriverPlaceholder(driver.fullName),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
+                const SizedBox(width: 12),
+                Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -637,6 +666,7 @@ class _DriverCard extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -661,39 +691,72 @@ class _VehicleModal extends StatefulWidget {
 }
 
 class _VehicleModalState extends State<_VehicleModal> {
+  final _nameCtrl = TextEditingController();
   final _modelCtrl = TextEditingController();
   final _regCtrl = TextEditingController();
   final _yearCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
+  final _capacityCtrl = TextEditingController();
+  final _mileageCtrl = TextEditingController();
+  final _categoryDetailCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  final _avgRunCtrl = TextEditingController(text: '0');
+  final _tripEfficiencyCtrl = TextEditingController(text: '0');
+  final _monthlyUsageCtrl = TextEditingController(text: '0');
   String _ownership = 'Owned';
   String _category = 'Shipment';
+  String _fuelType = 'Diesel';
   bool _saving = false;
   bool _verifying = false;
-  final List<File> _images = [];
+  bool _confirmed = false;
+  File? _image;
+  final Set<String> _lockedFields = {};
+
+  static const _fuelTypes = ['Diesel', 'Petrol', 'Electric', 'CNG'];
+  static const _categories = ['Shipment', 'Construction', 'Mining', 'Others'];
+
+  bool get _isEdit => widget.vehicle != null;
+  bool _isLocked(String key) => !_isEdit && _lockedFields.contains(key);
 
   @override
   void initState() {
     super.initState();
     final v = widget.vehicle;
     if (v != null) {
+      _nameCtrl.text = v.vehicleName.isNotEmpty ? v.vehicleName : v.vehicleModel;
       _modelCtrl.text = v.vehicleModel;
       _regCtrl.text = v.vehicleNumber;
       _yearCtrl.text = v.manufacturingYear > 0 ? '${v.manufacturingYear}' : '';
-      _descCtrl.text = v.description;
+      _locationCtrl.text = v.description;
+      _categoryDetailCtrl.text = v.categoryDetail;
+      _capacityCtrl.text = v.capacity;
+      _mileageCtrl.text = v.mileage;
+      _fuelType = _fuelTypes.contains(v.fuelType) ? v.fuelType : 'Diesel';
+      _avgRunCtrl.text = v.avgRun == 0 ? '0' : v.avgRun.toString();
+      _tripEfficiencyCtrl.text = v.tripEfficiency == 0 ? '0' : v.tripEfficiency.toString();
+      _monthlyUsageCtrl.text = v.monthlyUsage == 0 ? '0' : v.monthlyUsage.toString();
       _ownership = v.ownershipType.isEmpty ? 'Owned' : v.ownershipType;
-      _category = v.vehicleType.isEmpty ? 'Shipment' : v.vehicleType;
+      _category = _categories.contains(v.vehicleType) ? v.vehicleType : 'Shipment';
     }
   }
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _modelCtrl.dispose();
     _regCtrl.dispose();
     _yearCtrl.dispose();
-    _descCtrl.dispose();
+    _capacityCtrl.dispose();
+    _mileageCtrl.dispose();
+    _categoryDetailCtrl.dispose();
+    _locationCtrl.dispose();
+    _avgRunCtrl.dispose();
+    _tripEfficiencyCtrl.dispose();
+    _monthlyUsageCtrl.dispose();
     super.dispose();
   }
 
+  /// RC verification (add mode only) — mirrors web `handleFetchVehicleDetails`:
+  /// auto-fills + locks registrationNumber/model/name/year/fuelType/capacity.
   Future<void> _verify() async {
     if (_regCtrl.text.trim().isEmpty) {
       SnackBarHelper.warning('Enter registration number first');
@@ -705,57 +768,102 @@ class _VehicleModalState extends State<_VehicleModal> {
     setState(() => _verifying = false);
     // On failure the controller already surfaces the backend reason.
     if (data != null) {
+      final locked = <String>{};
+      final reg = data['registrationNumber']?.toString();
+      if (reg != null && reg.trim().isNotEmpty) {
+        _regCtrl.text = reg.trim();
+        locked.add('reg');
+      }
       final model = (data['model'] ?? data['manufacturer'])?.toString();
-      if (model != null && model.trim().isNotEmpty) _modelCtrl.text = model.trim();
+      if (model != null && model.trim().isNotEmpty) {
+        _modelCtrl.text = model.trim();
+        locked.add('model');
+        if (_nameCtrl.text.trim().isEmpty) _nameCtrl.text = model.trim();
+        locked.add('name');
+      }
       final year = data['year']?.toString();
       if (year != null && year.isNotEmpty && year != 'null') {
         _yearCtrl.text = year;
+        locked.add('year');
       }
-      // Reflect the official RC registration number (uppercased / spaces removed).
-      final reg = data['registrationNumber']?.toString();
-      if (reg != null && reg.trim().isNotEmpty) _regCtrl.text = reg.trim();
-      setState(() {});
+      final fuel = data['fuelType']?.toString();
+      if (fuel != null && _fuelTypes.contains(fuel)) {
+        _fuelType = fuel;
+        locked.add('fuelType');
+      }
+      final capacity = data['seatingCapacity']?.toString();
+      if (capacity != null && capacity.isNotEmpty && capacity != 'null') {
+        _capacityCtrl.text = capacity;
+        locked.add('capacity');
+      }
+      setState(() => _lockedFields.addAll(locked));
       SnackBarHelper.success('Vehicle verified ✓ details auto-filled');
     }
   }
 
-  Future<void> _pickImages() async {
+  Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickMultiImage(imageQuality: 75);
-    if (picked.isNotEmpty) {
-      setState(() {
-        _images.addAll(picked.map((x) => File(x.path)));
-      });
-    }
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    if (picked != null) setState(() => _image = File(picked.path));
   }
 
   Future<void> _save() async {
-    if (_modelCtrl.text.trim().isEmpty || _regCtrl.text.trim().isEmpty) {
-      SnackBarHelper.warning('Model and registration are required');
+    if (_nameCtrl.text.trim().isEmpty ||
+        _modelCtrl.text.trim().isEmpty ||
+        _regCtrl.text.trim().isEmpty) {
+      SnackBarHelper.warning('Name, model, and registration are required');
+      return;
+    }
+    if (_category == 'Others' && _categoryDetailCtrl.text.trim().isEmpty) {
+      SnackBarHelper.warning('Please specify the category');
+      return;
+    }
+    if (!_confirmed) {
+      SnackBarHelper.warning('Please confirm the information provided is correct');
       return;
     }
     setState(() => _saving = true);
+    final avgRun = double.tryParse(_avgRunCtrl.text.trim()) ?? 0;
+    final tripEfficiency = double.tryParse(_tripEfficiencyCtrl.text.trim()) ?? 0;
+    final monthlyUsage = double.tryParse(_monthlyUsageCtrl.text.trim()) ?? 0;
     bool ok;
     if (widget.vehicle != null) {
       ok = await widget.ctrl.updateVehicle(
         vehicleId: widget.vehicle!.vehicleId,
+        name: _nameCtrl.text.trim(),
         model: _modelCtrl.text.trim(),
         registrationNumber: _regCtrl.text.trim(),
         year: int.tryParse(_yearCtrl.text) ?? 0,
         ownership: _ownership,
         category: _category,
-        description: _descCtrl.text.trim(),
-        images: _images,
+        categoryDetail: _categoryDetailCtrl.text.trim(),
+        fuelType: _fuelType,
+        capacity: _capacityCtrl.text.trim(),
+        mileage: _mileageCtrl.text.trim(),
+        location: _locationCtrl.text.trim(),
+        avgRun: avgRun,
+        tripEfficiency: tripEfficiency,
+        monthlyUsage: monthlyUsage,
+        statusBadge: widget.vehicle!.status.isNotEmpty ? widget.vehicle!.status : 'Available',
+        image: _image,
       );
     } else {
       ok = await widget.ctrl.createVehicle(
+        name: _nameCtrl.text.trim(),
         model: _modelCtrl.text.trim(),
         registrationNumber: _regCtrl.text.trim(),
         year: int.tryParse(_yearCtrl.text) ?? 0,
         ownership: _ownership,
         category: _category,
-        description: _descCtrl.text.trim(),
-        images: _images,
+        categoryDetail: _categoryDetailCtrl.text.trim(),
+        fuelType: _fuelType,
+        capacity: _capacityCtrl.text.trim(),
+        mileage: _mileageCtrl.text.trim(),
+        location: _locationCtrl.text.trim(),
+        avgRun: avgRun,
+        tripEfficiency: tripEfficiency,
+        monthlyUsage: monthlyUsage,
+        image: _image,
       );
     }
     setState(() => _saving = false);
@@ -769,42 +877,93 @@ class _VehicleModalState extends State<_VehicleModal> {
       title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
       child: Column(
         children: [
-          _ModalField('Model / Name', _modelCtrl, hint: 'e.g. Tata Prima', required: true),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _ModalField('Registration No.', _regCtrl, hint: 'MH01AB1234', required: true)),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _verifying ? null : _verify,
-                child: Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: _verifying ? _border : _primaryLight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: _primary.withValues(alpha: 0.3)),
-                  ),
-                  child: _verifying
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _primary))
-                      : const Text('Verify', style: TextStyle(fontSize: 13, color: _primary, fontWeight: FontWeight.w600, fontFamily: 'Poppins')),
-                ),
+          if (!isEdit)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
-            ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('🚗 Quick Vehicle Verification',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _textDark, fontFamily: 'Poppins')),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(child: _ModalField('Registration No.', _regCtrl, hint: 'MH01AB1234', required: true)),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: (_verifying || _regCtrl.text.trim().isEmpty) ? null : _verify,
+                        child: Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: _verifying ? _border : _primaryLight,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                          ),
+                          child: _verifying
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _primary))
+                              : const Text('Verify', style: TextStyle(fontSize: 13, color: _primary, fontWeight: FontWeight.w600, fontFamily: 'Poppins')),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          else
+            _ModalField('Registration No.', _regCtrl, hint: 'MH01AB1234', required: true),
+          const SizedBox(height: 12),
+          _ModalField('Vehicle Name', _nameCtrl, hint: 'e.g. Tata Ace', required: true, enabled: !_isLocked('name')),
+          const SizedBox(height: 12),
+          _ModalField('Model', _modelCtrl, hint: 'e.g. Tata 407', required: true, enabled: !_isLocked('model')),
+          const SizedBox(height: 12),
+          _ModalField('Year', _yearCtrl, hint: '2022', keyboard: TextInputType.number, enabled: !_isLocked('year')),
+          const SizedBox(height: 12),
+          _ModalDropdown('Fuel Type', _fuelType, _fuelTypes, (v) => setState(() => _fuelType = v!), required: true),
+          const SizedBox(height: 12),
+          _ModalField('Capacity', _capacityCtrl, hint: 'e.g. 5 Tons', enabled: !_isLocked('capacity')),
+          const SizedBox(height: 12),
+          _ModalField('Mileage (km)', _mileageCtrl, hint: 'e.g. 50000'),
+          const SizedBox(height: 12),
+          _ModalDropdown('Category', _category, _categories, (v) => setState(() => _category = v!), required: true),
+          if (_category == 'Others') ...[
+            const SizedBox(height: 12),
+            _ModalField('Specify Category', _categoryDetailCtrl, hint: 'e.g. Refrigerated', required: true),
+          ],
+          const SizedBox(height: 12),
+          _ModalDropdown('Ownership', _ownership, const ['Owned', 'Attached', 'Rented'],
+              (v) => setState(() => _ownership = v!), required: true),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('VEHICLE METRICS',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _textGrey, letterSpacing: 0.6, fontFamily: 'Poppins')),
+                const SizedBox(height: 12),
+                _ModalField('Odometer reading (KM)', _avgRunCtrl, keyboard: TextInputType.number, required: true),
+                const SizedBox(height: 12),
+                _ModalField('Trip Efficiency (Rs/KM)', _tripEfficiencyCtrl, keyboard: TextInputType.number, required: true),
+                const SizedBox(height: 12),
+                _ModalField('Monthly Usage (KM)', _monthlyUsageCtrl, keyboard: TextInputType.number, required: true),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          _ModalField('Year', _yearCtrl, hint: '2022', keyboard: TextInputType.number),
-          const SizedBox(height: 12),
-          _ModalDropdown('Ownership', _ownership, ['Owned', 'Attached', 'Rented'],
-              (v) => setState(() => _ownership = v!)),
-          const SizedBox(height: 12),
-          _ModalDropdown('Category', _category, ['Shipment', 'Construction', 'Mining', 'Others'],
-              (v) => setState(() => _category = v!)),
-          const SizedBox(height: 12),
-          _ModalField('Description', _descCtrl, hint: 'Optional notes', maxLines: 3),
+          _ModalField('Current Location / Description', _locationCtrl, hint: 'Current location or notes', maxLines: 3),
           const SizedBox(height: 12),
           GestureDetector(
-            onTap: _pickImages,
+            onTap: _pickImage,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -815,15 +974,22 @@ class _VehicleModalState extends State<_VehicleModal> {
               ),
               child: Column(
                 children: [
-                  Icon(Iconsax.gallery_add, color: _textGrey, size: 22),
+                  Icon(_image != null ? Iconsax.tick_circle : Iconsax.gallery_add,
+                      color: _image != null ? const Color(0xFF22C55E) : _textGrey, size: 22),
                   const SizedBox(height: 6),
-                  Text(_images.isEmpty ? 'Tap to add images' : '${_images.length} image(s) selected',
-                      style: const TextStyle(fontSize: 12, color: _textGrey, fontFamily: 'Poppins')),
+                  Text(_image == null ? 'Tap to add vehicle image' : 'Image selected',
+                      style: TextStyle(fontSize: 12, color: _image != null ? const Color(0xFF22C55E) : _textGrey, fontFamily: 'Poppins')),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          _ConfirmCheckbox(
+            value: _confirmed,
+            label: 'I confirm that all the information provided above is correct and accurate to the best of my knowledge.',
+            onChanged: (v) => setState(() => _confirmed = v ?? false),
+          ),
+          const SizedBox(height: 16),
           _SaveButton(saving: _saving, onSave: _save),
         ],
       ),
@@ -849,15 +1015,23 @@ class _DriverModalState extends State<_DriverModal> {
   final _emailCtrl = TextEditingController();
   final _expCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
+  final _categoryDetailCtrl = TextEditingController();
   DateTime? _dob;
+  DateTime? _licenseExpiry;
   String _category = 'Shipment';
   String _status = 'Available';
   File? _image;
   bool _saving = false;
   bool _verifying = false;
+  bool _confirmed = false;
+  final Set<String> _lockedFields = {};
 
   static const _statusOptions = ['Available', 'On Trip', 'Off Duty'];
+  static const _categories = ['Shipment', 'Construction', 'Mining', 'Others'];
+
+  bool get _isEdit => widget.driver != null;
+  bool _isLocked(String key) => !_isEdit && _lockedFields.contains(key);
 
   @override
   void initState() {
@@ -868,35 +1042,44 @@ class _DriverModalState extends State<_DriverModal> {
       _licenseCtrl.text = d.dlNo;
       _phoneCtrl.text = d.contactNumber;
       _expCtrl.text = d.experience;
-      _descCtrl.text = d.description;
+      _locationCtrl.text = d.location;
+      _addressCtrl.text = d.address;
+      _categoryDetailCtrl.text = d.vehicleCategoryDetail;
       _dob = d.dateOfBirth;
-      _category = d.vehicleType.isEmpty ? 'Shipment' : d.vehicleType;
+      _licenseExpiry = d.licenseExpiryDate;
+      _category = _categories.contains(d.vehicleType) ? d.vehicleType : 'Shipment';
       // Normalize status to a valid enum value
       final rawStatus = d.status;
       _status = _statusOptions.contains(rawStatus) ? rawStatus : 'Available';
     }
+    // Rebuilds the Verify button's enabled state live as the user types,
+    // mirroring the web form's `disabled={!licenseNumber.trim() || !dob}`.
+    _licenseCtrl.addListener(_onVerifyInputsChanged);
   }
+
+  void _onVerifyInputsChanged() => setState(() {});
 
   @override
   void dispose() {
+    _licenseCtrl.removeListener(_onVerifyInputsChanged);
     _nameCtrl.dispose();
     _licenseCtrl.dispose();
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _expCtrl.dispose();
     _locationCtrl.dispose();
-    _descCtrl.dispose();
+    _addressCtrl.dispose();
+    _categoryDetailCtrl.dispose();
     super.dispose();
   }
 
-  /// DL verification via Invincible Ocean (mirrors web DriverFormModal). Needs
-  /// the licence number AND the date of birth; the DOB is sent as DD/MM/YYYY,
-  /// which is what the external API expects. On success, auto-fills the name.
+  /// DL verification via Invincible Ocean (mirrors web `DriverFormModal`).
+  /// Needs the licence number AND the date of birth — the Verify button below
+  /// is disabled until both are filled, so a tap can never silently no-op.
+  /// On success, auto-fills + locks name/license/DOB/address/location/
+  /// category-detail/license-expiry/photo, exactly like the web form.
   Future<void> _verify() async {
-    if (_licenseCtrl.text.trim().isEmpty || _dob == null) {
-      SnackBarHelper.warning('Enter licence number and date of birth first');
-      return;
-    }
+    if (_licenseCtrl.text.trim().isEmpty || _dob == null) return;
     final dob =
         '${_dob!.day.toString().padLeft(2, '0')}/${_dob!.month.toString().padLeft(2, '0')}/${_dob!.year}';
     setState(() => _verifying = true);
@@ -906,13 +1089,50 @@ class _DriverModalState extends State<_DriverModal> {
     setState(() => _verifying = false);
     // On failure the controller already surfaces the backend reason.
     if (data != null) {
+      final locked = <String>{};
       final name = data['name']?.toString();
-      if (name != null && name.trim().isNotEmpty) _nameCtrl.text = name.trim();
+      if (name != null && name.trim().isNotEmpty) {
+        _nameCtrl.text = name.trim();
+        locked.add('name');
+      }
       final lic = data['licenseNumber']?.toString();
-      if (lic != null && lic.trim().isNotEmpty) _licenseCtrl.text = lic.trim();
-      setState(() {});
+      if (lic != null && lic.trim().isNotEmpty) {
+        _licenseCtrl.text = lic.trim();
+        locked.add('license');
+      }
+      final address = data['address']?.toString();
+      if (address != null && address.trim().isNotEmpty) {
+        _addressCtrl.text = address.trim();
+        locked.add('address');
+      }
+      final state = data['state']?.toString();
+      if (state != null && state.trim().isNotEmpty) {
+        _locationCtrl.text = state.trim();
+        locked.add('location');
+      }
+      final classes = data['vehicleClasses'];
+      if (classes is List && classes.isNotEmpty) {
+        _categoryDetailCtrl.text = classes.join(', ');
+        locked.add('categoryDetail');
+      }
+      final expiry = data['expiryDate']?.toString();
+      if (expiry != null && expiry.trim().isNotEmpty) {
+        _licenseExpiry = _parseDDMMYYYY(expiry.trim());
+        locked.add('licenseExpiry');
+      }
+      setState(() => _lockedFields.addAll(locked));
       SnackBarHelper.success('Licence verified ✓ details auto-filled');
     }
+  }
+
+  DateTime? _parseDDMMYYYY(String value) {
+    final parts = value.split('/');
+    if (parts.length != 3) return DateTime.tryParse(value);
+    final d = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    final y = int.tryParse(parts[2]);
+    if (d == null || m == null || y == null) return null;
+    return DateTime(y, m, d);
   }
 
   Future<void> _pickImage() async {
@@ -935,13 +1155,40 @@ class _DriverModalState extends State<_DriverModal> {
     if (d != null) setState(() => _dob = d);
   }
 
+  Future<void> _pickLicenseExpiry() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _licenseExpiry ?? DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 20)),
+      builder: (c, child) => Theme(
+        data: Theme.of(c).copyWith(colorScheme: const ColorScheme.light(primary: _primary)),
+        child: child!,
+      ),
+    );
+    if (d != null) setState(() => _licenseExpiry = d);
+  }
+
   Future<void> _save() async {
     if (_nameCtrl.text.trim().isEmpty || _licenseCtrl.text.trim().isEmpty || _dob == null) {
       SnackBarHelper.warning('Name, license, and date of birth are required');
       return;
     }
+    if (_licenseExpiry == null) {
+      SnackBarHelper.warning('License expiry date is required');
+      return;
+    }
+    if (_category == 'Others' && _categoryDetailCtrl.text.trim().isEmpty) {
+      SnackBarHelper.warning('Please specify the category');
+      return;
+    }
+    if (!_confirmed) {
+      SnackBarHelper.warning('Please confirm that the driver has been properly verified');
+      return;
+    }
     setState(() => _saving = true);
     final dobIso = _dob!.toIso8601String();
+    final expiryIso = _licenseExpiry!.toIso8601String();
     bool ok;
     if (widget.driver != null) {
       ok = await widget.ctrl.updateDriver(
@@ -952,10 +1199,12 @@ class _DriverModalState extends State<_DriverModal> {
         phoneNumber: _phoneCtrl.text.trim(),
         vehicleType: _category,
         experience: _expCtrl.text.trim(),
-        description: _descCtrl.text.trim(),
         status: _status,
         email: _emailCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
+        address: _addressCtrl.text.trim(),
+        licenseExpiryDate: expiryIso,
+        vehicleCategoryDetail: _categoryDetailCtrl.text.trim(),
         image: _image,
       );
     } else {
@@ -966,10 +1215,12 @@ class _DriverModalState extends State<_DriverModal> {
         phoneNumber: _phoneCtrl.text.trim(),
         vehicleType: _category,
         experience: _expCtrl.text.trim(),
-        description: _descCtrl.text.trim(),
         status: _status,
         email: _emailCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
+        address: _addressCtrl.text.trim(),
+        licenseExpiryDate: expiryIso,
+        vehicleCategoryDetail: _categoryDetailCtrl.text.trim(),
         image: _image,
       );
     }
@@ -984,71 +1235,128 @@ class _DriverModalState extends State<_DriverModal> {
       title: isEdit ? 'Edit Driver' : 'Add Driver',
       child: Column(
         children: [
-          _ModalField('Full Name', _nameCtrl, hint: 'e.g. Rajesh Kumar', required: true),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: _ModalField('License Number', _licenseCtrl,
-                    hint: 'DL1234567890', required: true),
+          if (!isEdit)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _verifying ? null : _verify,
-                child: Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: _verifying ? _border : _primaryLight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: _primary.withValues(alpha: 0.3)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('🪪 Quick License Verification',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _textDark, fontFamily: 'Poppins')),
+                  const SizedBox(height: 10),
+                  _ModalField('License Number', _licenseCtrl, hint: 'DL1234567890', required: true),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: _pickDob,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: _bg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Iconsax.calendar, size: 18, color: _textGrey),
+                          const SizedBox(width: 10),
+                          Text(
+                            _dob == null ? 'Date of Birth (18+ required)' : _fmtDate(_dob!),
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: _dob == null ? const Color(0xFF9CA3AF) : _textDark,
+                                fontFamily: 'Poppins'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: _verifying
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: _primary))
-                      : const Text('Verify',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: _primary,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Poppins')),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: GestureDetector(
+                      onTap: (_verifying || _licenseCtrl.text.trim().isEmpty || _dob == null)
+                          ? null
+                          : _verify,
+                      child: Container(
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: (_licenseCtrl.text.trim().isEmpty || _dob == null)
+                              ? _border
+                              : (_verifying ? _border : _primaryLight),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                        ),
+                        child: _verifying
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _primary))
+                            : Text('Verify',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: (_licenseCtrl.text.trim().isEmpty || _dob == null) ? _textGrey : _primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Poppins')),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            _ModalField('License Number', _licenseCtrl, hint: 'DL1234567890', required: true),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _pickDob,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(
+                  color: _bg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _border),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Iconsax.calendar, size: 18, color: _textGrey),
+                    const SizedBox(width: 10),
+                    Text(
+                      _dob == null ? 'Date of Birth (18+ required)' : _fmtDate(_dob!),
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: _dob == null ? const Color(0xFF9CA3AF) : _textDark,
+                          fontFamily: 'Poppins'),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text('Set date of birth below, then tap Verify to fetch licence details.',
-              style: TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+            ),
+          ],
           const SizedBox(height: 12),
-          _ModalField('Phone Number', _phoneCtrl, hint: '+91 9876543210',
-              keyboard: TextInputType.phone),
-          const SizedBox(height: 12),
-          _ModalField('Email', _emailCtrl, hint: 'driver@example.com',
-              keyboard: TextInputType.emailAddress),
+          _ModalField('Full Name', _nameCtrl, hint: 'e.g. Rajesh Kumar', required: true, enabled: !_isLocked('name')),
           const SizedBox(height: 12),
           GestureDetector(
-            onTap: _pickDob,
+            onTap: _pickLicenseExpiry,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
-                color: _bg,
+                color: _isLocked('licenseExpiry') ? const Color(0xFFF3F4F6) : _bg,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: _border),
               ),
               child: Row(
                 children: [
-                  const Icon(Iconsax.calendar, size: 18, color: _textGrey),
+                  const Icon(Iconsax.calendar_1, size: 18, color: _textGrey),
                   const SizedBox(width: 10),
                   Text(
-                    _dob == null ? 'Date of Birth (18+ required)' : _fmtDate(_dob!),
+                    _licenseExpiry == null ? 'License Expiry Date *' : _fmtDate(_licenseExpiry!),
                     style: TextStyle(
                         fontSize: 14,
-                        color: _dob == null ? const Color(0xFF9CA3AF) : _textDark,
+                        color: _licenseExpiry == null ? const Color(0xFF9CA3AF) : _textDark,
                         fontFamily: 'Poppins'),
                   ),
                 ],
@@ -1056,17 +1364,27 @@ class _DriverModalState extends State<_DriverModal> {
             ),
           ),
           const SizedBox(height: 12),
+          _ModalField('Phone Number', _phoneCtrl, hint: '+91 9876543210',
+              keyboard: TextInputType.phone),
+          const SizedBox(height: 12),
+          _ModalField('Email', _emailCtrl, hint: 'driver@example.com',
+              keyboard: TextInputType.emailAddress),
+          const SizedBox(height: 12),
           _ModalField('Experience (years)', _expCtrl, hint: '5', keyboard: TextInputType.number),
           const SizedBox(height: 12),
           _ModalDropdown('Status', _status, _statusOptions,
-              (v) => setState(() => _status = v!)),
+              (v) => setState(() => _status = v!), required: true),
           const SizedBox(height: 12),
-          _ModalDropdown('Vehicle Category', _category, ['Shipment', 'Construction', 'Mining', 'Others'],
-              (v) => setState(() => _category = v!)),
+          _ModalDropdown('Vehicle Category', _category, _categories,
+              (v) => setState(() => _category = v!), required: true),
+          if (_category == 'Others') ...[
+            const SizedBox(height: 12),
+            _ModalField('Specify', _categoryDetailCtrl, hint: 'e.g. Tanker', required: true, enabled: !_isLocked('categoryDetail')),
+          ],
           const SizedBox(height: 12),
-          _ModalField('Location / Current City', _locationCtrl, hint: 'e.g. Mumbai'),
+          _ModalField('Current Location', _locationCtrl, hint: 'e.g. Mumbai', enabled: !_isLocked('location')),
           const SizedBox(height: 12),
-          _ModalField('Description / Notes', _descCtrl, hint: 'Optional notes', maxLines: 2),
+          _ModalField('Address', _addressCtrl, hint: 'Full address', maxLines: 2, enabled: !_isLocked('address')),
           const SizedBox(height: 12),
           GestureDetector(
             onTap: _pickImage,
@@ -1095,7 +1413,13 @@ class _DriverModalState extends State<_DriverModal> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          _ConfirmCheckbox(
+            value: _confirmed,
+            label: 'I confirm that the driver has been properly verified.',
+            onChanged: (v) => setState(() => _confirmed = v ?? false),
+          ),
+          const SizedBox(height: 16),
           _SaveButton(saving: _saving, onSave: _save),
         ],
       ),
@@ -1341,9 +1665,66 @@ class _ModalField extends StatelessWidget {
   final TextInputType? keyboard;
   final int maxLines;
   final bool required;
+  final bool enabled;
 
   const _ModalField(this.label, this.ctrl,
-      {this.hint, this.keyboard, this.maxLines = 1, this.required = false});
+      {this.hint,
+      this.keyboard,
+      this.maxLines = 1,
+      this.required = false,
+      this.enabled = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w500, color: _textGrey, fontFamily: 'Poppins')),
+            if (required) const Text(' *', style: TextStyle(color: _primary, fontSize: 12)),
+            if (!enabled) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.lock_rounded, size: 11, color: Color(0xFF22C55E)),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: ctrl,
+          keyboardType: keyboard,
+          maxLines: maxLines,
+          enabled: enabled,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF9CA3AF), fontFamily: 'Poppins'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            counterText: '',
+            filled: true,
+            fillColor: enabled ? _bg : const Color(0xFFF3F4F6),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _primary, width: 1.5)),
+            disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
+          ),
+          style: const TextStyle(fontSize: 14, color: _textDark, fontFamily: 'Poppins'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ModalDropdown extends StatelessWidget {
+  final String label;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+  final bool required;
+
+  const _ModalDropdown(this.label, this.value, this.items, this.onChanged,
+      {this.required = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1358,44 +1739,6 @@ class _ModalField extends StatelessWidget {
             if (required) const Text(' *', style: TextStyle(color: _primary, fontSize: 12)),
           ],
         ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: ctrl,
-          keyboardType: keyboard,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF9CA3AF), fontFamily: 'Poppins'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            filled: true,
-            fillColor: _bg,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _primary, width: 1.5)),
-          ),
-          style: const TextStyle(fontSize: 14, color: _textDark, fontFamily: 'Poppins'),
-        ),
-      ],
-    );
-  }
-}
-
-class _ModalDropdown extends StatelessWidget {
-  final String label;
-  final String value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-
-  const _ModalDropdown(this.label, this.value, this.items, this.onChanged);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w500, color: _textGrey, fontFamily: 'Poppins')),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1413,6 +1756,39 @@ class _ModalDropdown extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ConfirmCheckbox extends StatelessWidget {
+  final bool value;
+  final String label;
+  final ValueChanged<bool?> onChanged;
+  const _ConfirmCheckbox({required this.value, required this.label, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Checkbox(
+            value: value,
+            onChanged: onChanged,
+            activeColor: _primary,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(label,
+                  style: const TextStyle(fontSize: 12.5, color: _textGrey, fontFamily: 'Poppins')),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

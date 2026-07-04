@@ -49,6 +49,7 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
   DistanceResult? _distanceResult;
   bool _isCalculatingDistance = false;
   bool _isLoadingLocation = false;
+  double? _pickupLat, _pickupLng;
   double? _deliveryLat, _deliveryLng;
 
   @override
@@ -202,6 +203,8 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
       tripCode: 'TRIP-${DateTime.now().millisecondsSinceEpoch}',
       tripStatus: 'Pending',
       isScheduledTrip: true,
+      pickupLat: _pickupLat,
+      pickupLng: _pickupLng,
       latitude: _deliveryLat,
       longitude: _deliveryLng,
       distance: _distanceResult != null
@@ -226,7 +229,16 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
               position.latitude, position.longitude)
           : null;
       if (address != null && address.isNotEmpty) {
-        setState(() => controller.text = address);
+        setState(() {
+          controller.text = address;
+          if (controller == pickupController) {
+            _pickupLat = position!.latitude;
+            _pickupLng = position.longitude;
+          } else {
+            _deliveryLat = position!.latitude;
+            _deliveryLng = position.longitude;
+          }
+        });
         _autoCalculateDistance();
       } else {
         SnackBarHelper.error(
@@ -244,8 +256,21 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
     if (pickupController.text.isEmpty || deliveryController.text.isEmpty) return;
     setState(() => _isCalculatingDistance = true);
     try {
+      // Prefer the exact resolved coordinates (from a tapped suggestion or
+      // "Use Current Location") over the free-text address whenever they're
+      // known. Google's Distance Matrix API re-geocodes address text
+      // independently, which can resolve to a slightly different point than
+      // the coordinates that actually get saved/routed by the backend —
+      // that mismatch is what causes the live estimate here to disagree with
+      // the distance shown later on Trip Details.
+      final origin = (_pickupLat != null && _pickupLng != null)
+          ? '$_pickupLat,$_pickupLng'
+          : pickupController.text;
+      final destination = (_deliveryLat != null && _deliveryLng != null)
+          ? '$_deliveryLat,$_deliveryLng'
+          : deliveryController.text;
       final result = await distanceService.calculateDistance(
-        origin: pickupController.text, destination: deliveryController.text);
+        origin: origin, destination: destination);
       if (mounted) setState(() { _distanceResult = result; _isCalculatingDistance = false; });
     } catch (e) {
       if (mounted) setState(() => _isCalculatingDistance = false);
@@ -495,7 +520,9 @@ class _ScheduleTripScreenState extends State<ScheduleTripScreen> {
               });
               try {
                 final loc = await placesService.fetchPlaceLocation(s.placeId);
-                if (!isPickup) {
+                if (isPickup) {
+                  setState(() { _pickupLat = loc['lat']; _pickupLng = loc['lng']; });
+                } else {
                   setState(() { _deliveryLat = loc['lat']; _deliveryLng = loc['lng']; });
                 }
               } catch (e) {

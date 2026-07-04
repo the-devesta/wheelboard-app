@@ -1,13 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:wheelboard/constants/apps_colors.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../controllers/Transport/post_controller.dart';
-import 'package:wheelboard/core/auth/auth_service.dart';
-import '../../widgets/custom_snackbar.dart';
 
+import 'package:wheelboard/core/auth/auth_service.dart';
+import '../../controllers/Transport/post_controller.dart';
+import '../../widgets/smart_image.dart';
+import '../../widgets/ui/app_ui.dart';
+
+/// Create Post — a minimal, social-media-style composer.
+///
+/// 1:1 with the web `CreatePostModal` (wheelboard-fe/src/components/company):
+/// same 5 categories, same upload-on-select flow (image → `/media` → hosted
+/// URL, then the post carries that URL), same 5MB/type validation, same
+/// disabled-until-content Post button. Shared by the Transport Company and
+/// Service Provider (business) personas.
 class NetworkPostScreen extends StatefulWidget {
   const NetworkPostScreen({super.key});
 
@@ -16,15 +23,139 @@ class NetworkPostScreen extends StatefulWidget {
 }
 
 class _NetworkPostScreenState extends State<NetworkPostScreen> {
-  final PostController postController = Get.put(PostController());
-  final TextEditingController _contentController = TextEditingController();
-  String? _selectedCategory;
-  final List<File> _selectedImages = [];
+  final PostController _controller = Get.isRegistered<PostController>()
+      ? Get.find<PostController>()
+      : Get.put(PostController());
+  final TextEditingController _contentCtrl = TextEditingController();
   final ImagePicker _picker = ImagePicker();
+
+  // Same five categories, in the same order, as the web CreatePostModal.
+  static const _categories = <_Category>[
+    _Category(FeedCategory.tip, 'Tips', Icons.lightbulb_outline_rounded),
+    _Category(FeedCategory.services, 'Services', Icons.layers_outlined),
+    _Category(FeedCategory.promotions, 'Promotions', Icons.campaign_outlined),
+    _Category(FeedCategory.question, 'Question', Icons.help_outline_rounded),
+    _Category(FeedCategory.general, 'General', Icons.public_rounded),
+  ];
+
+  String _selectedCategory = FeedCategory.tip; // web default: 'tip'
+  String? _uploadedImageUrl;
+  bool _uploading = false;
+  String? _error;
+
+  static const _maxImageBytes = 5 * 1024 * 1024;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentCtrl.addListener(() => setState(() {})); // live-enable Post button
+  }
+
+  @override
+  void dispose() {
+    _contentCtrl.dispose();
+    super.dispose();
+  }
+
+  bool get _canPost =>
+      _contentCtrl.text.trim().isNotEmpty && !_uploading;
+
+  // ── Image upload (on select, exactly like the web) ────────────────────────
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picked = await _picker.pickImage(source: source, imageQuality: 85);
+      if (picked == null) return;
+      final file = File(picked.path);
+
+      final size = await file.length();
+      if (size > _maxImageBytes) {
+        setState(() => _error = 'Image size must be less than 5MB');
+        return;
+      }
+
+      setState(() {
+        _error = null;
+        _uploading = true;
+      });
+
+      final url = await _controller.uploadImage(file);
+      if (!mounted) return;
+      if (url == null || url.isEmpty) {
+        setState(() {
+          _uploading = false;
+          _error = 'Failed to upload image. Please try again.';
+        });
+        return;
+      }
+      setState(() {
+        _uploadedImageUrl = url;
+        _uploading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _uploading = false;
+        _error = 'Failed to upload image. Please try again.';
+      });
+    }
+  }
+
+  void _showImageSourceSheet() {
+    Get.bottomSheet(
+      Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined, color: AppUi.accent),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Get.back();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: AppUi.accent),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Get.back();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+  Future<void> _post() async {
+    if (!_canPost) return;
+    setState(() => _error = null);
+
+    final ok = await _controller.createPost(
+      content: _contentCtrl.text.trim(),
+      category: _selectedCategory,
+      imageUrl: _uploadedImageUrl,
+    );
+
+    if (!mounted) return;
+    if (ok) {
+      Navigator.of(context).pop(true);
+    }
+    // On failure the controller shows the real backend message via snackbar.
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Check if user is professional
+    // Professionals cannot create posts (mirrors the web role gate).
     if (AuthService.to.isProfessional) {
       return Scaffold(
         appBar: AppBar(title: const Text('Access Denied')),
@@ -33,387 +164,323 @@ class _NetworkPostScreenState extends State<NetworkPostScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.primary, // Light grey background
+      backgroundColor: AppUi.scaffold,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0, // No shadow
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close_rounded, color: AppUi.textPrimary),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text(
-          'Network Post',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        title: const Text('Create Post', style: AppUi.title),
+        centerTitle: false,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Create a Post Card
-            Card(
-              color: Colors.white,
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Text(
-                      'Create a Post',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF535353),
-                      ),
-                    ),
-                    const SizedBox(height: 12.0),
-                    Container(
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: TextField(
-                        controller: _contentController,
-                        maxLines: null, // Allows multiline input
-                        expands: true, // Allows content to expand vertically
-                        keyboardType: TextInputType.multiline,
-                        decoration: const InputDecoration(
-                          hintText: 'Share your thoughts...',
-                          fillColor: Color(0xFFF9FAFB),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.all(12.0),
-                        ),
-                      ),
-                    ),
-                    // Display selected images
-                    if (_selectedImages.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 100,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _selectedImages.length,
-                          itemBuilder: (context, index) {
-                            return Stack(
-                              children: [
-                                Container(
-                                  margin: const EdgeInsets.only(right: 8),
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    image: DecorationImage(
-                                      image: FileImage(_selectedImages[index]),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedImages.removeAt(index);
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16.0),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          _composerCard(),
+          const SizedBox(height: 16),
+          _categoryCard(),
+          const SizedBox(height: 16),
+          if (_error != null) ...[
+            _errorBox(_error!),
+            const SizedBox(height: 16),
+          ],
+          _imageSection(),
+          const SizedBox(height: 24),
+          _actions(),
+        ],
+      ),
+    );
+  }
 
-            // Select Category Card
-            Card(
-              color: Colors.white,
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: RadioGroup<String>(
-                  groupValue: _selectedCategory,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedCategory = newValue;
-                    });
-                  },
-                  child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Text(
-                      'Select Category',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF535353),
-                      ),
-                    ),
-                    const SizedBox(height: 8.0),
-                    _buildCategoryRadioTile(
-                      iconPath: 'assets/tips.svg',
-                      title: 'Tips',
-                      value: 'Tips',
-                    ),
-                    _buildCategoryRadioTile(
-                      iconPath: 'assets/promotion.svg',
-                      title: 'Services',
-                      value: 'Services',
-                    ),
-                    _buildCategoryRadioTile(
-                      iconPath: 'assets/services.svg',
-                      title: 'Promotions',
-                      value: 'Promotions',
-                    ),
-                  ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16.0),
-
-            // Single Add Photo Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  _showImagePickerOptions();
-                },
-                icon: const Icon(Icons.add_a_photo, size: 18),
-                label: Text(
-                  _selectedImages.isEmpty
-                      ? 'Add Photo'
-                      : '${_selectedImages.length} Photo(s) Selected',
+  Widget _composerCard() {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _authorAvatar(),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  AuthService.to.currentUser.value?.displayName ?? 'You',
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[400],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                      fontSize: 14, fontWeight: FontWeight.w700, color: AppUi.textPrimary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _contentCtrl,
+            maxLines: 5,
+            minLines: 4,
+            style: const TextStyle(fontSize: 15, color: AppUi.textPrimary, height: 1.4),
+            decoration: InputDecoration(
+              hintText: 'Share your thoughts…',
+              hintStyle: const TextStyle(color: AppUi.textTertiary, fontSize: 15),
+              filled: true,
+              fillColor: AppUi.scaffold,
+              contentPadding: const EdgeInsets.all(14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppUi.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppUi.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppUi.accent, width: 1.5),
+              ),
             ),
-            const SizedBox(height: 16.0),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[200],
-                      foregroundColor: Colors.black54,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Color(0xFF374151)),
-                    ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _authorAvatar() {
+    final logo = AuthService.to.currentUser.value?.profile['companyLogo']?.toString() ??
+        AuthService.to.currentUser.value?.profile['logo']?.toString();
+    const radius = 20.0;
+    if (logo != null && logo.trim().isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: SmartImage(
+            source: logo,
+            width: radius * 2, height: radius * 2, fit: BoxFit.cover,
+            placeholder: _initialsAvatar(radius)),
+      );
+    }
+    return _initialsAvatar(radius);
+  }
+
+  Widget _initialsAvatar(double radius) {
+    final name = AuthService.to.currentUser.value?.displayName ?? 'U';
+    final initials = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'U';
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: AppUi.accentSoft,
+      child: Text(initials,
+          style: const TextStyle(color: AppUi.accent, fontWeight: FontWeight.w700)),
+    );
+  }
+
+  Widget _categoryCard() {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Select Category', style: AppUi.title),
+          const SizedBox(height: 12),
+          ..._categories.map(_categoryTile),
+        ],
+      ),
+    );
+  }
+
+  Widget _categoryTile(_Category cat) {
+    final selected = _selectedCategory == cat.value;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => setState(() => _selectedCategory = cat.value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected ? AppUi.accentSoft : AppUi.scaffold,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? AppUi.accent : AppUi.border,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: selected ? AppUi.accent : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: selected ? null : Border.all(color: AppUi.border),
+                ),
+                child: Icon(cat.icon,
+                    size: 20, color: selected ? Colors.white : AppUi.textSecondary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(cat.label,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: selected ? AppUi.accentDark : AppUi.textPrimary)),
+              ),
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? AppUi.accent : Colors.white,
+                  border: Border.all(
+                      color: selected ? AppUi.accent : AppUi.textTertiary, width: 2),
+                ),
+                child: selected
+                    ? const Center(
+                        child: Icon(Icons.circle, size: 8, color: Colors.white))
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _imageSection() {
+    return Column(
+      children: [
+        if (_uploading)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppUi.blue)),
+                SizedBox(width: 10),
+                Text('Uploading image…', style: TextStyle(color: AppUi.blue)),
+              ],
+            ),
+          )
+        else if (_uploadedImageUrl != null)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Stack(
+              children: [
+                SmartImage(
+                  source: _uploadedImageUrl,
+                  width: double.infinity,
+                  height: 220,
+                  fit: BoxFit.cover,
+                  placeholder: Container(
+                    height: 220,
+                    width: double.infinity,
+                    color: const Color(0xFFF3F4F6),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.broken_image_outlined,
+                        color: AppUi.textTertiary, size: 40),
                   ),
                 ),
-                const SizedBox(width: 12.0),
-                Expanded(
-                  child: Obx(
-                    () => ElevatedButton.icon(
-                      onPressed: postController.isCreatingPost.value
-                          ? null
-                          : () async {
-                              if (_contentController.text.trim().isEmpty) {
-                                SnackBarHelper.error("Please enter post content");
-                                return;
-                              }
-                              if (_selectedCategory == null) {
-                                SnackBarHelper.error("Please select a category");
-                                return;
-                              }
-
-                              final success = await postController.createPost(
-                                content: _contentController.text.trim(),
-                                category: _selectedCategory!,
-                                images: _selectedImages.isNotEmpty
-                                    ? _selectedImages
-                                    : null,
-                              );
-
-                              if (success) {
-                                _resetFormState();
-                                if (context.mounted) {
-                                  Navigator.of(context).pop(true);
-                                }
-                              }
-                            },
-                      icon: postController.isCreatingPost.value
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Icon(Icons.send, size: 18),
-                      label: Text(
-                        postController.isCreatingPost.value
-                            ? 'Posting...'
-                            : 'Post',
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _uploadedImageUrl = null),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red[400],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
+                      child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
                     ),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _resetFormState() {
-    _contentController.clear();
-    _selectedCategory = null;
-    setState(() {
-      _selectedImages.clear();
-    });
-  }
-
-  Widget _buildCategoryRadioTile({
-    required String iconPath, // Path to your SVG file
-    required String title,
-    required String value,
-  }) {
-    return RadioListTile<String>(
-      title: Row(
-        children: [
-          SvgPicture.asset(
-            iconPath, // Path to your SVG image
-            width: 50.0, // Set the width of the SVG image
-            height: 50.0, // Set the height of the SVG image
-            // Color of the SVG image, optional
           ),
-          const SizedBox(width: 8),
-          Text(title),
-        ],
-      ),
-      value: value,
-      activeColor: Colors.blueGrey,
-      controlAffinity: ListTileControlAffinity.trailing,
-      contentPadding: EdgeInsets.zero,
+        const SizedBox(height: 12),
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _uploading ? null : _showImageSourceSheet,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              color: AppUi.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: AppUi.border, width: 1.5, style: BorderStyle.solid),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.upload_rounded, color: AppUi.textSecondary),
+                const SizedBox(height: 6),
+                Text(
+                  _uploadedImageUrl != null
+                      ? 'Change Image (optional)'
+                      : 'Upload Image (optional)',
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: AppUi.textSecondary),
+                ),
+                const SizedBox(height: 4),
+                const Text('Max file size: 5MB. Supports JPG, PNG, GIF',
+                    style: TextStyle(fontSize: 11, color: AppUi.textTertiary)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Future<void> _pickImages() async {
-    try {
-      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 80);
-
-      if (images.isNotEmpty) {
-        setState(() {
-          _selectedImages.addAll(
-            images.map((xFile) => File(xFile.path)).toList(),
-          );
-        });
-      }
-    } catch (e) {
-      SnackBarHelper.error("Failed to pick images: $e");
-    }
-  }
-
-  Future<void> _showImagePickerOptions() async {
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text("Take Photo"),
-              onTap: () async {
-                Get.back();
-                try {
-                  final XFile? photo = await _picker.pickImage(
-                    source: ImageSource.camera,
-                  );
-                  if (photo != null) {
-                    setState(() {
-                      _selectedImages.add(File(photo.path));
-                    });
-                  }
-                } catch (e) {
-                  SnackBarHelper.error("Failed to take photo: $e");
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text("Choose from Gallery"),
-              onTap: () {
-                Get.back();
-                _pickImages();
-              },
-            ),
-          ],
-        ),
+  Widget _errorBox(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFECACA)),
       ),
+      child: Text(message,
+          style: const TextStyle(color: AppUi.red, fontSize: 13)),
     );
   }
 
-  @override
-  void dispose() {
-    _contentController.dispose();
-    super.dispose();
+  Widget _actions() {
+    return Row(
+      children: [
+        Expanded(
+          child: SecondaryButton(
+            label: 'Cancel',
+            color: AppUi.textSecondary,
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Obx(() => PrimaryButton(
+                label: 'Post',
+                icon: Icons.send_rounded,
+                loading: _controller.isCreatingPost.value,
+                onPressed: _canPost ? _post : null,
+              )),
+        ),
+      ],
+    );
   }
+}
+
+class _Category {
+  final String value;
+  final String label;
+  final IconData icon;
+  const _Category(this.value, this.label, this.icon);
 }

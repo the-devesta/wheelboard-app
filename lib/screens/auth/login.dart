@@ -6,7 +6,6 @@ import '../../controllers/Transport/login_controller.dart';
 import '../../core/auth/auth_service.dart' as core;
 import '../../core/auth/user_role.dart';
 import '../../utils/navigation_helper.dart';
-import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/legal_widgets.dart';
 import '../CompanyTransport/complete_company_profile.dart';
@@ -101,14 +100,7 @@ class _LoginScreenState extends State<LoginScreen>
     final profileComplete = authUser?.isProfileComplete ?? true;
 
     if (role == UserRole.company && !profileComplete) {
-      final sessionManager = SessionManager();
-      final data = {
-        'companyName': await sessionManager.getString('registration_companyName') ?? '',
-        'email': await sessionManager.getString('registration_email') ?? '',
-        'mobileNo': await sessionManager.getString('registration_mobileNo') ?? '',
-        'businessCategory': await sessionManager.getString('registration_businessCategory') ?? 'Transport',
-      };
-      Get.to(() => CompanyCompleteProfile(), arguments: data);
+      Get.to(() => const CompanyCompleteProfile());
       return;
     }
     if (role == UserRole.business && !profileComplete) {

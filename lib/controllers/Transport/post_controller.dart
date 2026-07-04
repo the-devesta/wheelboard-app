@@ -3,7 +3,6 @@ import 'package:dio/dio.dart' as dio;
 import 'package:get/get.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_endpoints.dart';
-import '../../core/network/api_exception.dart';
 import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../models/feed_model.dart';
 import '../../services/media_service.dart';
@@ -102,19 +101,35 @@ class PostController extends GetxController {
     return media?.url;
   }
 
-  /// Create a feed post. Mirrors the FE flow: upload the image first (if any)
-  /// to get a hosted URL, then POST /feeds with JSON `{content, image, category}`.
+  /// Create a feed post. Mirrors the FE flow exactly: the image is uploaded
+  /// first (on the compose screen, via [uploadImage] → `/media` → hosted URL),
+  /// then `POST /feeds` carries that hosted URL string as `image`.
+  ///
+  /// Pass [imageUrl] when the image was already uploaded on the compose screen
+  /// (preferred — matches the web's upload-on-select). [images] is a fallback
+  /// that uploads on submit.
   Future<bool> createPost({
     required String content,
     required String category,
     List<File>? images,
+    String? imageUrl,
   }) async {
     try {
       isCreatingPost.value = true;
 
-      String? imageUrl;
-      if (images != null && images.isNotEmpty) {
-        imageUrl = await uploadImage(images.first);
+      String? finalImageUrl = imageUrl;
+      if ((finalImageUrl == null || finalImageUrl.isEmpty) &&
+          images != null &&
+          images.isNotEmpty) {
+        // A failed photo upload shouldn't sink the whole post — mirrors the
+        // web app, where a bad image only affects the image, not the text +
+        // category submission.
+        try {
+          finalImageUrl = await uploadImage(images.first);
+        } catch (e) {
+          AppLogger.e("❌ Photo upload failed, posting without photo: $e");
+          SnackBarHelper.warning("Photo upload failed — posting without photo");
+        }
       }
 
       final feed = await ApiClient.instance.post<Map<String, dynamic>>(
@@ -122,7 +137,8 @@ class PostController extends GetxController {
         data: {
           'content': content,
           'category': category,
-          if (imageUrl != null && imageUrl.isNotEmpty) 'image': imageUrl,
+          if (finalImageUrl != null && finalImageUrl.isNotEmpty)
+            'image': finalImageUrl,
         },
       );
 
@@ -328,9 +344,15 @@ class PostController extends GetxController {
     }
   }
 
+  /// `ApiException` is never actually attached to `DioException.error` by the
+  /// interceptor, so `e.error is ApiException` was always false — read the
+  /// backend's real validation message straight from the response body.
   String _msg(dio.DioException e, {String fallback = 'Something went wrong'}) {
-    return e.error is ApiException
-        ? (e.error as ApiException).message
-        : fallback;
+    final data = e.response?.data;
+    if (data is Map && data['message'] != null) {
+      final m = data['message'];
+      return m is List ? m.join(', ') : m.toString();
+    }
+    return fallback;
   }
 }

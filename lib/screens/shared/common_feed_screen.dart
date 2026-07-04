@@ -6,8 +6,8 @@ import 'package:wheelboard/core/auth/auth_service.dart';
 import '../CompanyTransport/new_post_screen.dart';
 import '../../controllers/Transport/post_controller.dart';
 import '../../widgets/custom_loader.dart';
+import '../../widgets/smart_image.dart';
 import '../../widgets/ui/app_ui.dart';
-import '../../utils/media_url.dart';
 import '../../utils/share_service.dart';
 
 /// Common Feed Screen — shared across Transport, Service Provider, and
@@ -203,12 +203,13 @@ class _FeedPostCardState extends State<_FeedPostCard> {
         children: [
           _header(),
           const SizedBox(height: 10),
-          if (post.content.isNotEmpty)
-            Text(post.content, style: const TextStyle(color: Colors.black87, fontSize: 14)),
+          // Image first, then content — matches the web FeedCard layout.
           if (post.imageUrls.isNotEmpty) ...[
-            const SizedBox(height: 10),
             _image(post.imageUrls.first),
+            const SizedBox(height: 10),
           ],
+          if (post.content.isNotEmpty)
+            Text(post.content, style: const TextStyle(color: Colors.black87, fontSize: 14, height: 1.4)),
           const SizedBox(height: 10),
           _engagementCounts(),
           const Divider(height: 18),
@@ -264,16 +265,15 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   }
 
   Widget _avatar(String? url, String initials, double radius) {
-    if (url != null && url.isNotEmpty) {
+    if (url != null && url.trim().isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: Image.network(
-          _formatImageUrl(url),
+        child: SmartImage(
+          source: url,
           width: radius * 2,
           height: radius * 2,
           fit: BoxFit.cover,
-          headers: _imageHeaders(),
-          errorBuilder: (_, __, ___) => _initialsAvatar(initials, radius),
+          placeholder: _initialsAvatar(initials, radius),
         ),
       );
     }
@@ -349,16 +349,17 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   Widget _image(String url) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.network(
-        _formatImageUrl(url),
+      child: SmartImage(
+        source: url,
         width: double.infinity,
-        height: 200,
+        height: 220,
         fit: BoxFit.cover,
-        headers: _imageHeaders(),
-        errorBuilder: (_, __, ___) => Container(
-          height: 200,
-          color: Colors.grey[200],
-          child: Image.asset("assets/truck.png", fit: BoxFit.cover),
+        placeholder: Container(
+          height: 220,
+          width: double.infinity,
+          color: const Color(0xFFF3F4F6),
+          alignment: Alignment.center,
+          child: const Icon(Icons.image_outlined, color: Color(0xFF9CA3AF), size: 32),
         ),
       ),
     );
@@ -642,10 +643,3 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   }
 }
 
-String _formatImageUrl(String url) => MediaUrl.resolve(url);
-
-Map<String, String>? _imageHeaders() {
-  final token = AuthService.to.currentToken;
-  if (token.isEmpty) return null;
-  return {'Authorization': 'Bearer $token', 'Accept': '*/*'};
-}

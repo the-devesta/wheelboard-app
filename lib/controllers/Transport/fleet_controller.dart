@@ -8,6 +8,7 @@ import '../../core/network/api_exception.dart';
 import '../../models/get_driver_model.dart';
 import '../../models/get_vehicle_model.dart';
 import '../../services/fleet_payment_service.dart';
+import '../../services/profile_service.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 
@@ -92,6 +93,8 @@ class DriverController extends GetxController {
     String email = '',
     String location = '',
     String address = '',
+    String licenseExpiryDate = '',
+    String vehicleCategoryDetail = '',
     File? image,
     // Payment proof — populated on the Razorpay-retry path only.
     Map<String, dynamic>? payment,
@@ -109,6 +112,8 @@ class DriverController extends GetxController {
         email: email,
         location: location,
         address: address,
+        licenseExpiryDate: licenseExpiryDate,
+        vehicleCategoryDetail: vehicleCategoryDetail,
         image: image,
         payment: payment,
       );
@@ -134,13 +139,15 @@ class DriverController extends GetxController {
           'email': email,
           'location': location,
           'address': address,
+          'licenseExpiryDate': licenseExpiryDate,
+          'vehicleCategoryDetail': vehicleCategoryDetail,
           // image cannot be re-passed directly; user would need to re-select.
           // We capture image path to re-attach on retry.
           '_imagePath': image?.path,
         });
         return false; // result arrives asynchronously via Razorpay callbacks
       }
-      SnackBarHelper.error('Failed to add driver');
+      SnackBarHelper.error(_actionError(e, 'Failed to add driver'));
       AppLogger.e('❌ createDriver: $e');
       return false;
     } catch (e) {
@@ -186,6 +193,10 @@ class DriverController extends GetxController {
           email: (originalParams['email'] as String?) ?? '',
           location: (originalParams['location'] as String?) ?? '',
           address: (originalParams['address'] as String?) ?? '',
+          licenseExpiryDate:
+              (originalParams['licenseExpiryDate'] as String?) ?? '',
+          vehicleCategoryDetail:
+              (originalParams['vehicleCategoryDetail'] as String?) ?? '',
           image: imagePath != null ? File(imagePath) : null,
           payment: {
             'orderId': orderId,
@@ -225,6 +236,8 @@ class DriverController extends GetxController {
     String email = '',
     String location = '',
     String address = '',
+    String licenseExpiryDate = '',
+    String vehicleCategoryDetail = '',
     File? image,
   }) async {
     try {
@@ -240,6 +253,8 @@ class DriverController extends GetxController {
         email: email,
         location: location,
         address: address,
+        licenseExpiryDate: licenseExpiryDate,
+        vehicleCategoryDetail: vehicleCategoryDetail,
         image: image,
       );
       await ApiClient.instance.upload<dynamic>(
@@ -250,6 +265,10 @@ class DriverController extends GetxController {
       SnackBarHelper.success('Driver updated successfully');
       await fetchDrivers();
       return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_actionError(e, 'Failed to update driver'));
+      AppLogger.e('❌ updateDriver: $e');
+      return false;
     } catch (e) {
       SnackBarHelper.error('Failed to update driver');
       AppLogger.e('❌ updateDriver: $e');
@@ -325,34 +344,56 @@ class DriverController extends GetxController {
 
   /// Creates a vehicle.
   ///
+  /// 1:1 with the web `VehicleFormModal`/`handleSaveVehicle`: sends a plain JSON
+  /// body matching `CreateVehicleDto` (the backend route has no file
+  /// interceptor, so multipart was silently rejected by the strict
+  /// `ValidationPipe` — this is why vehicles never actually saved before).
+  ///
   /// 402 handling mirrors the web app:
   ///   - `upgradeRequired` → upgrade dialog.
   ///   - per-vehicle charge → Razorpay checkout → retry with payment proof.
   Future<bool> createVehicle({
+    required String name,
     required String model,
     required String registrationNumber,
     required int year,
     required String ownership,
     required String category,
-    String description = '',
-    List<File> images = const [],
+    String categoryDetail = '',
+    String fuelType = 'Diesel',
+    String capacity = '',
+    String mileage = '',
+    String location = '',
+    double avgRun = 0,
+    double tripEfficiency = 0,
+    double monthlyUsage = 0,
+    File? image,
     // Payment proof — populated on the Razorpay-retry path only.
     Map<String, dynamic>? payment,
   }) async {
     try {
-      final formData = await _buildVehicleFormData(
+      final data = await _buildVehiclePayload(
+        name: name,
         model: model,
         registrationNumber: registrationNumber,
         year: year,
         ownership: ownership,
         category: category,
-        description: description,
-        images: images,
+        categoryDetail: categoryDetail,
+        fuelType: fuelType,
+        capacity: capacity,
+        mileage: mileage,
+        location: location,
+        avgRun: avgRun,
+        tripEfficiency: tripEfficiency,
+        monthlyUsage: monthlyUsage,
+        statusBadge: 'Available',
+        image: image,
         payment: payment,
       );
-      await ApiClient.instance.upload<dynamic>(
+      await ApiClient.instance.post<dynamic>(
         ApiEndpoints.fleet.addVehicle,
-        formData: formData,
+        data: data,
       );
       SnackBarHelper.success('Vehicle added successfully');
       await fetchVehicles();
@@ -360,17 +401,25 @@ class DriverController extends GetxController {
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 402) {
         _handle402Vehicle(e, {
+          'name': name,
           'model': model,
           'registrationNumber': registrationNumber,
           'year': year,
           'ownership': ownership,
           'category': category,
-          'description': description,
-          '_imagePaths': images.map((f) => f.path).toList(),
+          'categoryDetail': categoryDetail,
+          'fuelType': fuelType,
+          'capacity': capacity,
+          'mileage': mileage,
+          'location': location,
+          'avgRun': avgRun,
+          'tripEfficiency': tripEfficiency,
+          'monthlyUsage': monthlyUsage,
+          '_imagePath': image?.path,
         });
         return false;
       }
-      SnackBarHelper.error('Failed to add vehicle');
+      SnackBarHelper.error(_actionError(e, 'Failed to add vehicle'));
       AppLogger.e('❌ createVehicle: $e');
       return false;
     } catch (e) {
@@ -403,16 +452,25 @@ class DriverController extends GetxController {
     _vehiclePaymentService = FleetPaymentService(
       onPaymentSuccess: (orderId, paymentId, signature) async {
         AppLogger.d('[Fleet] Vehicle payment success, retrying create…');
-        final imagePaths =
-            (originalParams['_imagePaths'] as List?)?.cast<String>() ?? [];
+        final imagePath = originalParams['_imagePath'] as String?;
         final ok = await createVehicle(
+          name: originalParams['name'] as String,
           model: originalParams['model'] as String,
           registrationNumber: originalParams['registrationNumber'] as String,
           year: originalParams['year'] as int,
           ownership: originalParams['ownership'] as String,
           category: originalParams['category'] as String,
-          description: (originalParams['description'] as String?) ?? '',
-          images: imagePaths.map((p) => File(p)).toList(),
+          categoryDetail: (originalParams['categoryDetail'] as String?) ?? '',
+          fuelType: (originalParams['fuelType'] as String?) ?? 'Diesel',
+          capacity: (originalParams['capacity'] as String?) ?? '',
+          mileage: (originalParams['mileage'] as String?) ?? '',
+          location: (originalParams['location'] as String?) ?? '',
+          avgRun: (originalParams['avgRun'] as num?)?.toDouble() ?? 0,
+          tripEfficiency:
+              (originalParams['tripEfficiency'] as num?)?.toDouble() ?? 0,
+          monthlyUsage:
+              (originalParams['monthlyUsage'] as num?)?.toDouble() ?? 0,
+          image: imagePath != null ? File(imagePath) : null,
           payment: {
             'orderId': orderId,
             'paymentId': paymentId,
@@ -440,40 +498,53 @@ class DriverController extends GetxController {
 
   Future<bool> updateVehicle({
     required String vehicleId,
+    required String name,
     required String model,
     required String registrationNumber,
     required int year,
     required String ownership,
     required String category,
-    String description = '',
-    List<File> images = const [],
+    String categoryDetail = '',
+    String fuelType = 'Diesel',
+    String capacity = '',
+    String mileage = '',
+    String location = '',
+    double avgRun = 0,
+    double tripEfficiency = 0,
+    double monthlyUsage = 0,
+    String? statusBadge,
+    File? image,
   }) async {
     try {
-      final formData = await _buildVehicleFormData(
+      final data = await _buildVehiclePayload(
+        name: name,
         model: model,
         registrationNumber: registrationNumber,
         year: year,
         ownership: ownership,
         category: category,
-        description: description,
-        images: images,
+        categoryDetail: categoryDetail,
+        fuelType: fuelType,
+        capacity: capacity,
+        mileage: mileage,
+        location: location,
+        avgRun: avgRun,
+        tripEfficiency: tripEfficiency,
+        monthlyUsage: monthlyUsage,
+        statusBadge: statusBadge ?? 'Available',
+        image: image,
       );
-      // Swap the endpoint for the update URL
-      final updatedFormData = dio.FormData.fromMap({});
-      for (final field in formData.fields) {
-        updatedFormData.fields.add(field);
-      }
-      for (final file in formData.files) {
-        updatedFormData.files.add(file);
-      }
-      await ApiClient.instance.upload<dynamic>(
+      await ApiClient.instance.put<dynamic>(
         ApiEndpoints.fleet.updateVehicle(vehicleId),
-        formData: updatedFormData,
-        method: 'PUT',
+        data: data,
       );
       SnackBarHelper.success('Vehicle updated successfully');
       await fetchVehicles();
       return true;
+    } on dio.DioException catch (e) {
+      SnackBarHelper.error(_actionError(e, 'Failed to update vehicle'));
+      AppLogger.e('❌ updateVehicle: $e');
+      return false;
     } catch (e) {
       SnackBarHelper.error('Failed to update vehicle');
       AppLogger.e('❌ updateVehicle: $e');
@@ -584,6 +655,12 @@ class DriverController extends GetxController {
     return fallback;
   }
 
+  /// Surfaces the backend's real validation/error message instead of a
+  /// generic fallback (`ApiException` is never actually attached to
+  /// `DioException.error` by the interceptor, so `e.error is ApiException`
+  /// is always false — read straight from the response body instead).
+  String _actionError(dio.DioException e, String fallback) => _verifyError(e, fallback);
+
   // ── Filtered views ─────────────────────────────────────────────────────────
 
   List<Vehicle> filteredVehicles(String query, String filter) {
@@ -655,6 +732,8 @@ class DriverController extends GetxController {
     String email = '',
     String location = '',
     String address = '',
+    String licenseExpiryDate = '',
+    String vehicleCategoryDetail = '',
     File? image,
     Map<String, dynamic>? payment,
   }) async {
@@ -671,6 +750,9 @@ class DriverController extends GetxController {
       if (email.isNotEmpty) 'email': email,
       if (location.isNotEmpty) 'location': location,
       if (address.isNotEmpty) 'address': address,
+      if (licenseExpiryDate.isNotEmpty) 'licenseExpiryDate': licenseExpiryDate,
+      if (vehicleCategoryDetail.isNotEmpty)
+        'vehicleCategoryExpertiseDetail': vehicleCategoryDetail,
       // Attach payment proof so backend can verify and allow resource creation.
       if (payment != null) 'payment[orderId]': payment['orderId'],
       if (payment != null) 'payment[paymentId]': payment['paymentId'],
@@ -687,36 +769,57 @@ class DriverController extends GetxController {
     return formData;
   }
 
-  /// Builds the vehicle FormData, optionally embedding a Razorpay payment proof.
-  Future<dio.FormData> _buildVehicleFormData({
+  /// Builds the vehicle JSON payload — 1:1 with the web `handleSaveVehicle`
+  /// (`CreateVehicleDto`/`UpdateVehicleDto`): `status` mirrors `ownership`
+  /// (the web form reuses the same value for both), `metrics` is always sent
+  /// as a full object (defaults to 0, matching the web form's pre-filled
+  /// zeros), and the image — if any — is inlined as a base64 data-URL exactly
+  /// like the web's `FileReader.readAsDataURL` (no separate upload endpoint).
+  Future<Map<String, dynamic>> _buildVehiclePayload({
+    required String name,
     required String model,
     required String registrationNumber,
     required int year,
     required String ownership,
     required String category,
-    String description = '',
-    List<File> images = const [],
+    required String statusBadge,
+    String categoryDetail = '',
+    String fuelType = 'Diesel',
+    String capacity = '',
+    String mileage = '',
+    String location = '',
+    double avgRun = 0,
+    double tripEfficiency = 0,
+    double monthlyUsage = 0,
+    File? image,
     Map<String, dynamic>? payment,
   }) async {
-    final fields = <String, dynamic>{
-      'model': model,
-      'registrationNumber': registrationNumber,
-      'year': year,
-      'ownership': ownership,
-      'category': category,
-      'description': description,
-      'isDeclarationAccepted': true,
-      if (payment != null) 'payment[orderId]': payment['orderId'],
-      if (payment != null) 'payment[paymentId]': payment['paymentId'],
-      if (payment != null) 'payment[signature]': payment['signature'],
-    };
-    final formData = dio.FormData.fromMap(fields);
-    for (final img in images) {
-      formData.files.add(MapEntry(
-        'Images',
-        await dio.MultipartFile.fromFile(img.path),
-      ));
+    String? imageDataUrl;
+    if (image != null) {
+      imageDataUrl = await ProfileService.fileToBase64DataUrl(image);
     }
-    return formData;
+    return {
+      'name': name,
+      'model': model,
+      'year': year,
+      'registrationNumber': registrationNumber,
+      'status': ownership,
+      'fuelType': fuelType,
+      'capacity': capacity,
+      'mileage': mileage,
+      'location': location.trim().isEmpty ? 'Not Specified' : location.trim(),
+      if (imageDataUrl != null) 'image': imageDataUrl,
+      'statusBadge': statusBadge,
+      'ownership': ownership,
+      'metrics': {
+        'avgRun': avgRun,
+        'tripEfficiency': tripEfficiency,
+        'monthlyUsage': monthlyUsage,
+      },
+      'category': category,
+      if (category == 'Others' && categoryDetail.trim().isNotEmpty)
+        'categoryDetail': categoryDetail.trim(),
+      if (payment != null) 'payment': payment,
+    };
   }
 }

@@ -4,6 +4,7 @@ class Driver {
   final String fullName;
   final String contactNumber;
   final String vehicleType;
+  final String vehicleCategoryDetail;
   final String vehicleNumber;
   final String description;
   final bool isDeclarationAccepted;
@@ -11,7 +12,10 @@ class Driver {
   final String dlNo;
   final String status;
   final String experience;
+  final String location;
+  final String address;
   DateTime? dateOfBirth;
+  DateTime? licenseExpiryDate;
 
   Driver({
     required this.driverId,
@@ -27,6 +31,10 @@ class Driver {
     required this.dateOfBirth,
     this.status = 'Available',
     this.experience = '',
+    this.vehicleCategoryDetail = '',
+    this.location = '',
+    this.address = '',
+    this.licenseExpiryDate,
   });
 
   factory Driver.fromJson(Map<String, dynamic> json) {
@@ -41,6 +49,7 @@ class Driver {
       contactNumber: json['phoneNumber']?.toString() ?? json['contactNumber']?.toString() ?? '',
       // Backend returns 'vehicleCategoryExpertise'; legacy returned 'vehicleType'
       vehicleType: json['vehicleCategoryExpertise']?.toString() ?? json['vehicleType']?.toString() ?? '',
+      vehicleCategoryDetail: json['vehicleCategoryExpertiseDetail']?.toString() ?? '',
       vehicleNumber: json['vehicleNumber']?.toString() ?? '',
       description: json['description']?.toString() ?? json['status']?.toString() ?? '',
       isDeclarationAccepted: json['isDeclarationAccepted'] as bool? ?? false,
@@ -49,8 +58,11 @@ class Driver {
       // Backend returns 'licenseNumber'; legacy returned 'dlNo'
       dlNo: json['licenseNumber']?.toString() ?? json['dlNo']?.toString() ?? '',
       dateOfBirth: _parseDate(json['dateOfBirth']),
+      licenseExpiryDate: _parseDate(json['licenseExpiryDate']),
       status: json['status']?.toString() ?? 'Available',
       experience: json['experience']?.toString() ?? '',
+      location: json['location']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
     );
   }
 

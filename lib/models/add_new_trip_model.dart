@@ -125,10 +125,38 @@ class Trip {
               ? json['totalBidCount'] ?? json['TotalBidCount'] ?? 0
               : int.tryParse((json['totalBidCount'] ?? json['TotalBidCount'] ?? 0).toString()) ?? 0),
       isScheduledTrip: json['tripType']?.toString() == 'scheduled' || json['isScheduledTrip'] == true,
-      latitude: (json['latitude'] ?? json['Latitude'])?.toDouble(),
-      longitude: (json['longitude'] ?? json['Longitude'])?.toDouble(),
-      distance: route['plannedDistance']?.toString() ?? json['distance']?.toString() ?? json['Distance']?.toString(),
+      // Coordinates are stored as GeoJSON `[lng, lat]` on route.*Location.coordinates
+      // (see AddTripController._buildDriverFormData / trips.service.ts). Parsing
+      // them back here means re-editing a trip pre-fills real coordinates instead
+      // of defaulting to (0,0), which previously re-corrupted plannedDistance.
+      pickupLat: (json['pickupLat'] ?? json['PickupLat'])?.toDouble() ??
+          _coordAt(startLoc['coordinates'], 1),
+      pickupLng: (json['pickupLng'] ?? json['PickupLng'])?.toDouble() ??
+          _coordAt(startLoc['coordinates'], 0),
+      latitude: (json['latitude'] ?? json['Latitude'])?.toDouble() ??
+          _coordAt(endLoc['coordinates'], 1),
+      longitude: (json['longitude'] ?? json['Longitude'])?.toDouble() ??
+          _coordAt(endLoc['coordinates'], 0),
+      distance: _formatDistance(route['plannedDistance']) ??
+          json['distance']?.toString() ??
+          json['Distance']?.toString(),
     );
+  }
+
+  static double? _coordAt(dynamic coordinates, int index) {
+    if (coordinates is! List || coordinates.length <= index) return null;
+    final v = coordinates[index];
+    return v is num ? v.toDouble() : double.tryParse(v.toString());
+  }
+
+  /// Matches the web app's `${plannedDistance} km` convention so the unit is
+  /// never ambiguous between the create-trip estimate and the trip-details
+  /// read-back.
+  static String? _formatDistance(dynamic plannedDistance) {
+    if (plannedDistance == null) return null;
+    final s = plannedDistance.toString();
+    if (s.isEmpty) return null;
+    return s.toLowerCase().contains('km') ? s : '$s km';
   }
 
   static DateTime? _parseDate(dynamic value) {

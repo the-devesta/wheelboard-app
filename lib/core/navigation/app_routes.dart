@@ -12,9 +12,7 @@ class AppRoutes {
   static const companySignup = '/signup/company';
   static const professionalSignup = '/signup/professional';
   static const serviceProviderSignup = '/signup/service-provider';
-  static const otpVerify = '/otp-verify';
   static const forgotPassword = '/forgot-password';
-  static const verifyEmail = '/verify-email';
 
   // ── Main Wrappers (role-based shells) ─────────────────────────────────
   static const professionalHome = '/professional';
@@ -24,8 +22,6 @@ class AppRoutes {
   // ── Company Transport Screens ─────────────────────────────────────────
   static const companyCompleteProfile = '/company/complete-profile';
   static const addTrip = '/company/trips/add';
-  static const addVehicle = '/company/fleet/add-vehicle';
-  static const addDriver = '/company/fleet/add-driver';
   static const vehicleDetail = '/company/fleet/vehicle/:id';
   static const driverDetail = '/company/fleet/driver/:id';
   static const tripDetail = '/company/trips/:id';
@@ -33,7 +29,6 @@ class AppRoutes {
   static const leaseDetail = '/company/lease/:id';
   static const jobForm = '/company/jobs/form';
   static const jobApplications = '/company/jobs/:id/applications';
-  static const newPost = '/company/feed/new-post';
   static const companyProfile = '/company/profile';
 
   // ── Professional Screens ──────────────────────────────────────────────

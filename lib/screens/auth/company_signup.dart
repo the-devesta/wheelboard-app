@@ -4,7 +4,6 @@ import 'package:country_picker/country_picker.dart';
 
 import '../../controllers/Transport/signup_controller.dart';
 import '../../models/company_signupmodel.dart';
-import '../../utils/session_manager.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/legal_widgets.dart';
 import '../CompanyTransport/complete_company_profile.dart';
@@ -101,23 +100,7 @@ class _SignupState extends State<Signup> with SingleTickerProviderStateMixin {
     final success = await _ctrl.registerCompany(model);
     if (!success) return;
 
-    final userId = _ctrl.userId.value ?? '';
-
-    final sessionManager = SessionManager();
-    await sessionManager.saveString('registration_companyName', company);
-    await sessionManager.saveString('registration_email', email);
-    await sessionManager.saveString('registration_mobileNo', phone);
-    await sessionManager.saveString('registration_businessCategory', _selectedCategory);
-
-    final args = {
-      'userId': userId,
-      'companyName': company,
-      'email': email,
-      'mobileNo': phone,
-      'businessCategory': _selectedCategory,
-    };
-
-    Get.offAll(() => CompanyCompleteProfile(), arguments: args);
+    Get.offAll(() => const CompanyCompleteProfile());
   }
 
   @override

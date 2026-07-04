@@ -27,9 +27,7 @@ export '../../screens/auth/professional_signup.dart';
 export '../../screens/auth/service_provider_register_screen.dart';
 export '../../screens/CompanyServiceProvider/complete_profile_screen.dart';
 export '../../screens/auth/otp_screen.dart';
-export '../../screens/auth/verify_email.dart';
 export '../../screens/auth/forgot_password.dart';
 
 // Auth models
 export '../../models/company_signupmodel.dart';
-export '../../models/professional_signupmodel.dart';

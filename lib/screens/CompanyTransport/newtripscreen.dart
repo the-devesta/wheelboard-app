@@ -262,8 +262,19 @@ class _NewTripScreenState extends State<Newtripscreen> {
     if (pickupController.text.isEmpty || deliveryController.text.isEmpty) return;
     setState(() => _isCalculatingDistance = true);
     try {
+      // Prefer the exact resolved coordinates (from a tapped suggestion or
+      // "Use Current Location") over the free-text address whenever they're
+      // known — see schedulescreen.dart's `_calculateDistance` for why this
+      // matters: address-text geocoding can resolve to a different point
+      // than the coordinates actually saved/routed by the backend.
+      final origin = (_pickupLat != null && _pickupLng != null)
+          ? '$_pickupLat,$_pickupLng'
+          : pickupController.text;
+      final destination = (_deliveryLat != null && _deliveryLng != null)
+          ? '$_deliveryLat,$_deliveryLng'
+          : deliveryController.text;
       final result = await distanceService.calculateDistance(
-        origin: pickupController.text, destination: deliveryController.text);
+        origin: origin, destination: destination);
       if (mounted) setState(() { _distanceResult = result; _isCalculatingDistance = false; });
     } catch (e) {
       if (mounted) setState(() => _isCalculatingDistance = false);

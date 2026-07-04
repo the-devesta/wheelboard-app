@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../auth/auth_models.dart';
 import '../storage/secure_session_manager.dart';
+import 'api_exception.dart';
 import '../../utils/app_logger.dart';
 
 /// A centralized singleton network client built on top of [Dio].
@@ -185,6 +186,41 @@ class _AuthInterceptor extends Interceptor {
     return handler.next(options);
   }
 
+  /// Attach a typed [ApiException] (with the backend's real, user-friendly
+  /// message parsed from the response body) onto the error before it
+  /// propagates. Every caller that reads `e.error is ApiException` — and there
+  /// are many across the app — then surfaces the actual "…must be…" / "already
+  /// exists" message instead of a hardcoded "Something went wrong" fallback.
+  DioException _enrich(DioException err) {
+    // Already enriched (e.g. re-entered) — leave as-is.
+    if (err.error is ApiException) return err;
+
+    // Connectivity failures have no response body to parse.
+    switch (err.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return err.copyWith(error: const NetworkException());
+      default:
+        break;
+    }
+
+    final status = err.response?.statusCode ?? 0;
+    final data = err.response?.data;
+    final friendly = ApiException.toFriendlyMessage(data, status);
+    final rawError =
+        data is Map<String, dynamic> ? data['error']?.toString() : null;
+    return err.copyWith(
+      error: ApiException(
+        message: friendly,
+        statusCode: status,
+        error: rawError,
+        response: data,
+      ),
+    );
+  }
+
   @override
   Future<void> onError(
     DioException err,
@@ -219,7 +255,7 @@ class _AuthInterceptor extends Interceptor {
         final refreshToken = await _sessionManager.getRefreshToken();
         if (refreshToken == null || refreshToken.isEmpty) {
           await _forceLogout();
-          return handler.reject(err);
+          return handler.reject(_enrich(err));
         }
 
         final refreshResp = await _dio.post<Map<String, dynamic>>(
@@ -234,7 +270,7 @@ class _AuthInterceptor extends Interceptor {
 
         if (newAccess == null || newAccess.isEmpty) {
           await _forceLogout();
-          return handler.reject(err);
+          return handler.reject(_enrich(err));
         }
 
         await _sessionManager.setTokens(
@@ -251,13 +287,13 @@ class _AuthInterceptor extends Interceptor {
         return handler.resolve(retryResp);
       } catch (_) {
         await _forceLogout();
-        return handler.reject(err);
+        return handler.reject(_enrich(err));
       } finally {
         _isRefreshing = false;
       }
     }
 
-    return handler.next(err);
+    return handler.next(_enrich(err));
   }
 
   Future<void> _forceLogout() async {
