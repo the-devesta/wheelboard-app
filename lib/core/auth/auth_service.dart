@@ -345,12 +345,24 @@ class AuthService extends GetxService {
 
   /// Update KYC status locally (called after KYC verification success).
   Future<void> updateKYCStatus(bool isKYCCompleted) async {
-    if (currentUser.value == null) return;
-    final updatedProfile = Map<String, dynamic>.from(currentUser.value!.profile);
-    updatedProfile['isKYCCompleted'] = isKYCCompleted;
-    updatedProfile['kycCompleted'] = isKYCCompleted;
-    if (isKYCCompleted) updatedProfile['kycStatus'] = 'verified';
-    final u = currentUser.value!;
+    await syncKycStatus(isKYCCompleted ? 'verified' : 'pending');
+  }
+
+  /// Sync the live KYC overall status into the cached user profile so EVERY
+  /// screen that reads KYC status (profile badges, home banners, job/bid
+  /// feature gates) updates in real time — `currentUser` is reactive, so
+  /// updating it here rebuilds all `Obx` consumers immediately. Called by the
+  /// shared KYC screen after each verify / upload / refresh, for all 3 roles.
+  Future<void> syncKycStatus(String overallStatus) async {
+    final u = currentUser.value;
+    if (u == null) return;
+    final status = overallStatus.trim().isEmpty ? 'pending' : overallStatus.trim();
+    final verified = status.toLowerCase() == 'verified';
+    final updatedProfile = Map<String, dynamic>.from(u.profile);
+    updatedProfile['kycStatus'] = status;
+    updatedProfile['kycOverallStatus'] = status;
+    updatedProfile['isKYCCompleted'] = verified;
+    updatedProfile['kycCompleted'] = verified;
     final updatedUser = AppUser(
       id: u.id,
       email: u.email,

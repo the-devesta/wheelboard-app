@@ -1170,25 +1170,20 @@ class _DriverModalState extends State<_DriverModal> {
   }
 
   Future<void> _save() async {
-    if (_nameCtrl.text.trim().isEmpty || _licenseCtrl.text.trim().isEmpty || _dob == null) {
-      SnackBarHelper.warning('Name, license, and date of birth are required');
-      return;
-    }
-    if (_licenseExpiry == null) {
-      SnackBarHelper.warning('License expiry date is required');
+    // Only the driver's name is required. License number, DOB and expiry are
+    // optional — DL verification is unavailable for now, so a company can add a
+    // driver by entering (or skipping) these details manually and still save.
+    if (_nameCtrl.text.trim().isEmpty) {
+      SnackBarHelper.warning('Driver name is required');
       return;
     }
     if (_category == 'Others' && _categoryDetailCtrl.text.trim().isEmpty) {
       SnackBarHelper.warning('Please specify the category');
       return;
     }
-    if (!_confirmed) {
-      SnackBarHelper.warning('Please confirm that the driver has been properly verified');
-      return;
-    }
     setState(() => _saving = true);
-    final dobIso = _dob!.toIso8601String();
-    final expiryIso = _licenseExpiry!.toIso8601String();
+    final dobIso = _dob?.toIso8601String() ?? '';
+    final expiryIso = _licenseExpiry?.toIso8601String() ?? '';
     bool ok;
     if (widget.driver != null) {
       ok = await widget.ctrl.updateDriver(
@@ -1250,8 +1245,11 @@ class _DriverModalState extends State<_DriverModal> {
                 children: [
                   const Text('🪪 Quick License Verification',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _textDark, fontFamily: 'Poppins')),
+                  const SizedBox(height: 4),
+                  const Text('Optional — verify to auto-fill, or just enter the details manually below.',
+                      style: TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
                   const SizedBox(height: 10),
-                  _ModalField('License Number', _licenseCtrl, hint: 'DL1234567890', required: true),
+                  _ModalField('License Number', _licenseCtrl, hint: 'DL1234567890'),
                   const SizedBox(height: 12),
                   GestureDetector(
                     onTap: _pickDob,
@@ -1267,7 +1265,7 @@ class _DriverModalState extends State<_DriverModal> {
                           const Icon(Iconsax.calendar, size: 18, color: _textGrey),
                           const SizedBox(width: 10),
                           Text(
-                            _dob == null ? 'Date of Birth (18+ required)' : _fmtDate(_dob!),
+                            _dob == null ? 'Date of Birth (optional)' : _fmtDate(_dob!),
                             style: TextStyle(
                                 fontSize: 14,
                                 color: _dob == null ? const Color(0xFF9CA3AF) : _textDark,
@@ -1309,7 +1307,7 @@ class _DriverModalState extends State<_DriverModal> {
               ),
             )
           else ...[
-            _ModalField('License Number', _licenseCtrl, hint: 'DL1234567890', required: true),
+            _ModalField('License Number', _licenseCtrl, hint: 'DL1234567890'),
             const SizedBox(height: 12),
             GestureDetector(
               onTap: _pickDob,
@@ -1325,7 +1323,7 @@ class _DriverModalState extends State<_DriverModal> {
                     const Icon(Iconsax.calendar, size: 18, color: _textGrey),
                     const SizedBox(width: 10),
                     Text(
-                      _dob == null ? 'Date of Birth (18+ required)' : _fmtDate(_dob!),
+                      _dob == null ? 'Date of Birth (optional)' : _fmtDate(_dob!),
                       style: TextStyle(
                           fontSize: 14,
                           color: _dob == null ? const Color(0xFF9CA3AF) : _textDark,
@@ -1353,7 +1351,7 @@ class _DriverModalState extends State<_DriverModal> {
                   const Icon(Iconsax.calendar_1, size: 18, color: _textGrey),
                   const SizedBox(width: 10),
                   Text(
-                    _licenseExpiry == null ? 'License Expiry Date *' : _fmtDate(_licenseExpiry!),
+                    _licenseExpiry == null ? 'License Expiry Date (optional)' : _fmtDate(_licenseExpiry!),
                     style: TextStyle(
                         fontSize: 14,
                         color: _licenseExpiry == null ? const Color(0xFF9CA3AF) : _textDark,
@@ -1416,7 +1414,7 @@ class _DriverModalState extends State<_DriverModal> {
           const SizedBox(height: 8),
           _ConfirmCheckbox(
             value: _confirmed,
-            label: 'I confirm that the driver has been properly verified.',
+            label: 'I confirm the information provided is correct.',
             onChanged: (v) => setState(() => _confirmed = v ?? false),
           ),
           const SizedBox(height: 16),

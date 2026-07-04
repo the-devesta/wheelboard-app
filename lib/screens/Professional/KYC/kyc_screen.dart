@@ -74,6 +74,11 @@ class _KycScreenState extends State<KycScreen> {
         _service.getRequiredDocuments(kyc.professionalType),
         _service.checkCompleteness(),
       ]);
+      // Push the freshest KYC status into the reactive global user so the
+      // profile badges / banners / feature gates update in real time (they read
+      // AuthService.currentUser). Runs after every fetch — which happens after
+      // each verify/upload — for all 3 roles.
+      await AuthService.to.syncKycStatus(kyc.overallStatus);
       if (!mounted) return;
       setState(() {
         _kyc = kyc;

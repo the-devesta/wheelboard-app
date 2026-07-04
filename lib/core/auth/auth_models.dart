@@ -110,16 +110,18 @@ class AppUser {
   }
 
   bool get isKYCCompleted {
-    // Mirror wheelboard-fe's isKycVerified logic:
-    // isKycVerified(kycStatus) || isKycVerified(kycOverallStatus) || isVerified
+    // Mirrors wheelboard-fe's `isKycVerified` EXACTLY (business/profile:418,
+    // professional/kyc:209): verified ONLY when the status is 'verified' (or the
+    // legacy `isVerified` flag). It must NOT treat `kycCompleted` /
+    // `isKYCCompleted` as verified — those are "the user SUBMITTED KYC" flags
+    // that complete-profile sets to `true` while `kycStatus` is still 'pending'.
+    // Conflating them hid the "Complete KYC" prompt for unverified users.
     final kycStatus = profile['kycStatus']?.toString().toLowerCase();
     final kycOverallStatus =
         profile['kycOverallStatus']?.toString().toLowerCase();
     return kycStatus == 'verified' ||
         kycOverallStatus == 'verified' ||
-        profile['isVerified'] == true ||
-        profile['kycCompleted'] == true ||
-        profile['isKYCCompleted'] == true;
+        profile['isVerified'] == true;
   }
 
   /// Mirrors wheelboard-fe's profile completion check.

@@ -99,10 +99,11 @@ class _ProfessionalMainWrapperState extends State<ProfessionalMainWrapper>
         () => Stack(
           children: [
             IndexedStack(index: _tab.currentIndex.value, children: _screens),
-            const WheelbotFloatingButton(
-              roleContext: 'professional',
-              bottom: 170,
-            ),
+            if (_tab.currentIndex.value == 0)
+              const WheelbotFloatingButton(
+                roleContext: 'professional',
+                bottom: 170,
+              ),
           ],
         ),
       ),

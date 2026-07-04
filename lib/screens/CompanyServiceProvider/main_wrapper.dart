@@ -94,10 +94,11 @@ class _CompanyServiceProviderMainWrapperState
       body: Stack(
         children: [
           IndexedStack(index: _currentIndex, children: _screens),
-          WheelbotFloatingButton(
-            roleContext: 'serviceProvider',
-            bottom: (_currentIndex == 0 || _currentIndex == 1) ? 180 : 120,
-          ),
+          if (_currentIndex == 0)
+            const WheelbotFloatingButton(
+              roleContext: 'serviceProvider',
+              bottom: 180,
+            ),
         ],
       ),
       floatingActionButton: (_currentIndex == 0 || _currentIndex == 1)

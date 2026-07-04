@@ -739,8 +739,11 @@ class DriverController extends GetxController {
   }) async {
     final fields = <String, dynamic>{
       'name': name,
-      'licenseNumber': licenseNumber,
-      'dateOfBirth': dateOfBirth,
+      // License number & DOB are optional (DL verification is unavailable for
+      // now). Omit them entirely when blank so the backend's duplicate-license
+      // check treats them as absent instead of matching on an empty string.
+      if (licenseNumber.trim().isNotEmpty) 'licenseNumber': licenseNumber.trim(),
+      if (dateOfBirth.trim().isNotEmpty) 'dateOfBirth': dateOfBirth.trim(),
       'phoneNumber': phoneNumber,
       'vehicleCategoryExpertise': vehicleType,
       'description': description,

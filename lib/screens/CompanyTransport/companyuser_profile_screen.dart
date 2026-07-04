@@ -304,8 +304,9 @@ class CompanyProfileScreen extends StatelessWidget {
   // ── KYC banner ────────────────────────────────────────────────────────────
 
   Widget _buildKycBanner(UserProfileModel? profile) {
-    final isVerified = profile?.isKYCCompleted ?? false;
-    if (isVerified) return const SizedBox.shrink();
+    final isVerified =
+        AuthService.to.isUserKYCCompleted || (profile?.isKYCCompleted ?? false);
+    if (isVerified) return _kycVerifiedBanner();
     return GestureDetector(
       onTap: () => Get.to(() => const KycScreen()),
       child: Padding(
@@ -361,6 +362,54 @@ class CompanyProfileScreen extends StatelessWidget {
               const Icon(Icons.chevron_right_rounded, color: Color(0xFFF59E0B)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Green "KYC Verified" banner shown once the company is verified — mirrors
+  /// the Professional persona's verified banner and the web verified badge.
+  Widget _kycVerifiedBanner() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF22C55E), width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF22C55E).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Iconsax.shield_tick, size: 22, color: Color(0xFF22C55E)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('KYC Verified',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF14532D),
+                          fontFamily: 'Poppins')),
+                  SizedBox(height: 2),
+                  Text('Your company is verified — full platform access unlocked.',
+                      style: TextStyle(
+                          fontSize: 11, color: Color(0xFF166534), fontFamily: 'Poppins')),
+                ],
+              ),
+            ),
+            const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 22),
+          ],
         ),
       ),
     );

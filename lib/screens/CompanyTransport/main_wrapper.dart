@@ -73,7 +73,7 @@ class _CompanyTransportMainWrapperState
               index: _wrapperController.currentTabIndex.value,
               children: _screens,
             ),
-            if (_wrapperController.currentTabIndex.value != 0)
+            if (_wrapperController.currentTabIndex.value == 0)
               const WheelbotFloatingButton(roleContext: 'company', bottom: 120),
           ],
         ),
