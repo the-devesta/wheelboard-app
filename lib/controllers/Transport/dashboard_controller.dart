@@ -16,10 +16,50 @@ class DashboardController extends GetxController {
   final showAllAssignedServices = false.obs;
   final showAllProfessionals = false.obs;
 
+  // Ranged trip-completion trend — same endpoint & ranges as the web dashboard.
+  final trendRange = '7d'.obs; // 7d | month | 3month | all
+  final trendPoints = <TrendPoint>[].obs;
+  final trendLoading = false.obs;
+
   @override
   void onInit() {
     super.onInit();
     fetchDashboardData();
+    fetchTripCompletionTrend();
+  }
+
+  /// Change the trend range and refetch (called by the chart's range selector).
+  void setTrendRange(String range) {
+    if (trendRange.value == range) return;
+    trendRange.value = range;
+    fetchTripCompletionTrend();
+  }
+
+  /// Fetch the date-bucketed completion trend for the selected range. Backend
+  /// owns the grouping (daily / weekly / monthly) so the app never rebuilds
+  /// counts locally and always matches the web.
+  Future<void> fetchTripCompletionTrend() async {
+    trendLoading.value = true;
+    try {
+      final raw = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.dashboard.tripCompletionTrend(trendRange.value),
+      );
+      final body = raw is Map<String, dynamic> ? (raw['data'] ?? raw) : raw;
+      final points = (body is Map<String, dynamic> ? body['points'] : null);
+      if (points is List) {
+        trendPoints.value = points
+            .whereType<Map<String, dynamic>>()
+            .map(TrendPoint.fromJson)
+            .toList();
+      } else {
+        trendPoints.value = [];
+      }
+    } catch (e) {
+      AppLogger.e('❌ fetchTripCompletionTrend: $e');
+      trendPoints.value = [];
+    } finally {
+      trendLoading.value = false;
+    }
   }
 
   /// Refreshes the company dashboard if it has already been initialised. Call

@@ -122,8 +122,27 @@ class _KycScreenState extends State<KycScreen> {
     }
     setState(() => _verifying = true);
     try {
-      await _service.verifyPan(pan);
-      _toast('PAN submitted for verification', _green);
+      final result = await _service.verifyPan(pan);
+
+      if (result.verified) {
+        _toast('PAN verified successfully', _green);
+      } else {
+        // Distinguish "the provider could not verify this PAN" from "we could
+        // not reach the provider". Telling a user their PAN is invalid because
+        // of a timeout on our side is both wrong and alarming.
+        final reason = result.autoVerificationReason;
+        final couldNotReachProvider = reason == 'provider-unavailable' ||
+            reason == 'provider-not-configured';
+
+        _toast(
+          couldNotReachProvider
+              ? 'Automatic verification is unavailable right now. '
+                  'Upload your PAN card image and our team will verify it.'
+              : 'We could not verify this PAN automatically. '
+                  'Upload your PAN card image and our team will verify it.',
+          _amber,
+        );
+      }
       await _fetch();
     } catch (e) {
       _toast(e.toString().replaceFirst('Exception: ', ''), _danger);
@@ -435,10 +454,24 @@ class _KycScreenState extends State<KycScreen> {
       );
 
   // ── PAN ──
+  //
+  // The card reflects the ONE authoritative PAN state held by the backend
+  // (KycExtensions.panStatus), so a PAN already handled during registration or
+  // onboarding is never demanded a second time:
+  //
+  //   verified  → read-only confirmation, no re-entry, no re-upload
+  //   pending   → "awaiting review"; offers the PAN card image only, and does
+  //               NOT offer "Verify" again (that would create a second
+  //               submission for a PAN already queued for an admin)
+  //   rejected  → correction/resubmission allowed
+  //   none      → normal verification flow
   Widget _panCard(Kyc k) {
     final status = k.panStatus;
     final verified = status == KycStatus.verified;
+    final pending = status == KycStatus.pending;
+    final rejected = status == KycStatus.rejected;
     final mandatory = _required?.mandatory.contains(KycDocType.pan) ?? false;
+
     return _verifyCard(
       icon: Iconsax.card,
       title: 'PAN Card Verification',
@@ -449,7 +482,8 @@ class _KycScreenState extends State<KycScreen> {
           controller: _panCtrl,
           label: 'PAN Number',
           hint: 'ABCDE1234F',
-          enabled: !verified,
+          // Locked while verified or already awaiting an admin decision.
+          enabled: !verified && !pending,
           maxLength: 10,
           upper: true,
         ),
@@ -458,9 +492,42 @@ class _KycScreenState extends State<KycScreen> {
           Text('Name: ${k.panName}',
               style: GoogleFonts.poppins(fontSize: 12, color: _textGrey)),
         ],
-        if (!verified) ...[
+        if (verified) ...[
+          const SizedBox(height: 8),
+          Row(children: [
+            const Icon(Iconsax.tick_circle, size: 15, color: _green),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'PAN verified — no further action needed.',
+                style: GoogleFonts.poppins(fontSize: 12, color: _green),
+              ),
+            ),
+          ]),
+        ],
+        if (pending) ...[
+          const SizedBox(height: 8),
+          Text(
+            'PAN verification pending. Our team is reviewing your details. '
+            'Upload a clear photo of your PAN card using the upload icon above '
+            'if you have not already.',
+            style: GoogleFonts.poppins(fontSize: 12, color: _amber),
+          ),
+        ],
+        if (rejected) ...[
+          const SizedBox(height: 8),
+          Text(
+            'PAN verification was rejected. Please correct the number and '
+            'submit again.',
+            style: GoogleFonts.poppins(fontSize: 12, color: _danger),
+          ),
+        ],
+        if (!verified && !pending) ...[
           const SizedBox(height: 12),
-          _verifyButton('Verify PAN Card', _verifyPan),
+          _verifyButton(
+            rejected ? 'Re-submit PAN Card' : 'Verify PAN Card',
+            _verifyPan,
+          ),
         ],
       ]),
     );

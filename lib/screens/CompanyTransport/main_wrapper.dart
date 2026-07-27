@@ -7,7 +7,6 @@ import '../../controllers/Transport/notification_controller.dart';
 import '../../controllers/Transport/user_profile_controller.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/wheelbot_button.dart';
 import 'feed_screen.dart';
 import 'fleet_screen.dart';
 import 'home_screen.dart';
@@ -73,8 +72,13 @@ class _CompanyTransportMainWrapperState
               index: _wrapperController.currentTabIndex.value,
               children: _screens,
             ),
-            if (_wrapperController.currentTabIndex.value == 0)
-              const WheelbotFloatingButton(roleContext: 'company', bottom: 120),
+            // NOTE: the standalone WheelbotFloatingButton was removed.
+            //
+            // It was rendered only on tab 0 (Home) — the one screen whose
+            // Tools speed-dial already contains a "WheelBot" action — so the
+            // Home screen showed two identical WheelBot buttons stacked on top
+            // of each other. It offered no access on any other tab, so removing
+            // it loses no entry point: WheelBot stays reachable from Tools.
           ],
         ),
         bottomNavigationBar: AppBottomNav(

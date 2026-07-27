@@ -9,10 +9,45 @@ import '../widgets/custom_snackbar.dart';
 /// Read/delete client for the user's expenses (mirrors wheelboard-fe
 /// `expensesApi.getExpenses()` / `deleteExpense()` → `GET`/`DELETE /expenses`).
 class ExpenseService {
-  Future<List<Expense>> getExpenses() async {
+  /// GET /expenses with optional server-side filters.
+  ///
+  /// Every parameter is omitted when null/empty on purpose: the backend runs a
+  /// global ValidationPipe with `forbidNonWhitelisted`, so sending
+  /// `category=''` for an "All" selection fails its enum check with a 400
+  /// rather than being ignored.
+  Future<List<Expense>> getExpenses({
+    String? category,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? vehicle,
+    List<String>? tripIds,
+    String? tripLink,
+  }) async {
     try {
+      String? isoDate(DateTime? d) => d?.toIso8601String().split('T').first;
+
+      // "No trip" is a client-side concept; on the wire it is expressed as
+      // tripLink=unassigned, not as a trip identifier.
+      final realTripIds =
+          (tripIds ?? const <String>[]).where((t) => t != kUnassignedTripKey).toList();
+
+      final query = <String, dynamic>{
+        if (category != null && category.isNotEmpty && category != 'all')
+          'category': category,
+        if (status != null && status.isNotEmpty && status != 'all')
+          'status': status,
+        if (startDate != null) 'startDate': isoDate(startDate),
+        if (endDate != null) 'endDate': isoDate(endDate),
+        if (vehicle != null && vehicle.isNotEmpty) 'vehicle': vehicle,
+        if (realTripIds.isNotEmpty) 'tripIds': realTripIds.join(','),
+        if (tripLink != null && tripLink.isNotEmpty && tripLink != 'all')
+          'tripLink': tripLink,
+      };
+
       final raw = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.expenses.list,
+        queryParameters: query.isEmpty ? null : query,
       );
       final data = (raw is Map && raw.containsKey('data')) ? raw['data'] : raw;
       if (data is List) {

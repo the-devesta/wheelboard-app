@@ -130,29 +130,46 @@ class VehicleDetailCompat {
 
   List<RecentTrip> get recentTrips => _m.recentTrips;
 
-  // monthlyUsageKM maps to metrics.monthlyUsage or metrics.avgRun
-  num get monthlyUsageKM => _m.metrics.monthlyUsage > 0 ? _m.metrics.monthlyUsage : _m.metrics.avgRun;
+  /// Monthly usage in km, falling back to average run. Null when unknown.
+  num? get monthlyUsageKM {
+    final usage = _m.metrics.monthlyUsage;
+    if (usage != null && usage > 0) return usage;
+    return _m.metrics.avgRun;
+  }
 
-  // costPerKM maps to metrics.tripEfficiency
-  num get costPerKM => _m.metrics.tripEfficiency;
+  /// Cost per km in ₹. Null when unknown — callers must render '—', not '₹0'.
+  num? get costPerKM => _m.metrics.tripEfficiency;
 }
 
+/// Backend-derived vehicle metrics (canonical TripMetrics roll-up).
+///
+/// All fields are nullable: `null` means the backend could not determine the
+/// value (e.g. the vehicle has no completed trips, or no trip has a recorded
+/// distance). That is NOT the same as zero and must render as an em dash, so
+/// these are no longer coerced with `?? 0`.
 class VehicleMetrics {
-  final num avgRun;
-  final num tripEfficiency;
-  final num monthlyUsage;
+  /// Mean distance per completed trip, in km.
+  final num? avgRun;
+
+  /// Cost per kilometre in ₹ — a COST metric, not fuel mileage (km/L) and not
+  /// a 0-100 score. Alias of the backend's `costPerKm`.
+  final num? tripEfficiency;
+
+  final num? monthlyUsage;
 
   VehicleMetrics({
-    required this.avgRun,
-    required this.tripEfficiency,
-    required this.monthlyUsage,
+    this.avgRun,
+    this.tripEfficiency,
+    this.monthlyUsage,
   });
 
   factory VehicleMetrics.fromJson(Map<String, dynamic> json) {
     return VehicleMetrics(
-      avgRun: json['avgRun'] as num? ?? 0,
-      tripEfficiency: json['tripEfficiency'] as num? ?? 0,
-      monthlyUsage: json['monthlyUsage'] as num? ?? 0,
+      // Prefer the explicit `costPerKm` name when the backend provides it.
+      avgRun: json['avgRun'] as num?,
+      tripEfficiency:
+          (json['costPerKm'] as num?) ?? (json['tripEfficiency'] as num?),
+      monthlyUsage: json['monthlyUsage'] as num?,
     );
   }
 }

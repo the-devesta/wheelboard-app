@@ -699,9 +699,6 @@ class _VehicleModalState extends State<_VehicleModal> {
   final _mileageCtrl = TextEditingController();
   final _categoryDetailCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
-  final _avgRunCtrl = TextEditingController(text: '0');
-  final _tripEfficiencyCtrl = TextEditingController(text: '0');
-  final _monthlyUsageCtrl = TextEditingController(text: '0');
   String _ownership = 'Owned';
   String _category = 'Shipment';
   String _fuelType = 'Diesel';
@@ -710,6 +707,9 @@ class _VehicleModalState extends State<_VehicleModal> {
   bool _confirmed = false;
   File? _image;
   final Set<String> _lockedFields = {};
+
+  /// Last RC verification outcome — drives the persistent inline banner.
+  RcVerifyResult? _rcResult;
 
   static const _fuelTypes = ['Diesel', 'Petrol', 'Electric', 'CNG'];
   static const _categories = ['Shipment', 'Construction', 'Mining', 'Others'];
@@ -731,9 +731,6 @@ class _VehicleModalState extends State<_VehicleModal> {
       _capacityCtrl.text = v.capacity;
       _mileageCtrl.text = v.mileage;
       _fuelType = _fuelTypes.contains(v.fuelType) ? v.fuelType : 'Diesel';
-      _avgRunCtrl.text = v.avgRun == 0 ? '0' : v.avgRun.toString();
-      _tripEfficiencyCtrl.text = v.tripEfficiency == 0 ? '0' : v.tripEfficiency.toString();
-      _monthlyUsageCtrl.text = v.monthlyUsage == 0 ? '0' : v.monthlyUsage.toString();
       _ownership = v.ownershipType.isEmpty ? 'Owned' : v.ownershipType;
       _category = _categories.contains(v.vehicleType) ? v.vehicleType : 'Shipment';
     }
@@ -749,9 +746,6 @@ class _VehicleModalState extends State<_VehicleModal> {
     _mileageCtrl.dispose();
     _categoryDetailCtrl.dispose();
     _locationCtrl.dispose();
-    _avgRunCtrl.dispose();
-    _tripEfficiencyCtrl.dispose();
-    _monthlyUsageCtrl.dispose();
     super.dispose();
   }
 
@@ -762,11 +756,22 @@ class _VehicleModalState extends State<_VehicleModal> {
       SnackBarHelper.warning('Enter registration number first');
       return;
     }
-    setState(() => _verifying = true);
-    final data = await widget.ctrl.verifyVehicleRegistration(_regCtrl.text.trim());
+    setState(() {
+      _verifying = true;
+      _rcResult = null; // clear any previous banner
+    });
+    final result =
+        await widget.ctrl.verifyVehicleRegistration(_regCtrl.text.trim());
     if (!mounted) return;
-    setState(() => _verifying = false);
-    // On failure the controller already surfaces the backend reason.
+    setState(() {
+      _verifying = false;
+      // Persist the outcome so the form can render an inline banner. A snackbar
+      // alone was not reliably visible above this sheet, so the user never saw
+      // why verification failed or that they could continue manually.
+      _rcResult = result;
+    });
+
+    final data = result.data;
     if (data != null) {
       final locked = <String>{};
       final reg = data['registrationNumber']?.toString();
@@ -801,6 +806,64 @@ class _VehicleModalState extends State<_VehicleModal> {
     }
   }
 
+  /// Inline RC verification result.
+  ///
+  /// Green on success; amber (never a red "invalid") when automatic
+  /// verification could not be completed, with an explicit note that the
+  /// vehicle can still be added and the RC submitted for manual verification.
+  Widget _rcBanner(RcVerifyResult r) {
+    final ok = r.isVerified;
+    final bg = ok ? const Color(0xFFECFDF5) : const Color(0xFFFFF7ED);
+    final fg = ok ? const Color(0xFF047857) : const Color(0xFF9A3412);
+    final border = ok ? const Color(0xFFA7F3D0) : const Color(0xFFFED7AA);
+    final icon = ok ? Iconsax.tick_circle : Iconsax.info_circle;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: fg),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  r.message,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.35,
+                    color: fg,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                if (r.needsManual) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Tip: attach the RC photo below — our team will verify it.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: fg.withValues(alpha: 0.85),
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
@@ -823,9 +886,10 @@ class _VehicleModalState extends State<_VehicleModal> {
       return;
     }
     setState(() => _saving = true);
-    final avgRun = double.tryParse(_avgRunCtrl.text.trim()) ?? 0;
-    final tripEfficiency = double.tryParse(_tripEfficiencyCtrl.text.trim()) ?? 0;
-    final monthlyUsage = double.tryParse(_monthlyUsageCtrl.text.trim()) ?? 0;
+    // avgRun / tripEfficiency / monthlyUsage are no longer captured here.
+    // They are derived by the backend from the vehicle's actual trips; letting
+    // an operator type them in produced numbers that looked authoritative but
+    // were never reconciled against any trip.
     bool ok;
     if (widget.vehicle != null) {
       ok = await widget.ctrl.updateVehicle(
@@ -841,9 +905,6 @@ class _VehicleModalState extends State<_VehicleModal> {
         capacity: _capacityCtrl.text.trim(),
         mileage: _mileageCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
-        avgRun: avgRun,
-        tripEfficiency: tripEfficiency,
-        monthlyUsage: monthlyUsage,
         statusBadge: widget.vehicle!.status.isNotEmpty ? widget.vehicle!.status : 'Available',
         image: _image,
       );
@@ -860,9 +921,6 @@ class _VehicleModalState extends State<_VehicleModal> {
         capacity: _capacityCtrl.text.trim(),
         mileage: _mileageCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
-        avgRun: avgRun,
-        tripEfficiency: tripEfficiency,
-        monthlyUsage: monthlyUsage,
         image: _image,
       );
     }
@@ -914,6 +972,13 @@ class _VehicleModalState extends State<_VehicleModal> {
                       ),
                     ],
                   ),
+                  // Persistent RC verification result. Shown inline (not as a
+                  // snackbar, which the sheet could obscure) so the user always
+                  // sees the outcome and knows they can continue manually.
+                  if (_rcResult != null) ...[
+                    const SizedBox(height: 10),
+                    _rcBanner(_rcResult!),
+                  ],
                 ],
               ),
             )
@@ -951,11 +1016,16 @@ class _VehicleModalState extends State<_VehicleModal> {
                 const Text('VEHICLE METRICS',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _textGrey, letterSpacing: 0.6, fontFamily: 'Poppins')),
                 const SizedBox(height: 12),
-                _ModalField('Odometer reading (KM)', _avgRunCtrl, keyboard: TextInputType.number, required: true),
-                const SizedBox(height: 12),
-                _ModalField('Trip Efficiency (Rs/KM)', _tripEfficiencyCtrl, keyboard: TextInputType.number, required: true),
-                const SizedBox(height: 12),
-                _ModalField('Monthly Usage (KM)', _monthlyUsageCtrl, keyboard: TextInputType.number, required: true),
+                // Odometer / Trip Efficiency / Monthly Usage inputs removed.
+                //
+                // These were REQUIRED free-text fields — an operator typed a
+                // "Trip Efficiency (Rs/KM)" that was stored verbatim and shown
+                // on Vehicle Details as though it were measured. All three are
+                // now derived by the backend from the vehicle's actual trips.
+                const Text(
+                  'Distance, cost per km and monthly usage are calculated automatically from this vehicle’s completed trips.',
+                  style: TextStyle(fontSize: 12, color: _textGrey, fontFamily: 'Poppins'),
+                ),
               ],
             ),
           ),

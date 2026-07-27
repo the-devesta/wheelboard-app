@@ -1,15 +1,13 @@
-﻿import 'dart:convert';
-
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 import 'package:iconsax/iconsax.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../models/assigned_trip_model.dart';
+import '../../../services/sos_service.dart';
 import '../../../theme/design_system.dart';
 import '../../../utils/trip_status.dart';
 
@@ -70,8 +68,16 @@ class _SOSScreenState extends State<SOSScreen>
   }
 
   Future<void> _fireSOSWebhook() async {
+    // Each lookup below is individually guarded so the webhook ALWAYS fires.
+    // Previously one try/catch wrapped everything, so a thrown GPS fix (location
+    // services off, or the high-accuracy request timing out) aborted before the
+    // POST and no SOS alert was sent at all — the worst possible failure for an
+    // emergency button. Missing data is now simply omitted from the payload.
+
+    // ── Step 1+2: location permission & GPS fix ────────────────────────────
+    double? lat;
+    double? lng;
     try {
-      // ── Step 1: location permission ──────────────────────────────────────
       debugPrint('[SOS] 📍 Checking location permission...');
       LocationPermission perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
@@ -80,32 +86,44 @@ class _SOSScreenState extends State<SOSScreen>
       }
       debugPrint('[SOS] 📍 Location permission: $perm');
 
-      // ── Step 2: GPS fix ──────────────────────────────────────────────────
-      Map<String, dynamic> location = {};
       if (perm != LocationPermission.denied &&
           perm != LocationPermission.deniedForever) {
         debugPrint('[SOS] 📍 Fetching GPS coordinates...');
         final pos = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
-        location = {'lat': pos.latitude, 'lng': pos.longitude};
+        lat = pos.latitude;
+        lng = pos.longitude;
         debugPrint(
             '[SOS] 📍 Location obtained: lat=${pos.latitude}, lng=${pos.longitude}');
       } else {
-        debugPrint('[SOS] ⚠️ Location unavailable (permission denied) - sending without coords');
+        debugPrint(
+            '[SOS] ⚠️ Location unavailable (permission denied) - sending without coords');
       }
+    } catch (e) {
+      debugPrint('[SOS] ⚠️ Location lookup failed - sending without coords: $e');
+    }
 
-      // ── Step 3: driver identity ──────────────────────────────────────────
+    // ── Step 3: driver identity ────────────────────────────────────────────
+    String driverName = '';
+    String driverPhone = '';
+    try {
       debugPrint('[SOS] 👤 Reading driver info from AuthService...');
-      final auth = Get.isRegistered<AuthService>() ? Get.find<AuthService>() : null;
+      final auth =
+          Get.isRegistered<AuthService>() ? Get.find<AuthService>() : null;
       final user = auth?.currentUser.value;
-      final driverName = user?.fullName ?? '';
-      final driverPhone = user?.phoneNumber ?? '';
-      debugPrint('[SOS] 👤 driver_name="$driverName"  driver_phone="$driverPhone"');
+      driverName = user?.fullName ?? '';
+      driverPhone = user?.phoneNumber ?? '';
+      debugPrint(
+          '[SOS] 👤 driver_name="$driverName"  driver_phone="$driverPhone"');
+    } catch (e) {
+      debugPrint('[SOS] ⚠️ Driver lookup failed - sending without identity: $e');
+    }
 
-      // ── Step 4: active trip ──────────────────────────────────────────────
+    // ── Step 4: active trip ────────────────────────────────────────────────
+    String tripId = '';
+    try {
       debugPrint('[SOS] 🚗 Looking for active trip...');
-      String tripId = '';
       if (Get.isRegistered<AssignedTripController>()) {
         final c = Get.find<AssignedTripController>();
         for (final t in c.assignedTrips) {
@@ -120,38 +138,21 @@ class _SOSScreenState extends State<SOSScreen>
       } else {
         debugPrint('[SOS] 🚗 No active trip found - tripId will be empty');
       }
-
-      // ── Step 5: build & log payload ──────────────────────────────────────
-      final payload = {
-        'tripId': tripId,
-        'driver_name': driverName,
-        'driver_phone': driverPhone,
-        'location': location,
-      };
-      final body = jsonEncode(payload);
-      debugPrint('[SOS] 📤 Sending POST → https://n8n.srv1694525.hstgr.cloud/webhook/sos-call');
-      debugPrint('[SOS] 📦 Payload: $body');
-
-      // ── Step 6: fire request ─────────────────────────────────────────────
-      final response = await http.post(
-        Uri.parse('https://n8n.srv1694525.hstgr.cloud/webhook/sos-call'),
-        headers: {'Content-Type': 'application/json'},
-        body: body,
-      );
-
-      // ── Step 7: log response ─────────────────────────────────────────────
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('[SOS] ✅ Webhook response: ${response.statusCode} OK');
-        debugPrint('[SOS] 📥 Response body: ${response.body}');
-      } else {
-        debugPrint('[SOS] ⚠️ Webhook returned unexpected status: ${response.statusCode}');
-        debugPrint('[SOS] 📥 Response body: ${response.body}');
-      }
-    } catch (e, st) {
-      // Webhook failure must never block the emergency call.
-      debugPrint('[SOS] ❌ Webhook failed: $e');
-      debugPrint('[SOS] 🔍 Stack trace: $st');
+    } catch (e) {
+      debugPrint('[SOS] ⚠️ Trip lookup failed - sending without tripId: $e');
     }
+
+    // ── Step 5: fire the shared webhook helper ─────────────────────────────
+    // Payload construction, logging and error handling live in
+    // `services/sos_service.dart` so every SOS trigger sends an identical
+    // payload — and matches the web helper. It never throws.
+    await triggerSOSCall(
+      tripId: tripId,
+      driverName: driverName,
+      driverPhone: driverPhone,
+      lat: lat,
+      lng: lng,
+    );
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {

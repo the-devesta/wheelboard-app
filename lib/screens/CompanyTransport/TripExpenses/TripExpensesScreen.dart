@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:wheelboard/controllers/Transport/trip_expenses_controller.dart';
 import 'package:wheelboard/models/trip_expenses_model.dart';
+import 'package:wheelboard/utils/format_utils.dart';
 
 class TripExpensesScreen extends StatefulWidget {
   final String tripId;
@@ -204,16 +205,22 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
+              // An unknown distance/cost is rendered as an em dash, not as
+              // "0 km" / "₹0/km" — a missing measurement is not a zero one.
+              // Centralized formatters: distance trims trailing zeros
+              // (27.2 km, not 27.20 km) and both render "—" when unknown.
               _buildInfoItem(
                 Icons.route_outlined,
                 "Distance",
-                "${info.distanceKm ?? 0} km",
+                FormatUtils.formatDistanceKm(info.distanceKm),
               ),
               const Spacer(),
+              // ₹/km is a COST metric — labelled accordingly rather than the
+              // ambiguous "Efficiency", which elsewhere meant km/L or a score.
               _buildInfoItem(
                 Icons.speed_outlined,
-                "Efficiency",
-                "₹${info.efficiencyPerKm?.toStringAsFixed(2) ?? '0'}/km",
+                "Cost per km",
+                FormatUtils.formatCostPerKm(info.efficiencyPerKm),
               ),
             ],
           ),

@@ -51,7 +51,17 @@ class KycService {
   }
 
   /// POST /kyc/verify/pan  { panNumber }
-  /// Backend records the PAN as PENDING (manual review) — returns verified=false.
+  ///
+  /// The backend attempts automatic verification through its Invincible Ocean
+  /// integration and returns `verified: true` on success. If the provider
+  /// cannot verify the PAN — or cannot be reached — the PAN is recorded as
+  /// PENDING for manual admin review and `verified: false` is returned along
+  /// with `autoVerificationOutcome` / `autoVerificationReason`, which the UI
+  /// uses to avoid telling the user their PAN is invalid when the provider was
+  /// merely unavailable.
+  ///
+  /// The app never contacts the provider directly and never decides the
+  /// verification status itself.
   Future<KycVerifyResult> verifyPan(String panNumber) async {
     try {
       final raw = await ApiClient.instance.post<dynamic>(

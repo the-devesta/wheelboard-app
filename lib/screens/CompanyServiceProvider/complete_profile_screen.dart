@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/service_provider/sp_register_controller.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/navigation/app_routes.dart';
+import '../../services/kyc_service.dart';
 import '../../theme/design_system.dart';
 import '../../widgets/custom_snackbar.dart';
 
@@ -203,22 +204,29 @@ class _ServiceProviderCompleteProfileScreenState
       putStr('whatsappNumber', _whatsappCtrl.text);
     }
 
-    // On first completion we submit the KYC block (admin review) like the web
-    // page does. While editing we leave any existing KYC state untouched.
+    // `kycCompleted` marks the onboarding form as SUBMITTED (route guards read
+    // it). Verification state — isVerified / kycStatus / kycDetails — is owned
+    // by the backend and no longer sent from here; the server strips those
+    // fields from client profile updates. While editing we leave it untouched.
     if (!widget.isEdit) {
-      profile.addAll({
-        'isVerified': false,
-        'kycStatus': 'pending',
-        'kycCompleted': true,
-        'kycDetails': {
-          'verificationMode': 'admin_review',
-          'panNumber': pan,
-        },
-      });
+      profile['kycCompleted'] = true;
     }
 
     final ok = await _ctrl.completeProfile(profile);
     if (!ok) return;
+
+    // Route the PAN through the canonical KYC module so it is auto-verified
+    // against Invincible Ocean and recognised by the KYC screen later, instead
+    // of living only in the profile blob and being demanded a second time.
+    // A failure here must not block onboarding — the PAN is recorded as
+    // pending manual review.
+    if (pan.isNotEmpty) {
+      try {
+        await KycService().verifyPan(pan);
+      } catch (_) {
+        // Non-blocking — the KYC screen surfaces the pending/manual state.
+      }
+    }
 
     if (widget.isEdit) {
       SnackBarHelper.success('Profile updated successfully!');

@@ -238,7 +238,27 @@ class KycVerifyResult {
   final Kyc? kyc;
   final String? name;
 
-  const KycVerifyResult({required this.verified, this.kyc, this.name});
+  /// How automatic verification concluded when [verified] is false.
+  /// `'not-verified'` — the provider answered and could not verify the number.
+  /// `'unavailable'`  — the provider could not be reached.
+  final String? autoVerificationOutcome;
+
+  /// Finer-grained cause, e.g. `provider-could-not-verify`,
+  /// `provider-unavailable`, `provider-not-configured`. Used to avoid telling a
+  /// user their document is invalid when the provider simply timed out.
+  final String? autoVerificationReason;
+
+  /// True when the backend expects a document image for manual review.
+  final bool requiresDocumentUpload;
+
+  const KycVerifyResult({
+    required this.verified,
+    this.kyc,
+    this.name,
+    this.autoVerificationOutcome,
+    this.autoVerificationReason,
+    this.requiresDocumentUpload = false,
+  });
 
   factory KycVerifyResult.fromJson(Map<String, dynamic> json) {
     final root = json['data'] is Map<String, dynamic> && json['verified'] == null
@@ -251,6 +271,9 @@ class KycVerifyResult {
           ? Kyc.fromJson(Map<String, dynamic>.from(root['kyc']))
           : null,
       name: data['name']?.toString() ?? data['fullName']?.toString(),
+      autoVerificationOutcome: data['autoVerificationOutcome']?.toString(),
+      autoVerificationReason: data['autoVerificationReason']?.toString(),
+      requiresDocumentUpload: data['requiresDocumentUpload'] == true,
     );
   }
 }

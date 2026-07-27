@@ -166,6 +166,10 @@ class DashboardModel {
         totalTrips: (totalTrips['value'] as num?)?.toInt() ?? 0,
         activeTrips: (activeTrips['value'] as num?)?.toInt() ?? 0,
         scheduledToday: (activeTrips['scheduledToday'] as num?)?.toInt() ?? 0,
+        // Same backend fields the web dashboard reads, so both platforms show
+        // the same completed counts.
+        completedTrips: (activeTrips['completed'] as num?)?.toInt() ?? 0,
+        completedThisMonth: (totalTrips['thisMonth'] as num?)?.toInt() ?? 0,
       ),
       activeVehicles: ActiveVehicles(
         activeVehicles: totalVehiclesValue,
@@ -254,10 +258,20 @@ class TripSummary {
   final int activeTrips;
   final int scheduledToday;
 
+  /// All-time completed trips (backend `stats.activeTrips.completed`).
+  /// "Completed" spans the POD and payment statuses, not just the literal
+  /// 'completed' — the backend owns that definition.
+  final int completedTrips;
+
+  /// Trips completed in the current month (backend `stats.totalTrips.thisMonth`).
+  final int completedThisMonth;
+
   TripSummary({
     required this.totalTrips,
     this.activeTrips = 0,
     required this.scheduledToday,
+    this.completedTrips = 0,
+    this.completedThisMonth = 0,
   });
 
   factory TripSummary.fromJson(Map<String, dynamic> json) {
@@ -265,6 +279,8 @@ class TripSummary {
       totalTrips: json['totalTrips'] as int? ?? 0,
       activeTrips: json['activeTrips'] as int? ?? 0,
       scheduledToday: json['scheduledToday'] as int? ?? 0,
+      completedTrips: json['completedTrips'] as int? ?? 0,
+      completedThisMonth: json['completedThisMonth'] as int? ?? 0,
     );
   }
 }
@@ -352,6 +368,25 @@ class TripCompletionTrend {
     return TripCompletionTrend(
       dayName: json['dayName'] as String?,
       completedTrips: json['completedTrips'] as int? ?? 0,
+    );
+  }
+}
+
+/// One bucket of the ranged trip-completion trend
+/// (GET /dashboard/trip-completion-trend). Backend owns the grouping; the app
+/// only renders `label` (short axis label) and `count`.
+class TrendPoint {
+  final String date; // ISO bucket start
+  final String label; // short axis label, e.g. "Mon", "5 Jul", "Jul 26"
+  final int count;
+
+  const TrendPoint({required this.date, required this.label, required this.count});
+
+  factory TrendPoint.fromJson(Map<String, dynamic> json) {
+    return TrendPoint(
+      date: json['date']?.toString() ?? '',
+      label: json['label']?.toString() ?? '',
+      count: (json['count'] as num?)?.toInt() ?? 0,
     );
   }
 }

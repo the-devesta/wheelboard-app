@@ -351,8 +351,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     return _sectionCard(
       'Performance',
       [
+        // These are manually-entered 0-100 driver ratings. The middle one is
+        // labelled "Trip Performance", NOT "Trip Efficiency": the latter name
+        // is used platform-wide for the canonical ₹/km cost metric, and having
+        // both meant a 0-100 score and a rupee figure shared one label. The
+        // underlying API field stays `performance.tripEfficiency` for
+        // backward compatibility — only the display name changes.
         _perfRow('Timely Delivery', td?.toInt() ?? 0, const Color(0xFF22C55E)),
-        _perfRow('Trip Efficiency', te?.toInt() ?? 0, _primary),
+        _perfRow('Trip Performance', te?.toInt() ?? 0, _primary),
         _perfRow('Safety Score', sf?.toInt() ?? 0, const Color(0xFF3B82F6)),
       ],
       action: TextButton.icon(
@@ -393,7 +399,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               _sliderRow('Timely Delivery', _timelyDelivery, const Color(0xFF22C55E),
                   (v) => setState(() => _timelyDelivery = v.toInt())),
               const SizedBox(height: 16),
-              _sliderRow('Trip Efficiency', _tripEfficiency, _primary,
+              // See _buildPerformanceCard — 0-100 rating, deliberately not
+              // called "Trip Efficiency" (that is the ₹/km cost metric).
+              _sliderRow('Trip Performance', _tripEfficiency, _primary,
                   (v) => setState(() => _tripEfficiency = v.toInt())),
               const SizedBox(height: 16),
               _sliderRow('Safety Score', _safety, const Color(0xFF3B82F6),

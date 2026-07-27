@@ -204,10 +204,15 @@ class _ProfessionalCompleteProfileScreenState
     if (_vehicleType != null) profile['vehicleType'] = _vehicleType;
     putStr('licenseNumber', _licenseCtrl.text);
 
-    // Same verified block the web page submits.
-    profile['isVerified'] = _dlVerified;
-    profile['kycStatus'] = _dlVerified ? 'verified' : 'pending';
-    if (_verifiedDetails != null) profile['kycDetails'] = _verifiedDetails;
+    // Verification state is NOT sent from here.
+    //
+    // This previously submitted `isVerified` / `kycStatus` / `kycDetails`
+    // derived from the client's own DL check, letting the app declare itself
+    // verified. Those fields are owned by the backend — the DL verification
+    // this screen performs already goes through `POST /kyc/verify/driving-license`,
+    // which validates against the provider and persists `dlStatus` server-side.
+    // The server now strips these keys from client profile updates, so sending
+    // them would be a silent no-op anyway.
 
     try {
       await _profileService.updateProfile(profile: profile);

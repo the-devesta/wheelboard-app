@@ -13,7 +13,6 @@ import 'package:wheelboard/controllers/Transport/add_trip_controller.dart';
 import 'package:wheelboard/controllers/Transport/trip_page_controller.dart';
 import 'package:wheelboard/models/add_new_trip_model.dart';
 import '../../widgets/custom_loader.dart';
-import 'TripExpenses/TripExpensesScreen.dart';
 import '../shared/live_trip_tracking_screen.dart';
 import 'pod/PodViewScreen.dart';
 import 'share/share_navigation_sheet.dart';
@@ -591,7 +590,6 @@ class _TripsTabViews extends StatelessWidget {
                     onComplete:     tab == 'in-process' ? () => tripController.completeTrip(trip.tripId, trip.userId) : null,
                     onTrack:        tab == 'in-process' ? () => Get.to(() => LiveTripTrackingScreen(tripId: trip.id.isNotEmpty ? trip.id : trip.tripId, isDriver: false)) : null,
                     onViewPod:      tab == 'completed'  ? () => Get.to(() => PodViewScreen(tripId: trip.tripId)) : null,
-                    onViewExpenses: tab == 'completed'  ? () => Get.to(() => TripExpensesScreen(tripId: trip.tripId)) : null,
                   ),
           );
         },
@@ -848,11 +846,11 @@ class _UpcomingTripCard extends StatelessWidget {
 class _TripTile extends StatelessWidget {
   final Trip trip;
   final String date, from, to;
-  final VoidCallback? onComplete, onTrack, onViewPod, onViewExpenses, onDetails;
+  final VoidCallback? onComplete, onTrack, onViewPod, onDetails;
 
   const _TripTile({
     required this.trip, required this.date, required this.from, required this.to,
-    this.onComplete, this.onTrack, this.onViewPod, this.onViewExpenses, this.onDetails,
+    this.onComplete, this.onTrack, this.onViewPod, this.onDetails,
   });
 
   Future<void> _call(String n) async {
@@ -949,9 +947,9 @@ class _TripTile extends StatelessWidget {
               ))
             )),
           ])
+          // Completed trips show only View POD — the Expenses button was
+          // removed from the card at product request.
           else if (completed) Row(children: [
-            Expanded(child: _outlineBtn(icon: Iconsax.receipt_2, label: 'Expenses', onTap: onViewExpenses)),
-            const SizedBox(width: 8),
             Expanded(child: _filledBtn(icon: Iconsax.document_text, label: 'View POD', onTap: onViewPod, color: _completedColor)),
           ]),
         ],

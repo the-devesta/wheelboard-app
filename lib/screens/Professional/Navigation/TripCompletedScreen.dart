@@ -6,6 +6,7 @@ import '../../../controllers/Professional/assigned_trip_controller.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../theme/design_system.dart';
+import '../../../utils/format_utils.dart';
 
 /// Post-trip celebration + summary for professionals.
 ///
@@ -53,10 +54,40 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
         .toDouble();
   }
 
-  double _distance() {
-    if (_tripData == null) return 0;
+  /// Canonical trip distance in km, or null when it is genuinely unknown.
+  ///
+  /// This previously read `route.plannedDistance` only, so a completed trip
+  /// showed the distance that was PLANNED rather than the one actually
+  /// travelled — and disagreed with the web app, which preferred the actual
+  /// distance. Both platforms now read the backend-resolved canonical value.
+  ///
+  /// Returns null (rendered as "—") instead of 0 so an unknown distance is not
+  /// misreported as a zero-kilometre trip.
+  double? _distance() {
+    if (_tripData == null) return null;
+
+    final metrics = _tripData!['canonicalMetrics'] as Map<String, dynamic>?;
+    if (metrics != null) {
+      return (metrics['distanceKm'] as num?)?.toDouble();
+    }
+
+    // Fallback for a backend that predates canonicalMetrics: mirror the
+    // canonical resolution order (actual beats planned) rather than the old
+    // planned-only behaviour.
     final route = _tripData!['route'] as Map<String, dynamic>?;
-    return ((route?['plannedDistance'] ?? 0) as num).toDouble();
+    final actual = (route?['actualDistance'] as num?)?.toDouble();
+    if (actual != null && actual > 0) return actual;
+    final planned = (route?['plannedDistance'] as num?)?.toDouble();
+    if (planned != null && planned > 0) return planned;
+    return null;
+  }
+
+  /// Renders an unknown distance as 'N/A' rather than '0 km'. Uses the shared
+  /// formatter so Completed Trips shows the same value as the web (e.g.
+  /// "27.2 km", not a rounded "27 km" or an artifact).
+  String _formatDistance(double? km) {
+    if (km == null || km <= 0) return 'N/A';
+    return FormatUtils.formatDistanceKm(km);
   }
 
   String _duration() {
@@ -194,7 +225,8 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
         Expanded(
           child: _statCard(
             icon: Iconsax.routing,
-            value: _distance() > 0 ? '${_distance().toStringAsFixed(0)} km' : 'N/A',
+            // A null distance is unknown, not zero — shown as 'N/A'.
+            value: _formatDistance(_distance()),
             label: 'Distance',
             color: AppPalette.blue,
           ),

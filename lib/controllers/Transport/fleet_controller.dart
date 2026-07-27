@@ -12,6 +12,36 @@ import '../../services/profile_service.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 
+/// Outcome of an automatic RC verification attempt.
+///
+/// Carries a user-safe [message] so the Add-Vehicle form can show a persistent
+/// inline banner rather than relying on a snackbar that can be obscured by the
+/// sheet. [status] mirrors the backend vocabulary:
+/// `verified` | `not_verified` | `provider_unavailable`.
+class RcVerifyResult {
+  final String status;
+  final String message;
+
+  /// Vehicle details for auto-fill; only present when [status] is `verified`.
+  final Map<String, dynamic>? data;
+
+  const RcVerifyResult({
+    required this.status,
+    required this.message,
+    this.data,
+  });
+
+  bool get isVerified => status == 'verified';
+
+  /// True when automatic verification could not be completed — the user should
+  /// be offered manual verification and must never be blocked.
+  bool get needsManual => !isVerified;
+
+  /// Distinguishes "our provider is down" from "the RC could not be matched",
+  /// so the UI never accuses the user of an invalid RC during an outage.
+  bool get isProviderIssue => status == 'provider_unavailable';
+}
+
 class DriverController extends GetxController {
   // ── State ──────────────────────────────────────────────────────────────────
   final drivers = <Driver>[].obs;
@@ -364,9 +394,6 @@ class DriverController extends GetxController {
     String capacity = '',
     String mileage = '',
     String location = '',
-    double avgRun = 0,
-    double tripEfficiency = 0,
-    double monthlyUsage = 0,
     File? image,
     // Payment proof — populated on the Razorpay-retry path only.
     Map<String, dynamic>? payment,
@@ -384,9 +411,6 @@ class DriverController extends GetxController {
         capacity: capacity,
         mileage: mileage,
         location: location,
-        avgRun: avgRun,
-        tripEfficiency: tripEfficiency,
-        monthlyUsage: monthlyUsage,
         statusBadge: 'Available',
         image: image,
         payment: payment,
@@ -412,9 +436,6 @@ class DriverController extends GetxController {
           'capacity': capacity,
           'mileage': mileage,
           'location': location,
-          'avgRun': avgRun,
-          'tripEfficiency': tripEfficiency,
-          'monthlyUsage': monthlyUsage,
           '_imagePath': image?.path,
         });
         return false;
@@ -465,11 +486,6 @@ class DriverController extends GetxController {
           capacity: (originalParams['capacity'] as String?) ?? '',
           mileage: (originalParams['mileage'] as String?) ?? '',
           location: (originalParams['location'] as String?) ?? '',
-          avgRun: (originalParams['avgRun'] as num?)?.toDouble() ?? 0,
-          tripEfficiency:
-              (originalParams['tripEfficiency'] as num?)?.toDouble() ?? 0,
-          monthlyUsage:
-              (originalParams['monthlyUsage'] as num?)?.toDouble() ?? 0,
           image: imagePath != null ? File(imagePath) : null,
           payment: {
             'orderId': orderId,
@@ -509,9 +525,6 @@ class DriverController extends GetxController {
     String capacity = '',
     String mileage = '',
     String location = '',
-    double avgRun = 0,
-    double tripEfficiency = 0,
-    double monthlyUsage = 0,
     String? statusBadge,
     File? image,
   }) async {
@@ -528,9 +541,6 @@ class DriverController extends GetxController {
         capacity: capacity,
         mileage: mileage,
         location: location,
-        avgRun: avgRun,
-        tripEfficiency: tripEfficiency,
-        monthlyUsage: monthlyUsage,
         statusBadge: statusBadge ?? 'Available',
         image: image,
       );
@@ -590,27 +600,84 @@ class DriverController extends GetxController {
   /// `@Query('registrationNumber')`. The old code sent `number`, so the backend
   /// received `undefined` and verification silently failed ("RC verification not
   /// working"). Surfaces the real backend message on failure.
-  Future<Map<String, dynamic>?> verifyVehicleRegistration(
-      String regNumber) async {
+  /// RC verification via the backend (which calls the provider server-side).
+  ///
+  /// The backend answers with a structured outcome instead of throwing:
+  ///   verified              → vehicle details for auto-fill
+  ///   not_verified          → provider processed it and could not match the RC
+  ///   provider_unavailable  → timeout / outage / config problem on our side
+  ///
+  /// Returns a [RcVerifyResult] so the UI can render a PERSISTENT inline
+  /// message and offer manual verification. A transient snackbar alone was not
+  /// reliably visible above the Add-Vehicle sheet, so the failure reason never
+  /// reached the user.
+  ///
+  /// A failure NEVER blocks vehicle creation, and a provider outage is never
+  /// reported as an invalid RC.
+  Future<RcVerifyResult> verifyVehicleRegistration(String regNumber) async {
+    // Normalise the way the backend/provider expect (trim + uppercase, spaces
+    // removed). Does not alter an otherwise legitimate registration.
+    final normalized = regNumber.trim().toUpperCase().replaceAll(' ', '');
+
+    const unavailableMsg =
+        'Automatic RC verification is unavailable right now. You can still add '
+        'this vehicle and submit the RC for manual verification.';
+    const notVerifiedMsg =
+        'We could not verify this RC automatically. Please check the number, '
+        'or add the vehicle and submit the RC for manual verification.';
+
     try {
-      final data = await ApiClient.instance.get<dynamic>(
+      final raw = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.verifyVehicleRegistration,
-        queryParameters: {'registrationNumber': regNumber},
+        queryParameters: {'registrationNumber': normalized},
       );
-      final body = data is Map<String, dynamic>
-          ? (data['data'] is Map<String, dynamic>
-              ? data['data'] as Map<String, dynamic>
-              : data)
+
+      final body = raw is Map<String, dynamic>
+          ? (raw['data'] is Map<String, dynamic>
+              ? raw['data'] as Map<String, dynamic>
+              : raw)
           : null;
-      return body;
+
+      if (body == null) {
+        return const RcVerifyResult(
+          status: 'provider_unavailable',
+          message: unavailableMsg,
+        );
+      }
+
+      final status = body['status']?.toString();
+      if (body['verified'] == true || status == 'verified') {
+        final details = body['data'];
+        return RcVerifyResult(
+          status: 'verified',
+          message: 'RC verified successfully.',
+          data: details is Map<String, dynamic> ? details : body,
+        );
+      }
+
+      if (status == 'not_verified') {
+        return const RcVerifyResult(
+          status: 'not_verified',
+          message: notVerifiedMsg,
+        );
+      }
+
+      return const RcVerifyResult(
+        status: 'provider_unavailable',
+        message: unavailableMsg,
+      );
     } on dio.DioException catch (e) {
       AppLogger.e('❌ verifyVehicleRegistration: $e');
-      SnackBarHelper.error(_verifyError(e, 'Could not verify this RC number'));
-      return null;
+      return RcVerifyResult(
+        status: 'provider_unavailable',
+        message: _verifyError(e, unavailableMsg),
+      );
     } catch (e) {
       AppLogger.e('❌ verifyVehicleRegistration: $e');
-      SnackBarHelper.error('Could not verify this RC number');
-      return null;
+      return const RcVerifyResult(
+        status: 'provider_unavailable',
+        message: unavailableMsg,
+      );
     }
   }
 
@@ -791,9 +858,6 @@ class DriverController extends GetxController {
     String capacity = '',
     String mileage = '',
     String location = '',
-    double avgRun = 0,
-    double tripEfficiency = 0,
-    double monthlyUsage = 0,
     File? image,
     Map<String, dynamic>? payment,
   }) async {
@@ -814,11 +878,13 @@ class DriverController extends GetxController {
       if (imageDataUrl != null) 'image': imageDataUrl,
       'statusBadge': statusBadge,
       'ownership': ownership,
-      'metrics': {
-        'avgRun': avgRun,
-        'tripEfficiency': tripEfficiency,
-        'monthlyUsage': monthlyUsage,
-      },
+      // NOTE: `metrics` is deliberately NOT sent.
+      //
+      // avgRun / tripEfficiency / monthlyUsage are derived by the backend from
+      // the vehicle's actual trips. Sending them here persisted the client's
+      // default (0) into the vehicle record, which was then displayed forever
+      // as the vehicle's "Trip Efficiency" — the static-efficiency bug.
+      // A client must not author a canonical backend metric.
       'category': category,
       if (category == 'Others' && categoryDetail.trim().isNotEmpty)
         'categoryDetail': categoryDetail.trim(),

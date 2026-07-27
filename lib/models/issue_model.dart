@@ -5,8 +5,14 @@
 /// Status/resolution are set by admins; the app reports and tracks.
 library;
 
-/// Allowed issue categories (backend `CreateIssueDto`).
+/// Allowed issue categories (backend `CreateIssueDto` / `IssueCategory`).
+///
+/// `Breakdown` is not an ordinary support ticket: reporting one raises an
+/// "Emergency: Breakdown" notification to the driver's fleet owner, and the
+/// fleet owner assigning it sends "Help is on the way" back to the driver. It
+/// is listed first so a stranded driver does not have to scroll for it.
 const kIssueCategories = <String>[
+  'Breakdown',
   'Login',
   'Payment',
   'Booking',
@@ -14,6 +20,9 @@ const kIssueCategories = <String>[
   'Account',
   'Other',
 ];
+
+/// Categories that represent an on-road emergency rather than a support query.
+const kEmergencyIssueCategories = <String>['Breakdown'];
 
 /// Allowed issue priorities.
 const kIssuePriorities = <String>['Low', 'Medium', 'High'];

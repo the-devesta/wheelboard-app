@@ -6,6 +6,7 @@ import 'edit_trip_screen.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_endpoints.dart';
+import '../../utils/format_utils.dart';
 import '../../controllers/Transport/add_trip_controller.dart';
 import '../../widgets/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -504,12 +505,23 @@ class _TripMetricsSectionState extends State<_TripMetricsSection> {
   }
 
   String get _distanceText {
-    final d = widget.trip.distance ?? '';
-    if (d.trim().isNotEmpty) return d;
+    // Canonical backend distance wins. This previously preferred
+    // `widget.trip.distance`, which is populated from `route.plannedDistance`
+    // (see AssignedTrip.fromJson) — so Trip Details showed the PLANNED
+    // distance while the cost-per-km shown beside it was computed from the
+    // canonical (actual) distance. Same screen, two different distances.
     if (_distanceKm != null && _distanceKm! > 0) {
-      return '${_distanceKm!.toStringAsFixed(2)} km';
+      // Shared formatter — trims trailing zeros and strips float artifacts.
+      return FormatUtils.formatDistanceKm(_distanceKm);
     }
-    return _loading ? 'Calculating…' : 'Not available';
+    if (_loading) return 'Calculating…';
+
+    // Only fall back to the list-supplied planned distance once the canonical
+    // lookup has completed and produced nothing.
+    final planned = widget.trip.distance ?? '';
+    if (planned.trim().isNotEmpty) return '$planned (planned)';
+
+    return 'Not available';
   }
 
   @override
@@ -548,9 +560,13 @@ class _TripMetricsSectionState extends State<_TripMetricsSection> {
   }
 
   Widget _efficiencyCard() {
+    // Always formatted to 2dp so the same trip reads identically here, on the
+    // web Completed Trips card and in the Flutter expenses screen.
     final String value = _loading
         ? 'Calculating…'
-        : (_efficiency != null ? '₹$_efficiency / km' : 'Not enough data yet');
+        : (_efficiency != null
+            ? '₹${_efficiency!.toStringAsFixed(2)}/km'
+            : 'Not enough data yet');
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -565,7 +581,8 @@ class _TripMetricsSectionState extends State<_TripMetricsSection> {
           Row(children: [
             const Icon(Iconsax.trend_up, size: 16, color: Color(0xFF16A34A)),
             const SizedBox(width: 6),
-            Text('Trip Efficiency',
+            // ₹/km — a COST metric, not fuel mileage and not a score.
+            Text('Cost per km',
                 style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,

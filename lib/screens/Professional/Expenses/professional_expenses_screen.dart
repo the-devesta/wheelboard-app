@@ -31,7 +31,15 @@ class _ProfessionalExpensesScreenState
   bool _loading = true;
   String? _error;
   String _category = 'all';
+  String _status = 'all';
   String _search = '';
+
+  /// Selected trip keys. Empty means "all trips".
+  final Set<String> _tripKeys = <String>{};
+
+  ExpenseSortField _sortField = ExpenseSortField.date;
+  bool _sortAscending = false;
+  bool _groupByTrip = false;
 
   @override
   void initState() {
@@ -68,15 +76,44 @@ class _ProfessionalExpensesScreenState
     }
   }
 
+  /// Filtered AND sorted. Everything runs over the already-loaded list so a
+  /// chip tap is instant and never re-hits the API.
   List<Expense> get _filtered {
     final q = _search.toLowerCase();
-    return _expenses.where((e) {
+    final matched = _expenses.where((e) {
       final matchCat = _category == 'all' || e.category == _category;
+      final matchStatus = _status == 'all' || e.status == _status;
+      final matchTrip = _tripKeys.isEmpty || _tripKeys.contains(e.tripKey);
       final matchSearch = q.isEmpty ||
           e.description.toLowerCase().contains(q) ||
-          (e.vehicle?.toLowerCase().contains(q) ?? false);
-      return matchCat && matchSearch;
+          (e.vehicle?.toLowerCase().contains(q) ?? false) ||
+          e.category.toLowerCase().contains(q) ||
+          (e.hasTrip && e.tripKey.toLowerCase().contains(q)) ||
+          (e.tripRouteLabel?.toLowerCase().contains(q) ?? false);
+      return matchCat && matchStatus && matchTrip && matchSearch;
     }).toList();
+
+    return sortExpenses(matched,
+        field: _sortField, ascending: _sortAscending);
+  }
+
+  List<ExpenseTripOption> get _tripOptions =>
+      buildExpenseTripOptions(_expenses);
+
+  int get _activeFilterCount =>
+      (_category != 'all' ? 1 : 0) +
+      (_status != 'all' ? 1 : 0) +
+      (_tripKeys.isNotEmpty ? 1 : 0) +
+      (_search.trim().isNotEmpty ? 1 : 0);
+
+  void _clearFilters() {
+    setState(() {
+      _category = 'all';
+      _status = 'all';
+      _tripKeys.clear();
+      _search = '';
+      _searchCtrl.clear();
+    });
   }
 
   double _sum(Iterable<Expense> xs) =>
@@ -224,8 +261,31 @@ class _ProfessionalExpensesScreenState
         _searchBar(),
         AppSpacing.vGapMd,
         _categoryFilter(),
+        AppSpacing.vGapMd,
+        _filterToolbar(),
         AppSpacing.vGapLg,
-        Text('Recent Expenses (${filtered.length})', style: AppText.title),
+        Row(children: [
+          Expanded(
+            child: Text(
+              _groupByTrip
+                  ? 'Trip-wise (${filtered.length})'
+                  : 'Expenses (${filtered.length})',
+              style: AppText.title,
+            ),
+          ),
+          if (_activeFilterCount > 0)
+            TextButton.icon(
+              onPressed: _clearFilters,
+              icon: const Icon(Iconsax.close_circle, size: 15),
+              label: Text('Clear ($_activeFilterCount)',
+                  style: AppText.label.on(AppPalette.primary)),
+              style: TextButton.styleFrom(
+                foregroundColor: AppPalette.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 32),
+              ),
+            ),
+        ]),
         AppSpacing.vGapMd,
         if (filtered.isEmpty)
           Padding(
@@ -233,13 +293,353 @@ class _ProfessionalExpensesScreenState
             child: AppEmptyState(
               icon: Iconsax.receipt_1,
               title: 'No expenses found',
-              subtitle: 'Tap “Add Expense” to log your first one.',
+              subtitle: _expenses.isEmpty
+                  ? 'Tap “Add Expense” to log your first one.'
+                  : 'Try adjusting your search or filters.',
             ),
           )
+        else if (_groupByTrip)
+          ...groupExpensesByTrip(filtered).map(_tripGroup)
         else
           ...filtered.map(_expenseTile),
       ],
     );
+  }
+
+  /// Status / trip / sort / grouping controls.
+  ///
+  /// Kept on one scrollable row so the whole set stays reachable on a narrow
+  /// phone without pushing the list below the fold.
+  Widget _filterToolbar() {
+    final tripLabel = _tripKeys.isEmpty
+        ? 'All trips'
+        : _tripKeys.length == 1
+            ? (_tripKeys.first == kUnassignedTripKey
+                ? 'No trip'
+                : _tripKeys.first)
+            : '${_tripKeys.length} trips';
+
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _toolbarChip(
+            icon: Iconsax.routing,
+            label: tripLabel,
+            active: _tripKeys.isNotEmpty,
+            onTap: _openTripFilter,
+          ),
+          const SizedBox(width: 8),
+          _toolbarChip(
+            icon: Iconsax.tick_circle,
+            label: _status == 'all' ? 'All statuses' : _statusLabel(_status),
+            active: _status != 'all',
+            onTap: _openStatusFilter,
+          ),
+          const SizedBox(width: 8),
+          _toolbarChip(
+            icon: _sortAscending ? Iconsax.arrow_up_3 : Iconsax.arrow_down,
+            label: 'Sort: ${_sortField.label}',
+            active: _sortField != ExpenseSortField.date || _sortAscending,
+            onTap: _openSortSheet,
+          ),
+          const SizedBox(width: 8),
+          _toolbarChip(
+            icon: _groupByTrip ? Iconsax.category : Iconsax.menu_1,
+            label: _groupByTrip ? 'Trip-wise' : 'List',
+            active: _groupByTrip,
+            onTap: () => setState(() => _groupByTrip = !_groupByTrip),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _toolbarChip({
+    required IconData icon,
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? AppPalette.primary : AppPalette.card,
+          borderRadius: AppRadius.rPill,
+          border: Border.all(
+              color: active ? AppPalette.primary : AppPalette.border),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon,
+              size: 14, color: active ? Colors.white : AppPalette.textGrey),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.label
+                    .on(active ? Colors.white : AppPalette.textGrey)),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  String _statusLabel(String status) =>
+      status.isEmpty ? status : '${status[0].toUpperCase()}${status.substring(1)}';
+
+  /// Multi-select trip filter. Options come from the loaded expenses, so the
+  /// list always matches the trips the user actually has spend against.
+  Future<void> _openTripFilter() async {
+    final options = _tripOptions;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppPalette.card,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(builder: (sheetContext, setSheetState) {
+          void toggle(String key) {
+            setSheetState(() {
+              if (!_tripKeys.remove(key)) _tripKeys.add(key);
+            });
+            setState(() {});
+          }
+
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetContext).size.height * 0.75,
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                  child: Row(children: [
+                    Expanded(
+                        child: Text('Filter by trip', style: AppText.title)),
+                    if (_tripKeys.isNotEmpty)
+                      TextButton(
+                        onPressed: () {
+                          setSheetState(() => _tripKeys.clear());
+                          setState(() {});
+                        },
+                        child: Text('Clear',
+                            style: AppText.label.on(AppPalette.primary)),
+                      ),
+                  ]),
+                ),
+                const Divider(height: 1),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          _tripKeys.isEmpty
+                              ? Iconsax.tick_square
+                              : Iconsax.stop,
+                          color: _tripKeys.isEmpty
+                              ? AppPalette.primary
+                              : AppPalette.textGrey,
+                          size: 20,
+                        ),
+                        title: Text('All trips', style: AppText.subtitle),
+                        onTap: () {
+                          setSheetState(() => _tripKeys.clear());
+                          setState(() {});
+                        },
+                      ),
+                      if (options.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: Text('No trips with expenses yet',
+                                style: AppText.body.on(AppPalette.textGrey)),
+                          ),
+                        ),
+                      ...options.map((option) {
+                        final selected = _tripKeys.contains(option.key);
+                        return ListTile(
+                          leading: Icon(
+                            selected ? Iconsax.tick_square : Iconsax.stop,
+                            color: selected
+                                ? AppPalette.primary
+                                : AppPalette.textGrey,
+                            size: 20,
+                          ),
+                          title: Text(option.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.subtitle),
+                          subtitle: Text(
+                            [
+                              if (option.routeLabel != null)
+                                option.routeLabel!,
+                              '${option.expenseCount} expense'
+                                  '${option.expenseCount == 1 ? '' : 's'} · '
+                                  '₹${_fmt(option.totalAmount)}',
+                            ].join('\n'),
+                            style: AppText.caption,
+                          ),
+                          isThreeLine: option.routeLabel != null,
+                          onTap: () => toggle(option.key),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ]),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  Future<void> _openStatusFilter() async {
+    const statuses = ['all', 'paid', 'pending', 'overdue'];
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppPalette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              Expanded(child: Text('Filter by status', style: AppText.title)),
+            ]),
+          ),
+          const Divider(height: 1),
+          ...statuses.map((s) => ListTile(
+                leading: Icon(
+                  _status == s ? Iconsax.tick_circle : Iconsax.record,
+                  color:
+                      _status == s ? AppPalette.primary : AppPalette.textGrey,
+                  size: 20,
+                ),
+                title: Text(s == 'all' ? 'All statuses' : _statusLabel(s),
+                    style: AppText.subtitle),
+                onTap: () {
+                  setState(() => _status = s);
+                  Navigator.of(sheetContext).pop();
+                },
+              )),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _openSortSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppPalette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(builder: (sheetContext, setSheetState) {
+          return SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(children: [
+                  Expanded(child: Text('Sort by', style: AppText.title)),
+                  TextButton.icon(
+                    onPressed: () {
+                      setSheetState(() => _sortAscending = !_sortAscending);
+                      setState(() {});
+                    },
+                    icon: Icon(
+                        _sortAscending
+                            ? Iconsax.arrow_up_3
+                            : Iconsax.arrow_down,
+                        size: 16),
+                    label: Text(_sortAscending ? 'Ascending' : 'Descending',
+                        style: AppText.label.on(AppPalette.primary)),
+                    style:
+                        TextButton.styleFrom(foregroundColor: AppPalette.primary),
+                  ),
+                ]),
+              ),
+              const Divider(height: 1),
+              ...ExpenseSortField.values.map((field) => ListTile(
+                    leading: Icon(
+                      _sortField == field
+                          ? Iconsax.tick_circle
+                          : Iconsax.record,
+                      color: _sortField == field
+                          ? AppPalette.primary
+                          : AppPalette.textGrey,
+                      size: 20,
+                    ),
+                    title: Text(field.label, style: AppText.subtitle),
+                    onTap: () {
+                      setState(() => _sortField = field);
+                      Navigator.of(sheetContext).pop();
+                    },
+                  )),
+            ]),
+          );
+        });
+      },
+    );
+  }
+
+  /// One trip bucket in the trip-wise view.
+  Widget _tripGroup(ExpenseTripGroup group) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: group.isUnassigned
+              ? AppPalette.border.withValues(alpha: 0.3)
+              : AppPalette.primary.withValues(alpha: 0.08),
+          borderRadius: AppRadius.rMd,
+        ),
+        child: Row(children: [
+          Icon(Iconsax.routing,
+              size: 16,
+              color: group.isUnassigned
+                  ? AppPalette.textGrey
+                  : AppPalette.primary),
+          AppSpacing.hGapSm,
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(group.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.subtitle),
+              if (group.routeLabel != null)
+                Text(group.routeLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.caption),
+              Text(
+                  '${group.expenses.length} expense'
+                  '${group.expenses.length == 1 ? '' : 's'}',
+                  style: AppText.micro.weight(FontWeight.w400)),
+            ]),
+          ),
+          AppSpacing.hGapSm,
+          Text('₹${_fmt(group.total)}',
+              style: AppText.subtitle.on(AppPalette.primary)),
+        ]),
+      ),
+      ...group.expenses.map(_expenseTile),
+      AppSpacing.vGapMd,
+    ]);
   }
 
   Widget _totalCard(double total) {

@@ -4,15 +4,20 @@ import 'package:get/get.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/navigation/app_routes.dart';
+import '../../services/kyc_service.dart';
 import '../../services/profile_service.dart';
 import '../../theme/design_system.dart';
 import '../../widgets/custom_snackbar.dart';
 
 /// Transport Company profile completion.
 ///
-/// 1:1 rewrite of the web `src/app/company/complete-profile/page.tsx` page —
-/// same fields, same validation, same `PUT /users/profile` payload (including
-/// the `kycStatus` / `kycDetails` block), same "Skip for now" behaviour.
+/// Mirrors the web `src/app/company/complete-profile/page.tsx` page — same
+/// fields, same validation, same "Skip for now" behaviour.
+///
+/// The PAN entered here is submitted to the canonical KYC module
+/// (`POST /kyc/verify/pan`) so it is auto-verified against Invincible Ocean and
+/// recognised later by the KYC screen. Verification status itself is decided
+/// and persisted by the backend, never by this form.
 class CompanyCompleteProfile extends StatefulWidget {
   const CompanyCompleteProfile({super.key});
 
@@ -96,17 +101,28 @@ class _CompanyCompleteProfileState extends State<CompanyCompleteProfile> {
 
     final pan = _panCtrl.text.trim().toUpperCase();
     profile['panNumber'] = pan;
-    // Same verified block the web page submits.
-    profile['isVerified'] = false;
-    profile['kycStatus'] = 'pending';
+    // `kycCompleted` marks the onboarding form as SUBMITTED (route guards read
+    // it). Verification state itself — isVerified / kycStatus / kycDetails — is
+    // owned by the backend and is no longer sent from here; the server strips
+    // those fields from client profile updates.
     profile['kycCompleted'] = true;
-    profile['kycDetails'] = {
-      'verificationMode': 'admin_review',
-      'panNumber': pan,
-    };
 
     try {
       await _profileService.updateProfile(profile: profile);
+
+      // Route the PAN through the canonical KYC module so it is verified
+      // against Invincible Ocean and persisted as the single authoritative PAN
+      // state. Previously the PAN was only written into the profile blob, so
+      // the KYC screen saw no PAN and asked the user for it a second time.
+      //
+      // A verification failure must NOT block onboarding: the PAN is recorded
+      // as pending manual review and the user completes it from the KYC screen.
+      try {
+        await KycService().verifyPan(pan);
+      } catch (_) {
+        // Non-blocking — the KYC screen surfaces the pending/manual state.
+      }
+
       // Refresh the cached user so home/route guards see the completed profile.
       await AuthService.to.getProfile();
       if (!mounted) return;

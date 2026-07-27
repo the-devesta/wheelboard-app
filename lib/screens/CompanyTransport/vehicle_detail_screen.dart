@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/Transport/fleet_controller.dart';
 import '../../models/get_vehicle_model.dart';
 import '../../widgets/custom_loader.dart';
+import '../../widgets/smart_image.dart';
 import 'Lease/create_lease_wizard.dart';
 
 const _primary = Color(0xFFF36969);
@@ -98,9 +99,26 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     }
   }
 
+  /// Vehicle to display. Prefer the freshly-fetched detail (same endpoint the
+  /// web Vehicle Details uses via getVehicleById) so the header image and all
+  /// other fields match the web exactly. The list-supplied `widget.vehicle` is
+  /// only a fallback while the detail is still loading — it often lacks the
+  /// uploaded image, which is why the header showed the placeholder icon.
+  Vehicle get _displayVehicle {
+    final d = _detail;
+    if (d != null && d.isNotEmpty) {
+      try {
+        return Vehicle.fromJson(d);
+      } catch (_) {
+        // Fall through to the list item on any shape mismatch.
+      }
+    }
+    return widget.vehicle;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final v = widget.vehicle;
+    final v = _displayVehicle;
 
     return Scaffold(
       backgroundColor: _bg,
@@ -185,15 +203,18 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Image or placeholder
-            if (images.isNotEmpty)
-              Image.network(
-                images[_imageIndex],
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _imgPlaceholder(),
-              )
-            else
-              _imgPlaceholder(),
+            // Real vehicle photo, with the icon shown ONLY when no image exists.
+            //
+            // Must be SmartImage, not raw Image.network: this app persists
+            // vehicle images as base64 `data:` URIs, which Image.network cannot
+            // decode — it failed and fell through to the placeholder icon, which
+            // is why the detail header showed a truck while the Fleet card
+            // (already using SmartImage) rendered the photo correctly.
+            SmartImage(
+              source: images.isNotEmpty ? images[_imageIndex] : null,
+              fit: BoxFit.cover,
+              placeholder: _imgPlaceholder(),
+            ),
 
             // Gradient overlay at bottom
             const Positioned(
@@ -385,8 +406,14 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
   Widget _buildMetricsCard() {
     final m = _metrics ?? const <String, dynamic>{};
-    final tripEff = (m['tripEfficiency'] as num?)?.toDouble() ?? 0;
-    final monthlyUsage = (m['monthlyUsage'] as num?)?.toDouble() ?? 0;
+    // Null is preserved as "unknown" rather than coerced to 0: the backend
+    // returns null when a vehicle has no completed trips or no recorded
+    // distance, which is not the same as a measured zero.
+    // `costPerKm` is the explicit canonical name; `tripEfficiency` is the
+    // backward-compatible alias carrying the identical ₹/km value.
+    final costPerKm = (m['costPerKm'] as num?)?.toDouble() ??
+        (m['tripEfficiency'] as num?)?.toDouble();
+    final monthlyUsage = (m['monthlyUsage'] as num?)?.toDouble();
 
     // Odometer reading mirrors how wheelboard-fe shows it for the company user
     // (the "Mileage" field on the vehicle info card). Numeric values get a "km"
@@ -399,10 +426,21 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
     return _sectionCard('Vehicle Metrics', [
       _metricRow('Odometer', odometerText, Iconsax.speedometer, const Color(0xFF22C55E)),
-      // Trip Efficiency is a cost-per-distance figure (Rs/km), same as web fe —
-      // it was previously mislabelled as a percentage.
-      _metricRow('Trip Efficiency', tripEff > 0 ? '₹${tripEff.toStringAsFixed(1)}/km' : 'N/A', Iconsax.trend_up, _primary),
-      _metricRow('Monthly Usage', '${monthlyUsage.toStringAsFixed(1)} km', Iconsax.chart_square, const Color(0xFF3B82F6)),
+      // ₹/km is a COST metric. Labelled "Cost per km" so it cannot be confused
+      // with fuel mileage (km/L) or the 0-100 driver performance score, both of
+      // which were also called "Trip Efficiency" elsewhere in the platform.
+      _metricRow(
+        'Cost per km',
+        costPerKm != null ? '₹${costPerKm.toStringAsFixed(2)}/km' : 'N/A',
+        Iconsax.trend_up,
+        _primary,
+      ),
+      _metricRow(
+        'Monthly Usage',
+        monthlyUsage != null ? '${monthlyUsage.toStringAsFixed(1)} km' : 'N/A',
+        Iconsax.chart_square,
+        const Color(0xFF3B82F6),
+      ),
     ]);
   }
 

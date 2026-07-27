@@ -676,6 +676,12 @@ class _DashboardEndpoints {
 
   // GET    /dashboard/stats
   String get stats => '/dashboard/stats';
+
+  // GET    /dashboard/trip-completion-trend?range=7d|month|3month|all
+  // Ranged, date-bucketed completion trend (backend owns the grouping) — the
+  // same endpoint the web dashboard consumes so both platforms match.
+  String tripCompletionTrend(String range) =>
+      '/dashboard/trip-completion-trend?range=$range';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

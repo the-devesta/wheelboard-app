@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
 import '../../controllers/Transport/dashboard_controller.dart';
 import '../../models/dashboard_model.dart';
+import '../../utils/format_utils.dart';
 import '../../widgets/custom_loader.dart';
 import 'job_screen.dart';
 import 'job_form_screen.dart';
@@ -105,7 +106,10 @@ class DashboardScreen extends StatelessWidget {
                           Icons.directions_car,
                           "Total Trips",
                           "${data.tripSummary.totalTrips} Trips",
-                          "${data.tripSummary.activeTrips} Active",
+                          // Surfaces completed alongside active so the app
+                          // matches the web dashboard's trip counts.
+                          "${data.tripSummary.activeTrips} Active · "
+                              "${data.tripSummary.completedTrips} Completed",
                           Colors.green,
                         ),
                         GestureDetector(
@@ -122,7 +126,9 @@ class DashboardScreen extends StatelessWidget {
                         _statCard(
                           Icons.wallet,
                           "Monthly Expenses",
-                          "₹${_formatCurrency(data.monthlyExpenses.totalExpenses)}",
+                          // 2-decimal currency to match the web card (₹470.66).
+                          FormatUtils.formatMoney(
+                              data.monthlyExpenses.totalExpenses),
                           data.monthlyExpenses.highestFuelAmount > 0
                               ? "Highest Fuel: ₹${_formatCurrency(data.monthlyExpenses.highestFuelAmount)}"
                               : "No expenses",
@@ -137,9 +143,10 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         _statCard(
                           Icons.route,
-                          "Trip Efficiency",
+                          // ₹/km — labelled as the cost metric it is.
+                          "Cost per km",
                           data.tripEfficiency?.avgCostPerKm != null
-                              ? "₹${data.tripEfficiency!.avgCostPerKm!.toStringAsFixed(1)}/km"
+                              ? "₹${data.tripEfficiency!.avgCostPerKm!.toStringAsFixed(2)}/km"
                               : "N/A",
                           data.tripEfficiency?.totalKmPerMonth != null
                               ? "${_formatNumber(data.tripEfficiency!.totalKmPerMonth!)} km/mo"
@@ -170,21 +177,40 @@ class DashboardScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _sectionTitle("Trip Completion Trend"),
+                    // Range selector — same ranges the web dashboard offers.
+                    // Backend regroups; the chart just renders.
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: const Color(0xFFFCE7E7),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        "Last 7 Days",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                          fontWeight: FontWeight.w500,
+                      child: Obx(
+                        () => DropdownButton<String>(
+                          value: controller.trendRange.value,
+                          isDense: true,
+                          underline: const SizedBox.shrink(),
+                          borderRadius: BorderRadius.circular(12),
+                          icon: const Icon(Icons.keyboard_arrow_down,
+                              size: 16, color: Color(0xFFf36969)),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFf36969),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                                value: '7d', child: Text('Last 7 Days')),
+                            DropdownMenuItem(
+                                value: 'month', child: Text('Last Month')),
+                            DropdownMenuItem(
+                                value: '3month', child: Text('Last 3 Months')),
+                            DropdownMenuItem(
+                                value: 'all', child: Text('All Time')),
+                          ],
+                          onChanged: (v) {
+                            if (v != null) controller.setTrendRange(v);
+                          },
                         ),
                       ),
                     ),
@@ -193,7 +219,7 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Container(
                   height: 280,
-                  padding: const EdgeInsets.fromLTRB(12, 24, 24, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 24, 16, 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -205,7 +231,12 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: _buildTripCompletionChart(data.tripCompletionTrend),
+                  child: Obx(
+                    () => _buildRangedTrendChart(
+                      controller.trendPoints,
+                      controller.trendLoading.value,
+                    ),
+                  ),
                 ),
 
                 const SizedBox(height: 24),
@@ -1400,154 +1431,147 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // Trip Completion Trend Chart
-  static Widget _buildTripCompletionChart(List<TripCompletionTrend> trendData) {
-    if (trendData.isEmpty) {
-      return Center(
-        child: Text(
-          "No trend data available",
-          style: TextStyle(color: Colors.grey[500]),
+  // Ranged Trip Completion Trend chart (custom bars, any bucket count).
+  // Renders the backend-grouped points for the selected range; matches the web.
+  // Ranged Trip Completion Trend chart.
+  //
+  // Layout note: the bar area is an Expanded + FractionallySizedBox, so bar
+  // heights are a FRACTION of whatever space remains after the value and axis
+  // labels are laid out. An earlier version computed the bar height from
+  // `constraints.maxHeight - 34` while the column actually needed ~45px of
+  // chrome, which overflowed the card by ~12px. This structure cannot overflow.
+  Widget _buildRangedTrendChart(List<TrendPoint> points, bool loading) {
+    const valueRowHeight = 18.0;
+    const labelRowHeight = 22.0;
+    const accent = Color(0xFFf36969);
+
+    if (loading && points.isEmpty) {
+      return const Center(
+        child: SizedBox(
+          height: 22,
+          width: 22,
+          child: CircularProgressIndicator(strokeWidth: 2, color: accent),
         ),
       );
     }
 
-    // Initialize with 0s for Mon-Sun
-    final List<double> tripData = List.filled(7, 0.0);
-
-    final dayMap = {
-      'Monday': 0,
-      'Tuesday': 1,
-      'Wednesday': 2,
-      'Thursday': 3,
-      'Friday': 4,
-      'Saturday': 5,
-      'Sunday': 6,
-    };
-
-    for (var item in trendData) {
-      if (item.dayName != null) {
-        // Handle case variations if necessary, though API typically returns Title Case
-        final day = item.dayName!;
-        // Simple flexible matching (e.g. "Wed" or "Wednesday")
-        int? index;
-        dayMap.forEach((key, val) {
-          if (day.toLowerCase().startsWith(key.toLowerCase().substring(0, 3))) {
-            index = val;
-          }
-        });
-
-        if (index != null) {
-          tripData[index!] = item.completedTrips?.toDouble() ?? 0.0;
-        }
-      }
+    if (points.isEmpty || points.every((p) => p.count == 0)) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.show_chart_rounded, size: 30, color: Colors.grey.shade300),
+            const SizedBox(height: 8),
+            Text(
+              'No completed trips in this period',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    final chartData = tripData.take(7).toList();
-    final maxY = chartData.isEmpty
-        ? 30.0
-        : (chartData.reduce((a, b) => a > b ? a : b) * 1.2).clamp(
-            10.0,
-            double.infinity,
-          );
+    final maxCount =
+        points.map((p) => p.count).fold<int>(1, (a, b) => a > b ? a : b);
 
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: maxY > 0 ? maxY / 5 : 5,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(color: Colors.grey.shade100, strokeWidth: 1);
-          },
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 30,
-              interval: 1,
-              getTitlesWidget: (value, meta) {
-                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                if (value.toInt() >= 0 && value.toInt() < days.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      days[value.toInt()],
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+    Widget bar(TrendPoint p) {
+      // Give a non-zero bucket a visible minimum so "1" never renders as a sliver.
+      final factor = p.count <= 0
+          ? 0.0
+          : (p.count / maxCount).clamp(0.08, 1.0).toDouble();
+
+      return Column(
+        children: [
+          SizedBox(
+            height: valueRowHeight,
+            child: p.count > 0
+                ? Text(
+                    '${p.count}',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF374151),
                     ),
-                  );
-                }
-                return const Text('');
-              },
+                  )
+                : null,
+          ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: FractionallySizedBox(
+                heightFactor: factor,
+                child: Container(
+                  width: 18,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [Color(0xFFF9A8A8), accent],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
             ),
           ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: maxY > 0 ? maxY / 5 : 5,
-              reservedSize: 30,
-              getTitlesWidget: (value, meta) {
-                if (value == meta.min || value == meta.max) {
-                  return const Text('');
-                }
-                return Text(
-                  value.toInt().toString(),
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        minX: 0,
-        maxX: 6,
-        minY: 0,
-        maxY: maxY,
-        lineBarsData: [
-          LineChartBarData(
-            spots: List.generate(chartData.length, (index) {
-              return FlSpot(index.toDouble(), chartData[index]);
-            }),
-            isCurved: true,
-            color: Colors.blueAccent,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 4,
-                  color: Colors.white,
-                  strokeWidth: 2,
-                  strokeColor: Colors.blueAccent,
-                );
-              },
-            ),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                colors: [
-                  Colors.blueAccent.withValues(alpha: 0.3),
-                  Colors.blueAccent.withValues(alpha: 0.0),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+          const SizedBox(height: 8),
+          SizedBox(
+            height: labelRowHeight,
+            child: Text(
+              p.label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10.5,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
         ],
-      ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Comfortable slot width; scroll horizontally when the range has many
+        // buckets (30-day / all-time) instead of squeezing them together.
+        const minSlot = 42.0;
+        final fits = constraints.maxWidth / points.length >= minSlot;
+        final slot = fits ? constraints.maxWidth / points.length : minSlot;
+
+        final row = Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: points
+              .map((p) => SizedBox(width: slot, child: bar(p)))
+              .toList(),
+        );
+
+        // Subtle baseline under the bars for a cleaner, more finished look.
+        final chart = Stack(
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: labelRowHeight + 8,
+              child: Container(height: 1, color: Colors.grey.shade200),
+            ),
+            row,
+          ],
+        );
+
+        return fits
+            ? chart
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(width: slot * points.length, child: chart),
+              );
+      },
     );
   }
 
@@ -1647,7 +1671,9 @@ class DashboardScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                     ),
                     Text(
-                      _formatCurrency(totalAmount),
+                      // 2-decimal currency, matching the web donut (₹470.66) —
+                      // no rounded-to-integer or float artifact.
+                      FormatUtils.formatMoney(totalAmount),
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
