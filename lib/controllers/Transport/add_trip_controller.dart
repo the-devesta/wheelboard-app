@@ -61,12 +61,15 @@ class TripController extends GetxController {
     try {
       isLoading.value = true;
 
-      final data = await ApiClient.instance.get<List<dynamic>>(
+      final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.drivers,
-        queryParameters: {'userId': userId},
+        queryParameters: {'userId': userId, 'page': 1, 'limit': 50},
       );
+      final list = data is List ? data : (data['data'] ?? data) as List;
 
-      drivers.value = data.map((e) => Driver.fromJson(e)).toList();
+      drivers.value = list
+          .map((e) => Driver.fromJson(e as Map<String, dynamic>))
+          .toList();
 
       if (drivers.isNotEmpty && selectedDriver.value == null) {
         selectedDriver.value = drivers.first.driverId;
@@ -87,12 +90,15 @@ class TripController extends GetxController {
     try {
       isVehicleLoading.value = true;
 
-      final data = await ApiClient.instance.get<List<dynamic>>(
+      final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.vehicles,
-        queryParameters: {'userId': userId},
+        queryParameters: {'userId': userId, 'page': 1, 'limit': 50},
       );
+      final list = data is List ? data : (data['data'] ?? data) as List;
 
-      vehicles.value = data.map((e) => Vehicle.fromJson(e)).toList();
+      vehicles.value = list
+          .map((e) => Vehicle.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on dio.DioException catch (e) {
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
@@ -137,8 +143,11 @@ class TripController extends GetxController {
         final hour = int.tryParse(parts[0]) ?? 0;
         final minute = int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;
         scheduledStart = DateTime(
-          scheduledStart.year, scheduledStart.month, scheduledStart.day,
-          hour, minute,
+          scheduledStart.year,
+          scheduledStart.month,
+          scheduledStart.day,
+          hour,
+          minute,
         );
       }
       final scheduledEnd = scheduledStart.add(const Duration(hours: 8));
@@ -158,17 +167,15 @@ class TripController extends GetxController {
           },
         },
         "tripType": trip.isScheduledTrip ? "scheduled" : "created",
-        if (trip.payRange.trim().isNotEmpty) "expectedPay": trip.payRange.trim(),
+        if (trip.payRange.trim().isNotEmpty)
+          "expectedPay": trip.payRange.trim(),
         if (trip.isScheduledTrip && trip.driverId.trim().isNotEmpty)
           "driverId": trip.driverId.trim(),
       };
 
       AppLogger.d("📤 Creating trip: ${ApiEndpoints.trips.create}");
 
-      await ApiClient.instance.post(
-        ApiEndpoints.trips.create,
-        data: body,
-      );
+      await ApiClient.instance.post(ApiEndpoints.trips.create, data: body);
 
       AppLogger.d("✅ Trip created successfully");
       SnackBarHelper.success("Trip added successfully!");
@@ -227,8 +234,11 @@ class TripController extends GetxController {
         final hour = int.tryParse(parts[0]) ?? 0;
         final minute = int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;
         scheduledStart = DateTime(
-          scheduledStart.year, scheduledStart.month, scheduledStart.day,
-          hour, minute,
+          scheduledStart.year,
+          scheduledStart.month,
+          scheduledStart.day,
+          hour,
+          minute,
         );
       }
       final scheduledEnd = scheduledStart.add(const Duration(hours: 8));
@@ -319,7 +329,9 @@ class TripController extends GetxController {
       AppLogger.d("API raw response length: ${tripsList.length}");
       AppLogger.d("Parsed trips length: ${trips.length}");
       for (final t in trips) {
-        AppLogger.d("Trip ID: ${t.tripId} | DB ID: ${t.id} | Status: ${t.tripStatus}");
+        AppLogger.d(
+          "Trip ID: ${t.tripId} | DB ID: ${t.id} | Status: ${t.tripStatus}",
+        );
       }
       AppLogger.d("================================");
 
@@ -345,8 +357,8 @@ class TripController extends GetxController {
     final target = (normalized == 'in-process' || normalized == 'in process')
         ? 'in-process'
         : normalized == 'completed'
-            ? 'completed'
-            : 'upcoming';
+        ? 'completed'
+        : 'upcoming';
     return trips
         .where((trip) => tripStatusBucket(trip.tripStatus) == target)
         .toList();
@@ -371,9 +383,7 @@ class TripController extends GetxController {
       isLoading.value = true;
       AppLogger.d('📡 Deleting trip: $tripId');
 
-      await ApiClient.instance.delete(
-        ApiEndpoints.trips.delete(tripId),
-      );
+      await ApiClient.instance.delete(ApiEndpoints.trips.delete(tripId));
 
       await fetchTrips(userId);
       DashboardController.refreshIfActive();
@@ -398,9 +408,7 @@ class TripController extends GetxController {
       isLoading.value = true;
       AppLogger.d('📡 Completing trip: $tripId');
 
-      await ApiClient.instance.post(
-        ApiEndpoints.trips.arrive(tripId),
-      );
+      await ApiClient.instance.post(ApiEndpoints.trips.arrive(tripId));
 
       SnackBarHelper.success('Trip completed successfully!');
       await fetchTrips(userId);

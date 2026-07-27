@@ -102,25 +102,36 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen>
       scrolledUnderElevation: 1,
       shadowColor: _border,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-            size: 20, color: _textDark),
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          size: 20,
+          color: _textDark,
+        ),
         onPressed: () => Get.back(),
       ),
-      title: const Text('Fleet Management',
-          style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: _textDark,
-              fontFamily: 'Poppins')),
+      title: const Text(
+        'Fleet Management',
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: _textDark,
+          fontFamily: 'Poppins',
+        ),
+      ),
       actions: [
         Obx(() {
-          final busy =
-              _ctrl.isLoading.value || _ctrl.isVehicleLoading.value;
+          final busy = _ctrl.isLoading.value || _ctrl.isVehicleLoading.value;
           return busy
               ? const Padding(
                   padding: EdgeInsets.all(12),
-                  child:
-                      SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: _primary)),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: _primary,
+                    ),
+                  ),
                 )
               : IconButton(
                   icon: const Icon(Iconsax.refresh, size: 20, color: _textGrey),
@@ -140,32 +151,55 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Lease Marketplace',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _textGrey,
-                  fontFamily: 'Poppins',
-                  letterSpacing: 0.5)),
+          const Text(
+            'Lease Marketplace',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _textGrey,
+              fontFamily: 'Poppins',
+              letterSpacing: 0.5,
+            ),
+          ),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _leaseChip(Iconsax.receipt_text, 'My Listings', const Color(0xFF3B82F6),
-                    () => Get.to(() => const LeaseListingsScreen())),
+                _leaseChip(
+                  Iconsax.receipt_text,
+                  'My Listings',
+                  const Color(0xFF3B82F6),
+                  () => Get.to(() => const LeaseListingsScreen()),
+                ),
                 const SizedBox(width: 8),
-                _leaseChip(Iconsax.add_circle, 'List Vehicle', _primary,
-                    () => Get.to(() => const CreateLeaseWizard())),
+                _leaseChip(
+                  Iconsax.add_circle,
+                  'List Vehicle',
+                  _primary,
+                  () => Get.to(() => const CreateLeaseWizard()),
+                ),
                 const SizedBox(width: 8),
-                _leaseChip(Iconsax.document_download, 'Incoming', const Color(0xFF22C55E),
-                    () => Get.to(() => const IncomingBookingsScreen())),
+                _leaseChip(
+                  Iconsax.document_download,
+                  'Incoming',
+                  const Color(0xFF22C55E),
+                  () => Get.to(() => const IncomingBookingsScreen()),
+                ),
                 const SizedBox(width: 8),
-                _leaseChip(Iconsax.shop, 'Marketplace', const Color(0xFF10B981),
-                    () => Get.to(() => const MarketplaceScreen())),
+                _leaseChip(
+                  Iconsax.shop,
+                  'Marketplace',
+                  const Color(0xFF10B981),
+                  () => Get.to(() => const MarketplaceScreen()),
+                ),
                 const SizedBox(width: 8),
-                _leaseChip(Iconsax.shopping_cart, 'My Leases', const Color(0xFF8B5CF6),
-                    () => Get.to(() => const MyBookedLeasesScreen())),
+                _leaseChip(
+                  Iconsax.shopping_cart,
+                  'My Leases',
+                  const Color(0xFF8B5CF6),
+                  () => Get.to(() => const MyBookedLeasesScreen()),
+                ),
               ],
             ),
           ),
@@ -174,7 +208,12 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen>
     );
   }
 
-  Widget _leaseChip(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _leaseChip(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -189,12 +228,15 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen>
           children: [
             Icon(icon, size: 14, color: color),
             const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                    fontFamily: 'Poppins')),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+                fontFamily: 'Poppins',
+              ),
+            ),
           ],
         ),
       ),
@@ -213,29 +255,39 @@ class _FleetVehiclesScreenState extends State<FleetVehiclesScreen>
         indicatorColor: _primary,
         indicatorWeight: 2,
         labelStyle: const TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Poppins'),
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Poppins',
+        ),
         unselectedLabelStyle: const TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w500, fontFamily: 'Poppins'),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Poppins',
+        ),
         tabs: [
           Tab(
-            child: Obx(() => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Iconsax.truck, size: 16),
-                    const SizedBox(width: 6),
-                    Text('Vehicles (${_ctrl.vehicles.length})'),
-                  ],
-                )),
+            child: Obx(
+              () => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Iconsax.truck, size: 16),
+                  const SizedBox(width: 6),
+                  Text('Vehicles (${_ctrl.vehicles.length})'),
+                ],
+              ),
+            ),
           ),
           Tab(
-            child: Obx(() => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Iconsax.people, size: 16),
-                    const SizedBox(width: 6),
-                    Text('Drivers (${_ctrl.drivers.length})'),
-                  ],
-                )),
+            child: Obx(
+              () => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Iconsax.people, size: 16),
+                  const SizedBox(width: 6),
+                  Text('Drivers (${_ctrl.drivers.length})'),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -290,7 +342,14 @@ class _VehiclesTab extends StatelessWidget {
           query: query,
           onQueryChanged: onQueryChanged,
           filter: filter,
-          filters: const ['All', 'Available', 'In-Transit', 'Assigned', 'Owned', 'Attached'],
+          filters: const [
+            'All',
+            'Available',
+            'In-Transit',
+            'Assigned',
+            'Owned',
+            'Attached',
+          ],
           onFilterChanged: onFilterChanged,
           onAdd: onAdd,
           addLabel: 'Add Vehicle',
@@ -327,10 +386,8 @@ class _VehiclesTab extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 itemCount: list.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) => _VehicleCard(
-                  vehicle: list[i],
-                  ctrl: ctrl,
-                ),
+                itemBuilder: (_, i) =>
+                    _VehicleCard(vehicle: list[i], ctrl: ctrl),
               ),
             );
           }),
@@ -348,11 +405,14 @@ class _VehicleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _vehicleStatusColor(vehicle.status);
+    final gpsStatus = _gpsStatus(vehicle);
     // The stored value may be a hosted URL, a relative path, or a base64
     // `data:` URI (this app persists vehicle images as base64). SmartImage
     // renders all three — raw `Image.network` could not render data URIs,
     // which is why the photo fell through to the placeholder icon.
-    final rawImage = vehicle.imageUrls.isNotEmpty ? vehicle.imageUrls.first : null;
+    final rawImage = vehicle.imageUrls.isNotEmpty
+        ? vehicle.imageUrls.first
+        : null;
 
     return Material(
       color: _card,
@@ -364,7 +424,13 @@ class _VehicleCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _border),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 3))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: IntrinsicHeight(
             child: Row(
@@ -374,7 +440,9 @@ class _VehicleCard extends StatelessWidget {
                 // the vehicle, otherwise a branded placeholder (mirrors the
                 // web fleet list's prominent vehicle photo).
                 ClipRRect(
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(18),
+                  ),
                   child: SizedBox(
                     width: 104,
                     child: SmartImage(
@@ -394,42 +462,66 @@ class _VehicleCard extends StatelessWidget {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(vehicle.vehicleModel,
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: _textDark,
-                                      fontFamily: 'Poppins'),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis),
+                              child: Text(
+                                vehicle.vehicleModel,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: _textDark,
+                                  fontFamily: 'Poppins',
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: statusColor.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Text(vehicle.status.isEmpty ? 'Unknown' : vehicle.status,
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: statusColor,
-                                      fontFamily: 'Poppins')),
+                              child: Text(
+                                vehicle.status.isEmpty
+                                    ? 'Unknown'
+                                    : vehicle.status,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: statusColor,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text(vehicle.vehicleNumber,
-                            style: const TextStyle(
-                                fontSize: 12, color: _textGrey, fontFamily: 'Poppins')),
+                        Text(
+                          vehicle.vehicleNumber,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: _textGrey,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Wrap(
-                          spacing: 6, runSpacing: 6,
+                          spacing: 6,
+                          runSpacing: 6,
                           children: [
                             _tag(vehicle.vehicleType, const Color(0xFF8B5CF6)),
-                            _tag(vehicle.ownershipType, const Color(0xFF3B82F6)),
+                            _tag(
+                              vehicle.ownershipType,
+                              const Color(0xFF3B82F6),
+                            ),
+                            _tag(gpsStatus.$1, gpsStatus.$2),
                             if (vehicle.manufacturingYear > 0)
-                              _tag('${vehicle.manufacturingYear}', const Color(0xFF6B7280)),
+                              _tag(
+                                '${vehicle.manufacturingYear}',
+                                const Color(0xFF6B7280),
+                              ),
                           ],
                         ),
                       ],
@@ -437,7 +529,11 @@ class _VehicleCard extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(right: 10, top: 10, bottom: 10),
+                  padding: const EdgeInsets.only(
+                    right: 10,
+                    top: 10,
+                    bottom: 10,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -448,15 +544,20 @@ class _VehicleCard extends StatelessWidget {
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (_) => _VehicleModal(ctrl: ctrl, vehicle: vehicle),
+                          builder: (_) =>
+                              _VehicleModal(ctrl: ctrl, vehicle: vehicle),
                         ),
                       ),
                       const SizedBox(height: 6),
                       _IconBtn(
                         Iconsax.trash,
                         const Color(0xFFEF4444),
-                        () => _confirmDelete(context, 'vehicle', vehicle.vehicleModel,
-                            () => ctrl.deleteVehicle(vehicle.vehicleId)),
+                        () => _confirmDelete(
+                          context,
+                          'vehicle',
+                          vehicle.vehicleModel,
+                          () => ctrl.deleteVehicle(vehicle.vehicleId),
+                        ),
                       ),
                     ],
                   ),
@@ -471,12 +572,25 @@ class _VehicleCard extends StatelessWidget {
 
   Color _vehicleStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'available': return const Color(0xFF22C55E);
-      case 'in-transit': case 'in transit': return const Color(0xFF3B82F6);
-      case 'assigned': return const Color(0xFFF59E0B);
-      case 'maintenance': return const Color(0xFFEF4444);
-      default: return _textGrey;
+      case 'available':
+        return const Color(0xFF22C55E);
+      case 'in-transit':
+      case 'in transit':
+        return const Color(0xFF3B82F6);
+      case 'assigned':
+        return const Color(0xFFF59E0B);
+      case 'maintenance':
+        return const Color(0xFFEF4444);
+      default:
+        return _textGrey;
     }
+  }
+
+  (String, Color) _gpsStatus(Vehicle vehicle) {
+    final gps = vehicle.gpsLastKnown;
+    if (gps == null) return ('GPS: Not connected', _textGrey);
+    if (gps.stale) return ('GPS: Stale', const Color(0xFFF59E0B));
+    return ('GPS: Live', const Color(0xFF22C55E));
   }
 }
 
@@ -559,12 +673,19 @@ class _DriverCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () => Get.to(() => DriverProfileScreen(driverId: driver.driverId)),
+        onTap: () =>
+            Get.to(() => DriverProfileScreen(driverId: driver.driverId)),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _border),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 3))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -579,7 +700,10 @@ class _DriverCard extends StatelessWidget {
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: statusColor.withValues(alpha: 0.55), width: 2.5),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.55),
+                      width: 2.5,
+                    ),
                   ),
                   child: ClipOval(
                     child: SmartImage(
@@ -593,98 +717,135 @@ class _DriverCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(driver.fullName,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              driver.fullName,
                               style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: _textDark,
-                                  fontFamily: 'Poppins'),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: _textDark,
+                                fontFamily: 'Poppins',
+                              ),
                               maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                        ),
-                        if (driver.status.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: _statusColor(driver.status).withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            child: Text(driver.status,
-                                style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: _statusColor(driver.status),
-                                    fontFamily: 'Poppins')),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(driver.contactNumber.isNotEmpty ? driver.contactNumber : '—',
-                        style: const TextStyle(
-                            fontSize: 12, color: _textGrey, fontFamily: 'Poppins')),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Iconsax.star1, size: 12, color: Color(0xFFF59E0B)),
-                        const SizedBox(width: 3),
-                        const Text('4.7',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: _textGrey,
-                                fontFamily: 'Poppins')),
-                        const SizedBox(width: 10),
-                        if (driver.vehicleType.isNotEmpty)
-                          _tag(driver.vehicleType, const Color(0xFF8B5CF6)),
-                        if (driver.experience.isNotEmpty) ...[
-                          const SizedBox(width: 6),
-                          _tag('${driver.experience} yrs', const Color(0xFF3B82F6)),
+                          if (driver.status.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _statusColor(
+                                  driver.status,
+                                ).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                driver.status,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: _statusColor(driver.status),
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                            ),
                         ],
-                      ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        driver.contactNumber.isNotEmpty
+                            ? driver.contactNumber
+                            : '—',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _textGrey,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Iconsax.star1,
+                            size: 12,
+                            color: Color(0xFFF59E0B),
+                          ),
+                          const SizedBox(width: 3),
+                          const Text(
+                            '4.7',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _textGrey,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          if (driver.vehicleType.isNotEmpty)
+                            _tag(driver.vehicleType, const Color(0xFF8B5CF6)),
+                          if (driver.experience.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            _tag(
+                              '${driver.experience} yrs',
+                              const Color(0xFF3B82F6),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  children: [
+                    _IconBtn(
+                      Iconsax.edit,
+                      const Color(0xFF3B82F6),
+                      () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) =>
+                            _DriverModal(ctrl: ctrl, driver: driver),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    _IconBtn(
+                      Iconsax.trash,
+                      const Color(0xFFEF4444),
+                      () => _confirmDelete(
+                        context,
+                        'driver',
+                        driver.fullName,
+                        () => ctrl.deleteDriver(driver.driverId),
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                children: [
-                  _IconBtn(
-                    Iconsax.edit,
-                    const Color(0xFF3B82F6),
-                    () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => _DriverModal(ctrl: ctrl, driver: driver),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  _IconBtn(
-                    Iconsax.trash,
-                    const Color(0xFFEF4444),
-                    () => _confirmDelete(context, 'driver', driver.fullName,
-                        () => ctrl.deleteDriver(driver.driverId)),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'available': return const Color(0xFF22C55E);
-      case 'on trip': case 'hired': return const Color(0xFF3B82F6);
-      default: return _textGrey;
+      case 'available':
+        return const Color(0xFF22C55E);
+      case 'on trip':
+      case 'hired':
+        return const Color(0xFF3B82F6);
+      default:
+        return _textGrey;
     }
   }
 }
@@ -732,7 +893,9 @@ class _VehicleModalState extends State<_VehicleModal> {
     super.initState();
     final v = widget.vehicle;
     if (v != null) {
-      _nameCtrl.text = v.vehicleName.isNotEmpty ? v.vehicleName : v.vehicleModel;
+      _nameCtrl.text = v.vehicleName.isNotEmpty
+          ? v.vehicleName
+          : v.vehicleModel;
       _modelCtrl.text = v.vehicleModel;
       _regCtrl.text = v.vehicleNumber;
       _yearCtrl.text = v.manufacturingYear > 0 ? '${v.manufacturingYear}' : '';
@@ -742,7 +905,9 @@ class _VehicleModalState extends State<_VehicleModal> {
       _mileageCtrl.text = v.mileage;
       _fuelType = _fuelTypes.contains(v.fuelType) ? v.fuelType : 'Diesel';
       _ownership = v.ownershipType.isEmpty ? 'Owned' : v.ownershipType;
-      _category = _categories.contains(v.vehicleType) ? v.vehicleType : 'Shipment';
+      _category = _categories.contains(v.vehicleType)
+          ? v.vehicleType
+          : 'Shipment';
     }
   }
 
@@ -770,8 +935,9 @@ class _VehicleModalState extends State<_VehicleModal> {
       _verifying = true;
       _rcResult = null; // clear any previous banner
     });
-    final result =
-        await widget.ctrl.verifyVehicleRegistration(_regCtrl.text.trim());
+    final result = await widget.ctrl.verifyVehicleRegistration(
+      _regCtrl.text.trim(),
+    );
     if (!mounted) return;
     setState(() {
       _verifying = false;
@@ -876,7 +1042,10 @@ class _VehicleModalState extends State<_VehicleModal> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
     if (picked != null) setState(() => _image = File(picked.path));
   }
 
@@ -892,7 +1061,9 @@ class _VehicleModalState extends State<_VehicleModal> {
       return;
     }
     if (!_confirmed) {
-      SnackBarHelper.warning('Please confirm the information provided is correct');
+      SnackBarHelper.warning(
+        'Please confirm the information provided is correct',
+      );
       return;
     }
     setState(() => _saving = true);
@@ -915,7 +1086,9 @@ class _VehicleModalState extends State<_VehicleModal> {
         capacity: _capacityCtrl.text.trim(),
         mileage: _mileageCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
-        statusBadge: widget.vehicle!.status.isNotEmpty ? widget.vehicle!.status : 'Available',
+        statusBadge: widget.vehicle!.status.isNotEmpty
+            ? widget.vehicle!.status
+            : 'Available',
         image: _image,
       );
     } else {
@@ -958,26 +1131,59 @@ class _VehicleModalState extends State<_VehicleModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🚗 Quick Vehicle Verification',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _textDark, fontFamily: 'Poppins')),
+                  const Text(
+                    '🚗 Quick Vehicle Verification',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _textDark,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      Expanded(child: _ModalField('Registration No.', _regCtrl, hint: 'MH01AB1234', required: true)),
+                      Expanded(
+                        child: _ModalField(
+                          'Registration No.',
+                          _regCtrl,
+                          hint: 'MH01AB1234',
+                          required: true,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       GestureDetector(
-                        onTap: (_verifying || _regCtrl.text.trim().isEmpty) ? null : _verify,
+                        onTap: (_verifying || _regCtrl.text.trim().isEmpty)
+                            ? null
+                            : _verify,
                         child: Container(
                           height: 48,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
                             color: _verifying ? _border : _primaryLight,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color: _primary.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: _verifying
-                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _primary))
-                              : const Text('Verify', style: TextStyle(fontSize: 13, color: _primary, fontWeight: FontWeight.w600, fontFamily: 'Poppins')),
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: _primary,
+                                  ),
+                                )
+                              : const Text(
+                                  'Verify',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: _primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
                         ),
                       ),
                     ],
@@ -993,38 +1199,99 @@ class _VehicleModalState extends State<_VehicleModal> {
               ),
             )
           else
-            _ModalField('Registration No.', _regCtrl, hint: 'MH01AB1234', required: true),
+            _ModalField(
+              'Registration No.',
+              _regCtrl,
+              hint: 'MH01AB1234',
+              required: true,
+            ),
           const SizedBox(height: 12),
-          _ModalField('Vehicle Name', _nameCtrl, hint: 'e.g. Tata Ace', required: true, enabled: !_isLocked('name')),
+          _ModalField(
+            'Vehicle Name',
+            _nameCtrl,
+            hint: 'e.g. Tata Ace',
+            required: true,
+            enabled: !_isLocked('name'),
+          ),
           const SizedBox(height: 12),
-          _ModalField('Model', _modelCtrl, hint: 'e.g. Tata 407', required: true, enabled: !_isLocked('model')),
+          _ModalField(
+            'Model',
+            _modelCtrl,
+            hint: 'e.g. Tata 407',
+            required: true,
+            enabled: !_isLocked('model'),
+          ),
           const SizedBox(height: 12),
-          _ModalField('Year', _yearCtrl, hint: '2022', keyboard: TextInputType.number, enabled: !_isLocked('year')),
+          _ModalField(
+            'Year',
+            _yearCtrl,
+            hint: '2022',
+            keyboard: TextInputType.number,
+            enabled: !_isLocked('year'),
+          ),
           const SizedBox(height: 12),
-          _ModalDropdown('Fuel Type', _fuelType, _fuelTypes, (v) => setState(() => _fuelType = v!), required: true),
+          _ModalDropdown(
+            'Fuel Type',
+            _fuelType,
+            _fuelTypes,
+            (v) => setState(() => _fuelType = v!),
+            required: true,
+          ),
           const SizedBox(height: 12),
-          _ModalField('Capacity', _capacityCtrl, hint: 'e.g. 5 Tons', enabled: !_isLocked('capacity')),
+          _ModalField(
+            'Capacity',
+            _capacityCtrl,
+            hint: 'e.g. 5 Tons',
+            enabled: !_isLocked('capacity'),
+          ),
           const SizedBox(height: 12),
           _ModalField('Mileage (km)', _mileageCtrl, hint: 'e.g. 50000'),
           const SizedBox(height: 12),
-          _ModalDropdown('Category', _category, _categories, (v) => setState(() => _category = v!), required: true),
+          _ModalDropdown(
+            'Category',
+            _category,
+            _categories,
+            (v) => setState(() => _category = v!),
+            required: true,
+          ),
           if (_category == 'Others') ...[
             const SizedBox(height: 12),
-            _ModalField('Specify Category', _categoryDetailCtrl, hint: 'e.g. Refrigerated', required: true),
+            _ModalField(
+              'Specify Category',
+              _categoryDetailCtrl,
+              hint: 'e.g. Refrigerated',
+              required: true,
+            ),
           ],
           const SizedBox(height: 12),
-          _ModalDropdown('Ownership', _ownership, const ['Owned', 'Attached', 'Rented'],
-              (v) => setState(() => _ownership = v!), required: true),
+          _ModalDropdown(
+            'Ownership',
+            _ownership,
+            const ['Owned', 'Attached', 'Rented'],
+            (v) => setState(() => _ownership = v!),
+            required: true,
+          ),
           const SizedBox(height: 16),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: _bg,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('VEHICLE METRICS',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _textGrey, letterSpacing: 0.6, fontFamily: 'Poppins')),
+                const Text(
+                  'VEHICLE METRICS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _textGrey,
+                    letterSpacing: 0.6,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
                 const SizedBox(height: 12),
                 // Odometer / Trip Efficiency / Monthly Usage inputs removed.
                 //
@@ -1034,13 +1301,22 @@ class _VehicleModalState extends State<_VehicleModal> {
                 // now derived by the backend from the vehicle's actual trips.
                 const Text(
                   'Distance, cost per km and monthly usage are calculated automatically from this vehicle’s completed trips.',
-                  style: TextStyle(fontSize: 12, color: _textGrey, fontFamily: 'Poppins'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _textGrey,
+                    fontFamily: 'Poppins',
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          _ModalField('Current Location / Description', _locationCtrl, hint: 'Current location or notes', maxLines: 3),
+          _ModalField(
+            'Current Location / Description',
+            _locationCtrl,
+            hint: 'Current location or notes',
+            maxLines: 3,
+          ),
           const SizedBox(height: 12),
           GestureDetector(
             onTap: _pickImage,
@@ -1054,11 +1330,24 @@ class _VehicleModalState extends State<_VehicleModal> {
               ),
               child: Column(
                 children: [
-                  Icon(_image != null ? Iconsax.tick_circle : Iconsax.gallery_add,
-                      color: _image != null ? const Color(0xFF22C55E) : _textGrey, size: 22),
+                  Icon(
+                    _image != null ? Iconsax.tick_circle : Iconsax.gallery_add,
+                    color: _image != null ? const Color(0xFF22C55E) : _textGrey,
+                    size: 22,
+                  ),
                   const SizedBox(height: 6),
-                  Text(_image == null ? 'Tap to add vehicle image' : 'Image selected',
-                      style: TextStyle(fontSize: 12, color: _image != null ? const Color(0xFF22C55E) : _textGrey, fontFamily: 'Poppins')),
+                  Text(
+                    _image == null
+                        ? 'Tap to add vehicle image'
+                        : 'Image selected',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _image != null
+                          ? const Color(0xFF22C55E)
+                          : _textGrey,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1066,7 +1355,8 @@ class _VehicleModalState extends State<_VehicleModal> {
           const SizedBox(height: 8),
           _ConfirmCheckbox(
             value: _confirmed,
-            label: 'I confirm that all the information provided above is correct and accurate to the best of my knowledge.',
+            label:
+                'I confirm that all the information provided above is correct and accurate to the best of my knowledge.',
             onChanged: (v) => setState(() => _confirmed = v ?? false),
           ),
           const SizedBox(height: 16),
@@ -1127,7 +1417,9 @@ class _DriverModalState extends State<_DriverModal> {
       _categoryDetailCtrl.text = d.vehicleCategoryDetail;
       _dob = d.dateOfBirth;
       _licenseExpiry = d.licenseExpiryDate;
-      _category = _categories.contains(d.vehicleType) ? d.vehicleType : 'Shipment';
+      _category = _categories.contains(d.vehicleType)
+          ? d.vehicleType
+          : 'Shipment';
       // Normalize status to a valid enum value
       final rawStatus = d.status;
       _status = _statusOptions.contains(rawStatus) ? rawStatus : 'Available';
@@ -1163,8 +1455,10 @@ class _DriverModalState extends State<_DriverModal> {
     final dob =
         '${_dob!.day.toString().padLeft(2, '0')}/${_dob!.month.toString().padLeft(2, '0')}/${_dob!.year}';
     setState(() => _verifying = true);
-    final data =
-        await widget.ctrl.verifyDriverLicense(_licenseCtrl.text.trim(), dob);
+    final data = await widget.ctrl.verifyDriverLicense(
+      _licenseCtrl.text.trim(),
+      dob,
+    );
     if (!mounted) return;
     setState(() => _verifying = false);
     // On failure the controller already surfaces the backend reason.
@@ -1217,7 +1511,10 @@ class _DriverModalState extends State<_DriverModal> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
     if (picked != null) setState(() => _image = File(picked.path));
   }
 
@@ -1228,7 +1525,9 @@ class _DriverModalState extends State<_DriverModal> {
       firstDate: DateTime(1950),
       lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
       builder: (c, child) => Theme(
-        data: Theme.of(c).copyWith(colorScheme: const ColorScheme.light(primary: _primary)),
+        data: Theme.of(
+          c,
+        ).copyWith(colorScheme: const ColorScheme.light(primary: _primary)),
         child: child!,
       ),
     );
@@ -1238,11 +1537,14 @@ class _DriverModalState extends State<_DriverModal> {
   Future<void> _pickLicenseExpiry() async {
     final d = await showDatePicker(
       context: context,
-      initialDate: _licenseExpiry ?? DateTime.now().add(const Duration(days: 365)),
+      initialDate:
+          _licenseExpiry ?? DateTime.now().add(const Duration(days: 365)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 20)),
       builder: (c, child) => Theme(
-        data: Theme.of(c).copyWith(colorScheme: const ColorScheme.light(primary: _primary)),
+        data: Theme.of(
+          c,
+        ).copyWith(colorScheme: const ColorScheme.light(primary: _primary)),
         child: child!,
       ),
     );
@@ -1323,18 +1625,38 @@ class _DriverModalState extends State<_DriverModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🪪 Quick License Verification',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _textDark, fontFamily: 'Poppins')),
+                  const Text(
+                    '🪪 Quick License Verification',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _textDark,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  const Text('Optional — verify to auto-fill, or just enter the details manually below.',
-                      style: TextStyle(fontSize: 11, color: _textGrey, fontFamily: 'Poppins')),
+                  const Text(
+                    'Optional — verify to auto-fill, or just enter the details manually below.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: _textGrey,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  _ModalField('License Number', _licenseCtrl, hint: 'DL1234567890'),
+                  _ModalField(
+                    'License Number',
+                    _licenseCtrl,
+                    hint: 'DL1234567890',
+                  ),
                   const SizedBox(height: 12),
                   GestureDetector(
                     onTap: _pickDob,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: _bg,
                         borderRadius: BorderRadius.circular(10),
@@ -1342,14 +1664,23 @@ class _DriverModalState extends State<_DriverModal> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Iconsax.calendar, size: 18, color: _textGrey),
+                          const Icon(
+                            Iconsax.calendar,
+                            size: 18,
+                            color: _textGrey,
+                          ),
                           const SizedBox(width: 10),
                           Text(
-                            _dob == null ? 'Date of Birth (optional)' : _fmtDate(_dob!),
+                            _dob == null
+                                ? 'Date of Birth (optional)'
+                                : _fmtDate(_dob!),
                             style: TextStyle(
-                                fontSize: 14,
-                                color: _dob == null ? const Color(0xFF9CA3AF) : _textDark,
-                                fontFamily: 'Poppins'),
+                              fontSize: 14,
+                              color: _dob == null
+                                  ? const Color(0xFF9CA3AF)
+                                  : _textDark,
+                              fontFamily: 'Poppins',
+                            ),
                           ),
                         ],
                       ),
@@ -1359,27 +1690,47 @@ class _DriverModalState extends State<_DriverModal> {
                   SizedBox(
                     width: double.infinity,
                     child: GestureDetector(
-                      onTap: (_verifying || _licenseCtrl.text.trim().isEmpty || _dob == null)
+                      onTap:
+                          (_verifying ||
+                              _licenseCtrl.text.trim().isEmpty ||
+                              _dob == null)
                           ? null
                           : _verify,
                       child: Container(
                         height: 44,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: (_licenseCtrl.text.trim().isEmpty || _dob == null)
+                          color:
+                              (_licenseCtrl.text.trim().isEmpty || _dob == null)
                               ? _border
                               : (_verifying ? _border : _primaryLight),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: _primary.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: _verifying
-                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _primary))
-                            : Text('Verify',
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: _primary,
+                                ),
+                              )
+                            : Text(
+                                'Verify',
                                 style: TextStyle(
-                                    fontSize: 13,
-                                    color: (_licenseCtrl.text.trim().isEmpty || _dob == null) ? _textGrey : _primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'Poppins')),
+                                  fontSize: 13,
+                                  color:
+                                      (_licenseCtrl.text.trim().isEmpty ||
+                                          _dob == null)
+                                      ? _textGrey
+                                      : _primary,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -1392,7 +1743,10 @@ class _DriverModalState extends State<_DriverModal> {
             GestureDetector(
               onTap: _pickDob,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: _bg,
                   borderRadius: BorderRadius.circular(10),
@@ -1403,11 +1757,16 @@ class _DriverModalState extends State<_DriverModal> {
                     const Icon(Iconsax.calendar, size: 18, color: _textGrey),
                     const SizedBox(width: 10),
                     Text(
-                      _dob == null ? 'Date of Birth (optional)' : _fmtDate(_dob!),
+                      _dob == null
+                          ? 'Date of Birth (optional)'
+                          : _fmtDate(_dob!),
                       style: TextStyle(
-                          fontSize: 14,
-                          color: _dob == null ? const Color(0xFF9CA3AF) : _textDark,
-                          fontFamily: 'Poppins'),
+                        fontSize: 14,
+                        color: _dob == null
+                            ? const Color(0xFF9CA3AF)
+                            : _textDark,
+                        fontFamily: 'Poppins',
+                      ),
                     ),
                   ],
                 ),
@@ -1415,14 +1774,22 @@ class _DriverModalState extends State<_DriverModal> {
             ),
           ],
           const SizedBox(height: 12),
-          _ModalField('Full Name', _nameCtrl, hint: 'e.g. Rajesh Kumar', required: true, enabled: !_isLocked('name')),
+          _ModalField(
+            'Full Name',
+            _nameCtrl,
+            hint: 'e.g. Rajesh Kumar',
+            required: true,
+            enabled: !_isLocked('name'),
+          ),
           const SizedBox(height: 12),
           GestureDetector(
             onTap: _pickLicenseExpiry,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
-                color: _isLocked('licenseExpiry') ? const Color(0xFFF3F4F6) : _bg,
+                color: _isLocked('licenseExpiry')
+                    ? const Color(0xFFF3F4F6)
+                    : _bg,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: _border),
               ),
@@ -1431,38 +1798,83 @@ class _DriverModalState extends State<_DriverModal> {
                   const Icon(Iconsax.calendar_1, size: 18, color: _textGrey),
                   const SizedBox(width: 10),
                   Text(
-                    _licenseExpiry == null ? 'License Expiry Date (optional)' : _fmtDate(_licenseExpiry!),
+                    _licenseExpiry == null
+                        ? 'License Expiry Date (optional)'
+                        : _fmtDate(_licenseExpiry!),
                     style: TextStyle(
-                        fontSize: 14,
-                        color: _licenseExpiry == null ? const Color(0xFF9CA3AF) : _textDark,
-                        fontFamily: 'Poppins'),
+                      fontSize: 14,
+                      color: _licenseExpiry == null
+                          ? const Color(0xFF9CA3AF)
+                          : _textDark,
+                      fontFamily: 'Poppins',
+                    ),
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          _ModalField('Phone Number', _phoneCtrl, hint: '+91 9876543210',
-              keyboard: TextInputType.phone),
+          _ModalField(
+            'Phone Number',
+            _phoneCtrl,
+            hint: '+91 9876543210',
+            keyboard: TextInputType.phone,
+          ),
           const SizedBox(height: 12),
-          _ModalField('Email', _emailCtrl, hint: 'driver@example.com',
-              keyboard: TextInputType.emailAddress),
+          _ModalField(
+            'Email',
+            _emailCtrl,
+            hint: 'driver@example.com',
+            keyboard: TextInputType.emailAddress,
+          ),
           const SizedBox(height: 12),
-          _ModalField('Experience (years)', _expCtrl, hint: '5', keyboard: TextInputType.number),
+          _ModalField(
+            'Experience (years)',
+            _expCtrl,
+            hint: '5',
+            keyboard: TextInputType.number,
+          ),
           const SizedBox(height: 12),
-          _ModalDropdown('Status', _status, _statusOptions,
-              (v) => setState(() => _status = v!), required: true),
+          _ModalDropdown(
+            'Status',
+            _status,
+            _statusOptions,
+            (v) => setState(() => _status = v!),
+            required: true,
+          ),
           const SizedBox(height: 12),
-          _ModalDropdown('Vehicle Category', _category, _categories,
-              (v) => setState(() => _category = v!), required: true),
+          _ModalDropdown(
+            'Vehicle Category',
+            _category,
+            _categories,
+            (v) => setState(() => _category = v!),
+            required: true,
+          ),
           if (_category == 'Others') ...[
             const SizedBox(height: 12),
-            _ModalField('Specify', _categoryDetailCtrl, hint: 'e.g. Tanker', required: true, enabled: !_isLocked('categoryDetail')),
+            _ModalField(
+              'Specify',
+              _categoryDetailCtrl,
+              hint: 'e.g. Tanker',
+              required: true,
+              enabled: !_isLocked('categoryDetail'),
+            ),
           ],
           const SizedBox(height: 12),
-          _ModalField('Current Location', _locationCtrl, hint: 'e.g. Mumbai', enabled: !_isLocked('location')),
+          _ModalField(
+            'Current Location',
+            _locationCtrl,
+            hint: 'e.g. Mumbai',
+            enabled: !_isLocked('location'),
+          ),
           const SizedBox(height: 12),
-          _ModalField('Address', _addressCtrl, hint: 'Full address', maxLines: 2, enabled: !_isLocked('address')),
+          _ModalField(
+            'Address',
+            _addressCtrl,
+            hint: 'Full address',
+            maxLines: 2,
+            enabled: !_isLocked('address'),
+          ),
           const SizedBox(height: 12),
           GestureDetector(
             onTap: _pickImage,
@@ -1479,14 +1891,20 @@ class _DriverModalState extends State<_DriverModal> {
                 children: [
                   Icon(
                     _image != null ? Iconsax.tick_circle : Iconsax.camera,
-                    size: 18, color: _image != null ? const Color(0xFF22C55E) : _textGrey,
+                    size: 18,
+                    color: _image != null ? const Color(0xFF22C55E) : _textGrey,
                   ),
                   const SizedBox(width: 8),
-                  Text(_image != null ? 'Photo selected' : 'Add driver photo',
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: _image != null ? const Color(0xFF22C55E) : _textGrey,
-                          fontFamily: 'Poppins')),
+                  Text(
+                    _image != null ? 'Photo selected' : 'Add driver photo',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _image != null
+                          ? const Color(0xFF22C55E)
+                          : _textGrey,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1550,12 +1968,24 @@ class _SearchFilterBar extends StatelessWidget {
                     onChanged: onQueryChanged,
                     decoration: const InputDecoration(
                       hintText: 'Search…',
-                      hintStyle: TextStyle(fontSize: 13, color: _textGrey, fontFamily: 'Poppins'),
-                      prefixIcon: Icon(Iconsax.search_normal, size: 16, color: _textGrey),
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: _textGrey,
+                        fontFamily: 'Poppins',
+                      ),
+                      prefixIcon: Icon(
+                        Iconsax.search_normal,
+                        size: 16,
+                        color: _textGrey,
+                      ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(vertical: 12),
                     ),
-                    style: const TextStyle(fontSize: 13, color: _textDark, fontFamily: 'Poppins'),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: _textDark,
+                      fontFamily: 'Poppins',
+                    ),
                   ),
                 ),
               ),
@@ -1571,14 +2001,21 @@ class _SearchFilterBar extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                      const Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       const SizedBox(width: 4),
-                      Text(addLabel,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              fontFamily: 'Poppins')),
+                      Text(
+                        addLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1598,18 +2035,24 @@ class _SearchFilterBar extends StatelessWidget {
                 return GestureDetector(
                   onTap: () => onFilterChanged(f),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: active ? _primary : _bg,
                       borderRadius: BorderRadius.circular(15),
                       border: Border.all(color: active ? _primary : _border),
                     ),
-                    child: Text(f,
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                            color: active ? Colors.white : _textGrey,
-                            fontFamily: 'Poppins')),
+                    child: Text(
+                      f,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                        color: active ? Colors.white : _textGrey,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
                   ),
                 );
               },
@@ -1654,17 +2097,25 @@ class _EmptyState extends StatelessWidget {
               child: Icon(icon, size: 32, color: _primary),
             ),
             const SizedBox(height: 16),
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: _textDark,
-                    fontFamily: 'Poppins')),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: _textDark,
+                fontFamily: 'Poppins',
+              ),
+            ),
             const SizedBox(height: 6),
-            Text(subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 13, color: _textGrey, fontFamily: 'Poppins')),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: _textGrey,
+                fontFamily: 'Poppins',
+              ),
+            ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: onAction,
@@ -1673,8 +2124,13 @@ class _EmptyState extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primary,
                 foregroundColor: Colors.white,
-                textStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                textStyle: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -1704,15 +2160,28 @@ class _ModalSheet extends StatelessWidget {
         builder: (_, scrollCtrl) => Column(
           children: [
             const SizedBox(height: 10),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2))),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w700, color: _textDark, fontFamily: 'Poppins')),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: _textDark,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close_rounded, color: _textGrey),
@@ -1745,12 +2214,15 @@ class _ModalField extends StatelessWidget {
   final bool required;
   final bool enabled;
 
-  const _ModalField(this.label, this.ctrl,
-      {this.hint,
-      this.keyboard,
-      this.maxLines = 1,
-      this.required = false,
-      this.enabled = true});
+  const _ModalField(
+    this.label,
+    this.ctrl, {
+    this.hint,
+    this.keyboard,
+    this.maxLines = 1,
+    this.required = false,
+    this.enabled = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1759,13 +2231,24 @@ class _ModalField extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w500, color: _textGrey, fontFamily: 'Poppins')),
-            if (required) const Text(' *', style: TextStyle(color: _primary, fontSize: 12)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: _textGrey,
+                fontFamily: 'Poppins',
+              ),
+            ),
+            if (required)
+              const Text(' *', style: TextStyle(color: _primary, fontSize: 12)),
             if (!enabled) ...[
               const SizedBox(width: 6),
-              const Icon(Icons.lock_rounded, size: 11, color: Color(0xFF22C55E)),
+              const Icon(
+                Icons.lock_rounded,
+                size: 11,
+                color: Color(0xFF22C55E),
+              ),
             ],
           ],
         ),
@@ -1777,17 +2260,40 @@ class _ModalField extends StatelessWidget {
           enabled: enabled,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF9CA3AF), fontFamily: 'Poppins'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            hintStyle: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF9CA3AF),
+              fontFamily: 'Poppins',
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 13,
+            ),
             counterText: '',
             filled: true,
             fillColor: enabled ? _bg : const Color(0xFFF3F4F6),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _primary, width: 1.5)),
-            disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _primary, width: 1.5),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _border),
+            ),
           ),
-          style: const TextStyle(fontSize: 14, color: _textDark, fontFamily: 'Poppins'),
+          style: const TextStyle(
+            fontSize: 14,
+            color: _textDark,
+            fontFamily: 'Poppins',
+          ),
         ),
       ],
     );
@@ -1801,8 +2307,13 @@ class _ModalDropdown extends StatelessWidget {
   final ValueChanged<String?> onChanged;
   final bool required;
 
-  const _ModalDropdown(this.label, this.value, this.items, this.onChanged,
-      {this.required = false});
+  const _ModalDropdown(
+    this.label,
+    this.value,
+    this.items,
+    this.onChanged, {
+    this.required = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1811,10 +2322,17 @@ class _ModalDropdown extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w500, color: _textGrey, fontFamily: 'Poppins')),
-            if (required) const Text(' *', style: TextStyle(color: _primary, fontSize: 12)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: _textGrey,
+                fontFamily: 'Poppins',
+              ),
+            ),
+            if (required)
+              const Text(' *', style: TextStyle(color: _primary, fontSize: 12)),
           ],
         ),
         const SizedBox(height: 6),
@@ -1829,7 +2347,20 @@ class _ModalDropdown extends StatelessWidget {
             value: items.contains(value) ? value : items.first,
             isExpanded: true,
             underline: const SizedBox(),
-            items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: const TextStyle(fontSize: 14, fontFamily: 'Poppins')))).toList(),
+            items: items
+                .map(
+                  (i) => DropdownMenuItem(
+                    value: i,
+                    child: Text(
+                      i,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
             onChanged: onChanged,
           ),
         ),
@@ -1842,7 +2373,11 @@ class _ConfirmCheckbox extends StatelessWidget {
   final bool value;
   final String label;
   final ValueChanged<bool?> onChanged;
-  const _ConfirmCheckbox({required this.value, required this.label, required this.onChanged});
+  const _ConfirmCheckbox({
+    required this.value,
+    required this.label,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1861,8 +2396,14 @@ class _ConfirmCheckbox extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Text(label,
-                  style: const TextStyle(fontSize: 12.5, color: _textGrey, fontFamily: 'Poppins')),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: _textGrey,
+                  fontFamily: 'Poppins',
+                ),
+              ),
             ),
           ),
         ],
@@ -1886,13 +2427,29 @@ class _SaveButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: _primary,
           disabledBackgroundColor: _primary.withValues(alpha: 0.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           elevation: 0,
         ),
         child: saving
-            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-            : const Text('Save Changes',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white, fontFamily: 'Poppins')),
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : const Text(
+                'Save Changes',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  fontFamily: 'Poppins',
+                ),
+              ),
       ),
     );
   }
@@ -1909,8 +2466,12 @@ class _IconBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 34, height: 34,
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Icon(icon, size: 16, color: color),
       ),
     );
@@ -1920,10 +2481,11 @@ class _IconBtn extends StatelessWidget {
 class _VehiclePlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-        width: 72, height: 72,
-        color: const Color(0xFFF3F4F6),
-        child: const Icon(Iconsax.truck, size: 28, color: _textGrey),
-      );
+    width: 72,
+    height: 72,
+    color: const Color(0xFFF3F4F6),
+    child: const Icon(Iconsax.truck, size: 28, color: _textGrey),
+  );
 }
 
 class _DriverPlaceholder extends StatelessWidget {
@@ -1936,8 +2498,15 @@ class _DriverPlaceholder extends StatelessWidget {
     return Container(
       color: _primaryLight,
       alignment: Alignment.center,
-      child: Text(initials,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _primary, fontFamily: 'Poppins')),
+      child: Text(
+        initials,
+        style: const TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: _primary,
+          fontFamily: 'Poppins',
+        ),
+      ),
     );
   }
 }
@@ -1945,25 +2514,56 @@ class _DriverPlaceholder extends StatelessWidget {
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
 Widget _tag(String label, Color color) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color, fontFamily: 'Poppins')),
-    );
+  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+  decoration: BoxDecoration(
+    color: color.withValues(alpha: 0.1),
+    borderRadius: BorderRadius.circular(6),
+  ),
+  child: Text(
+    label,
+    style: TextStyle(
+      fontSize: 10,
+      fontWeight: FontWeight.w600,
+      color: color,
+      fontFamily: 'Poppins',
+    ),
+  ),
+);
 
 Future<void> _confirmDelete(
-    BuildContext context, String type, String name, Future<bool> Function() onDelete) async {
+  BuildContext context,
+  String type,
+  String name,
+  Future<bool> Function() onDelete,
+) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (_) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text('Remove $type', style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
-      content: Text('Are you sure you want to remove "$name"?',
-          style: const TextStyle(fontFamily: 'Poppins')),
+      title: Text(
+        'Remove $type',
+        style: const TextStyle(
+          fontFamily: 'Poppins',
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      content: Text(
+        'Are you sure you want to remove "$name"?',
+        style: const TextStyle(fontFamily: 'Poppins'),
+      ),
       actions: [
-        TextButton(onPressed: () => Get.back(result: false), child: const Text('Cancel', style: TextStyle(color: _textGrey))),
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: const Text('Cancel', style: TextStyle(color: _textGrey)),
+        ),
         ElevatedButton(
           onPressed: () => Get.back(result: true),
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFEF4444),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
           child: const Text('Remove', style: TextStyle(color: Colors.white)),
         ),
       ],

@@ -23,12 +23,15 @@ class NotificationController extends GetxController {
       AppLogger.d('🔔 Fetching notifications');
 
       // JWT on the request already identifies the user — no userId param needed
-      final data = await ApiClient.instance.get<List<dynamic>>(
+      final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.notifications.list,
+        queryParameters: const {'page': 1, 'limit': 20},
       );
+      final list = data is List ? data : (data['data'] ?? data) as List;
 
-      notifications.value =
-          data.map((e) => NotificationModel.fromJson(e as Map<String, dynamic>)).toList();
+      notifications.value = list
+          .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
+          .toList();
       AppLogger.d('✅ Fetched ${notifications.length} notifications');
     } on DioException catch (e) {
       final apiError = e.error;

@@ -85,6 +85,7 @@ class DriverController extends GetxController {
       isLoading.value = true;
       final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.drivers,
+        queryParameters: const {'page': 1, 'limit': 50},
       );
       final list = data is List ? data : (data['data'] ?? data) as List;
       drivers.value = list
@@ -195,10 +196,13 @@ class DriverController extends GetxController {
     Map<String, dynamic> originalParams,
   ) {
     final responseData = _extract402Data(e);
-    final upgradeRequired = responseData['upgradeRequired'] == true ||
+    final upgradeRequired =
+        responseData['upgradeRequired'] == true ||
         responseData['feeType'] == 'upgrade_required';
 
-    AppLogger.d('[Fleet 402] driver | upgradeRequired=$upgradeRequired | data=$responseData');
+    AppLogger.d(
+      '[Fleet 402] driver | upgradeRequired=$upgradeRequired | data=$responseData',
+    );
 
     if (upgradeRequired) {
       final limit = (responseData['limit'] as num?)?.toInt() ?? 0;
@@ -309,8 +313,9 @@ class DriverController extends GetxController {
 
   Future<bool> deleteDriver(String driverId, [String? _, String? __]) async {
     try {
-      await ApiClient.instance
-          .delete(ApiEndpoints.fleet.deleteDriver(driverId));
+      await ApiClient.instance.delete(
+        ApiEndpoints.fleet.deleteDriver(driverId),
+      );
       drivers.removeWhere((d) => d.driverId == driverId);
       SnackBarHelper.success('Driver removed');
       return true;
@@ -334,7 +339,9 @@ class DriverController extends GetxController {
   }
 
   Future<bool> updateDriverPerformance(
-      String driverId, Map<String, dynamic> fields) async {
+    String driverId,
+    Map<String, dynamic> fields,
+  ) async {
     try {
       await ApiClient.instance.put(
         ApiEndpoints.fleet.updateDriver(driverId),
@@ -356,6 +363,7 @@ class DriverController extends GetxController {
       vehicleLoadError.value = '';
       final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.vehicles,
+        queryParameters: const {'page': 1, 'limit': 50},
       );
       final list = data is List ? data : (data['data'] ?? data) as List;
       vehicles.value = list
@@ -461,10 +469,13 @@ class DriverController extends GetxController {
     Map<String, dynamic> originalParams,
   ) {
     final responseData = _extract402Data(e);
-    final upgradeRequired = responseData['upgradeRequired'] == true ||
+    final upgradeRequired =
+        responseData['upgradeRequired'] == true ||
         responseData['feeType'] == 'upgrade_required';
 
-    AppLogger.d('[Fleet 402] vehicle | upgradeRequired=$upgradeRequired | data=$responseData');
+    AppLogger.d(
+      '[Fleet 402] vehicle | upgradeRequired=$upgradeRequired | data=$responseData',
+    );
 
     if (upgradeRequired) {
       final limit = (responseData['limit'] as num?)?.toInt() ?? 0;
@@ -568,8 +579,9 @@ class DriverController extends GetxController {
 
   Future<bool> deleteVehicle(String vehicleId, [String? _, String? __]) async {
     try {
-      await ApiClient.instance
-          .delete(ApiEndpoints.fleet.deleteVehicle(vehicleId));
+      await ApiClient.instance.delete(
+        ApiEndpoints.fleet.deleteVehicle(vehicleId),
+      );
       vehicles.removeWhere((v) => v.vehicleId == vehicleId);
       SnackBarHelper.success('Vehicle removed');
       return true;
@@ -581,7 +593,9 @@ class DriverController extends GetxController {
   }
 
   Future<Map<String, dynamic>?> fetchVehicleDetails(
-      String vehicleId, [String? _]) async {
+    String vehicleId, [
+    String? _,
+  ]) async {
     try {
       isVehicleDetailsLoading.value = true;
       final data = await ApiClient.instance.get<Map<String, dynamic>>(
@@ -638,8 +652,8 @@ class DriverController extends GetxController {
 
       final body = raw is Map<String, dynamic>
           ? (raw['data'] is Map<String, dynamic>
-              ? raw['data'] as Map<String, dynamic>
-              : raw)
+                ? raw['data'] as Map<String, dynamic>
+                : raw)
           : null;
 
       if (body == null) {
@@ -691,19 +705,18 @@ class DriverController extends GetxController {
   /// Backend reads `@Query('licenseNumber')` + `@Query('dateOfBirth')` (DOB in
   /// DD/MM/YYYY). The old code sent `number`/`dob` → backend got undefined.
   Future<Map<String, dynamic>?> verifyDriverLicense(
-      String licenseNumber, String dob) async {
+    String licenseNumber,
+    String dob,
+  ) async {
     try {
       final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.verifyDriverLicense,
-        queryParameters: {
-          'licenseNumber': licenseNumber,
-          'dateOfBirth': dob,
-        },
+        queryParameters: {'licenseNumber': licenseNumber, 'dateOfBirth': dob},
       );
       final body = data is Map<String, dynamic>
           ? (data['data'] is Map<String, dynamic>
-              ? data['data'] as Map<String, dynamic>
-              : data)
+                ? data['data'] as Map<String, dynamic>
+                : data)
           : null;
       return body;
     } on dio.DioException catch (e) {
@@ -730,7 +743,8 @@ class DriverController extends GetxController {
   /// generic fallback (`ApiException` is never actually attached to
   /// `DioException.error` by the interceptor, so `e.error is ApiException`
   /// is always false — read straight from the response body instead).
-  String _actionError(dio.DioException e, String fallback) => _verifyError(e, fallback);
+  String _actionError(dio.DioException e, String fallback) =>
+      _verifyError(e, fallback);
 
   // ── Filtered views ─────────────────────────────────────────────────────────
 
@@ -748,9 +762,11 @@ class DriverController extends GetxController {
     if (query.isNotEmpty) {
       final q = query.toLowerCase();
       list = list
-          .where((v) =>
-              v.vehicleModel.toLowerCase().contains(q) ||
-              v.vehicleNumber.toLowerCase().contains(q))
+          .where(
+            (v) =>
+                v.vehicleModel.toLowerCase().contains(q) ||
+                v.vehicleNumber.toLowerCase().contains(q),
+          )
           .toList();
     }
     return list;
@@ -768,9 +784,11 @@ class DriverController extends GetxController {
     if (query.isNotEmpty) {
       final q = query.toLowerCase();
       list = list
-          .where((d) =>
-              d.fullName.toLowerCase().contains(q) ||
-              d.vehicleNumber.toLowerCase().contains(q))
+          .where(
+            (d) =>
+                d.fullName.toLowerCase().contains(q) ||
+                d.vehicleNumber.toLowerCase().contains(q),
+          )
           .toList();
     }
     return list;
@@ -813,7 +831,8 @@ class DriverController extends GetxController {
       // License number & DOB are optional (DL verification is unavailable for
       // now). Omit them entirely when blank so the backend's duplicate-license
       // check treats them as absent instead of matching on an empty string.
-      if (licenseNumber.trim().isNotEmpty) 'licenseNumber': licenseNumber.trim(),
+      if (licenseNumber.trim().isNotEmpty)
+        'licenseNumber': licenseNumber.trim(),
       if (dateOfBirth.trim().isNotEmpty) 'dateOfBirth': dateOfBirth.trim(),
       'phoneNumber': phoneNumber,
       'vehicleCategoryExpertise': vehicleType,
@@ -835,10 +854,9 @@ class DriverController extends GetxController {
 
     final formData = dio.FormData.fromMap(fields);
     if (image != null) {
-      formData.files.add(MapEntry(
-        'image',
-        await dio.MultipartFile.fromFile(image.path),
-      ));
+      formData.files.add(
+        MapEntry('image', await dio.MultipartFile.fromFile(image.path)),
+      );
     }
     return formData;
   }

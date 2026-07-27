@@ -142,6 +142,8 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                         const SizedBox(height: 16),
                         _buildInfoCard(v),
                         const SizedBox(height: 16),
+                        _buildGpsCard(v),
+                        const SizedBox(height: 16),
                         if (_driver != null && (_driver!['driverName']?.toString().isNotEmpty == true)) ...[
                           _buildDriverCard(),
                           const SizedBox(height: 16),
@@ -342,6 +344,71 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       if (v.description.isNotEmpty)
         _infoRow(Iconsax.note_text, 'Description', v.description, multiline: true),
     ]);
+  }
+
+  Widget _buildGpsCard(Vehicle v) {
+    final gps = v.gpsLastKnown;
+    if (gps == null) {
+      return _sectionCard('GPS Tracking', [
+        _infoRow(Iconsax.gps_slash, 'Status', 'Not connected'),
+      ]);
+    }
+
+    final status = gps.stale ? 'Stale' : 'Live';
+    final statusColor = gps.stale ? const Color(0xFFF59E0B) : const Color(0xFF22C55E);
+    final lastSeen = gps.lastSeenAt == null
+        ? 'Waiting for ping'
+        : DateTime.tryParse(gps.lastSeenAt!)?.toLocal().toString() ?? gps.lastSeenAt!;
+    final hasLocation = gps.latitude != null && gps.longitude != null;
+
+    return _sectionCard('GPS Tracking', [
+      _infoRow(Iconsax.gps, 'Status', status),
+      _infoRow(Iconsax.link, 'Provider', gps.providerName.isNotEmpty ? gps.providerName : 'Connected'),
+      _infoRow(Iconsax.clock, 'Last Seen', lastSeen),
+      _infoRow(
+        Iconsax.speedometer,
+        'Speed',
+        gps.speedKph != null ? '${gps.speedKph!.toStringAsFixed(1)} km/h' : 'N/A',
+      ),
+      _infoRow(
+        Iconsax.flash,
+        'Ignition',
+        gps.ignition == null ? 'N/A' : (gps.ignition! ? 'On' : 'Off'),
+      ),
+      if (hasLocation)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _openGpsLocation(gps),
+              icon: Icon(Iconsax.location, size: 16, color: statusColor),
+              label: Text(
+                'Open Current Location',
+                style: TextStyle(
+                  color: statusColor,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: statusColor),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ),
+    ]);
+  }
+
+  Future<void> _openGpsLocation(VehicleGpsLastKnown gps) async {
+    if (gps.latitude == null || gps.longitude == null) return;
+    final uri = Uri.parse(
+      'https://www.google.com/maps?q=${gps.latitude},${gps.longitude}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildDriverCard() {

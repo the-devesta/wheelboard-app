@@ -1,3 +1,51 @@
+class VehicleGpsLastKnown {
+  final String providerCode;
+  final String providerName;
+  final String deviceId;
+  final String providerDeviceId;
+  final double? latitude;
+  final double? longitude;
+  final double? speedKph;
+  final bool? ignition;
+  final String? lastSeenAt;
+  final String? syncedAt;
+  final bool stale;
+
+  const VehicleGpsLastKnown({
+    required this.providerCode,
+    required this.providerName,
+    required this.deviceId,
+    required this.providerDeviceId,
+    this.latitude,
+    this.longitude,
+    this.speedKph,
+    this.ignition,
+    this.lastSeenAt,
+    this.syncedAt,
+    required this.stale,
+  });
+
+  factory VehicleGpsLastKnown.fromJson(Map<String, dynamic> json) {
+    double? asDouble(dynamic value) => value is num
+        ? value.toDouble()
+        : double.tryParse(value?.toString() ?? '');
+
+    return VehicleGpsLastKnown(
+      providerCode: json['providerCode']?.toString() ?? '',
+      providerName: json['providerName']?.toString() ?? '',
+      deviceId: json['deviceId']?.toString() ?? '',
+      providerDeviceId: json['providerDeviceId']?.toString() ?? '',
+      latitude: asDouble(json['latitude']),
+      longitude: asDouble(json['longitude']),
+      speedKph: asDouble(json['speedKph']),
+      ignition: json['ignition'] is bool ? json['ignition'] as bool : null,
+      lastSeenAt: json['lastSeenAt']?.toString(),
+      syncedAt: json['syncedAt']?.toString(),
+      stale: json['stale'] == true,
+    );
+  }
+}
+
 class Vehicle {
   final String vehicleId;
   final String userId;
@@ -18,6 +66,7 @@ class Vehicle {
   final double avgRun;
   final double tripEfficiency;
   final double monthlyUsage;
+  final VehicleGpsLastKnown? gpsLastKnown;
 
   Vehicle({
     required this.vehicleId,
@@ -39,6 +88,7 @@ class Vehicle {
     this.avgRun = 0,
     this.tripEfficiency = 0,
     this.monthlyUsage = 0,
+    this.gpsLastKnown,
   });
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
@@ -58,6 +108,10 @@ class Vehicle {
 
     final metrics = json['metrics'];
     final metricsMap = metrics is Map ? metrics : const {};
+    final gpsRaw = json['gpsLastKnown'];
+    final gps = gpsRaw is Map
+        ? VehicleGpsLastKnown.fromJson(Map<String, dynamic>.from(gpsRaw))
+        : null;
 
     return Vehicle(
       // Backend returns 'id'; legacy returned 'vehicleId'
@@ -90,6 +144,7 @@ class Vehicle {
       avgRun: (metricsMap['avgRun'] as num?)?.toDouble() ?? 0,
       tripEfficiency: (metricsMap['tripEfficiency'] as num?)?.toDouble() ?? 0,
       monthlyUsage: (metricsMap['monthlyUsage'] as num?)?.toDouble() ?? 0,
+      gpsLastKnown: gps,
     );
   }
 }
