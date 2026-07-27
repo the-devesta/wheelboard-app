@@ -300,6 +300,16 @@ class _VehiclesTab extends StatelessWidget {
             if (ctrl.isVehicleLoading.value && ctrl.vehicles.isEmpty) {
               return const Center(child: CustomLoader());
             }
+            if (ctrl.vehicleLoadError.value.isNotEmpty &&
+                ctrl.vehicles.isEmpty) {
+              return _EmptyState(
+                icon: Iconsax.warning_2,
+                title: 'Could not load vehicles',
+                subtitle: ctrl.vehicleLoadError.value,
+                action: 'Retry',
+                onAction: ctrl.fetchVehicles,
+              );
+            }
             final list = ctrl.filteredVehicles(query, filter);
             if (list.isEmpty) {
               return _EmptyState(

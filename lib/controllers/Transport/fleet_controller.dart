@@ -48,6 +48,7 @@ class DriverController extends GetxController {
   final vehicles = <Vehicle>[].obs;
   final isLoading = false.obs;
   final isVehicleLoading = false.obs;
+  final vehicleLoadError = ''.obs;
 
   // ── Vehicle detail (kept for backward compat with vehicle_detail_screen) ──
   final vehicleDetails = Rxn<Map<String, dynamic>>();
@@ -352,6 +353,7 @@ class DriverController extends GetxController {
   Future<void> fetchVehicles() async {
     try {
       isVehicleLoading.value = true;
+      vehicleLoadError.value = '';
       final data = await ApiClient.instance.get<dynamic>(
         ApiEndpoints.fleet.vehicles,
       );
@@ -363,9 +365,11 @@ class DriverController extends GetxController {
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
           : 'Failed to load vehicles';
+      vehicleLoadError.value = msg;
       SnackBarHelper.error(msg);
       AppLogger.e('❌ fetchVehicles: $e');
     } catch (e) {
+      vehicleLoadError.value = 'Failed to load vehicles';
       AppLogger.e('❌ fetchVehicles: $e');
     } finally {
       isVehicleLoading.value = false;
