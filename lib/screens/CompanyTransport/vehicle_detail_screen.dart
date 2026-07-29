@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/network/vehicle_gps_socket_service.dart';
 import '../../controllers/Transport/fleet_controller.dart';
 import '../../models/get_vehicle_model.dart';
 import '../../widgets/custom_loader.dart';
@@ -31,11 +32,33 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   Map<String, dynamic>? _detail;
   bool _loading = true;
   int _imageIndex = 0;
+  final VehicleGpsSocketService _gpsSocket = VehicleGpsSocketService();
+  final List<VehicleGpsPoint> _gpsPoints = [];
+  bool _gpsLoading = false;
+  bool _gpsSocketConnected = false;
+  String? _gpsVehicleId;
 
   @override
   void initState() {
     super.initState();
+    _gpsSocket.onConnectionChange = (connected) {
+      if (!mounted) return;
+      setState(() => _gpsSocketConnected = connected);
+    };
+    _gpsSocket.onPoint = (point) {
+      if (!mounted) return;
+      setState(() => _upsertGpsPoint(point));
+    };
     _load();
+  }
+
+  @override
+  void dispose() {
+    if (_gpsVehicleId != null) {
+      _gpsSocket.unsubscribe(_gpsVehicleId!);
+    }
+    _gpsSocket.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -45,6 +68,43 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       _detail = result;
       _loading = false;
     });
+    await _syncGpsTracking();
+  }
+
+  Future<void> _syncGpsTracking() async {
+    final v = _displayVehicle;
+    if (v.gpsLastKnown == null || v.vehicleId.isEmpty) return;
+    if (_gpsVehicleId == v.vehicleId && _gpsPoints.isNotEmpty) return;
+
+    _gpsVehicleId = v.vehicleId;
+    setState(() => _gpsLoading = true);
+    final history = await _ctrl.fetchVehicleGpsHistory(v.vehicleId, limit: 500);
+    if (mounted) {
+      setState(() {
+        _gpsPoints
+          ..clear()
+          ..addAll(history);
+        _gpsLoading = false;
+      });
+    }
+    await _gpsSocket.connectAndSubscribe(v.vehicleId);
+  }
+
+  void _upsertGpsPoint(VehicleGpsPoint point) {
+    final index = _gpsPoints.indexWhere((item) => item.stableKey == point.stableKey);
+    if (index >= 0) {
+      _gpsPoints[index] = point;
+    } else {
+      _gpsPoints.add(point);
+    }
+    _gpsPoints.sort((a, b) {
+      final aTime = DateTime.tryParse(a.recordedAt)?.millisecondsSinceEpoch ?? 0;
+      final bTime = DateTime.tryParse(b.recordedAt)?.millisecondsSinceEpoch ?? 0;
+      return aTime.compareTo(bTime);
+    });
+    if (_gpsPoints.length > 500) {
+      _gpsPoints.removeRange(0, _gpsPoints.length - 500);
+    }
   }
 
   Future<void> _confirmDelete() async {
@@ -346,6 +406,27 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     ]);
   }
 
+  VehicleGpsPoint? _latestGpsPoint(Vehicle v) {
+    if (_gpsPoints.isNotEmpty) return _gpsPoints.last;
+    final gps = v.gpsLastKnown;
+    if (gps?.latitude == null || gps?.longitude == null) return null;
+    return VehicleGpsPoint(
+      telemetryId: '',
+      vehicleId: v.vehicleId,
+      connectionId: '',
+      providerDeviceId: gps!.providerDeviceId,
+      latitude: gps.latitude!,
+      longitude: gps.longitude!,
+      speedKph: gps.speedKph,
+      heading: null,
+      ignition: gps.ignition,
+      fuelLevel: null,
+      odometer: null,
+      recordedAt: gps.lastSeenAt ?? DateTime.now().toUtc().toIso8601String(),
+      receivedAt: gps.syncedAt,
+    );
+  }
+
   Widget _buildGpsCard(Vehicle v) {
     final gps = v.gpsLastKnown;
     if (gps == null) {
@@ -354,26 +435,37 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       ]);
     }
 
+    final latest = _latestGpsPoint(v);
     final status = gps.stale ? 'Stale' : 'Live';
     final statusColor = gps.stale ? const Color(0xFFF59E0B) : const Color(0xFF22C55E);
-    final lastSeen = gps.lastSeenAt == null
+    final lastSeen = latest?.recordedAt == null
         ? 'Waiting for ping'
-        : DateTime.tryParse(gps.lastSeenAt!)?.toLocal().toString() ?? gps.lastSeenAt!;
-    final hasLocation = gps.latitude != null && gps.longitude != null;
+        : DateTime.tryParse(latest!.recordedAt)?.toLocal().toString() ?? latest.recordedAt;
+    final hasLocation = latest != null;
 
     return _sectionCard('GPS Tracking', [
       _infoRow(Iconsax.gps, 'Status', status),
+      _infoRow(
+        Iconsax.wifi,
+        'Socket',
+        _gpsSocketConnected ? 'Connected' : 'Idle',
+      ),
       _infoRow(Iconsax.link, 'Provider', gps.providerName.isNotEmpty ? gps.providerName : 'Connected'),
       _infoRow(Iconsax.clock, 'Last Seen', lastSeen),
       _infoRow(
         Iconsax.speedometer,
         'Speed',
-        gps.speedKph != null ? '${gps.speedKph!.toStringAsFixed(1)} km/h' : 'N/A',
+        latest?.speedKph != null ? '${latest!.speedKph!.toStringAsFixed(1)} km/h' : 'N/A',
       ),
       _infoRow(
         Iconsax.flash,
         'Ignition',
-        gps.ignition == null ? 'N/A' : (gps.ignition! ? 'On' : 'Off'),
+        latest?.ignition == null ? 'N/A' : (latest!.ignition! ? 'On' : 'Off'),
+      ),
+      _infoRow(
+        Iconsax.routing,
+        'Route Points',
+        _gpsLoading ? 'Loading...' : '${_gpsPoints.length}',
       ),
       if (hasLocation)
         Padding(
@@ -381,10 +473,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           child: SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => _openGpsLocation(gps),
+              onPressed: () => _openGpsLocation(latest),
               icon: Icon(Iconsax.location, size: 16, color: statusColor),
               label: Text(
-                'Open Current Location',
+                'Open Latest Location',
                 style: TextStyle(
                   color: statusColor,
                   fontFamily: 'Poppins',
@@ -398,11 +490,65 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             ),
           ),
         ),
+      if (_gpsPoints.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Recent GPS Points',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: _textDark,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              const SizedBox(height: 8),
+              ..._gpsPoints.reversed.take(5).map((point) {
+                final time = DateTime.tryParse(point.recordedAt)
+                        ?.toLocal()
+                        .toString() ??
+                    point.recordedAt;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Iconsax.location_tick, size: 14, color: _primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _textDark,
+                            fontFamily: 'Poppins',
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        time,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: _textGrey,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
     ]);
   }
 
-  Future<void> _openGpsLocation(VehicleGpsLastKnown gps) async {
-    if (gps.latitude == null || gps.longitude == null) return;
+  Future<void> _openGpsLocation(VehicleGpsPoint gps) async {
     final uri = Uri.parse(
       'https://www.google.com/maps?q=${gps.latitude},${gps.longitude}',
     );

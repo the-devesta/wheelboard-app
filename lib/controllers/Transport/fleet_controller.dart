@@ -611,6 +611,26 @@ class DriverController extends GetxController {
     }
   }
 
+  Future<List<VehicleGpsPoint>> fetchVehicleGpsHistory(
+    String vehicleId, {
+    int limit = 500,
+  }) async {
+    try {
+      final data = await ApiClient.instance.get<dynamic>(
+        ApiEndpoints.fleet.vehicleGpsHistory(vehicleId),
+        queryParameters: {'limit': limit},
+      );
+      final list = data is List ? data : const [];
+      return list
+          .whereType<Map>()
+          .map((item) => VehicleGpsPoint.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (e) {
+      AppLogger.e('❌ fetchVehicleGpsHistory: $e');
+      return const [];
+    }
+  }
+
   /// RC verification via the Invincible Ocean integration (mirrors web
   /// `fleetAPI.verifyVehicleRegistration`). GET /fleet/vehicles/verify/registration.
   ///

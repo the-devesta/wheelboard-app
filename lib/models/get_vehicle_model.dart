@@ -46,6 +46,67 @@ class VehicleGpsLastKnown {
   }
 }
 
+class VehicleGpsPoint {
+  final String telemetryId;
+  final String vehicleId;
+  final String connectionId;
+  final String providerDeviceId;
+  final double latitude;
+  final double longitude;
+  final double? speedKph;
+  final double? heading;
+  final bool? ignition;
+  final double? fuelLevel;
+  final double? odometer;
+  final String recordedAt;
+  final String? receivedAt;
+
+  const VehicleGpsPoint({
+    required this.telemetryId,
+    required this.vehicleId,
+    required this.connectionId,
+    required this.providerDeviceId,
+    required this.latitude,
+    required this.longitude,
+    this.speedKph,
+    this.heading,
+    this.ignition,
+    this.fuelLevel,
+    this.odometer,
+    required this.recordedAt,
+    this.receivedAt,
+  });
+
+  factory VehicleGpsPoint.fromJson(Map<String, dynamic> json) {
+    double asRequiredDouble(dynamic value) => value is num
+        ? value.toDouble()
+        : double.tryParse(value?.toString() ?? '') ?? 0;
+    double? asDouble(dynamic value) => value is num
+        ? value.toDouble()
+        : double.tryParse(value?.toString() ?? '');
+
+    return VehicleGpsPoint(
+      telemetryId: json['telemetryId']?.toString() ?? '',
+      vehicleId: json['vehicleId']?.toString() ?? '',
+      connectionId: json['connectionId']?.toString() ?? '',
+      providerDeviceId: json['providerDeviceId']?.toString() ?? '',
+      latitude: asRequiredDouble(json['latitude']),
+      longitude: asRequiredDouble(json['longitude']),
+      speedKph: asDouble(json['speedKph']),
+      heading: asDouble(json['heading']),
+      ignition: json['ignition'] is bool ? json['ignition'] as bool : null,
+      fuelLevel: asDouble(json['fuelLevel']),
+      odometer: asDouble(json['odometer']),
+      recordedAt: json['recordedAt']?.toString() ?? '',
+      receivedAt: json['receivedAt']?.toString(),
+    );
+  }
+
+  String get stableKey => telemetryId.isNotEmpty
+      ? telemetryId
+      : '$providerDeviceId:$recordedAt:$latitude:$longitude';
+}
+
 class Vehicle {
   final String vehicleId;
   final String userId;

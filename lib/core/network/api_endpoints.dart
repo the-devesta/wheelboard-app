@@ -209,6 +209,9 @@ class _FleetEndpoints {
   // GET    /fleet/vehicles/:id
   String vehicleDetails(String id) => '/fleet/vehicles/$id';
 
+  // GET    /fleet/vehicles/:id/gps-history
+  String vehicleGpsHistory(String id) => '/fleet/vehicles/$id/gps-history';
+
   // PUT    /fleet/vehicles/:id
   String updateVehicle(String id) => '/fleet/vehicles/$id';
 
