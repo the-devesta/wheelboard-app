@@ -54,7 +54,7 @@ class _ServiceDetailsPopupState extends State<ServiceDetailsPopup> {
     _descriptionController = TextEditingController();
 
     // Initialize fleet controller and fetch vehicles
-    _fleetController = Get.put(DriverController());
+    _fleetController = DriverController.shared;
     _loadVehicles();
   }
 

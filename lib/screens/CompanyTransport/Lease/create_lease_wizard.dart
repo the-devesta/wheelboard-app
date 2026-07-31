@@ -5,7 +5,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../controllers/Transport/fleet_controller.dart';
 import '../../../controllers/Transport/lease_controller.dart';
 import '../../../models/get_vehicle_model.dart';
-import '../../../widgets/custom_loader.dart';
+import '../../../widgets/skeletons.dart';
 import '../../../widgets/custom_snackbar.dart';
 
 const _primary = Color(0xFFF36969);
@@ -182,7 +182,7 @@ class _CreateLeaseWizardState extends State<CreateLeaseWizard> {
   Widget _buildStep1() {
     return Obx(() {
       if (_fleet.isVehicleLoading.value) {
-        return const Center(child: Padding(padding: EdgeInsets.all(32), child: CustomLoader()));
+        return const SkeletonListView(itemCount: 4);
       }
       final owned = _fleet.vehicles.where((v) => v.ownershipType.toLowerCase() == 'owned').toList();
       if (owned.isEmpty) {

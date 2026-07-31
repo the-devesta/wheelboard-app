@@ -6,7 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/network/vehicle_gps_socket_service.dart';
 import '../../controllers/Transport/fleet_controller.dart';
 import '../../models/get_vehicle_model.dart';
-import '../../widgets/custom_loader.dart';
+import '../../services/verification_service.dart';
+import '../../widgets/skeletons.dart';
 import '../../widgets/smart_image.dart';
 import 'Lease/create_lease_wizard.dart';
 
@@ -32,6 +33,12 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   Map<String, dynamic>? _detail;
   bool _loading = true;
   int _imageIndex = 0;
+
+  /// Persisted RC verification, read from the vehicle payload the backend
+  /// already returns. No provider call is made to render it.
+  bool _rcVerifying = false;
+  String? _rcMessage;
+  Map<String, dynamic>? _rcOverride;
   final VehicleGpsSocketService _gpsSocket = VehicleGpsSocketService();
   final List<VehicleGpsPoint> _gpsPoints = [];
   bool _gpsLoading = false;
@@ -69,6 +76,59 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       _loading = false;
     });
     await _syncGpsTracking();
+  }
+
+  /// The vehicle's stored RC verification.
+  ///
+  /// Prefers a result from a Verify tap in this session, otherwise reads what
+  /// the backend already included on the vehicle payload — so the correct
+  /// status renders on first paint with no extra request of any kind.
+  Map<String, dynamic>? get _rcVerification {
+    if (_rcOverride != null) return _rcOverride;
+    final raw = _detail?['rcVerification'];
+    return raw is Map<String, dynamic> ? raw : null;
+  }
+
+  /// Verify this vehicle's RC. The ONLY thing on this screen that can reach the
+  /// provider, and only on an explicit tap.
+  ///
+  /// The backend short-circuits when the RC is already verified, so even a
+  /// mis-tap on a verified vehicle costs no provider quota.
+  Future<void> _verifyRc() async {
+    if (_rcVerifying) return;
+
+    setState(() {
+      _rcVerifying = true;
+      _rcMessage = null;
+    });
+
+    RcVerifyResult result;
+    try {
+      result = await _ctrl.verifySavedVehicleRc(widget.vehicle.vehicleId);
+    } finally {
+      // Released whatever happens, so a failure never leaves a stuck spinner.
+      if (mounted) setState(() => _rcVerifying = false);
+    }
+    if (!mounted) return;
+
+    setState(() {
+      // Only the backend's verdict updates the displayed state — never an
+      // optimistic local guess.
+      _rcOverride = {
+        'status': switch (result.state) {
+          VerificationState.verified => 'verified',
+          VerificationState.pending => 'pending',
+          VerificationState.rejected => 'rejected',
+          _ => 'not_verified',
+        },
+        'rcStatus': result.rc?.rcStatus,
+        'rcExpiryDate': result.rc?.rcExpiryDate,
+        'insuranceUpto': result.rc?.insuranceUpto,
+        'puccUpto': result.rc?.puccUpto,
+      };
+      // Backend-authored, always user-safe copy.
+      _rcMessage = result.isVerified ? null : result.message;
+    });
   }
 
   Future<void> _syncGpsTracking() async {
@@ -187,10 +247,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           _buildSliverHeader(v),
           SliverToBoxAdapter(
             child: _loading
-                ? const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CustomLoader()),
-                  )
+                // Shaped like the real detail layout, so the page does not
+                // jump when the vehicle lands.
+                ? const SkeletonDetailView()
                 : Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -201,6 +260,8 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                         _buildQuickStats(v),
                         const SizedBox(height: 16),
                         _buildInfoCard(v),
+                        const SizedBox(height: 16),
+                        _buildRcCard(v),
                         const SizedBox(height: 16),
                         _buildGpsCard(v),
                         const SizedBox(height: 16),
@@ -426,6 +487,176 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       receivedAt: gps.syncedAt,
     );
   }
+
+  /// RC verification status.
+  ///
+  /// Rendered entirely from Wheelboard's PERSISTED state — opening this screen
+  /// never calls the KYC provider. That keeps a verified vehicle showing as
+  /// verified tomorrow, during a provider outage, and without spending quota.
+  /// The Verify action below is the only thing that contacts the provider, and
+  /// only when the owner taps it.
+  Widget _buildRcCard(Vehicle v) {
+    final rc = _rcVerification;
+    final status = rc?['status']?.toString() ?? 'not_verified';
+    final verified = status == 'verified';
+    final pending = status == 'pending';
+    final rejected = status == 'rejected';
+
+    final Color accent = verified
+        ? const Color(0xFF16A34A)
+        : pending
+        ? const Color(0xFFF59E0B)
+        : rejected
+        ? const Color(0xFFDC2626)
+        : _textGrey;
+
+    final IconData icon = verified
+        ? Iconsax.tick_circle
+        : pending
+        ? Iconsax.clock
+        : rejected
+        ? Iconsax.close_circle
+        : Iconsax.shield_cross;
+
+    final String label = verified
+        ? 'RC Verified'
+        : pending
+        ? 'Verification Pending'
+        : rejected
+        ? 'Verification Rejected'
+        : 'RC Not Verified';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _textDark,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ),
+              if (!verified && !pending)
+                GestureDetector(
+                  onTap: _rcVerifying ? null : _verifyRc,
+                  child: Container(
+                    height: 36,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _rcVerifying
+                          ? _border
+                          : _primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                    ),
+                    child: _rcVerifying
+                        ? const SizedBox(
+                            width: 15,
+                            height: 15,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: _primary,
+                            ),
+                          )
+                        : Text(
+                            rejected ? 'Re-verify' : 'Verify RC',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: _primary,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                  ),
+                ),
+            ],
+          ),
+          if (_rcMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _rcMessage!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: _textGrey,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ],
+          if (verified) ...[
+            const SizedBox(height: 10),
+            _rcDetail('Registration', v.vehicleNumber),
+            if (rc?['rcStatus'] != null)
+              _rcDetail('RC status', rc!['rcStatus'].toString()),
+            if (rc?['rcExpiryDate'] != null)
+              _rcDetail('RC valid until', rc!['rcExpiryDate'].toString()),
+            if (rc?['insuranceUpto'] != null)
+              _rcDetail('Insurance until', rc!['insuranceUpto'].toString()),
+            if (rc?['puccUpto'] != null)
+              _rcDetail('PUCC until', rc!['puccUpto'].toString()),
+          ],
+          if (rejected && rc?['rejectionReason'] != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              rc!['rejectionReason'].toString(),
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFFDC2626),
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _rcDetail(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 3),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: _textGrey,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: _textDark,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildGpsCard(Vehicle v) {
     final gps = v.gpsLastKnown;

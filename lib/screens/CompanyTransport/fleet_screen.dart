@@ -8,7 +8,8 @@ import '../../controllers/Transport/fleet_controller.dart';
 import '../../controllers/Transport/lease_controller.dart';
 import '../../models/get_driver_model.dart';
 import '../../models/get_vehicle_model.dart';
-import '../../widgets/custom_loader.dart';
+import '../../services/verification_service.dart';
+import '../../widgets/skeletons.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/smart_image.dart';
 import 'Lease/lease_listings_screen.dart';
@@ -38,7 +39,7 @@ class FleetVehiclesScreen extends StatefulWidget {
 class _FleetVehiclesScreenState extends State<FleetVehiclesScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
-  final DriverController _ctrl = Get.put(DriverController());
+  final DriverController _ctrl = DriverController.shared;
 
   String _vehicleQuery = '';
   String _vehicleFilter = 'All';
@@ -356,8 +357,11 @@ class _VehiclesTab extends StatelessWidget {
         ),
         Expanded(
           child: Obx(() {
-            if (ctrl.isVehicleLoading.value && ctrl.vehicles.isEmpty) {
-              return const Center(child: CustomLoader());
+            // Until a first load has COMPLETED we show a skeleton, never an
+            // empty state. Telling a company they have no vehicles while the
+            // request is still running is the exact failure being fixed here.
+            if (!ctrl.hasLoadedVehicles.value && ctrl.vehicles.isEmpty) {
+              return const SkeletonListView();
             }
             if (ctrl.vehicleLoadError.value.isNotEmpty &&
                 ctrl.vehicles.isEmpty) {
@@ -369,25 +373,47 @@ class _VehiclesTab extends StatelessWidget {
                 onAction: ctrl.fetchVehicles,
               );
             }
+
             final list = ctrl.filteredVehicles(query, filter);
             if (list.isEmpty) {
+              // "No results" and "no vehicles at all" are different situations;
+              // offering "Add your first vehicle" to someone whose SEARCH found
+              // nothing is misleading.
+              final isFiltered = query.isNotEmpty || filter != 'All';
+              if (isFiltered) {
+                return const _EmptyState(
+                  icon: Iconsax.search_normal,
+                  title: 'No matching vehicles',
+                  subtitle: 'Try a different search or filter.',
+                );
+              }
               return _EmptyState(
                 icon: Iconsax.truck,
-                title: 'No vehicles found',
+                title: 'No vehicles yet',
                 subtitle: 'Add your first vehicle to get started',
                 action: 'Add Vehicle',
                 onAction: onAdd,
               );
             }
+            // Paging applies to the UNFILTERED list. A local search only
+            // narrows what has been loaded, so asking for more pages while
+            // filtering would silently fetch rows the user cannot see.
+            final isFiltered = query.isNotEmpty || filter != 'All';
+
             return RefreshIndicator(
               color: _primary,
               onRefresh: ctrl.fetchVehicles,
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
+              child: _PagedListView(
                 itemCount: list.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                // ListView.builder already lazily builds only what is on
+                // screen, so a fleet of thousands costs the same as a fleet of
+                // thirty to render.
                 itemBuilder: (_, i) =>
                     _VehicleCard(vehicle: list[i], ctrl: ctrl),
+                canLoadMore: !isFiltered && ctrl.hasMoreVehicles.value,
+                isLoadingMore: ctrl.isLoadingMoreVehicles.value,
+                loadMoreError: ctrl.vehicleLoadMoreError.value,
+                onLoadMore: ctrl.loadMoreVehicles,
               ),
             );
           }),
@@ -628,14 +654,34 @@ class _DriversTab extends StatelessWidget {
         ),
         Expanded(
           child: Obx(() {
-            if (ctrl.isLoading.value && ctrl.drivers.isEmpty) {
-              return const Center(child: CustomLoader());
+            // Skeleton until a first load completes — never an empty state
+            // while the request is still running.
+            if (!ctrl.hasLoadedDrivers.value && ctrl.drivers.isEmpty) {
+              return const SkeletonListView();
             }
+            if (ctrl.driverLoadError.value.isNotEmpty && ctrl.drivers.isEmpty) {
+              return _EmptyState(
+                icon: Iconsax.warning_2,
+                title: 'Could not load drivers',
+                subtitle: ctrl.driverLoadError.value,
+                action: 'Retry',
+                onAction: ctrl.fetchDrivers,
+              );
+            }
+
             final list = ctrl.filteredDrivers(query, filter);
             if (list.isEmpty) {
+              final isFiltered = query.isNotEmpty || filter != 'All';
+              if (isFiltered) {
+                return const _EmptyState(
+                  icon: Iconsax.search_normal,
+                  title: 'No matching drivers',
+                  subtitle: 'Try a different search or filter.',
+                );
+              }
               return _EmptyState(
                 icon: Iconsax.people,
-                title: 'No drivers found',
+                title: 'No drivers yet',
                 subtitle: 'Add your first driver to get started',
                 action: 'Add Driver',
                 onAction: onAdd,
@@ -644,11 +690,15 @@ class _DriversTab extends StatelessWidget {
             return RefreshIndicator(
               color: _primary,
               onRefresh: ctrl.fetchDrivers,
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
+              child: _PagedListView(
                 itemCount: list.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (_, i) => _DriverCard(driver: list[i], ctrl: ctrl),
+                // Paging applies to the unfiltered list — see the vehicles tab.
+                canLoadMore:
+                    query.isEmpty && filter == 'All' && ctrl.hasMoreDrivers.value,
+                isLoadingMore: ctrl.isLoadingMoreDrivers.value,
+                loadMoreError: ctrl.driverLoadMoreError.value,
+                onLoadMore: ctrl.loadMoreDrivers,
               ),
             );
           }),
@@ -927,59 +977,73 @@ class _VehicleModalState extends State<_VehicleModal> {
   /// RC verification (add mode only) — mirrors web `handleFetchVehicleDetails`:
   /// auto-fills + locks registrationNumber/model/name/year/fuelType/capacity.
   Future<void> _verify() async {
-    if (_regCtrl.text.trim().isEmpty) {
+    // Guarding here as well as in the controller keeps the loading state
+    // honest: without it, a second tap would flip the spinner back on for a
+    // request that is really the first one still finishing.
+    if (_verifying) return;
+
+    final registration = _regCtrl.text.trim();
+    if (registration.isEmpty) {
       SnackBarHelper.warning('Enter registration number first');
       return;
     }
+
     setState(() {
       _verifying = true;
       _rcResult = null; // clear any previous banner
     });
-    final result = await widget.ctrl.verifyVehicleRegistration(
-      _regCtrl.text.trim(),
-    );
+
+    RcVerifyResult result;
+    try {
+      result = await widget.ctrl.verifyVehicleRegistration(registration);
+    } finally {
+      // Released whatever happens, so a failure can never leave a permanent
+      // spinner on the Add Vehicle sheet.
+      if (mounted) setState(() => _verifying = false);
+    }
     if (!mounted) return;
+
     setState(() {
-      _verifying = false;
       // Persist the outcome so the form can render an inline banner. A snackbar
       // alone was not reliably visible above this sheet, so the user never saw
       // why verification failed or that they could continue manually.
       _rcResult = result;
     });
 
-    final data = result.data;
-    if (data != null) {
-      final locked = <String>{};
-      final reg = data['registrationNumber']?.toString();
-      if (reg != null && reg.trim().isNotEmpty) {
-        _regCtrl.text = reg.trim();
-        locked.add('reg');
-      }
-      final model = (data['model'] ?? data['manufacturer'])?.toString();
-      if (model != null && model.trim().isNotEmpty) {
-        _modelCtrl.text = model.trim();
-        locked.add('model');
-        if (_nameCtrl.text.trim().isEmpty) _nameCtrl.text = model.trim();
-        locked.add('name');
-      }
-      final year = data['year']?.toString();
-      if (year != null && year.isNotEmpty && year != 'null') {
-        _yearCtrl.text = year;
-        locked.add('year');
-      }
-      final fuel = data['fuelType']?.toString();
-      if (fuel != null && _fuelTypes.contains(fuel)) {
-        _fuelType = fuel;
-        locked.add('fuelType');
-      }
-      final capacity = data['seatingCapacity']?.toString();
-      if (capacity != null && capacity.isNotEmpty && capacity != 'null') {
-        _capacityCtrl.text = capacity;
-        locked.add('capacity');
-      }
-      setState(() => _lockedFields.addAll(locked));
-      SnackBarHelper.success('Vehicle verified ✓ details auto-filled');
+    // Only a backend-confirmed `verified` populates the form. Nothing here
+    // decides verification, and no field is filled optimistically.
+    final rc = result.rc;
+    if (!result.isVerified || rc == null) return;
+
+    final locked = <String>{};
+    final reg = rc.registrationNumber?.trim();
+    if (reg != null && reg.isNotEmpty) {
+      _regCtrl.text = reg;
+      locked.add('reg');
     }
+    final model = (rc.model ?? rc.manufacturer)?.trim();
+    if (model != null && model.isNotEmpty) {
+      _modelCtrl.text = model;
+      locked.add('model');
+      if (_nameCtrl.text.trim().isEmpty) _nameCtrl.text = model;
+      locked.add('name');
+    }
+    if (rc.year != null && rc.year! > 0) {
+      _yearCtrl.text = '${rc.year}';
+      locked.add('year');
+    }
+    final fuel = rc.fuelType;
+    if (fuel != null && _fuelTypes.contains(fuel)) {
+      _fuelType = fuel;
+      locked.add('fuelType');
+    }
+    final capacity = rc.seatingCapacity?.trim();
+    if (capacity != null && capacity.isNotEmpty) {
+      _capacityCtrl.text = capacity;
+      locked.add('capacity');
+    }
+
+    setState(() => _lockedFields.addAll(locked));
   }
 
   /// Inline RC verification result.
@@ -1175,9 +1239,14 @@ class _VehicleModalState extends State<_VehicleModal> {
                                     color: _primary,
                                   ),
                                 )
-                              : const Text(
-                                  'Verify',
-                                  style: TextStyle(
+                              : Text(
+                                  // After a failed attempt the action is a
+                                  // retry, so the label says so rather than
+                                  // looking like nothing happened.
+                                  _rcResult != null && !_rcResult!.isVerified
+                                      ? 'Try Again'
+                                      : 'Verify',
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     color: _primary,
                                     fontWeight: FontWeight.w600,
@@ -1445,58 +1514,86 @@ class _DriverModalState extends State<_DriverModal> {
     super.dispose();
   }
 
-  /// DL verification via Invincible Ocean (mirrors web `DriverFormModal`).
-  /// Needs the licence number AND the date of birth — the Verify button below
-  /// is disabled until both are filled, so a tap can never silently no-op.
-  /// On success, auto-fills + locks name/license/DOB/address/location/
-  /// category-detail/license-expiry/photo, exactly like the web form.
+  /// Driving Licence verification from the licence DOCUMENT.
+  ///
+  /// The current provider contract reads every field by OCR from the licence
+  /// image, so this uploads a photo instead of looking the licence up by number
+  /// and date of birth. On success it auto-fills and locks name / licence /
+  /// DOB / address / category-detail / licence-expiry.
+  ///
+  /// Verification is a convenience here — a failure never blocks adding the
+  /// driver, and the form is left fully editable.
   Future<void> _verify() async {
-    if (_licenseCtrl.text.trim().isEmpty || _dob == null) return;
-    final dob =
-        '${_dob!.day.toString().padLeft(2, '0')}/${_dob!.month.toString().padLeft(2, '0')}/${_dob!.year}';
-    setState(() => _verifying = true);
-    final data = await widget.ctrl.verifyDriverLicense(
-      _licenseCtrl.text.trim(),
-      dob,
+    if (_verifying) return;
+
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 2000,
     );
-    if (!mounted) return;
-    setState(() => _verifying = false);
-    // On failure the controller already surfaces the backend reason.
-    if (data != null) {
-      final locked = <String>{};
-      final name = data['name']?.toString();
-      if (name != null && name.trim().isNotEmpty) {
-        _nameCtrl.text = name.trim();
-        locked.add('name');
-      }
-      final lic = data['licenseNumber']?.toString();
-      if (lic != null && lic.trim().isNotEmpty) {
-        _licenseCtrl.text = lic.trim();
-        locked.add('license');
-      }
-      final address = data['address']?.toString();
-      if (address != null && address.trim().isNotEmpty) {
-        _addressCtrl.text = address.trim();
-        locked.add('address');
-      }
-      final state = data['state']?.toString();
-      if (state != null && state.trim().isNotEmpty) {
-        _locationCtrl.text = state.trim();
-        locked.add('location');
-      }
-      final classes = data['vehicleClasses'];
-      if (classes is List && classes.isNotEmpty) {
-        _categoryDetailCtrl.text = classes.join(', ');
-        locked.add('categoryDetail');
-      }
-      final expiry = data['expiryDate']?.toString();
-      if (expiry != null && expiry.trim().isNotEmpty) {
-        _licenseExpiry = _parseDDMMYYYY(expiry.trim());
-        locked.add('licenseExpiry');
-      }
-      setState(() => _lockedFields.addAll(locked));
-      SnackBarHelper.success('Licence verified ✓ details auto-filled');
+    if (picked == null || !mounted) return;
+
+    final document = File(picked.path);
+    final fileError = validateDocumentFile(document);
+    if (fileError != null) {
+      SnackBarHelper.warning(fileError);
+      return;
     }
+
+    setState(() => _verifying = true);
+
+    VerificationResult<DrivingLicenceData> result;
+    try {
+      result = await widget.ctrl.verifyDriverLicenceDocument(document);
+    } finally {
+      if (mounted) setState(() => _verifying = false);
+    }
+    if (!mounted) return;
+
+    final dl = result.data;
+    if (!result.verified || dl == null) {
+      // The backend authors this copy and it is always user-safe — no status
+      // code, exception name or provider string ever reaches the screen.
+      SnackBarHelper.warning(result.message);
+      return;
+    }
+
+    final locked = <String>{};
+    final name = dl.name?.trim();
+    if (name != null && name.isNotEmpty) {
+      _nameCtrl.text = name;
+      locked.add('name');
+    }
+    final lic = dl.licenseNumber?.trim();
+    if (lic != null && lic.isNotEmpty) {
+      _licenseCtrl.text = lic;
+      locked.add('license');
+    }
+    final address = dl.address?.trim();
+    if (address != null && address.isNotEmpty) {
+      _addressCtrl.text = address;
+      locked.add('address');
+    }
+    final classes = dl.vehicleClasses;
+    if (classes != null && classes.isNotEmpty) {
+      _categoryDetailCtrl.text = classes.join(', ');
+      locked.add('categoryDetail');
+    }
+    // The OCR response gives dates as DD/MM/YYYY; parsed explicitly so
+    // 10/02/2030 is never read as 2 October.
+    final dob = _parseDDMMYYYY(dl.dateOfBirth?.trim() ?? '');
+    if (dob != null) {
+      _dob = dob;
+      locked.add('dob');
+    }
+    final expiry = _parseDDMMYYYY(dl.expiryDate?.trim() ?? '');
+    if (expiry != null) {
+      _licenseExpiry = expiry;
+      locked.add('licenseExpiry');
+    }
+
+    setState(() => _lockedFields.addAll(locked));
+    SnackBarHelper.success('Driving Licence verified');
   }
 
   DateTime? _parseDDMMYYYY(String value) {
@@ -1636,7 +1733,8 @@ class _DriverModalState extends State<_DriverModal> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Optional — verify to auto-fill, or just enter the details manually below.',
+                    'Optional — upload a photo of the licence to auto-fill the '
+                    'details, or just enter them manually below.',
                     style: TextStyle(
                       fontSize: 11,
                       color: _textGrey,
@@ -1644,92 +1742,68 @@ class _DriverModalState extends State<_DriverModal> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _ModalField(
-                    'License Number',
-                    _licenseCtrl,
-                    hint: 'DL1234567890',
-                  ),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: _pickDob,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _bg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: _border),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Iconsax.calendar,
-                            size: 18,
-                            color: _textGrey,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            _dob == null
-                                ? 'Date of Birth (optional)'
-                                : _fmtDate(_dob!),
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: _dob == null
-                                  ? const Color(0xFF9CA3AF)
-                                  : _textDark,
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: GestureDetector(
-                      onTap:
-                          (_verifying ||
-                              _licenseCtrl.text.trim().isEmpty ||
-                              _dob == null)
-                          ? null
-                          : _verify,
+                      // Only the in-flight state gates this. The handler picks
+                      // the document itself, so there is no licence number or
+                      // date of birth to require first — the current provider
+                      // contract reads both from the licence image.
+                      onTap: _verifying ? null : _verify,
                       child: Container(
+                        // 44dp keeps this a comfortable touch target.
                         height: 44,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color:
-                              (_licenseCtrl.text.trim().isEmpty || _dob == null)
-                              ? _border
-                              : (_verifying ? _border : _primaryLight),
+                          color: _verifying ? _border : _primaryLight,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: _primary.withValues(alpha: 0.3),
                           ),
                         ),
                         child: _verifying
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: _primary,
-                                ),
+                            ? const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: _primary,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Verifying Driving Licence...',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: _textGrey,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                ],
                               )
-                            : Text(
-                                'Verify',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color:
-                                      (_licenseCtrl.text.trim().isEmpty ||
-                                          _dob == null)
-                                      ? _textGrey
-                                      : _primary,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: 'Poppins',
-                                ),
+                            : const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Iconsax.document_upload,
+                                    size: 16,
+                                    color: _primary,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Upload Licence & Verify',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: _primary,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                ],
                               ),
                       ),
                     ),
@@ -2064,19 +2138,161 @@ class _SearchFilterBar extends StatelessWidget {
   }
 }
 
+/// A lazily-built list that appends pages as the user approaches the end.
+///
+/// Built on `ListView.builder`, so only the rows actually on screen are ever
+/// constructed — a fleet of thousands costs the same to render as a fleet of
+/// thirty, and memory stays flat because off-screen rows are recycled.
+///
+/// Paging is triggered from a scroll notification rather than from `build`:
+/// firing requests out of a build method is how a list ends up issuing one
+/// request per frame.
+class _PagedListView extends StatelessWidget {
+  final int itemCount;
+  final Widget Function(BuildContext, int) itemBuilder;
+  final bool canLoadMore;
+  final bool isLoadingMore;
+  final String loadMoreError;
+  final VoidCallback onLoadMore;
+
+  const _PagedListView({
+    required this.itemCount,
+    required this.itemBuilder,
+    required this.canLoadMore,
+    required this.isLoadingMore,
+    required this.loadMoreError,
+    required this.onLoadMore,
+  });
+
+  /// How close to the bottom (in pixels) the next page starts loading.
+  /// Roughly two cards, so the rows are usually ready before they are reached.
+  static const double _loadMoreThreshold = 320;
+
+  @override
+  Widget build(BuildContext context) {
+    // A footer row is appended for the loading / retry / end-of-list state.
+    final showFooter = canLoadMore || isLoadingMore || loadMoreError.isNotEmpty;
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (!canLoadMore || isLoadingMore) return false;
+
+        final metrics = notification.metrics;
+        // `hasContentDimensions` guards against the first frame, where extents
+        // are not yet known and the check would read as "at the bottom".
+        if (!metrics.hasContentDimensions) return false;
+
+        if (metrics.pixels >= metrics.maxScrollExtent - _loadMoreThreshold) {
+          // The controller collapses duplicate calls, so a fast fling cannot
+          // turn into a burst of page requests.
+          onLoadMore();
+        }
+        return false;
+      },
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        // Always scrollable so pull-to-refresh works even on a short list.
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: itemCount + (showFooter ? 1 : 0),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          if (index < itemCount) return itemBuilder(context, index);
+          return _PagingFooter(
+            isLoading: isLoadingMore,
+            error: loadMoreError,
+            onRetry: onLoadMore,
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The last row of a paged list: a spinner, a retry, or nothing.
+class _PagingFooter extends StatelessWidget {
+  final bool isLoading;
+  final String error;
+  final VoidCallback onRetry;
+
+  const _PagingFooter({
+    required this.isLoading,
+    required this.error,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (error.isNotEmpty) {
+      // A failed append never disturbs the rows already on screen — it offers
+      // a retry in place.
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          children: [
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: _textGrey,
+                fontFamily: 'Poppins',
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onRetry,
+              style: TextButton.styleFrom(
+                foregroundColor: _primary,
+                minimumSize: const Size(0, 44),
+              ),
+              child: const Text(
+                'Try Again',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
+          ),
+        ),
+      );
+    }
+
+    // More pages exist but loading has not started yet — reserve the space so
+    // the list does not jump when the spinner appears.
+    return const SizedBox(height: 44);
+  }
+}
+
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final String action;
-  final VoidCallback onAction;
+
+  /// Optional: some empty states are purely informational (a search that
+  /// matched nothing has no sensible call to action).
+  final String? action;
+  final VoidCallback? onAction;
 
   const _EmptyState({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.action,
-    required this.onAction,
+    this.action,
+    this.onAction,
   });
 
   @override
@@ -2116,23 +2332,27 @@ class _EmptyState extends StatelessWidget {
                 fontFamily: 'Poppins',
               ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.add_rounded, size: 16),
-              label: Text(action),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primary,
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            if (action != null && onAction != null) ...[
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: Text(action!),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  // A comfortable touch target on smaller Android screens.
+                  minimumSize: const Size(0, 44),
+                  textStyle: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

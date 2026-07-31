@@ -152,6 +152,27 @@ class Vehicle {
     this.gpsLastKnown,
   });
 
+  /// Read a numeric field that may arrive as a number OR a string.
+  ///
+  /// Several vehicle fields are stored inside a free-form JSON blob written by
+  /// the client, so their runtime type is not guaranteed. A hard `as num?` cast
+  /// throws on a mismatch, and because rows are mapped in one pass, a single
+  /// odd row used to abort the whole list — turning a real fleet into "0
+  /// vehicles". Returning null instead lets that one field fall back while the
+  /// rest of the vehicle, and every other vehicle, still loads.
+  static int? _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
+  }
+
+  static double? _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim());
+    return null;
+  }
+
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     // Backend returns a primary 'image' (single string) plus an 'images' array
     // (see mapVehicle in fleet.service.ts). Collect both, de-duplicated, with
@@ -186,7 +207,12 @@ class Vehicle {
       // Backend returns 'registrationNumber'; legacy returned 'vehicleNumber'
       vehicleNumber: json['registrationNumber']?.toString() ?? json['vehicleNumber']?.toString() ?? '',
       // Backend returns 'year'; legacy returned 'manufacturingYear'
-      manufacturingYear: (json['year'] as num?)?.toInt() ?? (json['manufacturingYear'] as num?)?.toInt() ?? 0,
+      // Parsed tolerantly, not cast. `year` is read from a free-form JSON blob
+      // on the backend, so it can legitimately arrive as "2019" rather than
+      // 2019 — and a hard `as num?` cast on one row used to throw, which
+      // aborted the whole list mapping and emptied the entire fleet.
+      manufacturingYear:
+          _asInt(json['year']) ?? _asInt(json['manufacturingYear']) ?? 0,
       // Backend returns 'ownership'; legacy returned 'ownershipType'
       ownershipType: json['ownership']?.toString() ?? json['ownershipType']?.toString() ?? '',
       // Backend returns 'category'; legacy returned 'vehicleType'
@@ -202,9 +228,9 @@ class Vehicle {
       isDeclarationAccepted: json['isDeclarationAccepted'] as bool? ?? false,
       status: json['status']?.toString() ?? '',
       imageUrls: images,
-      avgRun: (metricsMap['avgRun'] as num?)?.toDouble() ?? 0,
-      tripEfficiency: (metricsMap['tripEfficiency'] as num?)?.toDouble() ?? 0,
-      monthlyUsage: (metricsMap['monthlyUsage'] as num?)?.toDouble() ?? 0,
+      avgRun: _asDouble(metricsMap['avgRun']) ?? 0,
+      tripEfficiency: _asDouble(metricsMap['tripEfficiency']) ?? 0,
+      monthlyUsage: _asDouble(metricsMap['monthlyUsage']) ?? 0,
       gpsLastKnown: gps,
     );
   }

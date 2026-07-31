@@ -4,7 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/Transport/fleet_controller.dart';
-import '../../widgets/custom_loader.dart';
+import '../../widgets/skeletons.dart';
 
 const _primary = Color(0xFFF36969);
 const _primaryLight = Color(0xFFFFF1F1);
@@ -120,7 +120,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: _bg,
-        body: Center(child: CustomLoader()),
+        body: SkeletonDetailView(),
       );
     }
 

@@ -59,34 +59,15 @@ class ProfileService {
     return 'data:$mime;base64,${base64Encode(bytes)}';
   }
 
-  /// Verify Driving License KYC.
-  Future<Map<String, dynamic>> verifyDrivingLicence({
-    required String userId,
-    required String dlNumber,
-    required String dob,
-  }) async {
-    AppLogger.d('🔐 [ProfileService] Verify DL: userId=$userId dl=$dlNumber');
-    try {
-      final responseData = await ApiClient.instance.post<dynamic>(
-        ApiEndpoints.kyc.verifyDrivingLicense,
-        data: {'userId': userId, 'dlNumber': dlNumber, 'dob': dob},
-      );
-
-      final resultData = responseData is Map<String, dynamic>
-          ? responseData
-          : <String, dynamic>{};
-
-      return {
-        'success': true,
-        'message': 'Driving License verified successfully',
-        'data': resultData,
-      };
-    } on dio.DioException catch (e) {
-      throw Exception(
-        'Failed to verify driving license (${e.response?.statusCode}): ${e.response?.data}',
-      );
-    }
-  }
+  // REMOVED: verifyDrivingLicence({userId, dlNumber, dob})
+  //
+  // A second, unreferenced DL implementation that posted a licence-number +
+  // date-of-birth body — a provider contract that is no longer current — and
+  // additionally logged the full licence number and pasted the raw response
+  // body into an exception message.
+  //
+  // Driving Licence verification now lives solely in VerificationService,
+  // which uploads the licence document and returns the normalized contract.
 
   /// Verify PAN Card KYC.
   Future<Map<String, dynamic>> verifyPanKYC({

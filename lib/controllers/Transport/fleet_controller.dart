@@ -9,46 +9,94 @@ import '../../models/get_driver_model.dart';
 import '../../models/get_vehicle_model.dart';
 import '../../services/fleet_payment_service.dart';
 import '../../services/profile_service.dart';
+import '../../services/verification_service.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/custom_snackbar.dart';
 
-/// Outcome of an automatic RC verification attempt.
+/// Outcome of an automatic RC verification attempt, as the Add-Vehicle UI sees
+/// it.
 ///
-/// Carries a user-safe [message] so the Add-Vehicle form can show a persistent
-/// inline banner rather than relying on a snackbar that can be obscured by the
-/// sheet. [status] mirrors the backend vocabulary:
-/// `verified` | `not_verified` | `provider_unavailable`.
+/// A thin adapter over [VerificationResult] so existing fleet widgets keep
+/// working while the verification contract itself lives in one place
+/// ([VerificationService]) and matches Web exactly.
 class RcVerifyResult {
-  final String status;
+  final VerificationState state;
+
+  /// User-safe copy authored by the backend. Safe to display verbatim — it
+  /// never contains a status code, exception name or provider string.
   final String message;
 
-  /// Vehicle details for auto-fill; only present when [status] is `verified`.
-  final Map<String, dynamic>? data;
+  /// Normalized vehicle details for auto-fill; only present when verified.
+  final VehicleRcData? rc;
 
   const RcVerifyResult({
-    required this.status,
+    required this.state,
     required this.message,
-    this.data,
+    this.rc,
   });
 
-  bool get isVerified => status == 'verified';
+  factory RcVerifyResult.from(VerificationResult<VehicleRcData> result) =>
+      RcVerifyResult(
+        state: result.state,
+        message: result.message,
+        rc: result.data,
+      );
+
+  bool get isVerified => state == VerificationState.verified;
 
   /// True when automatic verification could not be completed — the user should
   /// be offered manual verification and must never be blocked.
   bool get needsManual => !isVerified;
 
-  /// Distinguishes "our provider is down" from "the RC could not be matched",
-  /// so the UI never accuses the user of an invalid RC during an outage.
-  bool get isProviderIssue => status == 'provider_unavailable';
+  /// Distinguishes "we could not reach the provider" from "the RC could not be
+  /// matched", so the UI never accuses the user of an invalid RC during an
+  /// outage.
+  bool get isProviderIssue =>
+      state == VerificationState.temporarilyUnavailable;
+}
+
+/// One page of a list endpoint, plus whether more remain.
+class _PageResult<T> {
+  final List<T> items;
+  final bool hasMore;
+
+  const _PageResult({required this.items, required this.hasMore});
 }
 
 class DriverController extends GetxController {
+  /// The single shared fleet controller.
+  ///
+  /// `Get.put(DriverController())` eagerly CONSTRUCTS a controller before
+  /// registering it, and replaces whatever was registered before. Two screens
+  /// doing that (the fleet screen and the service-detail sheet) meant a fresh
+  /// controller — and therefore a fresh `onInit()` → `refresh()` → a duplicate
+  /// round of list requests — every time either was opened, while widgets
+  /// holding the previous instance kept observing an orphaned, empty list.
+  ///
+  /// Reusing the registered instance keeps one source of truth for fleet state
+  /// and stops the duplicate fetches.
+  static DriverController get shared => Get.isRegistered<DriverController>()
+      ? Get.find<DriverController>()
+      : Get.put(DriverController());
+
   // ── State ──────────────────────────────────────────────────────────────────
   final drivers = <Driver>[].obs;
   final vehicles = <Vehicle>[].obs;
   final isLoading = false.obs;
   final isVehicleLoading = false.obs;
   final vehicleLoadError = ''.obs;
+
+  /// Last driver-load failure. Mirrors [vehicleLoadError] so the drivers tab
+  /// can offer Retry instead of silently showing "no drivers".
+  final driverLoadError = ''.obs;
+
+  /// True once a first load has completed (successfully or not).
+  ///
+  /// Lets the UI tell "we have not looked yet" apart from "we looked and there
+  /// really are none" — the difference between a skeleton and an empty state,
+  /// and the reason a user should never see "0 Vehicles" mid-request.
+  final hasLoadedVehicles = false.obs;
+  final hasLoadedDrivers = false.obs;
 
   // ── Vehicle detail (kept for backward compat with vehicle_detail_screen) ──
   final vehicleDetails = Rxn<Map<String, dynamic>>();
@@ -58,6 +106,54 @@ class DriverController extends GetxController {
   // Each is created on-demand when a 402 is received and disposed after use.
   FleetPaymentService? _driverPaymentService;
   FleetPaymentService? _vehiclePaymentService;
+
+  // ── Verification ───────────────────────────────────────────────────────────
+  final _verification = VerificationService();
+
+  /// In-flight verification requests, used to collapse duplicates.
+  ///
+  /// Verification hits a paid, rate-limited external provider, so five rapid
+  /// taps must produce ONE request. Holding the future (rather than a bool)
+  /// means every caller still receives the same real result.
+  Future<RcVerifyResult>? _rcVerifyInFlight;
+  Future<VerificationResult<DrivingLicenceData>>? _dlVerifyInFlight;
+
+  // ── List loading ───────────────────────────────────────────────────────────
+
+  /// Rows per page request.
+  ///
+  /// Deliberately modest: the backend enriches every vehicle with trip metrics
+  /// and GPS, so a smaller page means a materially faster first paint on a slow
+  /// mobile connection. Later pages arrive as the user scrolls, so a large
+  /// fleet costs nothing up front.
+  static const int _listPageSize = 30;
+
+  /// The in-flight list loads, used to collapse duplicate refreshes into one
+  /// request, and monotonic ids so only the newest load may write state.
+  Future<void>? _vehiclesInFlight;
+  Future<void>? _driversInFlight;
+  Future<void>? _vehiclesMoreInFlight;
+  Future<void>? _driversMoreInFlight;
+  int _vehiclesRequestId = 0;
+  int _driversRequestId = 0;
+
+  /// Highest page currently held in each list.
+  int _vehiclesPage = 0;
+  int _driversPage = 0;
+
+  /// Whether the server has more rows beyond what is loaded.
+  final hasMoreVehicles = false.obs;
+  final hasMoreDrivers = false.obs;
+
+  /// A page-append is running. Distinct from [isVehicleLoading], which means a
+  /// first load or a refresh — appending must never blank the list.
+  final isLoadingMoreVehicles = false.obs;
+  final isLoadingMoreDrivers = false.obs;
+
+  /// A failed page-append. Shown as a retryable footer, never as a screen-level
+  /// error, because the rows already on screen are still valid.
+  final vehicleLoadMoreError = ''.obs;
+  final driverLoadMoreError = ''.obs;
 
   @override
   void onInit() {
@@ -72,35 +168,102 @@ class DriverController extends GetxController {
     super.onClose();
   }
 
+  /// Reload drivers and vehicles together.
+  ///
+  /// Returns a future that completes when BOTH have finished, so pull-to-refresh
+  /// keeps its indicator up for the real duration of the work instead of
+  /// snapping shut immediately. Duplicate calls collapse onto the in-flight
+  /// loads rather than issuing a second round of requests.
   @override
-  void refresh() {
-    fetchDrivers();
-    fetchVehicles();
+  Future<void> refresh() {
+    return Future.wait([fetchDrivers(), fetchVehicles()]);
   }
 
   // ── Drivers ────────────────────────────────────────────────────────────────
 
-  Future<void> fetchDrivers() async {
+  /// Load the company's drivers — same pagination and concurrency rules as
+  /// [fetchVehicles], which see for the reasoning.
+  Future<void> fetchDrivers() {
+    final inFlight = _driversInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _loadDrivers();
+    _driversInFlight = future;
+    return future.whenComplete(() => _driversInFlight = null);
+  }
+
+  Future<void> _loadDrivers() async {
+    final requestId = ++_driversRequestId;
+    isLoading.value = true;
+    driverLoadError.value = '';
+
     try {
-      isLoading.value = true;
-      final data = await ApiClient.instance.get<dynamic>(
+      final page = await _fetchPage(
         ApiEndpoints.fleet.drivers,
-        queryParameters: const {'page': 1, 'limit': 50},
+        page: 1,
+        parse: Driver.fromJson,
       );
-      final list = data is List ? data : (data['data'] ?? data) as List;
-      drivers.value = list
-          .map((e) => Driver.fromJson(e as Map<String, dynamic>))
-          .toList();
+
+      if (requestId != _driversRequestId) return;
+      drivers.value = page.items;
+      _driversPage = 1;
+      hasMoreDrivers.value = page.hasMore;
     } on dio.DioException catch (e) {
+      if (requestId != _driversRequestId) return;
       final msg = e.error is ApiException
           ? (e.error as ApiException).message
           : 'Failed to load drivers';
-      SnackBarHelper.error(msg);
+      driverLoadError.value = msg;
+      // Existing drivers are kept — see fetchVehicles.
       AppLogger.e('❌ fetchDrivers: $e');
     } catch (e) {
+      if (requestId != _driversRequestId) return;
+      driverLoadError.value = 'Failed to load drivers';
       AppLogger.e('❌ fetchDrivers: $e');
     } finally {
-      isLoading.value = false;
+      if (requestId == _driversRequestId) {
+        isLoading.value = false;
+        hasLoadedDrivers.value = true;
+      }
+    }
+  }
+
+  /// Append the next page of drivers — same rules as [loadMoreVehicles].
+  Future<void> loadMoreDrivers() {
+    final inFlight = _driversMoreInFlight;
+    if (inFlight != null) return inFlight;
+    if (!hasMoreDrivers.value || isLoading.value) return Future.value();
+
+    final future = _loadMoreDrivers();
+    _driversMoreInFlight = future;
+    return future.whenComplete(() => _driversMoreInFlight = null);
+  }
+
+  Future<void> _loadMoreDrivers() async {
+    final requestId = _driversRequestId;
+    isLoadingMoreDrivers.value = true;
+    driverLoadMoreError.value = '';
+
+    try {
+      final next = _driversPage + 1;
+      final page = await _fetchPage(
+        ApiEndpoints.fleet.drivers,
+        page: next,
+        parse: Driver.fromJson,
+      );
+
+      if (requestId != _driversRequestId) return;
+
+      final seen = drivers.map((d) => d.driverId).toSet();
+      drivers.addAll(page.items.where((d) => seen.add(d.driverId)));
+      _driversPage = next;
+      hasMoreDrivers.value = page.hasMore;
+    } catch (e) {
+      if (requestId != _driversRequestId) return;
+      driverLoadMoreError.value = 'Could not load more drivers.';
+      AppLogger.e('❌ loadMoreDrivers: $e');
+    } finally {
+      isLoadingMoreDrivers.value = false;
     }
   }
 
@@ -357,32 +520,171 @@ class DriverController extends GetxController {
 
   // ── Vehicles ───────────────────────────────────────────────────────────────
 
-  Future<void> fetchVehicles() async {
+  /// Load the FIRST page of the company's vehicles.
+  ///
+  /// Only one page is fetched, so the list paints as soon as the first
+  /// response lands rather than after the whole fleet has been downloaded.
+  /// Further pages arrive through [loadMoreVehicles] as the user scrolls.
+  ///
+  /// Concurrency: one load at a time, and only the newest may write state.
+  /// Two overlapping loads (pull-to-refresh during the initial load, a retry
+  /// tap, a re-entered screen) previously resolved in arbitrary order, so a
+  /// slower EARLIER response could overwrite a newer, correct one — which
+  /// looks exactly like the fleet emptying itself.
+  Future<void> fetchVehicles() {
+    final inFlight = _vehiclesInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _loadVehiclesFirstPage();
+    _vehiclesInFlight = future;
+    return future.whenComplete(() => _vehiclesInFlight = null);
+  }
+
+  Future<void> _loadVehiclesFirstPage() async {
+    final requestId = ++_vehiclesRequestId;
+    isVehicleLoading.value = true;
+    vehicleLoadError.value = '';
+
     try {
-      isVehicleLoading.value = true;
-      vehicleLoadError.value = '';
-      final data = await ApiClient.instance.get<dynamic>(
+      final page = await _fetchPage(
         ApiEndpoints.fleet.vehicles,
-        queryParameters: const {'page': 1, 'limit': 50},
+        page: 1,
+        parse: Vehicle.fromJson,
       );
-      final list = data is List ? data : (data['data'] ?? data) as List;
-      vehicles.value = list
-          .map((e) => Vehicle.fromJson(e as Map<String, dynamic>))
-          .toList();
+
+      // A newer load started while this one was in flight — drop this result
+      // rather than letting stale data win.
+      if (requestId != _vehiclesRequestId) return;
+
+      vehicles.value = page.items;
+      _vehiclesPage = 1;
+      hasMoreVehicles.value = page.hasMore;
     } on dio.DioException catch (e) {
-      final msg = e.error is ApiException
+      if (requestId != _vehiclesRequestId) return;
+      vehicleLoadError.value = e.error is ApiException
           ? (e.error as ApiException).message
           : 'Failed to load vehicles';
-      vehicleLoadError.value = msg;
-      SnackBarHelper.error(msg);
+      // Existing vehicles are deliberately NOT cleared: a failed refresh must
+      // never replace a fleet the user can currently see with an empty list.
       AppLogger.e('❌ fetchVehicles: $e');
     } catch (e) {
+      if (requestId != _vehiclesRequestId) return;
       vehicleLoadError.value = 'Failed to load vehicles';
       AppLogger.e('❌ fetchVehicles: $e');
     } finally {
-      isVehicleLoading.value = false;
+      if (requestId == _vehiclesRequestId) {
+        isVehicleLoading.value = false;
+        hasLoadedVehicles.value = true;
+      }
     }
   }
+
+  /// Append the next page of vehicles.
+  ///
+  /// Called as the list approaches its end. Silent by design: a failed
+  /// load-more must not disturb the rows already on screen, so it surfaces as
+  /// a retryable footer rather than an error state or a snackbar.
+  ///
+  /// Safe to call repeatedly — scroll events fire far faster than the network,
+  /// so the in-flight guard is what stops a fling from queuing ten requests.
+  Future<void> loadMoreVehicles() {
+    final inFlight = _vehiclesMoreInFlight;
+    if (inFlight != null) return inFlight;
+    if (!hasMoreVehicles.value || isVehicleLoading.value) {
+      return Future.value();
+    }
+
+    final future = _loadMoreVehicles();
+    _vehiclesMoreInFlight = future;
+    return future.whenComplete(() => _vehiclesMoreInFlight = null);
+  }
+
+  Future<void> _loadMoreVehicles() async {
+    final requestId = _vehiclesRequestId;
+    isLoadingMoreVehicles.value = true;
+    vehicleLoadMoreError.value = '';
+
+    try {
+      final next = _vehiclesPage + 1;
+      final page = await _fetchPage(
+        ApiEndpoints.fleet.vehicles,
+        page: next,
+        parse: Vehicle.fromJson,
+      );
+
+      // A refresh happened while this page was in flight. Appending now would
+      // splice page N of the OLD list onto page 1 of the new one.
+      if (requestId != _vehiclesRequestId) return;
+
+      // De-duplicated on id: a vehicle created between two page requests
+      // shifts every later row down by one, which would otherwise re-deliver a
+      // row that is already on screen and crash the list on duplicate keys.
+      final seen = vehicles.map((v) => v.vehicleId).toSet();
+      vehicles.addAll(
+        page.items.where((v) => seen.add(v.vehicleId)),
+      );
+      _vehiclesPage = next;
+      hasMoreVehicles.value = page.hasMore;
+    } catch (e) {
+      if (requestId != _vehiclesRequestId) return;
+      vehicleLoadMoreError.value = 'Could not load more vehicles.';
+      AppLogger.e('❌ loadMoreVehicles: $e');
+    } finally {
+      isLoadingMoreVehicles.value = false;
+    }
+  }
+
+  /// Read ONE page of a paginated list endpoint.
+  ///
+  /// Tolerates both the paginated envelope `{data, pagination}` and a bare
+  /// array, so the client keeps working across a backend rollout. An
+  /// unreadable payload throws rather than yielding an empty list — silently
+  /// returning `[]` is how a broken response becomes "you have no vehicles".
+  Future<_PageResult<T>> _fetchPage<T>(
+    String path, {
+    required int page,
+    required T Function(Map<String, dynamic>) parse,
+    int pageSize = _listPageSize,
+  }) async {
+    final raw = await ApiClient.instance.get<dynamic>(
+      path,
+      queryParameters: {'page': page, 'limit': pageSize},
+    );
+
+    final List<dynamic> items;
+    bool hasMore;
+
+    if (raw is List) {
+      // Legacy unpaginated response — everything arrived at once.
+      items = raw;
+      hasMore = false;
+    } else if (raw is Map<String, dynamic> && raw['data'] is List) {
+      items = raw['data'] as List;
+      final meta = raw['pagination'];
+      final totalPages = meta is Map ? meta['totalPages'] : null;
+      hasMore = totalPages is int
+          ? page < totalPages
+          // No usable metadata: a full page implies there may be more.
+          : items.length >= pageSize;
+    } else {
+      throw const FormatException('Unexpected list response');
+    }
+
+    // Parsed row by row, so one malformed record cannot take the page down
+    // with it. Mapping in a single pass meant one odd row threw, the page was
+    // discarded, and a company with real vehicles saw an empty fleet.
+    final parsed = <T>[];
+    for (final item in items.whereType<Map<String, dynamic>>()) {
+      try {
+        parsed.add(parse(item));
+      } catch (e) {
+        AppLogger.e('⚠️ Skipped an unreadable row from $path: $e');
+      }
+    }
+
+    return _PageResult<T>(items: parsed, hasMore: hasMore);
+  }
+
 
   /// Creates a vehicle.
   ///
@@ -631,126 +933,93 @@ class DriverController extends GetxController {
     }
   }
 
-  /// RC verification via the Invincible Ocean integration (mirrors web
-  /// `fleetAPI.verifyVehicleRegistration`). GET /fleet/vehicles/verify/registration.
+  /// RC verification through the backend, which calls the provider server-side.
   ///
-  /// The query param MUST be `registrationNumber` — the backend reads
-  /// `@Query('registrationNumber')`. The old code sent `number`, so the backend
-  /// received `undefined` and verification silently failed ("RC verification not
-  /// working"). Surfaces the real backend message on failure.
-  /// RC verification via the backend (which calls the provider server-side).
-  ///
-  /// The backend answers with a structured outcome instead of throwing:
-  ///   verified              → vehicle details for auto-fill
-  ///   not_verified          → provider processed it and could not match the RC
-  ///   provider_unavailable  → timeout / outage / config problem on our side
-  ///
-  /// Returns a [RcVerifyResult] so the UI can render a PERSISTENT inline
-  /// message and offer manual verification. A transient snackbar alone was not
-  /// reliably visible above the Add-Vehicle sheet, so the failure reason never
-  /// reached the user.
+  /// The backend answers with the normalized verification contract rather than
+  /// throwing, so the UI can render a persistent inline message and offer
+  /// manual verification:
+  ///   verified                 → normalized vehicle details for auto-fill
+  ///   not_verified             → the provider answered and could not match it
+  ///   temporarily_unavailable  → timeout / outage / auth / config on our side
   ///
   /// A failure NEVER blocks vehicle creation, and a provider outage is never
-  /// reported as an invalid RC.
-  Future<RcVerifyResult> verifyVehicleRegistration(String regNumber) async {
-    // Normalise the way the backend/provider expect (trim + uppercase, spaces
-    // removed). Does not alter an otherwise legitimate registration.
-    final normalized = regNumber.trim().toUpperCase().replaceAll(' ', '');
-
-    const unavailableMsg =
-        'Automatic RC verification is unavailable right now. You can still add '
-        'this vehicle and submit the RC for manual verification.';
-    const notVerifiedMsg =
-        'We could not verify this RC automatically. Please check the number, '
-        'or add the vehicle and submit the RC for manual verification.';
-
-    try {
-      final raw = await ApiClient.instance.get<dynamic>(
-        ApiEndpoints.fleet.verifyVehicleRegistration,
-        queryParameters: {'registrationNumber': normalized},
-      );
-
-      final body = raw is Map<String, dynamic>
-          ? (raw['data'] is Map<String, dynamic>
-                ? raw['data'] as Map<String, dynamic>
-                : raw)
-          : null;
-
-      if (body == null) {
-        return const RcVerifyResult(
-          status: 'provider_unavailable',
-          message: unavailableMsg,
-        );
-      }
-
-      final status = body['status']?.toString();
-      if (body['verified'] == true || status == 'verified') {
-        final details = body['data'];
-        return RcVerifyResult(
-          status: 'verified',
-          message: 'RC verified successfully.',
-          data: details is Map<String, dynamic> ? details : body,
-        );
-      }
-
-      if (status == 'not_verified') {
-        return const RcVerifyResult(
-          status: 'not_verified',
-          message: notVerifiedMsg,
-        );
-      }
-
-      return const RcVerifyResult(
-        status: 'provider_unavailable',
-        message: unavailableMsg,
-      );
-    } on dio.DioException catch (e) {
-      AppLogger.e('❌ verifyVehicleRegistration: $e');
-      return RcVerifyResult(
-        status: 'provider_unavailable',
-        message: _verifyError(e, unavailableMsg),
-      );
-    } catch (e) {
-      AppLogger.e('❌ verifyVehicleRegistration: $e');
-      return const RcVerifyResult(
-        status: 'provider_unavailable',
-        message: unavailableMsg,
-      );
-    }
-  }
-
-  /// DL verification via the Invincible Ocean integration (mirrors web
-  /// `fleetAPI.verifyDriverLicense`). GET /fleet/drivers/verify/license.
+  /// reported to the user as an invalid RC.
   ///
-  /// Backend reads `@Query('licenseNumber')` + `@Query('dateOfBirth')` (DOB in
-  /// DD/MM/YYYY). The old code sent `number`/`dob` → backend got undefined.
-  Future<Map<String, dynamic>?> verifyDriverLicense(
-    String licenseNumber,
-    String dob,
-  ) async {
-    try {
-      final data = await ApiClient.instance.get<dynamic>(
-        ApiEndpoints.fleet.verifyDriverLicense,
-        queryParameters: {'licenseNumber': licenseNumber, 'dateOfBirth': dob},
-      );
-      final body = data is Map<String, dynamic>
-          ? (data['data'] is Map<String, dynamic>
-                ? data['data'] as Map<String, dynamic>
-                : data)
-          : null;
-      return body;
-    } on dio.DioException catch (e) {
-      AppLogger.e('❌ verifyDriverLicense: $e');
-      SnackBarHelper.error(_verifyError(e, 'Could not verify this licence'));
-      return null;
-    } catch (e) {
-      AppLogger.e('❌ verifyDriverLicense: $e');
-      SnackBarHelper.error('Could not verify this licence');
-      return null;
-    }
+  /// Concurrency: only one RC verification runs at a time. Rapid taps on Verify
+  /// return the in-flight future instead of starting another backend request
+  /// and another paid provider call.
+  Future<RcVerifyResult> verifyVehicleRegistration(String regNumber) {
+    final inFlight = _rcVerifyInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _runRcVerification(regNumber);
+    _rcVerifyInFlight = future;
+    return future.whenComplete(() => _rcVerifyInFlight = null);
   }
 
-  String _verifyError(dio.DioException e, String fallback) {
+  Future<RcVerifyResult> _runRcVerification(String regNumber) async {
+    // Cheap local check first, so obviously-unusable input never spends a paid
+    // provider call.
+    if (!isPlausibleRegistration(regNumber)) {
+      return const RcVerifyResult(
+        state: VerificationState.notVerified,
+        message:
+            'Enter a valid registration number, for example GJ07AH4682.',
+      );
+    }
+
+    final result = await _verification.verifyRegistration(regNumber);
+    return RcVerifyResult.from(result);
+  }
+
+  /// Read a saved vehicle's stored RC state. Never calls the provider — this is
+  /// what Vehicle Details uses on open, so reopening a screen costs a database
+  /// read rather than provider quota.
+  Future<RcVerifyResult> fetchVehicleRcStatus(String vehicleId) async {
+    final result = await _verification.getVehicleRcStatus(vehicleId);
+    return RcVerifyResult.from(result);
+  }
+
+  /// Verify a saved vehicle's RC and persist the result.
+  Future<RcVerifyResult> verifySavedVehicleRc(String vehicleId) async {
+    final result = await _verification.verifyVehicleRc(vehicleId);
+    return RcVerifyResult.from(result);
+  }
+
+  /// Manual RC fallback — moves the vehicle to Pending for admin review.
+  Future<RcVerifyResult> submitVehicleRcManually(
+    String vehicleId, {
+    required String documentUrl,
+    String? notes,
+  }) async {
+    final result = await _verification.submitVehicleRcManually(
+      vehicleId,
+      documentUrl: documentUrl,
+      notes: notes,
+    );
+    return RcVerifyResult.from(result);
+  }
+
+  /// Verify a driver's licence from the uploaded licence document.
+  ///
+  /// Replaces the old licence-number + date-of-birth lookup: the current
+  /// provider contract reads every field from the document itself.
+  Future<VerificationResult<DrivingLicenceData>> verifyDriverLicenceDocument(
+    File document,
+  ) {
+    final inFlight = _dlVerifyInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _verification.verifyDriverLicence(document);
+    _dlVerifyInFlight = future;
+    return future.whenComplete(() => _dlVerifyInFlight = null);
+  }
+
+  /// Surfaces the backend's real validation/error message instead of a
+  /// generic fallback (`ApiException` is never actually attached to
+  /// `DioException.error` by the interceptor, so `e.error is ApiException`
+  /// is always false — read straight from the response body instead).
+  String _actionError(dio.DioException e, String fallback) {
     final data = e.response?.data;
     if (data is Map && data['message'] != null) {
       final m = data['message'];
@@ -758,13 +1027,6 @@ class DriverController extends GetxController {
     }
     return fallback;
   }
-
-  /// Surfaces the backend's real validation/error message instead of a
-  /// generic fallback (`ApiException` is never actually attached to
-  /// `DioException.error` by the interceptor, so `e.error is ApiException`
-  /// is always false — read straight from the response body instead).
-  String _actionError(dio.DioException e, String fallback) =>
-      _verifyError(e, fallback);
 
   // ── Filtered views ─────────────────────────────────────────────────────────
 

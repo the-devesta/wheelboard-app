@@ -219,7 +219,21 @@ class _FleetEndpoints {
   String deleteVehicle(String id) => '/fleet/vehicles/$id';
 
   // GET    /fleet/vehicles/verify/registration?registrationNumber=...
+  // Pre-save RC lookup for the Add/Edit Vehicle form.
   String get verifyVehicleRegistration => '/fleet/vehicles/verify/registration';
+
+  // GET    /fleet/vehicles/:id/rc-status
+  //
+  // Reads the vehicle's persisted RC state — never calls the KYC provider.
+  // Vehicle Details and Fleet must use this rather than re-verifying on open.
+  String vehicleRcStatus(String id) => '/fleet/vehicles/$id/rc-status';
+
+  // POST   /fleet/vehicles/:id/verify-rc
+  String verifyVehicleRc(String id) => '/fleet/vehicles/$id/verify-rc';
+
+  // POST   /fleet/vehicles/:id/rc-manual-verification
+  String vehicleRcManualVerification(String id) =>
+      '/fleet/vehicles/$id/rc-manual-verification';
 
   // ── Drivers ───────────────────────────────────────────────────────────
   // POST   /fleet/drivers
@@ -237,7 +251,10 @@ class _FleetEndpoints {
   // DELETE /fleet/drivers/:id
   String deleteDriver(String id) => '/fleet/drivers/$id';
 
-  // GET    /fleet/drivers/verify/license?licenseNumber=...&dateOfBirth=DD/MM/YYYY
+  // POST   /fleet/drivers/verify/license   multipart/form-data, field `document`
+  //
+  // Replaced the old `GET ...?licenseNumber=&dateOfBirth=` lookup, which used a
+  // provider contract that is no longer current.
   String get verifyDriverLicense => '/fleet/drivers/verify/license';
 
   // GET    /fleet/summary
@@ -711,8 +728,20 @@ class _KycEndpoints {
   // POST   /kyc/verify/pan
   String get verifyPan => '/kyc/verify/pan';
 
-  // POST   /kyc/verify/driving-license
+  // POST   /kyc/verify/driving-license   multipart/form-data, field `document`
+  //
+  // The current provider contract reads the licence from the licence DOCUMENT,
+  // so this uploads the image/PDF. It is NOT a licence-number + DOB lookup.
   String get verifyDrivingLicense => '/kyc/verify/driving-license';
+
+  // GET    /kyc/verify/driving-license/status
+  //
+  // Reads Wheelboard's persisted state ONLY — never calls the KYC provider.
+  // Screens that merely display a status must use this.
+  String get drivingLicenceStatus => '/kyc/verify/driving-license/status';
+
+  // POST   /kyc/verify/driving-license/manual
+  String get drivingLicenceManual => '/kyc/verify/driving-license/manual';
 
   // POST   /kyc/upload/document
   String get uploadDocument => '/kyc/upload/document';

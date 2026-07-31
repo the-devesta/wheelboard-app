@@ -11,6 +11,8 @@ import 'package:wheelboard/core/auth/auth_service.dart';
 import '../../../models/kyc_model.dart';
 import '../../../services/kyc_service.dart';
 import '../../../services/media_service.dart';
+import '../../../services/verification_service.dart';
+import '../../../widgets/verification/driving_licence_verification.dart';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const _primary = Color(0xFFF36969);
@@ -39,27 +41,38 @@ class KycScreen extends StatefulWidget {
 class _KycScreenState extends State<KycScreen> {
   final _service = KycService();
   final _panCtrl = TextEditingController();
-  final _dlCtrl = TextEditingController();
 
   Kyc? _kyc;
   RequiredDocuments? _required;
   KycCompleteness? _completeness;
-  DateTime? _dob;
   bool _loading = true;
   String? _error;
   bool _verifying = false;
   String? _uploadingType; // document type currently being uploaded
 
+  /// Stored Driving Licence verification, read once when the screen opens.
+  ///
+  /// This is a plain status read — it never calls the KYC provider — so
+  /// reopening KYC costs a database lookup rather than paid provider quota,
+  /// and an already-verified user is never asked to verify again.
+  VerificationResult<DrivingLicenceData>? _dlState;
+
   @override
   void initState() {
     super.initState();
     _fetch();
+    _fetchDlState();
+  }
+
+  Future<void> _fetchDlState() async {
+    final state = await VerificationService().getDrivingLicenceStatus();
+    if (!mounted) return;
+    setState(() => _dlState = state);
   }
 
   @override
   void dispose() {
     _panCtrl.dispose();
-    _dlCtrl.dispose();
     super.dispose();
   }
 
@@ -86,12 +99,6 @@ class _KycScreenState extends State<KycScreen> {
         _completeness = results[1] as KycCompleteness?;
         if ((_panCtrl.text.isEmpty) && (kyc.panNumber?.isNotEmpty ?? false)) {
           _panCtrl.text = kyc.panNumber!;
-        }
-        if ((_dlCtrl.text.isEmpty) && (kyc.dlNumber?.isNotEmpty ?? false)) {
-          _dlCtrl.text = kyc.dlNumber!;
-        }
-        if (_dob == null && (kyc.dateOfBirth?.isNotEmpty ?? false)) {
-          _dob = DateTime.tryParse(kyc.dateOfBirth!);
         }
         _loading = false;
       });
@@ -143,27 +150,6 @@ class _KycScreenState extends State<KycScreen> {
           _amber,
         );
       }
-      await _fetch();
-    } catch (e) {
-      _toast(e.toString().replaceFirst('Exception: ', ''), _danger);
-    } finally {
-      if (mounted) setState(() => _verifying = false);
-    }
-  }
-
-  Future<void> _verifyDl() async {
-    final dl = _dlCtrl.text.trim().toUpperCase();
-    if (dl.isEmpty || _dob == null) {
-      _toast('Enter your DL number and date of birth', _amber);
-      return;
-    }
-    setState(() => _verifying = true);
-    try {
-      final result = await _service.verifyDl(dl, _fmtApiDate(_dob!));
-      _toast(
-        result.verified ? 'Driving License verified!' : 'DL submitted',
-        result.verified ? _green : _amber,
-      );
       await _fetch();
     } catch (e) {
       _toast(e.toString().replaceFirst('Exception: ', ''), _danger);
@@ -250,23 +236,6 @@ class _KycScreenState extends State<KycScreen> {
       default:
         return 'DOC';
     }
-  }
-
-  Future<void> _pickDob() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dob ?? DateTime(now.year - 25),
-      firstDate: DateTime(1940),
-      lastDate: now,
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: _primary),
-        ),
-        child: child!,
-      ),
-    );
-    if (picked != null) setState(() => _dob = picked);
   }
 
   // ── progress ──
@@ -534,57 +503,30 @@ class _KycScreenState extends State<KycScreen> {
   }
 
   // ── DL ──
+  //
+  // Verification is delegated to DrivingLicenceVerificationCard, which
+  // implements the current provider contract (the licence is read by OCR from
+  // the licence document, not looked up by number + date of birth).
   Widget _dlCard(Kyc k) {
     final status = k.dlStatus;
-    final verified = status == KycStatus.verified;
     final mandatory =
         _required?.mandatory.contains(KycDocType.drivingLicense) ?? false;
     return _verifyCard(
       icon: Iconsax.document_text,
-      title: 'Driving License Verification',
+      title: 'Driving Licence Verification',
       mandatory: mandatory,
       status: status,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _field(
-          controller: _dlCtrl,
-          label: 'DL Number',
-          hint: 'MH1420110012345',
-          enabled: !verified,
-          upper: true,
-        ),
-        const SizedBox(height: 12),
-        Text('Date of Birth',
-            style: GoogleFonts.poppins(fontSize: 12, color: _textGrey)),
-        const SizedBox(height: 6),
-        GestureDetector(
-          onTap: verified ? null : _pickDob,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: _bg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _border),
-            ),
-            child: Row(children: [
-              const Icon(Iconsax.calendar_1, size: 16, color: _textGrey),
-              const SizedBox(width: 10),
-              Text(_dob != null ? _fmtDisplayDate(_dob!) : 'Select date of birth',
-                  style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: _dob != null ? _textDark : _textGrey)),
-            ]),
-          ),
-        ),
-        if (k.dlName?.isNotEmpty ?? false) ...[
-          const SizedBox(height: 6),
-          Text('Name: ${k.dlName}${k.dlValidUpto != null ? ' · Valid till ${k.dlValidUpto}' : ''}',
-              style: GoogleFonts.poppins(fontSize: 12, color: _textGrey)),
-        ],
-        if (!verified) ...[
-          const SizedBox(height: 12),
-          _verifyButton('Verify Driving License', _verifyDl),
-        ],
-      ]),
+      child: DrivingLicenceVerificationCard(
+        initialState: _dlState,
+        onStateChange: (result) {
+          // Refresh the KYC summary only once the state actually settles, so
+          // the progress ring and overall status agree with the card.
+          if (result.state == VerificationState.verified ||
+              result.state == VerificationState.pending) {
+            _fetch();
+          }
+        },
+      ),
     );
   }
 
@@ -881,13 +823,6 @@ class _KycScreenState extends State<KycScreen> {
     );
   }
 
-  String _fmtApiDate(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-  String _fmtDisplayDate(DateTime d) {
-    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return '${d.day.toString().padLeft(2, '0')} ${m[d.month - 1]} ${d.year}';
-  }
 }
 
 /// Forces input to uppercase (for PAN / DL numbers).

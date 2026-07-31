@@ -4,7 +4,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../controllers/Transport/lease_controller.dart';
 import '../../../models/fleet_models.dart';
-import '../../../widgets/custom_loader.dart';
+import '../../../widgets/skeletons.dart';
 
 const _primary = Color(0xFFF36969);
 const _bg = Color(0xFFF9FAFB);
@@ -66,7 +66,7 @@ class _MyBookedLeasesScreenState extends State<MyBookedLeasesScreen> {
       ),
       body: Obx(() {
         if (_ctrl.isMyBookingsLoading.value && _ctrl.myBookings.isEmpty) {
-          return const Center(child: CustomLoader());
+          return const SkeletonListView();
         }
         return Column(
           children: [

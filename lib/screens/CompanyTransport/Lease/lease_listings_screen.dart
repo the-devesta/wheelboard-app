@@ -4,7 +4,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../controllers/Transport/lease_controller.dart';
 import '../../../models/fleet_models.dart';
-import '../../../widgets/custom_loader.dart';
+import '../../../widgets/skeletons.dart';
 import 'create_lease_wizard.dart';
 import 'lease_listing_detail_screen.dart';
 import 'incoming_bookings_screen.dart';
@@ -72,7 +72,7 @@ class _LeaseListingsScreenState extends State<LeaseListingsScreen> {
       ),
       body: Obx(() {
         if (_ctrl.isListingsLoading.value && _ctrl.myListings.isEmpty) {
-          return const Center(child: CustomLoader());
+          return const SkeletonListView();
         }
         final all = _ctrl.visibleListings;
         return Column(

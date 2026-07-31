@@ -4,7 +4,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../controllers/Transport/lease_controller.dart';
 import '../../../models/fleet_models.dart';
-import '../../../widgets/custom_loader.dart';
+import '../../../widgets/skeletons.dart';
 import 'marketplace_detail_screen.dart';
 
 const _primary = Color(0xFFF36969);
@@ -299,7 +299,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   Widget _buildBody() {
     return Obx(() {
       if (_ctrl.isMarketplaceLoading.value && _ctrl.marketplaceListings.isEmpty) {
-        return const Center(child: CustomLoader());
+        return const SkeletonListView();
       }
       if (_ctrl.marketplaceListings.isEmpty) return _buildEmpty();
 
