@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/subscription_controller.dart';
 import '../../models/subscription_model.dart';
+import '../../widgets/custom_snackbar.dart';
 
 // ── Theme per role ────────────────────────────────────────────────────────────
 
@@ -1084,6 +1086,33 @@ class _FaqSection extends StatelessWidget {
 
 // ── Support banner ────────────────────────────────────────────────────────────
 
+/// Wheelboard support line.
+///
+/// The same number the profile screens dial — kept identical so "Contact Us"
+/// means one thing across the app rather than a different destination per
+/// account type.
+const String kSupportPhoneNumber = '+917420861942';
+
+/// Open the dialer on the support number.
+///
+/// Failure is surfaced rather than swallowed: a device with no dialer (a
+/// tablet, an emulator) would otherwise make the button look broken again,
+/// which is the exact complaint being fixed.
+Future<void> _contactSupport(BuildContext context) async {
+  final uri = Uri(scheme: 'tel', path: kSupportPhoneNumber);
+  try {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+      return;
+    }
+  } catch (_) {
+    // Fall through to the message below.
+  }
+  SnackBarHelper.error(
+    'Could not open the dialer. Please call $kSupportPhoneNumber.',
+  );
+}
+
 class _SupportBanner extends StatelessWidget {
   final _RoleTheme theme;
   const _SupportBanner({required this.theme});
@@ -1121,18 +1150,35 @@ class _SupportBanner extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
+          // ROOT-CAUSE FIX: this was a bare Container + Text with no gesture
+          // handler at all — it looked like a button and did nothing, on every
+          // account type, because this screen is shared by all three roles.
+          //
+          // Routed through the SAME support number the profile screens dial,
+          // so there is one contact destination rather than a per-role variant.
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _contactSupport(context),
               borderRadius: BorderRadius.circular(12),
+              child: Container(
+                // 44dp minimum so it is a comfortable touch target.
+                constraints: const BoxConstraints(minHeight: 44),
+                alignment: Alignment.center,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text('Contact Us',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: t.primary,
+                        fontFamily: 'Poppins')),
+              ),
             ),
-            child: Text('Contact Us',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: t.primary,
-                    fontFamily: 'Poppins')),
           ),
         ],
       ),

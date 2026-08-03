@@ -289,6 +289,14 @@ class _TripEndpoints {
   // DELETE /trips/:tripId
   String delete(String tripId) => '/trips/$tripId';
 
+  // POST   /trips/:tripId/sos
+  //
+  // Wheelboard's canonical SOS. Validates the trip, writes the audit entry,
+  // marks the trip timeline, alerts the fleet owner and acknowledges the
+  // driver. The driver identity comes from the access token — it is never
+  // sent in the body. Accepts either the trip code or the trip row id.
+  String sos(String tripId) => '/trips/$tripId/sos';
+
   // POST   /trips/:tripId/start
   String start(String tripId) => '/trips/$tripId/start';
 

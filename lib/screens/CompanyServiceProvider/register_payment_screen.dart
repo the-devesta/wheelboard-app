@@ -25,6 +25,9 @@ class _RegisterPaymentScreenState extends State<RegisterPaymentScreen> {
   final _notesCtrl = TextEditingController();
 
   String? _serviceId;
+
+  /// Selected top-level category bucket; null means All.
+  String? _categoryFilter;
   DateTime _date = DateTime.now();
 
   @override
@@ -96,6 +99,8 @@ class _RegisterPaymentScreenState extends State<RegisterPaymentScreen> {
                 _sectionHeader(Iconsax.setting_4, 'Service Information'),
                 AppSpacing.vGapLg,
                 _label('Linked Service *'),
+                _categoryChips(),
+                AppSpacing.vGapMd,
                 _serviceDropdown(),
                 AppSpacing.vGapLg,
                 _label('Payment Date'),
@@ -176,6 +181,60 @@ class _RegisterPaymentScreenState extends State<RegisterPaymentScreen> {
         enabledBorder: border(AppPalette.border),
         focusedBorder: border(AppPalette.primary),
       ),
+    );
+  }
+
+  /// Vehicle / Tyres / Others selector.
+  ///
+  /// Narrows the service dropdown below. A service already chosen from another
+  /// bucket is cleared, so the field can never hold something the list no
+  /// longer shows.
+  Widget _categoryChips() {
+    final options = <String?>[null, ...kServiceCategories];
+
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: options.map((option) {
+        final isActive = _categoryFilter == option;
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _categoryFilter = option;
+
+              final selected = _c.userServices.firstWhereOrNull(
+                (s) => s['serviceId'] == _serviceId,
+              );
+              final stillVisible = option == null ||
+                  (selected != null &&
+                      normalizeServiceCategory(
+                            selected['category'] ?? selected['serviceTitle'],
+                          ) ==
+                          option);
+              if (!stillVisible) _serviceId = null;
+            });
+          },
+          child: Container(
+            // 40dp keeps these comfortable to tap.
+            constraints: const BoxConstraints(minHeight: 40),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: isActive ? AppPalette.primaryLight : AppPalette.bg,
+              borderRadius: AppRadius.rLg,
+              border: Border.all(
+                color: isActive ? AppPalette.primary : AppPalette.border,
+              ),
+            ),
+            child: Text(
+              option ?? 'All',
+              style: AppText.body.on(
+                isActive ? AppPalette.primary : AppPalette.textGrey,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -289,4 +348,37 @@ class _RegisterPaymentScreenState extends State<RegisterPaymentScreen> {
 
     if (ok && mounted) Navigator.of(context).pop();
   }
+}
+
+/// Top-level service categories.
+///
+/// Mirrors `wheelboard-be/src/service-management/service-categories.ts` and the
+/// web modal, so a payment registered on either platform is reported under the
+/// same bucket. Nothing is migrated — stored free text is classified on read,
+/// so historical services and payments keep working.
+const List<String> kServiceCategories = ['Vehicle', 'Tyres', 'Others'];
+
+/// Roll a stored category (or a service title) up to one of the three buckets.
+/// Tyres is checked first so 'Tyre Services' is not caught by the looser
+/// vehicle match.
+String normalizeServiceCategory(String? value) {
+  final text = (value ?? '').trim().toLowerCase();
+  if (text.isEmpty) return 'Others';
+  if (text == 'vehicle') return 'Vehicle';
+  if (text == 'tyres' || text == 'tyre') return 'Tyres';
+  if (text == 'others' || text == 'other') return 'Others';
+
+  const tyre = [
+    'tyre', 'tire', 'wheel', 'puncture', 'retread', 'alignment', 'balancing',
+  ];
+  if (tyre.any(text.contains)) return 'Tyres';
+
+  const vehicle = [
+    'vehicle', 'brake', 'engine', 'oil', 'ac ', 'a/c', 'body work',
+    'painting', 'battery', 'service', 'repair', 'inspection', 'kamani',
+    'grease', 'hub',
+  ];
+  if (vehicle.any(text.contains)) return 'Vehicle';
+
+  return 'Others';
 }

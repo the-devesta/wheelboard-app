@@ -33,7 +33,11 @@ class _SOSScreenState extends State<SOSScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool _isActivated = false;
-  bool _sending = false; // true while the webhook POST is in-flight
+  bool _sending = false; // true while the SOS dispatch is in-flight
+
+  /// Outcome of the two SOS channels. Null while the dispatch is running, so
+  /// the UI shows "sending" rather than a premature success.
+  SosDispatchResult? _dispatchResult;
 
   @override
   void initState() {
@@ -54,6 +58,8 @@ class _SOSScreenState extends State<SOSScreen>
     setState(() {
       _isActivated = true;
       _sending = true;
+      // Cleared so a re-trigger shows "sending" rather than the last result.
+      _dispatchResult = null;
     });
     _controller.duration = const Duration(milliseconds: 600);
     _controller.repeat();
@@ -142,17 +148,24 @@ class _SOSScreenState extends State<SOSScreen>
       debugPrint('[SOS] ⚠️ Trip lookup failed - sending without tripId: $e');
     }
 
-    // ── Step 5: fire the shared webhook helper ─────────────────────────────
-    // Payload construction, logging and error handling live in
-    // `services/sos_service.dart` so every SOS trigger sends an identical
-    // payload — and matches the web helper. It never throws.
-    await triggerSOSCall(
+    // ── Step 5: dispatch BOTH SOS channels ─────────────────────────────────
+    // Wheelboard's canonical SOS (trip validation, audit, timeline,
+    // fleet-owner alert, driver acknowledgement) AND the external emergency
+    // webhook. They run concurrently and are reported separately, so one
+    // failing never suppresses the other.
+    //
+    // Previously only the webhook fired, so no SOS was ever recorded in
+    // Wheelboard and no fleet owner was notified through the product.
+    final result = await dispatchSos(
       tripId: tripId,
       driverName: driverName,
       driverPhone: driverPhone,
       lat: lat,
       lng: lng,
     );
+
+    if (!mounted) return;
+    setState(() => _dispatchResult = result);
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
@@ -369,6 +382,29 @@ class _SOSScreenState extends State<SOSScreen>
                       style: AppText.caption.on(AppPalette.danger)),
                 ]),
               ],
+
+              // Each channel reported honestly once the dispatch settles.
+              // Claiming success while the Wheelboard record failed would
+              // leave a driver believing their fleet owner had been alerted
+              // when nobody had been.
+              if (!_sending && _dispatchResult != null) ...[
+                AppSpacing.vGapMd,
+                _SosChannelStatus(
+                  ok: _dispatchResult!.emergencyDispatched,
+                  okText: 'Emergency services alerted',
+                  failText:
+                      'Could not reach emergency services — call directly below',
+                ),
+                AppSpacing.vGapSm,
+                _SosChannelStatus(
+                  ok: _dispatchResult!.recorded,
+                  okText: 'Your fleet owner has been notified',
+                  failText: _dispatchResult!.skippedNoTrip
+                      ? 'No active trip — fleet owner not notified automatically'
+                      : (_dispatchResult!.recordError ??
+                          'Your fleet owner could not be notified'),
+                ),
+              ],
               AppSpacing.vGapXl,
               SizedBox(
                 width: 200,
@@ -527,6 +563,44 @@ class _SOSScreenState extends State<SOSScreen>
               )),
         ],
       ),
+    );
+  }
+}
+
+/// One line of SOS dispatch status.
+///
+/// The two channels — external emergency services and Wheelboard's own record
+/// — are reported separately and honestly, so a driver is never told their
+/// fleet owner was alerted when that call actually failed.
+class _SosChannelStatus extends StatelessWidget {
+  final bool ok;
+  final String okText;
+  final String failText;
+
+  const _SosChannelStatus({
+    required this.ok,
+    required this.okText,
+    required this.failText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ok ? AppPalette.green : AppPalette.amber;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(ok ? Iconsax.tick_circle : Iconsax.warning_2,
+            size: 15, color: color),
+        AppSpacing.hGapSm,
+        Flexible(
+          child: Text(
+            ok ? okText : failText,
+            textAlign: TextAlign.center,
+            style: AppText.caption.on(color),
+          ),
+        ),
+      ],
     );
   }
 }
